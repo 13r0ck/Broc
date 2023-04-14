@@ -7,11 +7,11 @@ extern crate bumpalo;
 
 #[cfg(test)]
 mod solve_expr {
-    use roc_can::abilities::ImplKey;
-    use roc_load::LoadedModule;
+    use broc_can::abilities::ImplKey;
+    use broc_load::LoadedModule;
     use test_solve_helpers::{format_problems, run_load_and_infer};
 
-    use roc_types::{
+    use broc_types::{
         pretty_print::{name_and_print_var, DebugPrint},
         types::MemberImpl,
     };
@@ -41,8 +41,8 @@ mod solve_expr {
         can_problems.retain(|prob| {
             !matches!(
                 prob,
-                roc_problem::can::Problem::UnusedDef(_, _)
-                    | roc_problem::can::Problem::UnusedBranchDef(..)
+                broc_problem::can::Problem::UnusedDef(_, _)
+                    | broc_problem::can::Problem::UnusedBranchDef(..)
             )
         });
 
@@ -3575,7 +3575,7 @@ mod solve_expr {
     #[test]
     fn sorting() {
         // based on https://github.com/elm/compiler/issues/2057
-        // Roc seems to do this correctly, tracking to make sure it stays that way
+        // Broc seems to do this correctly, tracking to make sure it stays that way
         infer_eq_without_problem(
             indoc!(
                 r#"
@@ -3628,7 +3628,7 @@ mod solve_expr {
     //    #[test]
     //    fn wrapper() {
     //        // based on https://github.com/elm/compiler/issues/1964
-    //        // Roc seems to do this correctly, tracking to make sure it stays that way
+    //        // Broc seems to do this correctly, tracking to make sure it stays that way
     //        infer_eq_without_problem(
     //            indoc!(
     //                r#"
@@ -4674,7 +4674,7 @@ mod solve_expr {
 
     #[test]
     fn rigid_type_variable_problem() {
-        // see https://github.com/roc-lang/roc/issues/1162
+        // see https://github.com/roc-lang/broc/issues/1162
         infer_eq_without_problem(
             indoc!(
                 r#"
@@ -4782,7 +4782,7 @@ mod solve_expr {
     #[test]
     fn inference_var_tag_union_ext() {
         // TODO: we should really be inferring [Blue, Orange]a -> [Lavender, Peach]a here.
-        // See https://github.com/roc-lang/roc/issues/2053
+        // See https://github.com/roc-lang/broc/issues/2053
         infer_eq_without_problem(
             indoc!(
                 r#"
@@ -4804,10 +4804,10 @@ mod solve_expr {
         infer_eq_without_problem(
             indoc!(
                 r#"
-                setRocEmail : _ -> { name: Str, email: Str }_
-                setRocEmail = \person ->
-                    { person & email: "\(person.name)@roclang.com" }
-                setRocEmail
+                setBrocEmail : _ -> { name: Str, email: Str }_
+                setBrocEmail = \person ->
+                    { person & email: "\(person.name)@broclang.com" }
+                setBrocEmail
                 "#
             ),
             "{ email : Str, name : Str }a -> { email : Str, name : Str }a",
@@ -5246,7 +5246,7 @@ mod solve_expr {
         )
     }
 
-    // https://github.com/roc-lang/roc/issues/2379
+    // https://github.com/roc-lang/broc/issues/2379
     #[test]
     fn copy_vars_referencing_copied_vars() {
         infer_eq_without_problem(
@@ -5621,7 +5621,7 @@ mod solve_expr {
     }
 
     #[test]
-    // https://github.com/roc-lang/roc/issues/2702
+    // https://github.com/roc-lang/broc/issues/2702
     fn tag_inclusion_behind_opaque() {
         infer_eq_without_problem(
             indoc!(

@@ -2,10 +2,10 @@ use std::fmt::Write as _; // import without risk of name clashing
 use std::path::PathBuf;
 
 use bumpalo::Bump;
-use roc_packaging::cache::RocCacheDir;
+use broc_packaging::cache::BrocCacheDir;
 use ven_pretty::DocAllocator;
 
-use roc_can::{
+use broc_can::{
     abilities::{AbilitiesStore, SpecializationLambdaSets},
     constraint::Constraints,
     debug::{pretty_print_def, PPCtx},
@@ -16,16 +16,16 @@ use roc_can::{
         RigidVariables,
     },
 };
-use roc_collections::VecSet;
-use roc_constrain::expr::constrain_decls;
-use roc_debug_flags::dbg_do;
-use roc_derive::DerivedModule;
-use roc_derive_key::{DeriveBuiltin, DeriveError, DeriveKey, Derived};
-use roc_load_internal::file::{add_imports, LoadedModule, Threading};
-use roc_module::symbol::{IdentIds, Interns, ModuleId, Symbol};
-use roc_region::all::LineInfo;
-use roc_reporting::report::{type_problem, RocDocAllocator};
-use roc_types::{
+use broc_collections::VecSet;
+use broc_constrain::expr::constrain_decls;
+use broc_debug_flags::dbg_do;
+use broc_derive::DerivedModule;
+use broc_derive_key::{DeriveBuiltin, DeriveError, DeriveKey, Derived};
+use broc_load_internal::file::{add_imports, LoadedModule, Threading};
+use broc_module::symbol::{IdentIds, Interns, ModuleId, Symbol};
+use broc_region::all::LineInfo;
+use broc_reporting::report::{type_problem, BrocDocAllocator};
+use broc_types::{
     pretty_print::{name_and_print_var, DebugPrint},
     subs::{ExposedTypesStorageSubs, Subs, Variable},
     types::Types,
@@ -34,45 +34,45 @@ use roc_types::{
 const DERIVED_MODULE: ModuleId = ModuleId::DERIVED_SYNTH;
 
 fn module_source_and_path(builtin: DeriveBuiltin) -> (ModuleId, &'static str, PathBuf) {
-    use roc_builtins::roc::module_source;
+    use broc_builtins::broc::module_source;
 
     let repo_root = std::env::var("ROC_WORKSPACE_DIR").expect("are you running with `cargo test`?");
     let builtins_path = PathBuf::from(repo_root)
         .join("compiler")
         .join("builtins")
-        .join("roc");
+        .join("broc");
 
     match builtin {
         DeriveBuiltin::ToEncoder => (
             ModuleId::ENCODE,
             module_source(ModuleId::ENCODE),
-            builtins_path.join("Encode.roc"),
+            builtins_path.join("Encode.broc"),
         ),
         DeriveBuiltin::Decoder => (
             ModuleId::DECODE,
             module_source(ModuleId::DECODE),
-            builtins_path.join("Decode.roc"),
+            builtins_path.join("Decode.broc"),
         ),
         DeriveBuiltin::Hash => (
             ModuleId::HASH,
             module_source(ModuleId::HASH),
-            builtins_path.join("Hash.roc"),
+            builtins_path.join("Hash.broc"),
         ),
         DeriveBuiltin::IsEq => (
             ModuleId::BOOL,
             module_source(ModuleId::BOOL),
-            builtins_path.join("Bool.roc"),
+            builtins_path.join("Bool.broc"),
         ),
     }
 }
 
-/// DSL for creating [`Content`][roc_types::subs::Content].
+/// DSL for creating [`Content`][broc_types::subs::Content].
 #[macro_export]
 macro_rules! v {
      ({ $($field:ident: $make_v:expr,)* $(?$opt_field:ident : $make_opt_v:expr,)* }$( $($ext:tt)+ )?) => {{
          #[allow(unused)]
-         use roc_types::types::RecordField;
-         use roc_types::subs::{Subs, RecordFields, Content, FlatType, Variable};
+         use broc_types::types::RecordField;
+         use broc_types::subs::{Subs, RecordFields, Content, FlatType, Variable};
          |subs: &mut Subs| {
              $(let $field = $make_v(subs);)*
              $(let $opt_field = $make_opt_v(subs);)*
@@ -86,12 +86,12 @@ macro_rules! v {
              let mut ext = Variable::EMPTY_RECORD;
              $( ext = $crate::v!($($ext)+)(subs); )?
 
-             roc_derive::synth_var(subs, Content::Structure(FlatType::Record(fields, ext)))
+             broc_derive::synth_var(subs, Content::Structure(FlatType::Record(fields, ext)))
          }
      }};
      (( $($make_v:expr,)* )$( $($ext:tt)+ )?) => {{
          #[allow(unused)]
-         use roc_types::subs::{Subs, RecordFields, Content, FlatType, Variable, TupleElems};
+         use broc_types::subs::{Subs, RecordFields, Content, FlatType, Variable, TupleElems};
          |subs: &mut Subs| {
              let elems = [
                  $($make_v(subs),)*
@@ -102,12 +102,12 @@ macro_rules! v {
              let mut ext = Variable::EMPTY_TUPLE;
              $( ext = $crate::v!($($ext)+)(subs); )?
 
-             roc_derive::synth_var(subs, Content::Structure(FlatType::Tuple(elems, ext)))
+             broc_derive::synth_var(subs, Content::Structure(FlatType::Tuple(elems, ext)))
          }
      }};
      ([ $($tag:ident $($payload:expr)*),* ] as $rec_var:ident) => {{
-         use roc_types::subs::{Subs, SubsIndex, Variable, Content, FlatType, TagExt, UnionTags};
-         use roc_module::ident::TagName;
+         use broc_types::subs::{Subs, SubsIndex, Variable, Content, FlatType, TagExt, UnionTags};
+         use broc_module::ident::TagName;
          |subs: &mut Subs| {
              let $rec_var = subs.fresh_unnamed_flex_var();
              let rec_name_index =
@@ -117,7 +117,7 @@ macro_rules! v {
              let $tag = vec![ $( $payload(subs), )* ];
              )*
              let tags = UnionTags::insert_into_subs::<_, Vec<Variable>>(subs, vec![ $( (TagName(stringify!($tag).into()), $tag) ,)* ]);
-             let tag_union_var = roc_derive::synth_var(subs, Content::Structure(FlatType::RecursiveTagUnion($rec_var, tags, TagExt::Any(Variable::EMPTY_TAG_UNION))));
+             let tag_union_var = broc_derive::synth_var(subs, Content::Structure(FlatType::RecursiveTagUnion($rec_var, tags, TagExt::Any(Variable::EMPTY_TAG_UNION))));
 
              subs.set_content(
                  $rec_var,
@@ -131,9 +131,9 @@ macro_rules! v {
      }};
      ([ $($tag:ident $($payload:expr)*),* ]$( $($ext:tt)+ )?) => {{
          #[allow(unused)]
-         use roc_types::subs::{Subs, UnionTags, Content, FlatType, TagExt, Variable};
+         use broc_types::subs::{Subs, UnionTags, Content, FlatType, TagExt, Variable};
          #[allow(unused)]
-         use roc_module::ident::TagName;
+         use broc_module::ident::TagName;
          |subs: &mut Subs| {
              $(
              let $tag = vec![ $( $payload(subs), )* ];
@@ -144,61 +144,61 @@ macro_rules! v {
              let mut ext = Variable::EMPTY_TAG_UNION;
              $( ext = $crate::v!($($ext)+)(subs); )?
 
-             roc_derive::synth_var(subs, Content::Structure(FlatType::TagUnion(tags, TagExt::Any(ext))))
+             broc_derive::synth_var(subs, Content::Structure(FlatType::TagUnion(tags, TagExt::Any(ext))))
          }
      }};
      (Symbol::$sym:ident $($arg:expr)*) => {{
-         use roc_types::subs::{Subs, SubsSlice, Content, FlatType};
-         use roc_module::symbol::Symbol;
+         use broc_types::subs::{Subs, SubsSlice, Content, FlatType};
+         use broc_module::symbol::Symbol;
          |subs: &mut Subs| {
              let $sym = vec![ $( $arg(subs) ,)* ];
              let var_slice = SubsSlice::insert_into_subs(subs, $sym);
-             roc_derive::synth_var(subs, Content::Structure(FlatType::Apply(Symbol::$sym, var_slice)))
+             broc_derive::synth_var(subs, Content::Structure(FlatType::Apply(Symbol::$sym, var_slice)))
          }
      }};
      (Symbol::$alias:ident $($arg:expr)* => $real_var:expr) => {{
-         use roc_types::subs::{Subs, AliasVariables, Content};
-         use roc_types::types::AliasKind;
-         use roc_module::symbol::Symbol;
+         use broc_types::subs::{Subs, AliasVariables, Content};
+         use broc_types::types::AliasKind;
+         use broc_module::symbol::Symbol;
          |subs: &mut Subs| {
              let args = vec![$( $arg(subs) )*];
              let alias_variables = AliasVariables::insert_into_subs::<Vec<_>, Vec<_>, _>(subs, args, vec![], vec![]);
              let real_var = $real_var(subs);
-             roc_derive::synth_var(subs, Content::Alias(Symbol::$alias, alias_variables, real_var, AliasKind::Structural))
+             broc_derive::synth_var(subs, Content::Alias(Symbol::$alias, alias_variables, real_var, AliasKind::Structural))
          }
      }};
      (@Symbol::$alias:ident $($arg:expr)* => $real_var:expr) => {{
-         use roc_types::subs::{Subs, AliasVariables, Content};
-         use roc_types::types::AliasKind;
-         use roc_module::symbol::Symbol;
+         use broc_types::subs::{Subs, AliasVariables, Content};
+         use broc_types::types::AliasKind;
+         use broc_module::symbol::Symbol;
          |subs: &mut Subs| {
              let args = vec![$( $arg(subs) )*];
              let alias_variables = AliasVariables::insert_into_subs::<Vec<_>, Vec<_>, _>(subs, args, vec![], vec![]);
              let real_var = $real_var(subs);
-             roc_derive::synth_var(subs, Content::Alias(Symbol::$alias, alias_variables, real_var, AliasKind::Opaque))
+             broc_derive::synth_var(subs, Content::Alias(Symbol::$alias, alias_variables, real_var, AliasKind::Opaque))
          }
      }};
      (*) => {{
-         use roc_types::subs::{Subs, Content};
-         |subs: &mut Subs| { roc_derive::synth_var(subs, Content::FlexVar(None)) }
+         use broc_types::subs::{Subs, Content};
+         |subs: &mut Subs| { broc_derive::synth_var(subs, Content::FlexVar(None)) }
      }};
      ($name:ident has $ability:path) => {{
-         use roc_types::subs::{Subs, SubsIndex, SubsSlice, Content};
+         use broc_types::subs::{Subs, SubsIndex, SubsSlice, Content};
          |subs: &mut Subs| {
              let name_index =
                  SubsIndex::push_new(&mut subs.field_names, stringify!($name).into());
 
              let abilities_slice = SubsSlice::extend_new(&mut subs.symbol_names, [$ability]);
 
-             roc_derive::synth_var(subs, Content::FlexAbleVar(Some(name_index), abilities_slice))
+             broc_derive::synth_var(subs, Content::FlexAbleVar(Some(name_index), abilities_slice))
          }
      }};
      (^$rec_var:ident) => {{
-         use roc_types::subs::{Subs};
+         use broc_types::subs::{Subs};
          |_: &mut Subs| { $rec_var }
      }};
      ($var:ident) => {{
-         use roc_types::subs::{Subs};
+         use broc_types::subs::{Subs};
          |_: &mut Subs| { Variable::$var }
      }};
  }
@@ -415,10 +415,10 @@ fn check_derived_typechecks_and_golden(
 
     // run the solver, print and fail if we have errors
     dbg_do!(
-        roc_debug_flags::ROC_PRINT_UNIFICATIONS_DERIVED,
-        std::env::set_var(roc_debug_flags::ROC_PRINT_UNIFICATIONS, "1")
+        broc_debug_flags::ROC_PRINT_UNIFICATIONS_DERIVED,
+        std::env::set_var(broc_debug_flags::ROC_PRINT_UNIFICATIONS, "1")
     );
-    let (mut solved_subs, _, problems, _) = roc_solve::module::run_solve(
+    let (mut solved_subs, _, problems, _) = broc_solve::module::run_solve(
         test_module,
         types,
         &constraints,
@@ -432,17 +432,17 @@ fn check_derived_typechecks_and_golden(
         Default::default(),
     );
     dbg_do!(
-        roc_debug_flags::ROC_PRINT_UNIFICATIONS_DERIVED,
-        std::env::set_var(roc_debug_flags::ROC_PRINT_UNIFICATIONS, "0")
+        broc_debug_flags::ROC_PRINT_UNIFICATIONS_DERIVED,
+        std::env::set_var(broc_debug_flags::ROC_PRINT_UNIFICATIONS, "0")
     );
     let subs = solved_subs.inner_mut();
 
     if !problems.is_empty() {
-        let filename = PathBuf::from("Test.roc");
+        let filename = PathBuf::from("Test.broc");
         let lines = LineInfo::new(" ");
         let src_lines = vec![" "];
         let mut reports = Vec::new();
-        let alloc = RocDocAllocator::new(&src_lines, test_module, interns);
+        let alloc = BrocDocAllocator::new(&src_lines, test_module, interns);
 
         for problem in problems.into_iter() {
             if let Some(report) = type_problem(&alloc, &lines, filename.clone(), problem.clone()) {
@@ -462,7 +462,7 @@ fn check_derived_typechecks_and_golden(
 
         let mut buf = String::new();
         doc.1
-            .render_raw(80, &mut roc_reporting::report::CiWrite::new(&mut buf))
+            .render_raw(80, &mut broc_reporting::report::CiWrite::new(&mut buf))
             .unwrap();
 
         panic!(
@@ -497,7 +497,7 @@ where
 {
     let arena = Bump::new();
     let (builtin_module, source, path) = module_source_and_path(builtin);
-    let target_info = roc_target::TargetInfo::default_x86_64();
+    let target_info = broc_target::TargetInfo::default_x86_64();
 
     let LoadedModule {
         mut interns,
@@ -505,16 +505,16 @@ where
         abilities_store,
         resolved_implementations,
         ..
-    } = roc_load_internal::file::load_and_typecheck_str(
+    } = broc_load_internal::file::load_and_typecheck_str(
         &arena,
         path.file_name().unwrap().into(),
         source,
         path.parent().unwrap().to_path_buf(),
         Default::default(),
         target_info,
-        roc_reporting::report::RenderTarget::ColorTerminal,
-        roc_reporting::report::DEFAULT_PALETTE,
-        RocCacheDir::Disallowed,
+        broc_reporting::report::RenderTarget::ColorTerminal,
+        broc_reporting::report::DEFAULT_PALETTE,
+        BrocCacheDir::Disallowed,
         Threading::AllAvailable,
     )
     .unwrap();

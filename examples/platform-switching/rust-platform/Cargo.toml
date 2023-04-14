@@ -1,6 +1,6 @@
 [package]
 name = "host"
-authors = ["The Roc Contributors"]
+authors = ["The Broc Contributors"]
 edition = "2021"
 license = "UPL-1.0"
 links = "app"
@@ -17,6 +17,6 @@ path = "src/main.rs"
 
 [dependencies]
 libc = "0.2"
-roc_std = { path = "../../../crates/roc_std" }
+broc_std = { path = "../../../crates/broc_std" }
 
 [workspace]

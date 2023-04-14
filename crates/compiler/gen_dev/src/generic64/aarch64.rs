@@ -2,10 +2,10 @@ use crate::generic64::{storage::StorageManager, Assembler, CallConv, RegTrait};
 use crate::Relocation;
 use bumpalo::collections::Vec;
 use packed_struct::prelude::*;
-use roc_builtins::bitcode::FloatWidth;
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{InLayout, STLayoutInterner};
+use broc_builtins::bitcode::FloatWidth;
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{InLayout, STLayoutInterner};
 
 use super::{CompareOperation, RegisterWidth};
 
@@ -1467,7 +1467,7 @@ impl ConditionalSelect {
 
 #[derive(PackedStruct)]
 #[packed_struct(endian = "msb")]
-pub struct DataProcessingTwoSource {
+pub struct DataPbrocessingTwoSource {
     sf: bool,
     fixed: bool,
     s: bool,
@@ -1478,19 +1478,19 @@ pub struct DataProcessingTwoSource {
     reg_d: Integer<u8, packed_bits::Bits<5>>,
 }
 
-impl Aarch64Bytes for DataProcessingTwoSource {}
+impl Aarch64Bytes for DataPbrocessingTwoSource {}
 
-pub struct DataProcessingTwoSourceParams {
+pub struct DataPbrocessingTwoSourceParams {
     op: u8,
     rm: AArch64GeneralReg,
     rn: AArch64GeneralReg,
     rd: AArch64GeneralReg,
 }
 
-impl DataProcessingTwoSource {
+impl DataPbrocessingTwoSource {
     #[inline(always)]
     fn new(
-        DataProcessingTwoSourceParams { op, rm, rn, rd }: DataProcessingTwoSourceParams,
+        DataPbrocessingTwoSourceParams { op, rm, rn, rd }: DataPbrocessingTwoSourceParams,
     ) -> Self {
         debug_assert!(op <= 0b111111);
 
@@ -1509,7 +1509,7 @@ impl DataProcessingTwoSource {
 
 #[derive(PackedStruct)]
 #[packed_struct(endian = "msb")]
-pub struct DataProcessingThreeSource {
+pub struct DataPbrocessingThreeSource {
     sf: bool,
     op54: Integer<u8, packed_bits::Bits<2>>,
     fixed: Integer<u8, packed_bits::Bits<5>>,
@@ -1521,9 +1521,9 @@ pub struct DataProcessingThreeSource {
     rd: Integer<u8, packed_bits::Bits<5>>,
 }
 
-impl Aarch64Bytes for DataProcessingThreeSource {}
+impl Aarch64Bytes for DataPbrocessingThreeSource {}
 
-pub struct DataProcessingThreeSourceParams {
+pub struct DataPbrocessingThreeSourceParams {
     op31: u8,
     rm: AArch64GeneralReg,
     ra: AArch64GeneralReg,
@@ -1531,16 +1531,16 @@ pub struct DataProcessingThreeSourceParams {
     rd: AArch64GeneralReg,
 }
 
-impl DataProcessingThreeSource {
+impl DataPbrocessingThreeSource {
     #[inline(always)]
     fn new(
-        DataProcessingThreeSourceParams {
+        DataPbrocessingThreeSourceParams {
             op31,
             rm,
             ra,
             rn,
             rd,
-        }: DataProcessingThreeSourceParams,
+        }: DataPbrocessingThreeSourceParams,
     ) -> Self {
         debug_assert!(op31 <= 0b111);
 
@@ -1846,7 +1846,7 @@ fn asr_reg64_reg64_reg64(
     src1: AArch64GeneralReg,
     src2: AArch64GeneralReg,
 ) {
-    let inst = DataProcessingTwoSource::new(DataProcessingTwoSourceParams {
+    let inst = DataPbrocessingTwoSource::new(DataPbrocessingTwoSourceParams {
         op: 0b001010,
         rm: src2,
         rn: src1,
@@ -2034,7 +2034,7 @@ fn lsl_reg64_reg64_reg64(
     src1: AArch64GeneralReg,
     src2: AArch64GeneralReg,
 ) {
-    let inst = DataProcessingTwoSource::new(DataProcessingTwoSourceParams {
+    let inst = DataPbrocessingTwoSource::new(DataPbrocessingTwoSourceParams {
         op: 0b001000,
         rm: src2,
         rn: src1,
@@ -2052,7 +2052,7 @@ fn lsr_reg64_reg64_reg64(
     src1: AArch64GeneralReg,
     src2: AArch64GeneralReg,
 ) {
-    let inst = DataProcessingTwoSource::new(DataProcessingTwoSourceParams {
+    let inst = DataPbrocessingTwoSource::new(DataPbrocessingTwoSourceParams {
         op: 0b001001,
         rm: src2,
         rn: src1,
@@ -2071,7 +2071,7 @@ fn madd_reg64_reg64_reg64_reg64(
     src2: AArch64GeneralReg,
     src3: AArch64GeneralReg,
 ) {
-    let inst = DataProcessingThreeSource::new(DataProcessingThreeSourceParams {
+    let inst = DataPbrocessingThreeSource::new(DataPbrocessingThreeSourceParams {
         op31: 0b000000,
         rm: src2,
         ra: src3,
@@ -2163,7 +2163,7 @@ fn sdiv_reg64_reg64_reg64(
     src1: AArch64GeneralReg,
     src2: AArch64GeneralReg,
 ) {
-    let inst = DataProcessingTwoSource::new(DataProcessingTwoSourceParams {
+    let inst = DataPbrocessingTwoSource::new(DataPbrocessingTwoSourceParams {
         op: 0b000011,
         rm: src2,
         rn: src1,
@@ -2292,7 +2292,7 @@ fn udiv_reg64_reg64_reg64(
     src1: AArch64GeneralReg,
     src2: AArch64GeneralReg,
 ) {
-    let inst = DataProcessingTwoSource::new(DataProcessingTwoSourceParams {
+    let inst = DataPbrocessingTwoSource::new(DataPbrocessingTwoSourceParams {
         op: 0b000010,
         rm: src2,
         rn: src1,

@@ -1,16 +1,16 @@
 #![allow(clippy::too_many_arguments)]
 
 use arrayvec::ArrayVec;
-use roc_can::constraint::{Constraint, Constraints, ExpectedTypeIndex};
-use roc_can::expected::Expected::{self, *};
-use roc_can::num::{FloatBound, FloatWidth, IntBound, IntLitWidth, NumBound, SignDemand};
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::num::{NumericRange, SingleQuoteBound};
-use roc_types::subs::Variable;
-use roc_types::types::Type::{self, *};
-use roc_types::types::{AliasKind, Category, Types};
-use roc_types::types::{OptAbleType, Reason};
+use broc_can::constraint::{Constraint, Constraints, ExpectedTypeIndex};
+use broc_can::expected::Expected::{self, *};
+use broc_can::num::{FloatBound, FloatWidth, IntBound, IntLitWidth, NumBound, SignDemand};
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::num::{NumericRange, SingleQuoteBound};
+use broc_types::subs::Variable;
+use broc_types::types::Type::{self, *};
+use broc_types::types::{AliasKind, Category, Types};
+use broc_types::types::{OptAbleType, Reason};
 
 #[inline(always)]
 pub(crate) fn add_numeric_bound_constr(
@@ -25,7 +25,7 @@ pub(crate) fn add_numeric_bound_constr(
 ) -> Type {
     let range = bound.numeric_bound();
 
-    use roc_types::num::{float_width_to_variable, int_lit_width_to_variable};
+    use broc_types::num::{float_width_to_variable, int_lit_width_to_variable};
 
     match range {
         NumericBound::None => {

@@ -1,5 +1,5 @@
 {
-  description = "Roc flake";
+  description = "Broc flake";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -90,7 +90,7 @@
           llvmPkgs.clang
           libxkbcommon
           pkg-config
-          zig # roc builtins are implemented in zig, see compiler/builtins/bitcode/
+          zig # broc builtins are implemented in zig, see compiler/builtins/bitcode/
 
           # lib deps
           libffi
@@ -99,12 +99,12 @@
           zlib
           libiconv
 
-          # faster builds - see https://github.com/roc-lang/roc/blob/main/BUILDING_FROM_SOURCE.md#use-lld-for-the-linker
+          # faster builds - see https://github.com/roc-lang/broc/blob/main/BUILDING_FROM_SOURCE.md#use-lld-for-the-linker
           llvmPkgs.lld
           debugir
           rust
           cargo-criterion # for benchmarks
-          simple-http-server # to view roc website when trying out edits
+          simple-http-server # to view broc website when trying out edits
           wasm-pack # for repl_wasm
           jq
         ]);
@@ -131,7 +131,7 @@
 
         formatter = pkgs.nixpkgs-fmt;
 
-        # You can build this package (the roc CLI) with the `nix build` command.
+        # You can build this package (the broc CLI) with the `nix build` command.
         packages.default = import ./. { inherit pkgs; };
       });
 }

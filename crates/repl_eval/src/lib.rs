@@ -1,7 +1,7 @@
-//! Provides the functionality for the REPL to evaluate Roc expressions.
-use roc_parse::ast::Expr;
-use roc_std::RocDec;
-use roc_target::TargetInfo;
+//! Provides the functionality for the REPL to evaluate Broc expressions.
+use broc_parse::ast::Expr;
+use broc_std::BrocDec;
+use broc_target::TargetInfo;
 
 pub mod eval;
 pub mod gen;
@@ -17,7 +17,7 @@ pub trait ReplApp<'a> {
         F: FnMut(&'a Self::Memory, Return) -> Expr<'a>,
         Self::Memory: 'a;
 
-    fn call_function_returns_roc_list<F>(&mut self, main_fn_name: &str, transform: F) -> Expr<'a>
+    fn call_function_returns_broc_list<F>(&mut self, main_fn_name: &str, transform: F) -> Expr<'a>
     where
         F: FnMut(&'a Self::Memory, (usize, usize, usize)) -> Expr<'a>,
         Self::Memory: 'a,
@@ -25,7 +25,7 @@ pub trait ReplApp<'a> {
         self.call_function(main_fn_name, transform)
     }
 
-    fn call_function_returns_roc_str<T, F>(
+    fn call_function_returns_broc_str<T, F>(
         &mut self,
         target_info: TargetInfo,
         main_fn_name: &str,
@@ -35,12 +35,12 @@ pub trait ReplApp<'a> {
         F: Fn(&'a Self::Memory, usize) -> T,
         Self::Memory: 'a,
     {
-        let roc_str_width = match target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => 12,
-            roc_target::PtrWidth::Bytes8 => 24,
+        let broc_str_width = match target_info.ptr_width() {
+            broc_target::PtrWidth::Bytes4 => 12,
+            broc_target::PtrWidth::Bytes8 => 24,
         };
 
-        self.call_function_dynamic_size(main_fn_name, roc_str_width, transform)
+        self.call_function_dynamic_size(main_fn_name, broc_str_width, transform)
     }
 
     /// Run user code that returns a struct or union, whose size is provided as an argument
@@ -76,9 +76,9 @@ pub trait ReplAppMemory {
     fn deref_f32(&self, addr: usize) -> f32;
     fn deref_f64(&self, addr: usize) -> f64;
 
-    fn deref_dec(&self, addr: usize) -> RocDec {
+    fn deref_dec(&self, addr: usize) -> BrocDec {
         let bits = self.deref_i128(addr);
-        RocDec::new(bits)
+        BrocDec::new(bits)
     }
 
     fn deref_str(&self, addr: usize) -> &str;

@@ -4,7 +4,7 @@ use std::process::Stdio;
 
 use crate::editor::code_lines::CodeLines;
 use crate::editor::ed_error::EdResult;
-use crate::editor::ed_error::{MissingSelectionSnafu, RocCheckFailedSnafu};
+use crate::editor::ed_error::{MissingSelectionSnafu, BrocCheckFailedSnafu};
 use crate::editor::grid_node_map::GridNodeMap;
 use crate::editor::mvc::app_update::InputOutcome;
 use crate::editor::mvc::ed_model::EdModel;
@@ -33,34 +33,34 @@ use crate::ui::util::path_to_string;
 use crate::ui::util::write_to_file;
 use crate::window::keyboard_input::Modifiers;
 use bumpalo::Bump;
-use roc_ast::constrain::constrain_expr;
-use roc_ast::constrain::Constraint;
-use roc_ast::lang::core::ast::ASTNodeId;
-use roc_ast::lang::core::def::def2::Def2;
-use roc_ast::lang::core::def::def2::DefId;
-use roc_ast::lang::core::expr::expr2::Expr2;
-use roc_ast::lang::core::expr::expr2::ExprId;
-use roc_ast::lang::core::types::Type2;
-use roc_ast::mem_pool::pool::Pool;
-use roc_ast::mem_pool::pool_str::PoolStr;
-use roc_ast::solve_type;
-use roc_can::expected::Expected;
-use roc_code_markup::markup::attribute::Attributes;
-use roc_code_markup::markup::convert::from_ast::ast_to_mark_nodes;
-use roc_code_markup::markup::nodes;
-use roc_code_markup::markup::nodes::MarkupNode;
-use roc_code_markup::markup::nodes::EQUALS;
-use roc_code_markup::slow_pool::MarkNodeId;
-use roc_code_markup::slow_pool::SlowPool;
-use roc_collections::all::MutMap;
-use roc_command_utils::cargo;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::Symbol;
-use roc_region::all::Region;
-use roc_solve::module::Solved;
-use roc_types::pretty_print::name_and_print_var;
-use roc_types::pretty_print::DebugPrint;
-use roc_types::subs::{Subs, VarStore, Variable};
+use broc_ast::constrain::constrain_expr;
+use broc_ast::constrain::Constraint;
+use broc_ast::lang::core::ast::ASTNodeId;
+use broc_ast::lang::core::def::def2::Def2;
+use broc_ast::lang::core::def::def2::DefId;
+use broc_ast::lang::core::expr::expr2::Expr2;
+use broc_ast::lang::core::expr::expr2::ExprId;
+use broc_ast::lang::core::types::Type2;
+use broc_ast::mem_pool::pool::Pool;
+use broc_ast::mem_pool::pool_str::PoolStr;
+use broc_ast::solve_type;
+use broc_can::expected::Expected;
+use broc_code_markup::markup::attribute::Attributes;
+use broc_code_markup::markup::convert::from_ast::ast_to_mark_nodes;
+use broc_code_markup::markup::nodes;
+use broc_code_markup::markup::nodes::MarkupNode;
+use broc_code_markup::markup::nodes::EQUALS;
+use broc_code_markup::slow_pool::MarkNodeId;
+use broc_code_markup::slow_pool::SlowPool;
+use broc_collections::all::MutMap;
+use broc_command_utils::cargo;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::Symbol;
+use broc_region::all::Region;
+use broc_solve::module::Solved;
+use broc_types::pretty_print::name_and_print_var;
+use broc_types::pretty_print::DebugPrint;
+use broc_types::subs::{Subs, VarStore, Variable};
 use snafu::OptionExt;
 use threadpool::ThreadPool;
 use winit::event::VirtualKeyCode;
@@ -474,7 +474,7 @@ impl<'a> EdModel<'a> {
 
     fn run_solve(
         mempool: &mut Pool,
-        aliases: MutMap<Symbol, roc_types::types::Alias>,
+        aliases: MutMap<Symbol, broc_types::types::Alias>,
         rigid_variables: MutMap<Variable, Lowercase>,
         constraint: Constraint,
         var_store: VarStore,
@@ -612,19 +612,19 @@ impl<'a> EdModel<'a> {
     fn check_file(&mut self) -> EdResult<()> {
         println!("\nChecking file (cargo run check <file>)...");
 
-        let roc_file_str = path_to_string(self.file_path);
+        let broc_file_str = path_to_string(self.file_path);
 
         let cmd_out = cargo()
             .arg("run")
             .arg("--release")
             .arg("check")
-            .arg(roc_file_str)
+            .arg(broc_file_str)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .output()?;
 
         if !cmd_out.status.success() {
-            RocCheckFailedSnafu.fail()?
+            BrocCheckFailedSnafu.fail()?
         }
 
         Ok(())
@@ -633,12 +633,12 @@ impl<'a> EdModel<'a> {
     fn run_file(&mut self) -> EdResult<()> {
         println!("\nExecuting file (cargo run --release <file>)...");
 
-        let roc_file_str = path_to_string(self.file_path);
+        let broc_file_str = path_to_string(self.file_path);
 
         cargo()
             .arg("run")
             .arg("--release")
-            .arg(roc_file_str)
+            .arg(broc_file_str)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .output()?;
@@ -947,7 +947,7 @@ pub fn handle_new_char_expr(
                 start_new_list(ed_model)?
             }
             '\r' => {
-                println!("For convenience and consistency there is only one way to format Roc, you can't add extra blank lines.");
+                println!("For convenience and consistency there is only one way to format Broc, you can't add extra blank lines.");
                 InputOutcome::Ignored
             }
             _ => InputOutcome::Ignored,
@@ -1285,8 +1285,8 @@ pub mod test_ed_update {
     use crate::window::keyboard_input::test_modifiers::ctrl_cmd_shift;
     use crate::window::keyboard_input::Modifiers;
     use bumpalo::Bump;
-    use roc_code_markup::markup::common_nodes::NEW_LINES_AFTER_DEF;
-    use roc_module::symbol::ModuleIds;
+    use broc_code_markup::markup::common_nodes::NEW_LINES_AFTER_DEF;
+    use broc_module::symbol::ModuleIds;
     use threadpool::ThreadPool;
     use winit::event::VirtualKeyCode::*;
 

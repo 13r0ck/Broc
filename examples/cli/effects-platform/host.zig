@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const str = @import("str");
-const RocStr = str.RocStr;
+const BrocStr = str.BrocStr;
 const testing = std.testing;
 const expectEqual = testing.expectEqual;
 const expect = testing.expect;
@@ -24,11 +24,11 @@ comptime {
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
-extern fn roc__mainForHost_1_exposed_generic([*]u8) void;
-extern fn roc__mainForHost_1_exposed_size() i64;
-extern fn roc__mainForHost_0_caller(*const u8, [*]u8, [*]u8) void;
-extern fn roc__mainForHost_0_size() i64;
-extern fn roc__mainForHost_0_result_size() i64;
+extern fn broc__mainForHost_1_exposed_generic([*]u8) void;
+extern fn broc__mainForHost_1_exposed_size() i64;
+extern fn broc__mainForHost_0_caller(*const u8, [*]u8, [*]u8) void;
+extern fn broc__mainForHost_0_size() i64;
+extern fn broc__mainForHost_0_result_size() i64;
 
 const Align = 2 * @alignOf(usize);
 extern fn malloc(size: usize) callconv(.C) ?*align(Align) anyopaque;
@@ -43,7 +43,7 @@ extern fn getppid() c_int;
 
 const DEBUG: bool = false;
 
-export fn roc_alloc(size: usize, alignment: u32) callconv(.C) ?*anyopaque {
+export fn broc_alloc(size: usize, alignment: u32) callconv(.C) ?*anyopaque {
     if (DEBUG) {
         var ptr = malloc(size);
         const stdout = std.io.getStdOut().writer();
@@ -54,7 +54,7 @@ export fn roc_alloc(size: usize, alignment: u32) callconv(.C) ?*anyopaque {
     }
 }
 
-export fn roc_realloc(c_ptr: *anyopaque, new_size: usize, old_size: usize, alignment: u32) callconv(.C) ?*anyopaque {
+export fn broc_realloc(c_ptr: *anyopaque, new_size: usize, old_size: usize, alignment: u32) callconv(.C) ?*anyopaque {
     if (DEBUG) {
         const stdout = std.io.getStdOut().writer();
         stdout.print("realloc: {d} (alignment {d}, old_size {d})\n", .{ c_ptr, alignment, old_size }) catch unreachable;
@@ -63,7 +63,7 @@ export fn roc_realloc(c_ptr: *anyopaque, new_size: usize, old_size: usize, align
     return realloc(@alignCast(Align, @ptrCast([*]u8, c_ptr)), new_size);
 }
 
-export fn roc_dealloc(c_ptr: *anyopaque, alignment: u32) callconv(.C) void {
+export fn broc_dealloc(c_ptr: *anyopaque, alignment: u32) callconv(.C) void {
     if (DEBUG) {
         const stdout = std.io.getStdOut().writer();
         stdout.print("dealloc: {d} (alignment {d})\n", .{ c_ptr, alignment }) catch unreachable;
@@ -72,7 +72,7 @@ export fn roc_dealloc(c_ptr: *anyopaque, alignment: u32) callconv(.C) void {
     free(@alignCast(Align, @ptrCast([*]u8, c_ptr)));
 }
 
-export fn roc_panic(c_ptr: *anyopaque, tag_id: u32) callconv(.C) void {
+export fn broc_panic(c_ptr: *anyopaque, tag_id: u32) callconv(.C) void {
     _ = tag_id;
 
     const stderr = std.io.getStdErr().writer();
@@ -81,38 +81,38 @@ export fn roc_panic(c_ptr: *anyopaque, tag_id: u32) callconv(.C) void {
     std.process.exit(0);
 }
 
-export fn roc_memcpy(dst: [*]u8, src: [*]u8, size: usize) callconv(.C) void {
+export fn broc_memcpy(dst: [*]u8, src: [*]u8, size: usize) callconv(.C) void {
     return memcpy(dst, src, size);
 }
 
-export fn roc_memset(dst: [*]u8, value: i32, size: usize) callconv(.C) void {
+export fn broc_memset(dst: [*]u8, value: i32, size: usize) callconv(.C) void {
     return memset(dst, value, size);
 }
 
-fn roc_getppid() callconv(.C) c_int {
+fn broc_getppid() callconv(.C) c_int {
     return getppid();
 }
 
-fn roc_getppid_windows_stub() callconv(.C) c_int {
+fn broc_getppid_windows_stub() callconv(.C) c_int {
     return 0;
 }
 
-fn roc_shm_open(name: *const i8, oflag: c_int, mode: c_uint) callconv(.C) c_int {
+fn broc_shm_open(name: *const i8, oflag: c_int, mode: c_uint) callconv(.C) c_int {
     return shm_open(name, oflag, mode);
 }
-fn roc_mmap(addr: ?*anyopaque, length: c_uint, prot: c_int, flags: c_int, fd: c_int, offset: c_uint) callconv(.C) *anyopaque {
+fn broc_mmap(addr: ?*anyopaque, length: c_uint, prot: c_int, flags: c_int, fd: c_int, offset: c_uint) callconv(.C) *anyopaque {
     return mmap(addr, length, prot, flags, fd, offset);
 }
 
 comptime {
     if (builtin.os.tag == .macos or builtin.os.tag == .linux) {
-        @export(roc_getppid, .{ .name = "roc_getppid", .linkage = .Strong });
-        @export(roc_mmap, .{ .name = "roc_mmap", .linkage = .Strong });
-        @export(roc_shm_open, .{ .name = "roc_shm_open", .linkage = .Strong });
+        @export(broc_getppid, .{ .name = "broc_getppid", .linkage = .Strong });
+        @export(broc_mmap, .{ .name = "broc_mmap", .linkage = .Strong });
+        @export(broc_shm_open, .{ .name = "broc_shm_open", .linkage = .Strong });
     }
 
     if (builtin.os.tag == .windows) {
-        @export(roc_getppid_windows_stub, .{ .name = "roc_getppid", .linkage = .Strong });
+        @export(broc_getppid_windows_stub, .{ .name = "broc_getppid", .linkage = .Strong });
     }
 }
 
@@ -123,7 +123,7 @@ pub export fn main() u8 {
     const stderr = std.io.getStdErr().writer();
 
     // NOTE the return size can be zero, which will segfault. Always allocate at least 8 bytes
-    const size = std.math.max(8, @intCast(usize, roc__mainForHost_1_exposed_size()));
+    const size = std.math.max(8, @intCast(usize, broc__mainForHost_1_exposed_size()));
     const raw_output = allocator.allocAdvanced(u8, @alignOf(u64), @intCast(usize, size), .at_least) catch unreachable;
     var output = @ptrCast([*]u8, raw_output);
 
@@ -133,7 +133,7 @@ pub export fn main() u8 {
 
     var timer = std.time.Timer.start() catch unreachable;
 
-    roc__mainForHost_1_exposed_generic(output);
+    broc__mainForHost_1_exposed_generic(output);
 
     call_the_closure(output);
 
@@ -152,7 +152,7 @@ fn to_seconds(tms: std.os.timespec) f64 {
 fn call_the_closure(closure_data_pointer: [*]u8) void {
     const allocator = std.heap.page_allocator;
 
-    const size = roc__mainForHost_0_result_size();
+    const size = broc__mainForHost_0_result_size();
 
     if (size == 0) {
         // the function call returns an empty record
@@ -160,7 +160,7 @@ fn call_the_closure(closure_data_pointer: [*]u8) void {
         // So it's special-cased
         const flags: u8 = 0;
         var result: [1]u8 = .{0};
-        roc__mainForHost_0_caller(&flags, closure_data_pointer, &result);
+        broc__mainForHost_0_caller(&flags, closure_data_pointer, &result);
 
         return;
     }
@@ -173,28 +173,28 @@ fn call_the_closure(closure_data_pointer: [*]u8) void {
     }
 
     const flags: u8 = 0;
-    roc__mainForHost_0_caller(&flags, closure_data_pointer, output);
+    broc__mainForHost_0_caller(&flags, closure_data_pointer, output);
 
     return;
 }
 
-pub export fn roc_fx_getLine() str.RocStr {
-    return roc_fx_getLine_help() catch return str.RocStr.empty();
+pub export fn broc_fx_getLine() str.BrocStr {
+    return broc_fx_getLine_help() catch return str.BrocStr.empty();
 }
 
-fn roc_fx_getLine_help() !RocStr {
+fn broc_fx_getLine_help() !BrocStr {
     const stdin = std.io.getStdIn().reader();
     var buf: [400]u8 = undefined;
 
     const line: []u8 = (try stdin.readUntilDelimiterOrEof(&buf, '\n')) orelse "";
 
-    return str.RocStr.init(@ptrCast([*]const u8, line), line.len);
+    return str.BrocStr.init(@ptrCast([*]const u8, line), line.len);
 }
 
-pub export fn roc_fx_putLine(rocPath: *str.RocStr) i64 {
+pub export fn broc_fx_putLine(brocPath: *str.BrocStr) i64 {
     const stdout = std.io.getStdOut().writer();
 
-    for (rocPath.asSlice()) |char| {
+    for (brocPath.asSlice()) |char| {
         stdout.print("{c}", .{char}) catch unreachable;
     }
 
@@ -209,8 +209,8 @@ const GetInt = extern struct {
     is_error: bool,
 };
 
-pub export fn roc_fx_getInt() GetInt {
-    if (roc_fx_getInt_help()) |value| {
+pub export fn broc_fx_getInt() GetInt {
+    if (broc_fx_getInt_help()) |value| {
         const get_int = GetInt{ .is_error = false, .value = value, .error_code = 0 };
         return get_int;
     } else |err| switch (err) {
@@ -225,7 +225,7 @@ pub export fn roc_fx_getInt() GetInt {
     return 0;
 }
 
-fn roc_fx_getInt_help() !i64 {
+fn broc_fx_getInt_help() !i64 {
     const stdin = std.io.getStdIn().reader();
     var buf: [40]u8 = undefined;
 

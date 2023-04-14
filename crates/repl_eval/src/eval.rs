@@ -1,23 +1,23 @@
 use bumpalo::collections::{CollectIn, Vec};
 use bumpalo::Bump;
-use roc_types::types::AliasKind;
+use broc_types::types::AliasKind;
 use std::cmp::{max_by_key, min_by_key};
 
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::MutMap;
-use roc_module::called_via::CalledVia;
-use roc_module::ident::TagName;
-use roc_module::symbol::{Interns, ModuleId, Symbol};
-use roc_mono::ir::ProcLayout;
-use roc_mono::layout::{
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::MutMap;
+use broc_module::called_via::CalledVia;
+use broc_module::ident::TagName;
+use broc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_mono::ir::PbrocLayout;
+use broc_mono::layout::{
     self, cmp_fields, union_sorted_tags_pub, Builtin, InLayout, Layout, LayoutCache,
     LayoutInterner, TLLayoutInterner, UnionLayout, UnionVariant, WrappedVariant,
 };
-use roc_parse::ast::{AssignedField, Collection, Expr, Pattern, StrLiteral};
-use roc_region::all::{Loc, Region};
-use roc_std::RocDec;
-use roc_target::TargetInfo;
-use roc_types::subs::{
+use broc_parse::ast::{AssignedField, Collection, Expr, Pattern, StrLiteral};
+use broc_region::all::{Loc, Region};
+use broc_std::BrocDec;
+use broc_target::TargetInfo;
+use broc_types::subs::{
     Content, FlatType, GetSubsSlice, RecordFields, Subs, TagExt, TupleElems, UnionTags, Variable,
 };
 
@@ -44,7 +44,7 @@ pub fn jit_to_ast<'a, A: ReplApp<'a>>(
     arena: &'a Bump,
     app: &mut A,
     main_fn_name: &str,
-    layout: ProcLayout<'a>,
+    layout: PbrocLayout<'a>,
     var: Variable,
     subs: &Subs,
     interns: &'a Interns,
@@ -60,7 +60,7 @@ pub fn jit_to_ast<'a, A: ReplApp<'a>>(
     };
 
     match layout {
-        ProcLayout {
+        PbrocLayout {
             arguments: [],
             result,
             niche: _,
@@ -69,7 +69,7 @@ pub fn jit_to_ast<'a, A: ReplApp<'a>>(
             // it's `main` and can be executed.
             jit_to_ast_help(&mut env, app, main_fn_name, result, var)
         }
-        ProcLayout { arguments, .. } => {
+        PbrocLayout { arguments, .. } => {
             // This is a user-supplied function; create a fake Expr for it.
             let mut arg_patterns =
                 bumpalo::collections::Vec::with_capacity_in(arguments.len(), arena);
@@ -99,13 +99,13 @@ fn get_newtype_tag_and_var(
     tags: UnionTags,
 ) -> Option<(TagName, Variable)> {
     let union_variant = {
-        let mut layout_env = roc_mono::layout::Env::from_components(
+        let mut layout_env = broc_mono::layout::Env::from_components(
             &mut env.layout_cache,
             env.subs,
             env.arena,
             env.target_info,
         );
-        roc_mono::layout::union_sorted_tags(&mut layout_env, var).unwrap()
+        broc_mono::layout::union_sorted_tags(&mut layout_env, var).unwrap()
     };
 
     let tag_name = match union_variant {
@@ -300,7 +300,7 @@ fn tag_id_from_data<'a, 'env, M: ReplAppMemory>(
         .unwrap();
     let tag_id_addr = data_addr + offset as usize;
 
-    use roc_mono::layout::Discriminant::*;
+    use broc_mono::layout::Discriminant::*;
     match union_layout.discriminant() {
         U0 => 0,
         U1 => mem.deref_bool(tag_id_addr) as i64,
@@ -391,7 +391,7 @@ fn jit_to_ast_help<'a, A: ReplApp<'a>>(
                 F64 => num_helper!(f64),
             }
         }
-        Layout::Builtin(Builtin::Decimal) => num_helper!(RocDec),
+        Layout::Builtin(Builtin::Decimal) => num_helper!(BrocDec),
         Layout::Builtin(Builtin::Str) => {
             let body = |mem: &A::Memory, addr| {
                 let string = mem.deref_str(addr);
@@ -399,9 +399,9 @@ fn jit_to_ast_help<'a, A: ReplApp<'a>>(
                 Expr::Str(StrLiteral::PlainLine(arena_str))
             };
 
-            app.call_function_returns_roc_str(env.target_info, main_fn_name, body)
+            app.call_function_returns_broc_str(env.target_info, main_fn_name, body)
         }
-        Layout::Builtin(Builtin::List(elem_layout)) => app.call_function_returns_roc_list(
+        Layout::Builtin(Builtin::List(elem_layout)) => app.call_function_returns_broc_list(
             main_fn_name,
             |mem: &A::Memory, (addr, len, _cap)| {
                 list_to_ast(
@@ -600,7 +600,7 @@ fn addr_to_ast<'a, M: ReplAppMemory>(
             }
         }
         (_, Layout::Builtin(Builtin::Decimal)) => {
-            helper!(deref_dec, RocDec)
+            helper!(deref_dec, BrocDec)
         }
         (_, Layout::Builtin(Builtin::List(elem_layout))) => {
             let elem_addr = mem.deref_usize(addr);
@@ -712,10 +712,10 @@ fn addr_to_ast<'a, M: ReplAppMemory>(
                         Content::Structure(FlatType::RecursiveTagUnion(rec_var, tags, _)) => {
                             (rec_var, tags)
                         }
-                        content => unreachable!("any other content should have a different layout, but we saw {:#?}", roc_types::subs::SubsFmtContent(content, env.subs)),
+                        content => unreachable!("any other content should have a different layout, but we saw {:#?}", broc_types::subs::SubsFmtContent(content, env.subs)),
                     }
                 }
-                _ => unreachable!("any other content should have a different layout, but we saw {:#?}", roc_types::subs::SubsFmtContent(raw_content, env.subs)),
+                _ => unreachable!("any other content should have a different layout, but we saw {:#?}", broc_types::subs::SubsFmtContent(raw_content, env.subs)),
             };
             debug_assert_eq!(union_layouts.len(), tags.len());
 

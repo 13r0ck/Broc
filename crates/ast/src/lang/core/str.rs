@@ -1,6 +1,6 @@
-use roc_error_macros::internal_error;
-use roc_module::{called_via::CalledVia, symbol::Symbol};
-use roc_parse::ast::StrLiteral;
+use broc_error_macros::internal_error;
+use broc_module::{called_via::CalledVia, symbol::Symbol};
+use broc_parse::ast::StrLiteral;
 
 use crate::{
     ast_error::{ASTResult, UnexpectedASTNodeSnafu},
@@ -25,7 +25,7 @@ pub(crate) fn flatten_str_literal<'a>(
     scope: &mut Scope,
     literal: &StrLiteral<'a>,
 ) -> (Expr2, Output) {
-    use roc_parse::ast::StrLiteral::*;
+    use broc_parse::ast::StrLiteral::*;
 
     match literal {
         PlainLine(str_slice) => {
@@ -47,9 +47,9 @@ enum StrSegment {
 fn flatten_str_lines<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
-    lines: &[&[roc_parse::ast::StrSegment<'a>]],
+    lines: &[&[broc_parse::ast::StrSegment<'a>]],
 ) -> (Expr2, Output) {
-    use roc_parse::ast::StrSegment::*;
+    use broc_parse::ast::StrSegment::*;
 
     let mut buf = String::new();
     let mut segments = Vec::new();
@@ -91,7 +91,7 @@ fn flatten_str_lines<'a>(
                     }
                 },
                 Interpolated(loc_expr) => {
-                    if roc_can::expr::is_valid_interpolation(loc_expr.value) {
+                    if broc_can::expr::is_valid_interpolation(loc_expr.value) {
                         // Interpolations desugar to Str.concat calls
                         output.references.calls.insert(Symbol::STR_CONCAT);
 

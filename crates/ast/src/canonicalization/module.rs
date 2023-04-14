@@ -3,16 +3,16 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 use bumpalo::Bump;
-use roc_collections::all::{default_hasher, ImMap, ImSet, MutMap, MutSet, SendMap};
-use roc_module::ident::Ident;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::IdentIdsByModule;
-use roc_module::symbol::{IdentIds, ModuleId, ModuleIds, Symbol};
-use roc_parse::ast;
-use roc_parse::pattern::PatternType;
-use roc_problem::can::{Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarStore, Variable};
+use broc_collections::all::{default_hasher, ImMap, ImSet, MutMap, MutSet, SendMap};
+use broc_module::ident::Ident;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::IdentIdsByModule;
+use broc_module::symbol::{IdentIds, ModuleId, ModuleIds, Symbol};
+use broc_parse::ast;
+use broc_parse::pattern::PatternType;
+use broc_problem::can::{Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarStore, Variable};
 
 use crate::lang::core::def::def::canonicalize_defs;
 use crate::lang::core::def::def::Def;

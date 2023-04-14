@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 use libtest_mimic::{run, Arguments, Failed, Trial};
 use mono::MonoOptions;
 use regex::Regex;
-use roc_collections::VecMap;
+use broc_collections::VecMap;
 use test_solve_helpers::{
     infer_queries, Elaboration, InferOptions, InferredProgram, InferredQuery, MUTLILINE_MARKER,
 };
@@ -408,7 +408,7 @@ fn write_source_with_answers<W: io::Write>(
             continue;
         }
 
-        // Otherwise, write the Roc source line.
+        // Otherwise, write the Broc source line.
         if !is_query_line {
             reflow.write(line.trim_end())?;
             reflow.write("\n")?;

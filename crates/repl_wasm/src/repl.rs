@@ -1,18 +1,18 @@
 use bumpalo::{collections::vec::Vec, Bump};
 use std::mem::size_of;
 
-use roc_collections::all::MutSet;
-use roc_gen_wasm::wasm32_result;
-use roc_load::MonomorphizedModule;
-use roc_parse::ast::Expr;
-use roc_repl_eval::{
+use broc_collections::all::MutSet;
+use broc_gen_wasm::wasm32_result;
+use broc_load::MonomorphizedModule;
+use broc_parse::ast::Expr;
+use broc_repl_eval::{
     eval::jit_to_ast,
     gen::{compile_to_mono, format_answer},
     ReplApp, ReplAppMemory,
 };
-use roc_reporting::report::DEFAULT_PALETTE_HTML;
-use roc_target::TargetInfo;
-use roc_types::pretty_print::{name_and_print_var, DebugPrint};
+use broc_reporting::report::DEFAULT_PALETTE_HTML;
+use broc_target::TargetInfo;
+use broc_types::pretty_print::{name_and_print_var, DebugPrint};
 
 use crate::{js_create_app, js_get_result_and_memory, js_run_app};
 
@@ -65,7 +65,7 @@ impl<'a> ReplAppMemory for WasmMemory<'a> {
     deref_number!(deref_f64, f64);
 
     fn deref_str(&self, addr: usize) -> &str {
-        // We can't use RocStr, we need our own small/big string logic.
+        // We can't use BrocStr, we need our own small/big string logic.
         // The first field is *not* a pointer. We can calculate a pointer for it, but only for big strings.
         // If changing this code, remember it also runs in wasm32, not just the app.
         let last_byte = self.copied_bytes[addr + 4 + 4 + 3] as i8;
@@ -237,10 +237,10 @@ pub async fn entrypoint_from_js(src: String) -> Result<String, String> {
     };
 
     let app_module_bytes = {
-        let env = roc_gen_wasm::Env {
+        let env = broc_gen_wasm::Env {
             arena,
             module_id,
-            stack_bytes: roc_gen_wasm::Env::DEFAULT_STACK_BYTES,
+            stack_bytes: broc_gen_wasm::Env::DEFAULT_STACK_BYTES,
             exposed_to_host: exposed_to_host
                 .top_level_values
                 .keys()
@@ -249,8 +249,8 @@ pub async fn entrypoint_from_js(src: String) -> Result<String, String> {
         };
 
         let (mut module, mut called_fns, main_fn_index) = {
-            let host_module = roc_gen_wasm::parse_host(env.arena, PRE_LINKED_BINARY).unwrap();
-            roc_gen_wasm::build_app_module(
+            let host_module = broc_gen_wasm::parse_host(env.arena, PRE_LINKED_BINARY).unwrap();
+            broc_gen_wasm::build_app_module(
                 &env,
                 &mut layout_interner,
                 &mut interns, // NOTE: must drop this mutable ref before jit_to_ast

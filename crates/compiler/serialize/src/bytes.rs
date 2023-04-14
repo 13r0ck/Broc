@@ -3,7 +3,7 @@ use std::{
     io::{self, Write},
 };
 
-use roc_collections::{MutMap, VecMap};
+use broc_collections::{MutMap, VecMap};
 
 pub fn serialize_slice<T: Copy>(
     slice: &[T],
@@ -209,7 +209,7 @@ pub const fn next_multiple_of(lhs: usize, rhs: usize) -> usize {
 
 #[cfg(test)]
 mod test {
-    use roc_collections::{MutMap, VecMap, VecSet};
+    use broc_collections::{MutMap, VecMap, VecSet};
 
     use super::{
         deserialize_map, deserialize_slice, deserialize_slice_of_slices, deserialize_vec,

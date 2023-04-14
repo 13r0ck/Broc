@@ -1,4 +1,4 @@
-use roc_command_utils::{pretty_command_string, zig};
+use broc_command_utils::{pretty_command_string, zig};
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -89,7 +89,7 @@ fn generate_object_file(bitcode_path: &Path, zig_object: &str, object_file_name:
 }
 
 pub fn get_lib_dir() -> PathBuf {
-    // Currently we have the OUT_DIR variable which points to `/target/debug/build/roc_builtins-*/out/`.
+    // Currently we have the OUT_DIR variable which points to `/target/debug/build/broc_builtins-*/out/`.
     // So we just need to add "/bitcode" to that.
     let dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
@@ -100,8 +100,8 @@ pub fn get_lib_dir() -> PathBuf {
 }
 
 fn copy_zig_builtins_to_target_dir(bitcode_path: &Path) {
-    // To enable roc to find the zig builtins, we want them to be moved to a folder next to the roc executable.
-    // So if <roc_folder>/roc is the executable. The zig files will be in <roc_folder>/lib/*.zig
+    // To enable broc to find the zig builtins, we want them to be moved to a folder next to the broc executable.
+    // So if <broc_folder>/broc is the executable. The zig files will be in <broc_folder>/lib/*.zig
     let target_profile_dir = get_lib_dir();
 
     let zig_src_dir = bitcode_path.join("src");

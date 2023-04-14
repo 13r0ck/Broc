@@ -1,23 +1,23 @@
 use bumpalo::Bump;
 use inkwell::context::Context;
 use libloading::Library;
-use roc_build::link::llvm_module_to_dylib;
-use roc_collections::all::MutSet;
-use roc_gen_llvm::llvm::build::LlvmBackendMode;
-use roc_gen_llvm::llvm::externs::add_default_roc_externs;
-use roc_gen_llvm::{run_jit_function, run_jit_function_dynamic_type};
-use roc_load::{EntryPoint, MonomorphizedModule};
-use roc_mono::ir::OptLevel;
-use roc_mono::layout::STLayoutInterner;
-use roc_parse::ast::Expr;
-use roc_repl_eval::eval::jit_to_ast;
-use roc_repl_eval::gen::{compile_to_mono, format_answer, Problems, ReplOutput};
-use roc_repl_eval::{ReplApp, ReplAppMemory};
-use roc_reporting::report::DEFAULT_PALETTE;
-use roc_std::RocStr;
-use roc_target::TargetInfo;
-use roc_types::pretty_print::{name_and_print_var, DebugPrint};
-use roc_types::subs::Subs;
+use broc_build::link::llvm_module_to_dylib;
+use broc_collections::all::MutSet;
+use broc_gen_llvm::llvm::build::LlvmBackendMode;
+use broc_gen_llvm::llvm::externs::add_default_broc_externs;
+use broc_gen_llvm::{run_jit_function, run_jit_function_dynamic_type};
+use broc_load::{EntryPoint, MonomorphizedModule};
+use broc_mono::ir::OptLevel;
+use broc_mono::layout::STLayoutInterner;
+use broc_parse::ast::Expr;
+use broc_repl_eval::eval::jit_to_ast;
+use broc_repl_eval::gen::{compile_to_mono, format_answer, Problems, ReplOutput};
+use broc_repl_eval::{ReplApp, ReplAppMemory};
+use broc_reporting::report::DEFAULT_PALETTE;
+use broc_std::BrocStr;
+use broc_target::TargetInfo;
+use broc_types::pretty_print::{name_and_print_var, DebugPrint};
+use broc_types::subs::Subs;
 use target_lexicon::Triple;
 
 pub fn gen_and_eval_llvm<'a, I: Iterator<Item = &'a str>>(
@@ -166,7 +166,7 @@ impl ReplAppMemory for CliMemory {
     deref_number!(deref_f64, f64);
 
     fn deref_str(&self, addr: usize) -> &str {
-        let reference: &RocStr = unsafe { std::mem::transmute(addr) };
+        let reference: &BrocStr = unsafe { std::mem::transmute(addr) };
         reference.as_str()
     }
 
@@ -199,18 +199,18 @@ fn mono_module_to_dylib<'a>(
 
     let context = Context::create();
     let builder = context.create_builder();
-    let module = arena.alloc(roc_gen_llvm::llvm::build::module_from_builtins(
+    let module = arena.alloc(broc_gen_llvm::llvm::build::module_from_builtins(
         &target, &context, "",
     ));
 
     let module = arena.alloc(module);
     let (module_pass, function_pass) =
-        roc_gen_llvm::llvm::build::construct_optimization_passes(module, opt_level);
+        broc_gen_llvm::llvm::build::construct_optimization_passes(module, opt_level);
 
-    let (dibuilder, compile_unit) = roc_gen_llvm::llvm::build::Env::new_debug_info(module);
+    let (dibuilder, compile_unit) = broc_gen_llvm::llvm::build::Env::new_debug_info(module);
 
-    // Compile and add all the Procs before adding main
-    let env = roc_gen_llvm::llvm::build::Env {
+    // Compile and add all the Pbrocs before adding main
+    let env = broc_gen_llvm::llvm::build::Env {
         arena,
         builder: &builder,
         dibuilder: &dibuilder,
@@ -219,14 +219,14 @@ fn mono_module_to_dylib<'a>(
         interns,
         module,
         target_info,
-        mode: LlvmBackendMode::GenTest, // so roc_panic is generated
+        mode: LlvmBackendMode::GenTest, // so broc_panic is generated
         // important! we don't want any procedures to get the C calling convention
         exposed_to_host: MutSet::default(),
     };
 
-    // Add roc_alloc, roc_realloc, and roc_dealloc, since the repl has no
+    // Add broc_alloc, broc_realloc, and broc_dealloc, since the repl has no
     // platform to provide them.
-    add_default_roc_externs(&env);
+    add_default_broc_externs(&env);
 
     let entry_point = match entry_point {
         EntryPoint::Executable {
@@ -237,14 +237,14 @@ fn mono_module_to_dylib<'a>(
             debug_assert_eq!(exposed_to_host.len(), 1);
             let (symbol, layout) = exposed_to_host[0];
 
-            roc_mono::ir::SingleEntryPoint { symbol, layout }
+            broc_mono::ir::SingleEntryPoint { symbol, layout }
         }
         EntryPoint::Test => {
             unreachable!()
         }
     };
 
-    let (main_fn_name, main_fn) = roc_gen_llvm::llvm::build::build_procedures_return_main(
+    let (main_fn_name, main_fn) = broc_gen_llvm::llvm::build::build_procedures_return_main(
         &env,
         &mut layout_interner,
         opt_level,

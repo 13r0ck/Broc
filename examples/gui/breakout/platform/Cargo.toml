@@ -1,6 +1,6 @@
 [package]
 name = "host"
-authors = ["The Roc Contributors"]
+authors = ["The Broc Contributors"]
 edition = "2021"
 license = "UPL-1.0"
 version = "0.0.1"
@@ -18,7 +18,7 @@ path = "src/main.rs"
 arrayvec = "0.7.2"
 libc = "0.2"
 page_size = "0.4.2"
-roc_std = { path = "../../../../crates/roc_std" }
+broc_std = { path = "../../../../crates/broc_std" }
 cgmath = "0.18.0"
 colored = "2.0.0"
 confy = { git = 'https://github.com/rust-cli/confy', features = ["yaml_conf"], default-features = false }

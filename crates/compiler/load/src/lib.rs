@@ -1,12 +1,12 @@
-//! Used to load a .roc file and coordinate the compiler pipeline, including
+//! Used to load a .broc file and coordinate the compiler pipeline, including
 //! parsing, type checking, and [code generation](https://en.wikipedia.org/wiki/Code_generation_(compiler)).
 use bumpalo::Bump;
-use roc_can::module::{ExposedByModule, TypeState};
-use roc_collections::all::MutMap;
-use roc_module::symbol::ModuleId;
-use roc_packaging::cache::RocCacheDir;
-use roc_reporting::report::{Palette, RenderTarget};
-use roc_target::TargetInfo;
+use broc_can::module::{ExposedByModule, TypeState};
+use broc_collections::all::MutMap;
+use broc_module::symbol::ModuleId;
+use broc_packaging::cache::BrocCacheDir;
+use broc_reporting::report::{Palette, RenderTarget};
+use broc_target::TargetInfo;
 use std::path::PathBuf;
 
 const SKIP_SUBS_CACHE: bool = {
@@ -16,8 +16,8 @@ const SKIP_SUBS_CACHE: bool = {
     }
 };
 
-pub use roc_load_internal::docs;
-pub use roc_load_internal::file::{
+pub use broc_load_internal::docs;
+pub use broc_load_internal::file::{
     EntryPoint, ExecutionMode, ExpectMetadata, Expectations, ExposedToHost, LoadConfig, LoadResult,
     LoadStart, LoadedModule, LoadingProblem, MonomorphizedModule, Phase, Threading,
 };
@@ -27,17 +27,17 @@ fn load<'a>(
     arena: &'a Bump,
     load_start: LoadStart<'a>,
     exposed_types: ExposedByModule,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     load_config: LoadConfig,
 ) -> Result<LoadResult<'a>, LoadingProblem<'a>> {
     let cached_types = read_cached_types();
 
-    roc_load_internal::file::load(
+    broc_load_internal::file::load(
         arena,
         load_start,
         exposed_types,
         cached_types,
-        roc_cache_dir,
+        broc_cache_dir,
         load_config,
     )
 }
@@ -50,13 +50,13 @@ pub fn load_single_threaded<'a>(
     target_info: TargetInfo,
     render: RenderTarget,
     palette: Palette,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     exec_mode: ExecutionMode,
 ) -> Result<LoadResult<'a>, LoadingProblem<'a>> {
     let cached_subs = read_cached_types();
     let exposed_types = ExposedByModule::default();
 
-    roc_load_internal::file::load_single_threaded(
+    broc_load_internal::file::load_single_threaded(
         arena,
         load_start,
         exposed_types,
@@ -65,7 +65,7 @@ pub fn load_single_threaded<'a>(
         render,
         palette,
         exec_mode,
-        roc_cache_dir,
+        broc_cache_dir,
     )
 }
 
@@ -98,15 +98,15 @@ pub fn load_and_monomorphize_from_str<'a>(
     filename: PathBuf,
     src: &'a str,
     src_dir: PathBuf,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     load_config: LoadConfig,
 ) -> Result<MonomorphizedModule<'a>, LoadMonomorphizedError<'a>> {
     use LoadResult::*;
 
-    let load_start = LoadStart::from_str(arena, filename, src, roc_cache_dir, src_dir)?;
+    let load_start = LoadStart::from_str(arena, filename, src, broc_cache_dir, src_dir)?;
     let exposed_types = ExposedByModule::default();
 
-    match load(arena, load_start, exposed_types, roc_cache_dir, load_config)? {
+    match load(arena, load_start, exposed_types, broc_cache_dir, load_config)? {
         Monomorphized(module) => Ok(module),
         TypeChecked(module) => Err(LoadMonomorphizedError::ErrorModule(module)),
     }
@@ -115,7 +115,7 @@ pub fn load_and_monomorphize_from_str<'a>(
 pub fn load_and_monomorphize<'a>(
     arena: &'a Bump,
     filename: PathBuf,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     load_config: LoadConfig,
 ) -> Result<MonomorphizedModule<'a>, LoadMonomorphizedError<'a>> {
     use LoadResult::*;
@@ -124,13 +124,13 @@ pub fn load_and_monomorphize<'a>(
         arena,
         filename,
         load_config.render,
-        roc_cache_dir,
+        broc_cache_dir,
         load_config.palette,
     )?;
 
     let exposed_types = ExposedByModule::default();
 
-    match load(arena, load_start, exposed_types, roc_cache_dir, load_config)? {
+    match load(arena, load_start, exposed_types, broc_cache_dir, load_config)? {
         Monomorphized(module) => Ok(module),
         TypeChecked(module) => Err(LoadMonomorphizedError::ErrorModule(module)),
     }
@@ -139,7 +139,7 @@ pub fn load_and_monomorphize<'a>(
 pub fn load_and_typecheck<'a>(
     arena: &'a Bump,
     filename: PathBuf,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     load_config: LoadConfig,
 ) -> Result<LoadedModule, LoadingProblem<'a>> {
     use LoadResult::*;
@@ -148,13 +148,13 @@ pub fn load_and_typecheck<'a>(
         arena,
         filename,
         load_config.render,
-        roc_cache_dir,
+        broc_cache_dir,
         load_config.palette,
     )?;
 
     let exposed_types = ExposedByModule::default();
 
-    match load(arena, load_start, exposed_types, roc_cache_dir, load_config)? {
+    match load(arena, load_start, exposed_types, broc_cache_dir, load_config)? {
         Monomorphized(_) => unreachable!(""),
         TypeChecked(module) => Ok(module),
     }
@@ -168,12 +168,12 @@ pub fn load_and_typecheck_str<'a>(
     src_dir: PathBuf,
     target_info: TargetInfo,
     render: RenderTarget,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     palette: Palette,
 ) -> Result<LoadedModule, LoadingProblem<'a>> {
     use LoadResult::*;
 
-    let load_start = LoadStart::from_str(arena, filename, source, roc_cache_dir, src_dir)?;
+    let load_start = LoadStart::from_str(arena, filename, source, broc_cache_dir, src_dir)?;
 
     // NOTE: this function is meant for tests, and so we use single-threaded
     // solving so we don't use too many threads per-test. That gives higher
@@ -184,7 +184,7 @@ pub fn load_and_typecheck_str<'a>(
         target_info,
         render,
         palette,
-        roc_cache_dir,
+        broc_cache_dir,
         ExecutionMode::Check,
     )? {
         Monomorphized(_) => unreachable!(""),

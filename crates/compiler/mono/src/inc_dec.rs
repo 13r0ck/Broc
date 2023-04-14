@@ -1,13 +1,13 @@
 use crate::borrow::{Ownership, ParamMap, BORROWED, OWNED};
 use crate::ir::{
-    CallType, Expr, HigherOrderLowLevel, JoinPointId, ModifyRc, Param, Proc, ProcLayout, Stmt,
+    CallType, Expr, HigherOrderLowLevel, JoinPointId, ModifyRc, Param, Pbroc, PbrocLayout, Stmt,
     UpdateModeIds,
 };
 use crate::layout::{InLayout, Layout, LayoutInterner, STLayoutInterner};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_collections::all::{MutMap, MutSet};
-use roc_module::symbol::{IdentIds, ModuleId, Symbol};
+use broc_collections::all::{MutMap, MutSet};
+use broc_module::symbol::{IdentIds, ModuleId, Symbol};
 
 /// Data and Function ownership relation for higher-order lowlevels
 ///
@@ -600,7 +600,7 @@ impl<'a, 'i> Context<'a, 'i> {
                 arg_layouts,
                 ..
             } => {
-                let top_level = ProcLayout::new(self.arena, arg_layouts, name.niche(), *ret_layout);
+                let top_level = PbrocLayout::new(self.arena, arg_layouts, name.niche(), *ret_layout);
 
                 // get the borrow signature
                 let ps = self
@@ -647,7 +647,7 @@ impl<'a, 'i> Context<'a, 'i> {
             };
         }
 
-        let function_layout = ProcLayout {
+        let function_layout = PbrocLayout {
             arguments: passed_function.argument_layouts,
             result: passed_function.return_layout,
             niche: passed_function.name.niche(),
@@ -723,7 +723,7 @@ impl<'a, 'i> Context<'a, 'i> {
         }
 
         // incrementing/consuming the closure (if needed) is done by the zig implementation. We
-        // don't want to touch the RC on the roc side, so treat these as borrowed.
+        // don't want to touch the RC on the broc side, so treat these as borrowed.
         const FUNCTION: bool = BORROWED;
         const CLOSURE_DATA: bool = BORROWED;
 
@@ -1319,7 +1319,7 @@ fn branch_on_list_uniqueness<'a, 'i>(
     // define the condition
 
     let condition_call_type = CallType::LowLevel {
-        op: roc_module::low_level::LowLevel::ListIsUnique,
+        op: broc_module::low_level::LowLevel::ListIsUnique,
         update_mode: codegen.update_mode_ids.next_id(),
     };
 
@@ -1493,14 +1493,14 @@ struct CodegenTools<'i> {
     update_mode_ids: &'i mut UpdateModeIds,
 }
 
-pub fn visit_procs<'a, 'i>(
+pub fn visit_pbrocs<'a, 'i>(
     arena: &'a Bump,
     layout_interner: &'i STLayoutInterner<'a>,
     home: ModuleId,
     ident_ids: &'i mut IdentIds,
     update_mode_ids: &'i mut UpdateModeIds,
     param_map: &'a ParamMap<'a>,
-    procs: &mut MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    pbrocs: &mut MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
 ) {
     let ctx = Context::new(arena, layout_interner, param_map);
 
@@ -1510,32 +1510,32 @@ pub fn visit_procs<'a, 'i>(
         update_mode_ids,
     };
 
-    for (key, proc) in procs.iter_mut() {
-        visit_proc(
+    for (key, pbroc) in pbrocs.iter_mut() {
+        visit_pbroc(
             arena,
             layout_interner,
             &mut codegen,
             param_map,
             &ctx,
-            proc,
+            pbroc,
             key.1,
         );
     }
 }
 
-fn visit_proc<'a, 'i>(
+fn visit_pbroc<'a, 'i>(
     arena: &'a Bump,
     interner: &STLayoutInterner<'a>,
     codegen: &mut CodegenTools<'i>,
     param_map: &'a ParamMap<'a>,
     ctx: &Context<'a, 'i>,
-    proc: &mut Proc<'a>,
-    layout: ProcLayout<'a>,
+    pbroc: &mut Pbroc<'a>,
+    layout: PbrocLayout<'a>,
 ) {
-    let params = match param_map.get_symbol(interner, proc.name.name(), layout) {
+    let params = match param_map.get_symbol(interner, pbroc.name.name(), layout) {
         Some(slice) => slice,
         None => Vec::from_iter_in(
-            proc.args.iter().cloned().map(|(layout, symbol)| Param {
+            pbroc.args.iter().cloned().map(|(layout, symbol)| Param {
                 symbol,
                 ownership: Ownership::Owned,
                 layout,
@@ -1545,10 +1545,10 @@ fn visit_proc<'a, 'i>(
         .into_bump_slice(),
     };
 
-    let stmt = arena.alloc(proc.body.clone());
+    let stmt = arena.alloc(pbroc.body.clone());
     let ctx = ctx.update_var_info_with_params(params);
     let (b, b_live_vars) = ctx.visit_stmt(codegen, stmt);
     let b = ctx.add_dec_for_dead_params(params, b, &b_live_vars);
 
-    proc.body = b.clone();
+    pbroc.body = b.clone();
 }

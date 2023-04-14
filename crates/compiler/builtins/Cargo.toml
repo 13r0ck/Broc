@@ -1,6 +1,6 @@
 [package]
-name = "roc_builtins"
-description = "Provides the Roc functions and modules that are implicitly imported into every module."
+name = "broc_builtins"
+description = "Provides the Broc functions and modules that are implicitly imported into every module."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,10 +8,10 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_module = { path = "../module" }
-roc_region = { path = "../region" }
-roc_target = { path = "../roc_target" }
+broc_collections = { path = "../collections" }
+broc_module = { path = "../module" }
+broc_region = { path = "../region" }
+broc_target = { path = "../broc_target" }
 
 tempfile.workspace = true
 

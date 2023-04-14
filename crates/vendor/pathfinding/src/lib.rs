@@ -7,7 +7,7 @@
 //
 //
 //
-// This is modified from the original source to use the Roc compiler's preferred hashers
+// This is modified from the original source to use the Broc compiler's preferred hashers
 // instead of the SipHash hasher which Rust hash collections use by default.
 //
 // SipHash defends against hash flooding attacks by generating a random seed
@@ -22,7 +22,7 @@
 // Secondarily, SipHash isn't the fastest hashing algorithm out there, so we can get
 // slightly better performance by using a faster hasher.
 
-use roc_collections::all::{default_hasher, BuildHasher, MutSet};
+use broc_collections::all::{default_hasher, BuildHasher, MutSet};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 use std::mem;
@@ -45,9 +45,9 @@ use std::mem;
 /// greater numbers as successors:
 ///
 /// //```
-/// extern crate roc;
+/// extern crate broc;
 ///
-/// use roc::graph::topological_sort;
+/// use broc::graph::topological_sort;
 ///
 /// fn successors(node: &usize) -> Vec<usize> {
 ///   match *node {
@@ -66,9 +66,9 @@ use std::mem;
 /// an error:
 ///
 /// //```
-/// extern crate roc;
+/// extern crate broc;
 ///
-/// use roc::graph::*;
+/// use broc::graph::*;
 ///
 /// fn successors(node: &usize) -> Vec<usize> {
 ///   match *node {

@@ -1,11 +1,11 @@
 # Who is the editor for?
 
-Roc developers; beginners, experts, and everything in between.
+Broc developers; beginners, experts, and everything in between.
 
 # What will the editor do?
 
-- Edit roc code.
-- Debug roc programs.
+- Edit broc code.
+- Debug broc programs.
 - Allow everyone to make a plugin. Plugins can be standalone or come bundled with a package.
 - Search and view documentation.
 - Run tests with a nice UI.

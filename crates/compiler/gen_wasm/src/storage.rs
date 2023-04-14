@@ -1,15 +1,15 @@
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
 
-use roc_collections::all::MutMap;
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{InLayout, STLayoutInterner};
+use broc_collections::all::MutMap;
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{InLayout, STLayoutInterner};
 
 use crate::code_builder::{CodeBuilder, VmSymbolState};
 use crate::layout::{CallConv, ReturnMethod, StackMemoryFormat, WasmLayout};
 use crate::{copy_memory, CopyMemoryConfig, PTR_TYPE};
-use roc_wasm_module::{round_up_to_alignment, Align, LocalId, ValueType};
+use broc_wasm_module::{round_up_to_alignment, Align, LocalId, ValueType};
 
 pub enum StoredVarKind {
     Variable,
@@ -58,11 +58,11 @@ pub enum StoredValue {
 
 impl StoredValue {
     /// Value types to pass to Wasm functions
-    /// One Roc value can become 0, 1, or 2 Wasm arguments
+    /// One Broc value can become 0, 1, or 2 Wasm arguments
     pub fn arg_types(&self, conv: CallConv) -> &'static [ValueType] {
         use ValueType::*;
         match self {
-            // Simple numbers: 1 Roc argument => 1 Wasm argument
+            // Simple numbers: 1 Broc argument => 1 Wasm argument
             Self::VirtualMachineStack { value_type, .. } | Self::Local { value_type, .. } => {
                 match value_type {
                     I32 => &[I32],
@@ -71,7 +71,7 @@ impl StoredValue {
                     F64 => &[F64],
                 }
             }
-            // Stack memory values: 1 Roc argument => 0-2 Wasm arguments
+            // Stack memory values: 1 Broc argument => 0-2 Wasm arguments
             Self::StackMemory { size, format, .. } => conv.stack_memory_arg_types(*size, *format),
         }
     }
@@ -157,7 +157,7 @@ impl<'a> Storage<'a> {
         offset as u32
     }
 
-    /// Allocate storage for a Roc variable
+    /// Allocate storage for a Broc variable
     ///
     /// Wasm primitives (i32, i64, f32, f64) are allocated "storage" on the VM stack.
     /// This is really just a way to model how the stack machine works as a sort of
@@ -212,7 +212,7 @@ impl<'a> Storage<'a> {
         storage
     }
 
-    /// Allocate storage for a Roc procedure argument
+    /// Allocate storage for a Broc procedure argument
     /// Each argument is also a local variable. Their indices come before other locals.
     /// Structs and Tags are passed as pointers into the caller's frame
     /// 128-bit numbers are passed as two i64's, but we immediately store them in the
@@ -438,7 +438,7 @@ impl<'a> Storage<'a> {
         }
     }
 
-    /// stack memory values are returned by pointer. e.g. a roc function
+    /// stack memory values are returned by pointer. e.g. a broc function
     ///
     /// add : I128, I128 -> I128
     ///
@@ -526,7 +526,7 @@ impl<'a> Storage<'a> {
                 0 => {}
                 1 => symbols_to_load.push(*arg),
                 2 => symbols_to_load.extend_from_slice(&[*arg, *arg]),
-                n => internal_error!("Cannot have {} Wasm arguments for 1 Roc argument", n),
+                n => internal_error!("Cannot have {} Wasm arguments for 1 Broc argument", n),
             }
         }
 
@@ -593,7 +593,7 @@ impl<'a> Storage<'a> {
             | StoredValue::Local {
                 value_type, size, ..
             } => {
-                use roc_wasm_module::Align::*;
+                use broc_wasm_module::Align::*;
                 code_builder.get_local(to_ptr);
                 self.load_symbols(code_builder, &[from_symbol]);
                 match (value_type, size) {
@@ -667,7 +667,7 @@ impl<'a> Storage<'a> {
             | StoredValue::Local {
                 value_type, size, ..
             } => {
-                use roc_wasm_module::Align::*;
+                use broc_wasm_module::Align::*;
 
                 if let AddressValue::NotLoaded(from_ptr) = from_addr {
                     code_builder.get_local(from_ptr);

@@ -1,8 +1,8 @@
-use roc_error_macros::internal_error;
-use roc_gen_wasm::wasm32_sized::Wasm32Sized;
-use roc_mono::layout::Builtin;
-use roc_std::{RocBox, RocDec, RocList, RocOrder, RocResult, RocStr, I128, U128};
-use roc_wasm_module::round_up_to_alignment;
+use broc_error_macros::internal_error;
+use broc_gen_wasm::wasm32_sized::Wasm32Sized;
+use broc_mono::layout::Builtin;
+use broc_std::{BrocBox, BrocDec, BrocList, BrocOrder, BrocResult, BrocStr, I128, U128};
+use broc_wasm_module::round_up_to_alignment;
 use std::convert::TryInto;
 
 pub trait FromWasm32Memory: Wasm32Sized {
@@ -44,13 +44,13 @@ macro_rules! from_wasm_memory_primitive {
 from_wasm_memory_primitive!(
     u8, i8, u16, i16, u32, i32, char, u64, i64, u128, i128, f32, f64, bool,
 );
-from_wasm_memory_primitive!(RocDec, RocOrder, I128, U128,);
+from_wasm_memory_primitive!(BrocDec, BrocOrder, I128, U128,);
 
 impl FromWasm32Memory for () {
     fn decode(_: &[u8], _: u32) -> Self {}
 }
 
-impl FromWasm32Memory for RocStr {
+impl FromWasm32Memory for BrocStr {
     fn decode(memory_bytes: &[u8], addr: u32) -> Self {
         let index = addr as usize;
 
@@ -76,15 +76,15 @@ impl FromWasm32Memory for RocStr {
             &memory_bytes[big_elem_ptr..][..big_length]
         };
 
-        let mut roc_str = unsafe { RocStr::from_slice_unchecked(slice) };
+        let mut broc_str = unsafe { BrocStr::from_slice_unchecked(slice) };
         if !is_small_str {
-            roc_str.reserve(big_capacity - big_length)
+            broc_str.reserve(big_capacity - big_length)
         }
-        roc_str
+        broc_str
     }
 }
 
-impl<T: FromWasm32Memory + Clone> FromWasm32Memory for RocList<T> {
+impl<T: FromWasm32Memory + Clone> FromWasm32Memory for BrocList<T> {
     fn decode(memory: &[u8], offset: u32) -> Self {
         let elements = <u32 as FromWasm32Memory>::decode(memory, offset + 4 * Builtin::WRAPPER_PTR);
         let length = <u32 as FromWasm32Memory>::decode(memory, offset + 4 * Builtin::WRAPPER_LEN);
@@ -101,24 +101,24 @@ impl<T: FromWasm32Memory + Clone> FromWasm32Memory for RocList<T> {
             items.push(item);
         }
 
-        let mut list = RocList::with_capacity(capacity as usize);
+        let mut list = BrocList::with_capacity(capacity as usize);
         list.extend_from_slice(&items);
         list
     }
 }
 
-impl<T: FromWasm32Memory + Clone> FromWasm32Memory for RocBox<T> {
+impl<T: FromWasm32Memory + Clone> FromWasm32Memory for BrocBox<T> {
     fn decode(memory: &[u8], offset: u32) -> Self {
         let ptr = <u32 as FromWasm32Memory>::decode(memory, offset + 4 * Builtin::WRAPPER_PTR);
         debug_assert_ne!(ptr, 0);
 
         let value = <T as FromWasm32Memory>::decode(memory, ptr);
 
-        RocBox::new(value)
+        BrocBox::new(value)
     }
 }
 
-impl<T, E> FromWasm32Memory for RocResult<T, E>
+impl<T, E> FromWasm32Memory for BrocResult<T, E>
 where
     T: FromWasm32Memory + Wasm32Sized,
     E: FromWasm32Memory + Wasm32Sized,
@@ -130,10 +130,10 @@ where
         let tag = <u8 as FromWasm32Memory>::decode(memory, offset + tag_offset as u32);
         if tag == 1 {
             let value = <T as FromWasm32Memory>::decode(memory, offset);
-            RocResult::ok(value)
+            BrocResult::ok(value)
         } else {
             let payload = <E as FromWasm32Memory>::decode(memory, offset);
-            RocResult::err(payload)
+            BrocResult::err(payload)
         }
     }
 }

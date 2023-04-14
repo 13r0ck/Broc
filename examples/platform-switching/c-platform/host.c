@@ -15,35 +15,35 @@
 #include <signal.h> // for kill
 #endif
 
-void* roc_alloc(size_t size, unsigned int alignment) { return malloc(size); }
+void* broc_alloc(size_t size, unsigned int alignment) { return malloc(size); }
 
-void* roc_realloc(void* ptr, size_t new_size, size_t old_size, unsigned int alignment) {
+void* broc_realloc(void* ptr, size_t new_size, size_t old_size, unsigned int alignment) {
   return realloc(ptr, new_size);
 }
 
-void roc_dealloc(void* ptr, unsigned int alignment) { free(ptr); }
+void broc_dealloc(void* ptr, unsigned int alignment) { free(ptr); }
 
-void roc_panic(void* ptr, unsigned int alignment) {
+void broc_panic(void* ptr, unsigned int alignment) {
   char* msg = (char*)ptr;
   fprintf(stderr,
           "Application crashed with message\n\n    %s\n\nShutting down\n", msg);
   exit(0);
 }
 
-void* roc_memcpy(void* dest, const void* src, size_t n) {
+void* broc_memcpy(void* dest, const void* src, size_t n) {
   return memcpy(dest, src, n);
 }
 
-void* roc_memset(void* str, int c, size_t n) { return memset(str, c, n); }
+void* broc_memset(void* str, int c, size_t n) { return memset(str, c, n); }
 
-int roc_shm_open(char* name, int oflag, int mode) {
+int broc_shm_open(char* name, int oflag, int mode) {
 #ifdef _WIN32
     return 0;
 #else
     return shm_open(name, oflag, mode);
 #endif
 }
-void* roc_mmap(void* addr, int length, int prot, int flags, int fd, int offset) {
+void* broc_mmap(void* addr, int length, int prot, int flags, int fd, int offset) {
 #ifdef _WIN32
     return addr;
 #else
@@ -51,7 +51,7 @@ void* roc_mmap(void* addr, int length, int prot, int flags, int fd, int offset) 
 #endif
 }
 
-int roc_getppid() {
+int broc_getppid() {
 #ifdef _WIN32
     return 0;
 #else
@@ -59,17 +59,17 @@ int roc_getppid() {
 #endif
 }
 
-struct RocStr {
+struct BrocStr {
   char* bytes;
   size_t len;
   size_t capacity;
 };
 
-bool is_small_str(struct RocStr str) { return ((ssize_t)str.capacity) < 0; }
+bool is_small_str(struct BrocStr str) { return ((ssize_t)str.capacity) < 0; }
 
 // Determine the length of the string, taking into
 // account the small string optimization
-size_t roc_str_len(struct RocStr str) {
+size_t broc_str_len(struct BrocStr str) {
   char* bytes = (char*)&str;
   char last_byte = bytes[sizeof(str) - 1];
   char last_byte_xored = last_byte ^ 0b10000000;
@@ -86,16 +86,16 @@ size_t roc_str_len(struct RocStr str) {
   }
 }
 
-extern void roc__mainForHost_1_exposed_generic(struct RocStr *string);
+extern void broc__mainForHost_1_exposed_generic(struct BrocStr *string);
 
 int main() {
 
-  struct RocStr str;
-  roc__mainForHost_1_exposed_generic(&str);
+  struct BrocStr str;
+  broc__mainForHost_1_exposed_generic(&str);
 
   // Determine str_len and the str_bytes pointer,
   // taking into account the small string optimization.
-  size_t str_len = roc_str_len(str);
+  size_t str_len = broc_str_len(str);
   char* str_bytes;
 
   if (is_small_str(str)) {

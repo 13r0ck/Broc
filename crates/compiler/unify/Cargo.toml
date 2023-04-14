@@ -1,6 +1,6 @@
 [package]
-name = "roc_unify"
-description = "Implements Roc's unification algorithm, the heartstone of Roc's type inference."
+name = "broc_unify"
+description = "Implements Broc's unification algorithm, the heartstone of Broc's type inference."
 
 authors.workspace = true
 edition.workspace = true
@@ -10,20 +10,20 @@ version.workspace = true
 [dependencies]
 bitflags.workspace = true
 
-[dependencies.roc_collections]
+[dependencies.broc_collections]
 path = "../collections"
 
-[dependencies.roc_error_macros]
+[dependencies.broc_error_macros]
 path = "../../error_macros"
 
-[dependencies.roc_module]
+[dependencies.broc_module]
 path = "../module"
 
-[dependencies.roc_types]
+[dependencies.broc_types]
 path = "../types"
 
-[dependencies.roc_debug_flags]
+[dependencies.broc_debug_flags]
 path = "../debug_flags"
 
-[dependencies.roc_tracing]
+[dependencies.broc_tracing]
 path = "../../tracing"

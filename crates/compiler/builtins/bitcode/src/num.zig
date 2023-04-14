@@ -1,13 +1,13 @@
 const std = @import("std");
 const always_inline = std.builtin.CallOptions.Modifier.always_inline;
 const math = std.math;
-const RocList = @import("list.zig").RocList;
-const RocStr = @import("str.zig").RocStr;
+const BrocList = @import("list.zig").BrocList;
+const BrocStr = @import("str.zig").BrocStr;
 const WithOverflow = @import("utils.zig").WithOverflow;
-const roc_panic = @import("panic.zig").panic_help;
+const broc_panic = @import("panic.zig").panic_help;
 
 pub fn NumParseResult(comptime T: type) type {
-    // on the roc side we sort by alignment; putting the errorcode last
+    // on the broc side we sort by alignment; putting the errorcode last
     // always works out (no number with smaller alignment than 1)
     return extern struct {
         value: T,
@@ -56,7 +56,7 @@ pub fn mul_u128(a: u128, b: u128) U256 {
 
 pub fn exportParseInt(comptime T: type, comptime name: []const u8) void {
     comptime var f = struct {
-        fn func(buf: RocStr) callconv(.C) NumParseResult(T) {
+        fn func(buf: BrocStr) callconv(.C) NumParseResult(T) {
             // a radix of 0 will make zig determine the radix from the frefix:
             //  * A prefix of "0b" implies radix=2,
             //  * A prefix of "0o" implies radix=8,
@@ -75,7 +75,7 @@ pub fn exportParseInt(comptime T: type, comptime name: []const u8) void {
 
 pub fn exportParseFloat(comptime T: type, comptime name: []const u8) void {
     comptime var f = struct {
-        fn func(buf: RocStr) callconv(.C) NumParseResult(T) {
+        fn func(buf: BrocStr) callconv(.C) NumParseResult(T) {
             if (std.fmt.parseFloat(T, buf.asSlice())) |success| {
                 return .{ .errorcode = 0, .value = success };
             } else |_| {
@@ -186,7 +186,7 @@ pub fn exportDivCeil(comptime T: type, comptime name: []const u8) void {
 }
 
 pub fn ToIntCheckedResult(comptime T: type) type {
-    // On the Roc side we sort by alignment; putting the errorcode last
+    // On the Broc side we sort by alignment; putting the errorcode last
     // always works out (no number with smaller alignment than 1).
     return extern struct {
         value: T,
@@ -218,38 +218,38 @@ pub fn exportToIntCheckingMaxAndMin(comptime From: type, comptime To: type, comp
     @export(f, .{ .name = name ++ @typeName(From), .linkage = .Strong });
 }
 
-pub fn bytesToU16C(arg: RocList, position: usize) callconv(.C) u16 {
+pub fn bytesToU16C(arg: BrocList, position: usize) callconv(.C) u16 {
     return @call(.{ .modifier = always_inline }, bytesToU16, .{ arg, position });
 }
 
-fn bytesToU16(arg: RocList, position: usize) u16 {
+fn bytesToU16(arg: BrocList, position: usize) u16 {
     const bytes = @ptrCast([*]const u8, arg.bytes);
     return @bitCast(u16, [_]u8{ bytes[position], bytes[position + 1] });
 }
 
-pub fn bytesToU32C(arg: RocList, position: usize) callconv(.C) u32 {
+pub fn bytesToU32C(arg: BrocList, position: usize) callconv(.C) u32 {
     return @call(.{ .modifier = always_inline }, bytesToU32, .{ arg, position });
 }
 
-fn bytesToU32(arg: RocList, position: usize) u32 {
+fn bytesToU32(arg: BrocList, position: usize) u32 {
     const bytes = @ptrCast([*]const u8, arg.bytes);
     return @bitCast(u32, [_]u8{ bytes[position], bytes[position + 1], bytes[position + 2], bytes[position + 3] });
 }
 
-pub fn bytesToU64C(arg: RocList, position: usize) callconv(.C) u64 {
+pub fn bytesToU64C(arg: BrocList, position: usize) callconv(.C) u64 {
     return @call(.{ .modifier = always_inline }, bytesToU64, .{ arg, position });
 }
 
-fn bytesToU64(arg: RocList, position: usize) u64 {
+fn bytesToU64(arg: BrocList, position: usize) u64 {
     const bytes = @ptrCast([*]const u8, arg.bytes);
     return @bitCast(u64, [_]u8{ bytes[position], bytes[position + 1], bytes[position + 2], bytes[position + 3], bytes[position + 4], bytes[position + 5], bytes[position + 6], bytes[position + 7] });
 }
 
-pub fn bytesToU128C(arg: RocList, position: usize) callconv(.C) u128 {
+pub fn bytesToU128C(arg: BrocList, position: usize) callconv(.C) u128 {
     return @call(.{ .modifier = always_inline }, bytesToU128, .{ arg, position });
 }
 
-fn bytesToU128(arg: RocList, position: usize) u128 {
+fn bytesToU128(arg: BrocList, position: usize) u128 {
     const bytes = @ptrCast([*]const u8, arg.bytes);
     return @bitCast(u128, [_]u8{ bytes[position], bytes[position + 1], bytes[position + 2], bytes[position + 3], bytes[position + 4], bytes[position + 5], bytes[position + 6], bytes[position + 7], bytes[position + 8], bytes[position + 9], bytes[position + 10], bytes[position + 11], bytes[position + 12], bytes[position + 13], bytes[position + 14], bytes[position + 15] });
 }
@@ -302,7 +302,7 @@ pub fn exportAddOrPanic(comptime T: type, comptime name: []const u8) void {
         fn func(self: T, other: T) callconv(.C) T {
             const result = addWithOverflow(T, self, other);
             if (result.has_overflowed) {
-                roc_panic("integer addition overflowed!", 0);
+                broc_panic("integer addition overflowed!", 0);
                 unreachable;
             } else {
                 return result.value;
@@ -361,7 +361,7 @@ pub fn exportSubOrPanic(comptime T: type, comptime name: []const u8) void {
         fn func(self: T, other: T) callconv(.C) T {
             const result = subWithOverflow(T, self, other);
             if (result.has_overflowed) {
-                roc_panic("integer subtraction overflowed!", 0);
+                broc_panic("integer subtraction overflowed!", 0);
                 unreachable;
             } else {
                 return result.value;
@@ -469,7 +469,7 @@ pub fn exportMulOrPanic(comptime T: type, comptime W: type, comptime name: []con
         fn func(self: T, other: T) callconv(.C) T {
             const result = @call(.{ .modifier = always_inline }, mulWithOverflow, .{ T, W, self, other });
             if (result.has_overflowed) {
-                roc_panic("integer multiplication overflowed!", 0);
+                broc_panic("integer multiplication overflowed!", 0);
                 unreachable;
             } else {
                 return result.value;

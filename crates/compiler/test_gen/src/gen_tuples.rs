@@ -11,7 +11,7 @@ use crate::helpers::wasm::assert_evals_to;
 use indoc::indoc;
 
 #[cfg(all(test, any(feature = "gen-llvm", feature = "gen-wasm")))]
-use roc_std::RocStr;
+use broc_std::BrocStr;
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-dev", feature = "gen-wasm"))]
@@ -598,8 +598,8 @@ fn generalized_tuple_accessor() {
             return0 ("foo", 1)
             "#
         ),
-        RocStr::from("foo"),
-        RocStr
+        BrocStr::from("foo"),
+        BrocStr
     );
 }
 
@@ -614,7 +614,7 @@ fn generalized_explicit_tuple_accessor() {
             return0 ("foo", 1)
             "#
         ),
-        RocStr::from("foo"),
-        RocStr
+        BrocStr::from("foo"),
+        BrocStr
     );
 }

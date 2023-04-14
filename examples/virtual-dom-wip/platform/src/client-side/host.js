@@ -3,9 +3,9 @@
 /** @typedef {[string, JsEventDispatcher]} Listener */
 
 /**
- * @typedef {Object} RocWasmExports
- * @property {(size: number, alignment: number) => number} roc_alloc
- * @property {(jsonListAddr: number, jsonListLength: number, handlerId: number) => number} roc_dispatch_event
+ * @typedef {Object} BrocWasmExports
+ * @property {(size: number, alignment: number) => number} broc_alloc
+ * @property {(jsonListAddr: number, jsonListLength: number, handlerId: number) => number} broc_dispatch_event
  * @property {() => number} main
  */
 
@@ -17,7 +17,7 @@
  * @param {string} initData
  * @param {string} wasmUrl
  */
-const roc_init = async (initData, wasmUrl) => {
+const broc_init = async (initData, wasmUrl) => {
   /** @type {Array<Node | null>} */
   const nodes = [];
 
@@ -33,7 +33,7 @@ const roc_init = async (initData, wasmUrl) => {
      * @param {number} id
      */
     createElement: (tagAddr, id) => {
-      const tagName = decodeRocStr(tagAddr);
+      const tagName = decodeBrocStr(tagAddr);
       const node = document.createElement(tagName);
       nodes[id] = node;
     },
@@ -43,7 +43,7 @@ const roc_init = async (initData, wasmUrl) => {
      * @param {number} id
      */
     createTextNode: (contentAddr, id) => {
-      const content = decodeRocStr(contentAddr);
+      const content = decodeBrocStr(contentAddr);
       const node = document.createTextNode(content);
       nodes[id] = node;
     },
@@ -54,7 +54,7 @@ const roc_init = async (initData, wasmUrl) => {
      */
     updateTextNode: (nodeId, contentAddr) => {
       const node = nodes[nodeId];
-      node.textContent = decodeRocStr(contentAddr);
+      node.textContent = decodeBrocStr(contentAddr);
     },
 
     /**
@@ -94,8 +94,8 @@ const roc_init = async (initData, wasmUrl) => {
      */
     setAttribute: (nodeId, typeAddr, valueAddr) => {
       const node = nodes[nodeId];
-      const name = decodeRocStr(typeAddr);
-      const value = decodeRocStr(valueAddr);
+      const name = decodeBrocStr(typeAddr);
+      const value = decodeBrocStr(valueAddr);
       node.setAttribute(name, value);
     },
 
@@ -105,7 +105,7 @@ const roc_init = async (initData, wasmUrl) => {
      */
     removeAttribute: (nodeId, typeAddr) => {
       const node = nodes[nodeId];
-      const name = decodeRocStr(typeAddr);
+      const name = decodeBrocStr(typeAddr);
       node.removeAttribute(name);
     },
 
@@ -116,8 +116,8 @@ const roc_init = async (initData, wasmUrl) => {
      */
     setProperty: (nodeId, propNameAddr, jsonAddr) => {
       const node = nodes[nodeId];
-      const propName = decodeRocStr(propNameAddr);
-      const json = decodeRocListUtf8(jsonAddr);
+      const propName = decodeBrocStr(propNameAddr);
+      const json = decodeBrocListUtf8(jsonAddr);
       const value = JSON.parse(json);
       node[propName] = value;
     },
@@ -128,7 +128,7 @@ const roc_init = async (initData, wasmUrl) => {
      */
     removeProperty: (nodeId, propNameAddr) => {
       const node = nodes[nodeId];
-      const propName = decodeRocStr(propNameAddr);
+      const propName = decodeBrocStr(propNameAddr);
       node[propName] = typeof node[propName] === "string" ? "" : null;
     },
 
@@ -139,8 +139,8 @@ const roc_init = async (initData, wasmUrl) => {
      */
     setStyle: (nodeId, keyAddr, valueAddr) => {
       const node = nodes[nodeId];
-      const key = decodeRocStr(keyAddr);
-      const value = decodeRocStr(valueAddr);
+      const key = decodeBrocStr(keyAddr);
+      const value = decodeBrocStr(valueAddr);
       node.style[key] = value;
     },
 
@@ -152,17 +152,17 @@ const roc_init = async (initData, wasmUrl) => {
      */
     setListener: (nodeId, eventTypeAddr, accessorsJsonAddr, handlerId) => {
       const element = nodes[nodeId];
-      const eventType = decodeRocStr(eventTypeAddr);
-      const accessorsJson = decodeRocStr(accessorsJsonAddr);
+      const eventType = decodeBrocStr(eventTypeAddr);
+      const accessorsJson = decodeBrocStr(accessorsJsonAddr);
       const accessors = JSON.parse(accessorsJson);
 
       /**
-       * Dispatch a DOM event to the specified handler function in Roc
+       * Dispatch a DOM event to the specified handler function in Broc
        * This closure captures handlerId and accessors
        * @param {Event} ev
        */
       const dispatchEvent = (ev) => {
-        const outerListRcAddr = roc_alloc(4 + accessors.length * 12, 4);
+        const outerListRcAddr = broc_alloc(4 + accessors.length * 12, 4);
         memory32[outerListRcAddr >> 2] = 1;
         const outerListBaseAddr = outerListRcAddr + 4;
         let outerListIndex32 = outerListBaseAddr >> 2;
@@ -175,7 +175,7 @@ const roc_init = async (initData, wasmUrl) => {
           memory32[outerListIndex32++] = capacity;
         });
 
-        const flags = roc_dispatch_event(
+        const flags = broc_dispatch_event(
           outerListBaseAddr,
           accessors.length,
           handlerId
@@ -190,7 +190,7 @@ const roc_init = async (initData, wasmUrl) => {
 
       // Make things easier to debug
       dispatchEvent.name = "dispatchEvent" + eventType + handlerId;
-      element.setAttribute("data-roc-event-handler", eventType + handlerId);
+      element.setAttribute("data-broc-event-handler", eventType + handlerId);
 
       // Ensure the array doesn't become sparse (shouldn't happen anyway)
       while (handlerId > listeners.length) {
@@ -208,20 +208,20 @@ const roc_init = async (initData, wasmUrl) => {
       const element = nodes[nodeId];
       const [eventType, dispatchEvent] = findListener(element, handlerId);
       listeners[handlerId] = null;
-      element.removeAttribute("data-roc-event-handler");
+      element.removeAttribute("data-broc-event-handler");
       element.removeEventListener(eventType, dispatchEvent);
     },
   };
 
   /**
-   * Write a JS string into the Roc app as a `List U8`
+   * Write a JS string into the Broc app as a `List U8`
    * @param {string} str
    */
   const encodeJsString = (str) => {
     const length16 = str.length;
     // Due to UTF-8 encoding overhead, a few code points go from 2 bytes in UTF-16 to 3 bytes in UTF-8!
     const capacity = length16 * 3; // Extremely "worst-case", but simple, and the allocation is short-lived.
-    const rcAddr = roc_alloc(4 + capacity, 4);
+    const rcAddr = broc_alloc(4 + capacity, 4);
     memory32[rcAddr >> 2] = 1;
     const pointer = rcAddr + 4;
 
@@ -237,10 +237,10 @@ const roc_init = async (initData, wasmUrl) => {
   };
 
   /**
-   * decode a Roc `Str` to a JavaScript string
+   * decode a Broc `Str` to a JavaScript string
    * @param {number} strAddr8
    */
-  const decodeRocStr = (strAddr8) => {
+  const decodeBrocStr = (strAddr8) => {
     const lastByte = memory8[strAddr8 + 12];
     const isSmall = lastByte >= 0x80;
     if (isSmall) {
@@ -248,15 +248,15 @@ const roc_init = async (initData, wasmUrl) => {
       const bytes = memory8.slice(strAddr8, strAddr8 + len);
       return utf8Decoder.decode(bytes);
     } else {
-      return decodeRocListUtf8(strAddr8);
+      return decodeBrocListUtf8(strAddr8);
     }
   };
 
   /**
-   * decode a Roc List of UTF-8 bytes to a JavaScript string
+   * decode a Broc List of UTF-8 bytes to a JavaScript string
    * @param {number} listAddr8
    */
-  const decodeRocListUtf8 = (listAddr8) => {
+  const decodeBrocListUtf8 = (listAddr8) => {
     const listIndex32 = listAddr8 >> 2;
     const bytesAddr8 = memory32[listIndex32];
     const len = memory32[listIndex32 + 1];
@@ -313,7 +313,7 @@ const roc_init = async (initData, wasmUrl) => {
   const memory8 = new Uint8Array(memory.buffer);
   const memory32 = new Uint32Array(memory.buffer);
 
-  const { roc_vdom_init, roc_alloc, roc_dispatch_event } = app.exports;
+  const { broc_vdom_init, broc_alloc, broc_dispatch_event } = app.exports;
   const initList = encodeJsString(initData);
-  roc_vdom_init(initList.pointer, initList.length, initList.capacity);
+  broc_vdom_init(initList.pointer, initList.length, initList.capacity);
 };

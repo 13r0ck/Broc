@@ -2,20 +2,20 @@ use super::pattern::{build_list_index_probe, store_pattern, DestructType, ListIn
 use crate::borrow::Ownership;
 use crate::ir::{
     substitute_in_exprs_many, BranchInfo, Call, CallType, CompiledGuardStmt, Env, Expr,
-    GuardStmtSpec, JoinPointId, Literal, Param, Procs, Stmt,
+    GuardStmtSpec, JoinPointId, Literal, Param, Pbrocs, Stmt,
 };
 use crate::layout::{
     Builtin, InLayout, Layout, LayoutCache, LayoutInterner, TLLayoutInterner, TagIdIntType,
     UnionLayout,
 };
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::{MutMap, MutSet};
-use roc_collections::BumpMap;
-use roc_error_macros::internal_error;
-use roc_exhaustive::{Ctor, CtorName, ListArity, RenderAs, TagId, Union};
-use roc_module::ident::TagName;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::{MutMap, MutSet};
+use broc_collections::BumpMap;
+use broc_error_macros::internal_error;
+use broc_exhaustive::{Ctor, CtorName, ListArity, RenderAs, TagId, Union};
+use broc_module::ident::TagName;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
 
 /// COMPILE CASES
 
@@ -105,7 +105,7 @@ enum Test<'a> {
     IsCtor {
         tag_id: TagIdIntType,
         ctor_name: CtorName,
-        union: roc_exhaustive::Union,
+        union: broc_exhaustive::Union,
         arguments: Vec<(Pattern<'a>, InLayout<'a>)>,
     },
     IsInt([u8; 16], IntWidth),
@@ -1406,7 +1406,7 @@ struct JumpSpec<'a> {
 
 pub(crate) fn optimize_when<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     cond_symbol: Symbol,
     cond_layout: InLayout<'a>,
@@ -1452,7 +1452,7 @@ pub(crate) fn optimize_when<'a>(
         match (has_guard, should_inline) {
             (false, _) => {
                 // Bind the fields referenced in the pattern.
-                branch = store_pattern(env, procs, layout_cache, &pattern, cond_symbol, branch);
+                branch = store_pattern(env, pbrocs, layout_cache, &pattern, cond_symbol, branch);
 
                 join_params = &[];
                 jump_pattern_param_symbols = &[];
@@ -1522,7 +1522,7 @@ pub(crate) fn optimize_when<'a>(
 
     let mut stmt = decide_to_branching(
         env,
-        procs,
+        pbrocs,
         layout_cache,
         cond_symbol,
         cond_layout,
@@ -2027,13 +2027,13 @@ impl<'a> ConstructorKnown<'a> {
     }
 }
 
-// TODO procs and layout are currently unused, but potentially required
+// TODO pbrocs and layout are currently unused, but potentially required
 // for defining optional fields?
 // if not, do remove
 #[allow(clippy::too_many_arguments, clippy::needless_collect)]
 fn decide_to_branching<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     cond_symbol: Symbol,
     cond_layout: InLayout<'a>,
@@ -2067,7 +2067,7 @@ fn decide_to_branching<'a>(
 
             let pass_expr = decide_to_branching(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 cond_layout,
@@ -2078,7 +2078,7 @@ fn decide_to_branching<'a>(
 
             let fail_expr = decide_to_branching(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 cond_layout,
@@ -2106,7 +2106,7 @@ fn decide_to_branching<'a>(
             let CompiledGuardStmt {
                 join_point_id,
                 stmt,
-            } = stmt_spec.generate_guard_and_join(env, procs, layout_cache);
+            } = stmt_spec.generate_guard_and_join(env, pbrocs, layout_cache);
 
             let join = Stmt::Join {
                 id: join_point_id,
@@ -2115,7 +2115,7 @@ fn decide_to_branching<'a>(
                 remainder: arena.alloc(stmt),
             };
 
-            store_pattern(env, procs, layout_cache, &pattern, cond_symbol, join)
+            store_pattern(env, pbrocs, layout_cache, &pattern, cond_symbol, join)
         }
         Chain {
             test_chain,
@@ -2126,7 +2126,7 @@ fn decide_to_branching<'a>(
 
             let pass_expr = decide_to_branching(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 cond_layout,
@@ -2137,7 +2137,7 @@ fn decide_to_branching<'a>(
 
             let fail_expr = decide_to_branching(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 cond_layout,
@@ -2212,7 +2212,7 @@ fn decide_to_branching<'a>(
 
             let default_branch = decide_to_branching(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 cond_layout,
@@ -2229,7 +2229,7 @@ fn decide_to_branching<'a>(
             for (test, decider) in tests {
                 let branch = decide_to_branching(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     cond_symbol,
                     cond_layout,

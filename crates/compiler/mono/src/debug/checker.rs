@@ -1,13 +1,13 @@
-//! Type-checking of the generated [ir][crate::ir::Proc].
+//! Type-checking of the generated [ir][crate::ir::Pbroc].
 
 use bumpalo::Bump;
-use roc_collections::{MutMap, VecMap, VecSet};
-use roc_module::symbol::Symbol;
+use broc_collections::{MutMap, VecMap, VecSet};
+use broc_module::symbol::Symbol;
 
 use crate::{
     ir::{
         Call, CallSpecId, CallType, Expr, HigherOrderLowLevel, JoinPointId, ListLiteralElement,
-        ModifyRc, Param, Proc, ProcLayout, Stmt,
+        ModifyRc, Param, Pbroc, PbrocLayout, Stmt,
     },
     layout::{
         Builtin, InLayout, Layout, LayoutInterner, STLayoutInterner, TagIdIntType, UnionLayout,
@@ -64,10 +64,10 @@ pub enum ProblemKind<'a> {
         num_needed: usize,
         num_given: usize,
     },
-    CallingUndefinedProc {
+    CallingUndefinedPbroc {
         symbol: Symbol,
-        proc_layout: ProcLayout<'a>,
-        similar: Vec<ProcLayout<'a>>,
+        pbroc_layout: PbrocLayout<'a>,
+        similar: Vec<PbrocLayout<'a>>,
     },
     DuplicateCallSpecId {
         old_call_line: usize,
@@ -116,13 +116,13 @@ pub enum ProblemKind<'a> {
 }
 
 pub struct Problem<'a> {
-    pub proc: &'a Proc<'a>,
-    pub proc_layout: ProcLayout<'a>,
+    pub pbroc: &'a Pbroc<'a>,
+    pub pbroc_layout: PbrocLayout<'a>,
     pub line: usize,
     pub kind: ProblemKind<'a>,
 }
 
-type Procs<'a> = MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>;
+type Pbrocs<'a> = MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>;
 pub struct Problems<'a>(pub(crate) Vec<Problem<'a>>);
 
 impl<'a> Problems<'a> {
@@ -131,28 +131,28 @@ impl<'a> Problems<'a> {
     }
 }
 
-pub fn check_procs<'a>(
+pub fn check_pbrocs<'a>(
     arena: &'a Bump,
     interner: &mut STLayoutInterner<'a>,
-    procs: &Procs<'a>,
+    pbrocs: &Pbrocs<'a>,
 ) -> Problems<'a> {
     let mut problems = Default::default();
 
-    for ((_, proc_layout), proc) in procs.iter() {
+    for ((_, pbroc_layout), pbroc) in pbrocs.iter() {
         let mut ctx = Ctx {
             arena,
             interner,
-            proc,
-            proc_layout: *proc_layout,
-            ret_layout: proc.ret_layout,
+            pbroc,
+            pbroc_layout: *pbroc_layout,
+            ret_layout: pbroc.ret_layout,
             problems: &mut problems,
             call_spec_ids: Default::default(),
-            procs,
+            pbrocs,
             venv: Default::default(),
             joinpoints: Default::default(),
             line: 0,
         };
-        ctx.check_proc(proc);
+        ctx.check_pbroc(pbroc);
     }
 
     Problems(problems)
@@ -165,9 +165,9 @@ struct Ctx<'a, 'r> {
     arena: &'a Bump,
     interner: &'r mut STLayoutInterner<'a>,
     problems: &'r mut Vec<Problem<'a>>,
-    proc: &'r Proc<'a>,
-    proc_layout: ProcLayout<'a>,
-    procs: &'r Procs<'a>,
+    pbroc: &'r Pbroc<'a>,
+    pbroc_layout: PbrocLayout<'a>,
+    pbrocs: &'r Pbrocs<'a>,
     call_spec_ids: CallSpecIds,
     ret_layout: InLayout<'a>,
     venv: VEnv<'a>,
@@ -178,8 +178,8 @@ struct Ctx<'a, 'r> {
 impl<'a, 'r> Ctx<'a, 'r> {
     fn problem(&mut self, problem_kind: ProblemKind<'a>) {
         self.problems.push(Problem {
-            proc: self.arena.alloc(self.proc.clone()),
-            proc_layout: self.proc_layout,
+            pbroc: self.arena.alloc(self.pbroc.clone()),
+            pbroc_layout: self.pbroc_layout,
             line: self.line,
             kind: problem_kind,
         })
@@ -257,12 +257,12 @@ impl<'a, 'r> Ctx<'a, 'r> {
         }
     }
 
-    fn check_proc(&mut self, proc: &Proc<'a>) {
-        for (lay, arg) in proc.args.iter() {
+    fn check_pbroc(&mut self, pbroc: &Pbroc<'a>) {
+        for (lay, arg) in pbroc.args.iter() {
             self.insert(*arg, *lay);
         }
 
-        self.check_stmt(&proc.body)
+        self.check_stmt(&pbroc.body)
     }
 
     fn check_stmt(&mut self, body: &Stmt<'a>) {
@@ -563,21 +563,21 @@ impl<'a, 'r> Ctx<'a, 'r> {
                 arg_layouts,
                 specialization_id,
             } => {
-                let proc_layout = ProcLayout {
+                let pbroc_layout = PbrocLayout {
                     arguments: arg_layouts,
                     result: *ret_layout,
                     niche: name.niche(),
                 };
-                if !self.procs.contains_key(&(name.name(), proc_layout)) {
+                if !self.pbrocs.contains_key(&(name.name(), pbroc_layout)) {
                     let similar = self
-                        .procs
+                        .pbrocs
                         .keys()
                         .filter(|(sym, _)| *sym == name.name())
                         .map(|(_, lay)| *lay)
                         .collect();
-                    self.problem(ProblemKind::CallingUndefinedProc {
+                    self.problem(ProblemKind::CallingUndefinedPbroc {
                         symbol: name.name(),
-                        proc_layout,
+                        pbroc_layout,
                         similar,
                     });
                 }

@@ -9,8 +9,8 @@ mod helpers;
 #[cfg(test)]
 mod test_gen_rs {
     use crate::helpers::generate_bindings;
-    use roc_glue::rust_glue::HEADER;
-    use roc_glue::types::File;
+    use broc_glue::rust_glue::HEADER;
+    use broc_glue::types::File;
 
     #[test]
     fn basic_record_aliased() {
@@ -41,7 +41,7 @@ mod test_gen_rs {
                     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
                     #[repr(C)]
                     pub struct MyRcd {
-                        pub b: roc_std::I128,
+                        pub b: broc_std::I128,
                         pub a: u64,
                     }
                     "#
@@ -80,8 +80,8 @@ mod test_gen_rs {
                     #[repr(C)]
                     pub struct Outer {
                         pub x: Inner,
-                        pub y: roc_std::RocStr,
-                        pub z: roc_std::RocList<u8>,
+                        pub y: broc_std::BrocStr,
+                        pub z: broc_std::BrocList<u8>,
                     }
 
                     #[cfg(any(
@@ -105,8 +105,8 @@ mod test_gen_rs {
                     #[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
                     #[repr(C)]
                     pub struct Outer {
-                        pub y: roc_std::RocStr,
-                        pub z: roc_std::RocList<u8>,
+                        pub y: broc_std::BrocStr,
+                        pub z: broc_std::BrocList<u8>,
                         pub x: Inner,
                     }
                     "#
@@ -137,7 +137,7 @@ mod test_gen_rs {
                     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
                     #[repr(C)]
                     pub struct R1 {
-                        pub b: roc_std::U128,
+                        pub b: broc_std::U128,
                         pub a: u64,
                     }
                     "#
@@ -167,8 +167,8 @@ mod test_gen_rs {
                     #[repr(C)]
                     pub struct R1 {
                         pub x: R2,
-                        pub y: roc_std::RocStr,
-                        pub z: roc_std::RocList<u8>,
+                        pub y: broc_std::BrocStr,
+                        pub z: broc_std::BrocList<u8>,
                     }
 
                     #[cfg(any(
@@ -192,8 +192,8 @@ mod test_gen_rs {
                     #[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
                     #[repr(C)]
                     pub struct R1 {
-                        pub y: roc_std::RocStr,
-                        pub z: roc_std::RocList<u8>,
+                        pub y: broc_std::BrocStr,
+                        pub z: broc_std::BrocList<u8>,
                         pub x: R2,
                     }
                     "#

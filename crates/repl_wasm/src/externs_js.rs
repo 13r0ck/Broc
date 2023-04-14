@@ -1,4 +1,4 @@
-// wasm_bindgen procedural macro breaks this clippy rule
+// wasm_bindgen pbrocedural macro breaks this clippy rule
 // https://github.com/rustwasm/wasm-bindgen/issues/2774
 #![allow(clippy::unused_unit)]
 

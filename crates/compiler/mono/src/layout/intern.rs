@@ -7,10 +7,10 @@ use std::{
 
 use bumpalo::Bump;
 use parking_lot::{Mutex, RwLock};
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::{default_hasher, BumpMap};
-use roc_module::symbol::Symbol;
-use roc_target::TargetInfo;
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::{default_hasher, BumpMap};
+use broc_module::symbol::Symbol;
+use broc_target::TargetInfo;
 
 use super::{Builtin, FieldOrderHash, LambdaSet, Layout, SeenRecPtrs, UnionLayout};
 
@@ -86,7 +86,7 @@ macro_rules! impl_to_from_int_width {
             pub fn to_int_width(&self) -> IntWidth {
                 match self {
                     $(&$layout => $int_width,)*
-                    _ => roc_error_macros::internal_error!("not an integer layout!")
+                    _ => broc_error_macros::internal_error!("not an integer layout!")
                 }
             }
         }
@@ -234,7 +234,7 @@ pub trait LayoutInterner<'a>: Sized {
     /// This is only to be used when layouts need to be compared across statements and depths,
     /// for example
     ///   - when looking up a layout index in a lambda set
-    ///   - in the [checker][crate::debug::check_procs], where `x = UnionAtIndex(f, 0)` may have
+    ///   - in the [checker][crate::debug::check_pbrocs], where `x = UnionAtIndex(f, 0)` may have
     ///     that the recorded layout of `x` is at a different depth than that determined when we
     ///     index the recorded layout of `f` at 0. Hence the two layouts may have different
     ///     interned representations, even if they are in fact isomorphic.
@@ -358,7 +358,7 @@ pub trait LayoutInterner<'a>: Sized {
     ///     }
     ///
     ///     let deep_dbg = interner.dbg_deep(layout);
-    ///     roc_tracing::info!("not a recursive pointer, actually a {deep_dbg:?}");
+    ///     broc_tracing::info!("not a recursive pointer, actually a {deep_dbg:?}");
     ///     return false;
     /// }
     /// ```
@@ -499,7 +499,7 @@ struct LockedGlobalInterner<'a, 'r> {
 ///
 /// This uses the [default_hasher], so interner maps should also rely on [default_hasher].
 fn hash<V: std::hash::Hash>(val: V) -> u64 {
-    let mut state = roc_collections::all::BuildHasher::default().build_hasher();
+    let mut state = broc_collections::all::BuildHasher::default().build_hasher();
     val.hash(&mut state);
     state.finish()
 }
@@ -985,7 +985,7 @@ st_impl!('r LockedGlobalInterner);
 
 mod reify {
     use bumpalo::{collections::Vec, Bump};
-    use roc_module::symbol::Symbol;
+    use broc_module::symbol::Symbol;
 
     use crate::layout::{Builtin, LambdaSet, Layout, UnionLayout};
 
@@ -1300,7 +1300,7 @@ mod equiv {
 }
 
 pub mod dbg {
-    use roc_module::symbol::Symbol;
+    use broc_module::symbol::Symbol;
 
     use crate::layout::{Builtin, LambdaSet, Layout, UnionLayout};
 
@@ -1448,8 +1448,8 @@ pub mod dbg {
 #[cfg(test)]
 mod insert_lambda_set {
     use bumpalo::Bump;
-    use roc_module::symbol::Symbol;
-    use roc_target::TargetInfo;
+    use broc_module::symbol::Symbol;
+    use broc_target::TargetInfo;
 
     use crate::layout::{LambdaSet, Layout};
 
@@ -1540,7 +1540,7 @@ mod insert_lambda_set {
 #[cfg(test)]
 mod insert_recursive_layout {
     use bumpalo::Bump;
-    use roc_target::TargetInfo;
+    use broc_target::TargetInfo;
 
     use crate::layout::{Builtin, InLayout, Layout, UnionLayout};
 

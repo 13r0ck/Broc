@@ -1,5 +1,5 @@
 [package]
-name = "roc_command_utils"
+name = "broc_command_utils"
 description = "Utility functions used all over the code base to call eternal apps like zig."
 
 authors.workspace = true

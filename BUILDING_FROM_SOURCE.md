@@ -1,10 +1,10 @@
-# Building the Roc compiler from source
+# Building the Broc compiler from source
 
-If you run into any problems getting Roc built from source, please ask for help in the `#beginners` channel on [Roc Zulip](https://roc.zulipchat.com) (the fastest way), or create an issue in this repo!
+If you run into any problems getting Broc built from source, please ask for help in the `#beginners` channel on [Broc Zulip](https://broc.zulipchat.com) (the fastest way), or create an issue in this repo!
 
 ## Using Nix
 
-On Macos and Linux, we highly recommend Using [nix](https://nixos.org/download.html) to quickly install all dependencies necessary to build roc.
+On Macos and Linux, we highly recommend Using [nix](https://nixos.org/download.html) to quickly install all dependencies necessary to build broc.
 
 :warning: If you tried to run `cargo` in the repo folder before installing nix, make sure to execute `cargo clean` first. To prevent you from executing `cargo` outside of nix, tools like [direnv](https://github.com/nix-community/nix-direnv) and [lorri](https://github.com/nix-community/lorri) can put you in a nix shell automatically when you `cd` into the directory.
 
@@ -39,7 +39,7 @@ If you don't know how to do this, restarting your computer will also do the job.
 
 #### Usage
 
-Now with nix set up, you just need to run one command from the roc project root directory:
+Now with nix set up, you just need to run one command from the broc project root directory:
 
 ```sh
 nix develop
@@ -54,7 +54,7 @@ Read the instructions [here](devtools/README.md) to make nix work well with your
 
 #### Extra tips
 
-If you want to load all dependencies automatically whenever you `cd` into `roc`, check out [direnv](https://direnv.net/).
+If you want to load all dependencies automatically whenever you `cd` into `broc`, check out [direnv](https://direnv.net/).
 Then you will no longer need to execute `nix develop` first.
 
 ### Editor
@@ -190,8 +190,8 @@ export CPPFLAGS="-I/usr/local/opt/llvm/include"
 
 ### LLVM installation on Windows
 
-**Warning** While `cargo build` works on windows, linking roc programs does not yet, see issue #2608. This also means the repl, the editor and many tests will not work on windows.
-The official LLVM pre-built binaries for Windows lack features that roc needs. Instead:
+**Warning** While `cargo build` works on windows, linking broc programs does not yet, see issue #2608. This also means the repl, the editor and many tests will not work on windows.
+The official LLVM pre-built binaries for Windows lack features that broc needs. Instead:
 
 1. Download the custom LLVM 7z archive [here](https://github.com/roc-lang/llvm-package-windows/releases/download/v13.0.1/LLVM-13.0.1-win64.7z).
 1. [Download 7-zip](https://www.7-zip.org/) to be able to extract this archive.
@@ -203,7 +203,7 @@ The official LLVM pre-built binaries for Windows lack features that roc needs. I
 $env:LLVM_SYS_130_PREFIX = 'C:\Users\YOUR_USERNAME\Downloads\LLVM-13.0.1-win64'
 ```
 
-Once all that was done, `cargo build` ran successfully for Roc!
+Once all that was done, `cargo build` ran successfully for Broc!
 
 #### Build issues on Windows
 
@@ -211,7 +211,7 @@ If you see the build failing because some internal file is not available, it mig
 
 ### Build speed on WSL/WSL2
 
-If your Roc project folder is in the Windows filesystem but you're compiling from Linux, rebuilds may be as much as 20x slower than they should be!
+If your Broc project folder is in the Windows filesystem but you're compiling from Linux, rebuilds may be as much as 20x slower than they should be!
 Disk access during linking seems to be the bottleneck. It's recommended to move your folder to the Linux filesystem.
 
 ## Use LLD for the linker

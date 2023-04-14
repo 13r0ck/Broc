@@ -4,17 +4,17 @@ use crate::{
     single_register_integers, single_register_layouts, Env,
 };
 use bumpalo::collections::Vec;
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::{MutMap, MutSet};
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::{
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::{MutMap, MutSet};
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::{
     ir::{JoinPointId, Param},
     layout::{
         Builtin, InLayout, Layout, LayoutInterner, STLayoutInterner, TagIdIntType, UnionLayout,
     },
 };
-use roc_target::TargetInfo;
+use broc_target::TargetInfo;
 use std::cmp::max;
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -744,7 +744,7 @@ impl<
     }
 
     /// Copies a symbol to the specified stack offset. This is used for things like filling structs.
-    /// The offset is not guarenteed to be perfectly aligned, it follows Roc's alignment plan.
+    /// The offset is not guarenteed to be perfectly aligned, it follows Broc's alignment plan.
     /// This means that, for example 2 I32s might be back to back on the stack.
     /// Always interact with the stack using aligned 64bit movement.
     pub fn copy_symbol_to_stack_offset(

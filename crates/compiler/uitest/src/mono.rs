@@ -1,11 +1,11 @@
 use std::io;
 
 use bumpalo::Bump;
-use roc_collections::MutMap;
-use roc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
-use roc_module::symbol::{Interns, Symbol};
-use roc_mono::{
-    ir::{Proc, ProcLayout},
+use broc_collections::MutMap;
+use broc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
+use broc_module::symbol::{Interns, Symbol};
+use broc_mono::{
+    ir::{Pbroc, PbrocLayout},
     layout::STLayoutInterner,
 };
 use tempfile::tempdir;
@@ -23,7 +23,7 @@ pub fn write_compiled_ir<'a>(
     options: MonoOptions,
     allow_can_errors: bool,
 ) -> io::Result<()> {
-    use roc_packaging::cache::RocCacheDir;
+    use broc_packaging::cache::BrocCacheDir;
     use std::path::PathBuf;
 
     let exec_mode = ExecutionMode::Executable;
@@ -33,31 +33,31 @@ pub fn write_compiled_ir<'a>(
     let dir = tempdir()?;
 
     for (file, source) in dependencies {
-        std::fs::write(dir.path().join(format!("{file}.roc")), source)?;
+        std::fs::write(dir.path().join(format!("{file}.broc")), source)?;
     }
 
-    let filename = PathBuf::from("Test.roc");
+    let filename = PathBuf::from("Test.broc");
     let file_path = dir.path().join(filename);
 
     let load_config = LoadConfig {
-        target_info: roc_target::TargetInfo::default_x86_64(),
+        target_info: broc_target::TargetInfo::default_x86_64(),
         threading: Threading::Single,
-        render: roc_reporting::report::RenderTarget::Generic,
-        palette: roc_reporting::report::DEFAULT_PALETTE,
+        render: broc_reporting::report::RenderTarget::Generic,
+        palette: broc_reporting::report::DEFAULT_PALETTE,
         exec_mode,
     };
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
         file_path,
         test_module,
         dir.path().to_path_buf(),
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         load_config,
     );
 
     let loaded = match loaded {
         Ok(x) => x,
-        Err(LoadMonomorphizedError::LoadingProblem(roc_load::LoadingProblem::FormattedReport(
+        Err(LoadMonomorphizedError::LoadingProblem(broc_load::LoadingProblem::FormattedReport(
             report,
         ))) => {
             println!("{}", report);
@@ -66,7 +66,7 @@ pub fn write_compiled_ir<'a>(
         Err(e) => panic!("{:?}", e),
     };
 
-    use roc_load::MonomorphizedModule;
+    use broc_load::MonomorphizedModule;
     let MonomorphizedModule {
         procedures,
         exposed_to_host,
@@ -107,10 +107,10 @@ fn check_procedures<'a>(
     arena: &'a Bump,
     interns: &Interns,
     interner: &mut STLayoutInterner<'a>,
-    procedures: &MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: &MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
 ) {
-    use roc_mono::debug::{check_procs, format_problems};
-    let problems = check_procs(arena, interner, procedures);
+    use broc_mono::debug::{check_pbrocs, format_problems};
+    let problems = check_pbrocs(arena, interner, procedures);
     if problems.is_empty() {
         return;
     }
@@ -121,12 +121,12 @@ fn check_procedures<'a>(
 fn write_procedures<'a>(
     writer: &mut impl io::Write,
     interner: STLayoutInterner<'a>,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
     opt_main_fn_symbol: Option<Symbol>,
 ) -> io::Result<()> {
-    let mut procs_strings = procedures
+    let mut pbrocs_strings = procedures
         .values()
-        .map(|proc| proc.to_pretty(&interner, 200, false))
+        .map(|pbroc| pbroc.to_pretty(&interner, 200, false))
         .collect::<Vec<_>>();
 
     let opt_main_fn = opt_main_fn_symbol.map(|main_fn_symbol| {
@@ -134,21 +134,21 @@ fn write_procedures<'a>(
             .keys()
             .position(|(s, _)| *s == main_fn_symbol)
             .unwrap();
-        procs_strings.swap_remove(index)
+        pbrocs_strings.swap_remove(index)
     });
 
-    procs_strings.sort();
+    pbrocs_strings.sort();
 
     if let Some(main_fn) = opt_main_fn {
-        procs_strings.push(main_fn);
+        pbrocs_strings.push(main_fn);
     }
 
-    let mut procs = procs_strings.iter().peekable();
-    while let Some(proc) = procs.next() {
-        if procs.peek().is_some() {
-            writeln!(writer, "{}", proc)?;
+    let mut pbrocs = pbrocs_strings.iter().peekable();
+    while let Some(pbroc) = pbrocs.next() {
+        if pbrocs.peek().is_some() {
+            writeln!(writer, "{}", pbroc)?;
         } else {
-            write!(writer, "{}", proc)?;
+            write!(writer, "{}", pbroc)?;
         }
     }
 

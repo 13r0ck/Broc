@@ -1,17 +1,17 @@
 extern crate bumpalo;
 
 use self::bumpalo::Bump;
-use roc_can::env::Env;
-use roc_can::expr::Output;
-use roc_can::expr::{canonicalize_expr, Expr};
-use roc_can::operator;
-use roc_can::scope::Scope;
-use roc_collections::all::MutMap;
-use roc_module::symbol::{IdentIds, Interns, ModuleId, ModuleIds, Symbol};
-use roc_problem::can::Problem;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarStore, Variable};
-use roc_types::types::{AliasVar, Type};
+use broc_can::env::Env;
+use broc_can::expr::Output;
+use broc_can::expr::{canonicalize_expr, Expr};
+use broc_can::operator;
+use broc_can::scope::Scope;
+use broc_collections::all::MutMap;
+use broc_module::symbol::{IdentIds, Interns, ModuleId, ModuleIds, Symbol};
+use broc_problem::can::Problem;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarStore, Variable};
+use broc_types::types::{AliasVar, Type};
 use std::hash::Hash;
 
 pub fn test_home() -> ModuleId {
@@ -35,7 +35,7 @@ pub struct CanExprOut {
 
 #[allow(dead_code)]
 pub fn can_expr_with(arena: &Bump, home: ModuleId, expr_str: &str) -> CanExprOut {
-    let loc_expr = roc_parse::test_helpers::parse_loc_with(arena, expr_str).unwrap_or_else(|e| {
+    let loc_expr = broc_parse::test_helpers::parse_loc_with(arena, expr_str).unwrap_or_else(|e| {
         panic!(
             "can_expr_with() got a parse error when attempting to canonicalize:\n\n{:?} {:?}",
             expr_str, e
@@ -65,7 +65,7 @@ pub fn can_expr_with(arena: &Bump, home: ModuleId, expr_str: &str) -> CanExprOut
         ))],
         vec![],
         Type::EmptyRec,
-        roc_types::types::AliasKind::Structural,
+        broc_types::types::AliasKind::Structural,
     );
 
     let dep_idents = IdentIds::exposed_builtins(0);

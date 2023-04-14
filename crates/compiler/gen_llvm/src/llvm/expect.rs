@@ -1,25 +1,25 @@
 use crate::debug_info_init;
 use crate::llvm::bitcode::call_str_bitcode_fn;
-use crate::llvm::build::{get_tag_id, store_roc_value, tag_pointer_clear_tag_id, Env};
+use crate::llvm::build::{get_tag_id, store_broc_value, tag_pointer_clear_tag_id, Env};
 use crate::llvm::build_list::{self, incrementing_elem_loop};
-use crate::llvm::convert::{basic_type_from_layout, RocUnion};
+use crate::llvm::convert::{basic_type_from_layout, BrocUnion};
 use inkwell::builder::Builder;
 use inkwell::module::Linkage;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum};
 use inkwell::values::{BasicValueEnum, FunctionValue, IntValue, PointerValue};
 use inkwell::AddressSpace;
-use roc_builtins::bitcode;
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::ir::LookupType;
-use roc_mono::layout::{
+use broc_builtins::bitcode;
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::ir::LookupType;
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutIds, LayoutInterner, STLayoutInterner, UnionLayout,
 };
-use roc_region::all::Region;
+use broc_region::all::Region;
 
 use super::build::BuilderExt;
 use super::build::{
-    add_func, load_roc_value, load_symbol_and_layout, use_roc_value, FunctionSpec, LlvmBackendMode,
+    add_func, load_broc_value, load_symbol_and_layout, use_broc_value, FunctionSpec, LlvmBackendMode,
     Scope,
 };
 use super::convert::struct_type_from_union_layout;
@@ -337,7 +337,7 @@ fn build_clone<'a, 'ctx, 'env>(
                     .builder
                     .build_pointer_cast(ptr, ptr_type, "cast_ptr_type");
 
-                store_roc_value(env, layout_interner, layout, ptr, value);
+                store_broc_value(env, layout_interner, layout, ptr, value);
 
                 cursors.extra_offset
             } else {
@@ -358,7 +358,7 @@ fn build_clone<'a, 'ctx, 'env>(
             build_copy(env, ptr, cursors.offset, cursors.extra_offset.into());
 
             let source = value.into_pointer_value();
-            let value = load_roc_value(env, layout_interner, inner_layout, source, "inner");
+            let value = load_broc_value(env, layout_interner, inner_layout, source, "inner");
 
             let inner_width = env
                 .ptr_int()
@@ -441,7 +441,7 @@ fn build_clone_struct<'a, 'ctx, 'env>(
                 .build_extract_value(structure, i as _, "extract")
                 .unwrap();
 
-            let field = use_roc_value(env, layout_interner, *field_layout, field, "field");
+            let field = use_broc_value(env, layout_interner, *field_layout, field, "field");
 
             let new_extra = build_clone(
                 env,
@@ -559,7 +559,7 @@ fn load_tag_data<'a, 'ctx, 'env>(
         .new_build_struct_gep(
             union_struct_type,
             tag_value,
-            RocUnion::TAG_DATA_INDEX,
+            BrocUnion::TAG_DATA_INDEX,
             "tag_data",
         )
         .unwrap();
@@ -579,7 +579,7 @@ fn clone_tag_payload_and_id<'a, 'ctx, 'env>(
     layout_ids: &mut LayoutIds<'a>,
     ptr: PointerValue<'ctx>,
     cursors: Cursors<'ctx>,
-    roc_union: RocUnion<'ctx>,
+    broc_union: BrocUnion<'ctx>,
     tag_id: usize,
     payload_in_layout: InLayout<'a>,
     opaque_payload_ptr: PointerValue<'ctx>,
@@ -610,7 +610,7 @@ fn clone_tag_payload_and_id<'a, 'ctx, 'env>(
     );
 
     // include padding between data and tag id
-    let tag_id_internal_offset = roc_union.data_width();
+    let tag_id_internal_offset = broc_union.data_width();
 
     let tag_id_offset = offset_add(env.builder, cursors.offset, tag_id_internal_offset);
 
@@ -681,7 +681,7 @@ fn build_clone_tag_help<'a, 'ctx, 'env>(
                 let block = env.context.append_basic_block(parent, "tag_id_modify");
                 env.builder.position_at_end(block);
 
-                let roc_union = RocUnion::tagged_from_slices(
+                let broc_union = BrocUnion::tagged_from_slices(
                     layout_interner,
                     env.context,
                     tags,
@@ -695,9 +695,9 @@ fn build_clone_tag_help<'a, 'ctx, 'env>(
                 let opaque_payload_ptr = env
                     .builder
                     .new_build_struct_gep(
-                        roc_union.struct_type(),
+                        broc_union.struct_type(),
                         tag_value.into_pointer_value(),
-                        RocUnion::TAG_DATA_INDEX,
+                        BrocUnion::TAG_DATA_INDEX,
                         "data_buffer",
                     )
                     .unwrap();
@@ -708,7 +708,7 @@ fn build_clone_tag_help<'a, 'ctx, 'env>(
                     layout_ids,
                     ptr,
                     cursors,
-                    roc_union,
+                    broc_union,
                     tag_id,
                     payload_in_layout,
                     opaque_payload_ptr,

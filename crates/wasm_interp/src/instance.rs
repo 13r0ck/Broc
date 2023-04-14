@@ -2,11 +2,11 @@ use bumpalo::{collections::Vec, Bump};
 use std::fmt::{self, Write};
 use std::iter::{self, once, Iterator};
 
-use roc_wasm_module::opcodes::OpCode;
-use roc_wasm_module::parse::{Parse, SkipBytes};
-use roc_wasm_module::sections::{ImportDesc, MemorySection, SignatureParamsIter};
-use roc_wasm_module::{ExportType, WasmModule};
-use roc_wasm_module::{Value, ValueType};
+use broc_wasm_module::opcodes::OpCode;
+use broc_wasm_module::parse::{Parse, SkipBytes};
+use broc_wasm_module::sections::{ImportDesc, MemorySection, SignatureParamsIter};
+use broc_wasm_module::{ExportType, WasmModule};
+use broc_wasm_module::{Value, ValueType};
 
 use crate::frame::Frame;
 use crate::value_store::ValueStore;
@@ -196,7 +196,7 @@ impl<'a, I: ImportDispatcher> Instance<'a, I> {
     ) -> Result<Option<Value>, String> {
         // We have two different mechanisms for handling CLI arguments!
         // 1. Basic numbers:
-        //      e.g. `roc_wasm_interp fibonacci 12`
+        //      e.g. `broc_wasm_interp fibonacci 12`
         //      Below, we check if the called Wasm function takes numeric arguments and, if so, parse them from the CLI.
         //      This is good for low-level test cases, for example while developing this interpreter.
         // 2. WASI:
@@ -733,7 +733,7 @@ impl<'a, I: ImportDispatcher> Instance<'a, I> {
                 let table_index = self.fetch_immediate_u32(module);
                 let element_index = self.value_store.pop_u32()?;
 
-                // So far, all compilers seem to be emitting MVP-compatible code. (Rust, Zig, Roc...)
+                // So far, all compilers seem to be emitting MVP-compatible code. (Rust, Zig, Broc...)
                 assert_eq!(
                     table_index, 0,
                     "Table index {} not supported at file offset {:#x}. This interpreter only supports Wasm MVP.",

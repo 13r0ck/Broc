@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This script
-#   1. Uses cargo to build the Roc compiler as a .wasm file (build.rs is part of this step only)
+#   1. Uses cargo to build the Broc compiler as a .wasm file (build.rs is part of this step only)
 #   2. Further optimizes the .wasm, and generates JavaScript code to interface with it
 #
 # After running this, we zip the generated assets and host them somewhere public on the web.
@@ -26,20 +26,20 @@ rm -rf build/*
 # We want a release build, but with debug info (to get stack traces for Wasm backend panics)
 # This configuration is called `--profiling`
 wasm-pack build --profiling --target web -- --features console_error_panic_hook
-cp -v pkg/roc_repl_wasm.js build
+cp -v pkg/broc_repl_wasm.js build
 
 # To disable optimizations while debugging, do `export REPL_DEBUG=1` before running the script
 if [ "${REPL_DEBUG:-}" == "" ] && which wasm-opt
 then
-    wasm-opt -Os --debuginfo pkg/roc_repl_wasm_bg.wasm -o build/roc_repl_wasm_bg.wasm
+    wasm-opt -Os --debuginfo pkg/broc_repl_wasm_bg.wasm -o build/broc_repl_wasm_bg.wasm
 else
     echo "wasm-opt is not installed. Skipping .wasm optimization."
-    cp -v pkg/roc_repl_wasm_bg.wasm build
+    cp -v pkg/broc_repl_wasm_bg.wasm build
 fi
 
 # Copy the JS from wasm_bindgen, replacing its invalid `import` statement with a `var`.
 # The JS import from the invalid path 'env', seems to be generated when there are unresolved symbols.
-BINDGEN_FILE="roc_repl_wasm.js"
+BINDGEN_FILE="broc_repl_wasm.js"
 echo 'var __wbg_star0 = { now: Date.now };' > build/$BINDGEN_FILE
 grep -v '^import' pkg/$BINDGEN_FILE >> build/$BINDGEN_FILE
 
@@ -47,6 +47,6 @@ grep -v '^import' pkg/$BINDGEN_FILE >> build/$BINDGEN_FILE
 echo "Generated REPL assets for website:"
 ls -l build
 
-TARFILE=${1:-roc_repl_wasm.tar.gz}
+TARFILE=${1:-broc_repl_wasm.tar.gz}
 cd build
 tar cvzf $TARFILE *

@@ -1,21 +1,21 @@
-//! Provides the core CLI functionality for the Roc binary.
+//! Provides the core CLI functionality for the Broc binary.
 
 #[macro_use]
 extern crate const_format;
 
 use bumpalo::Bump;
 use clap::{Arg, ArgMatches, Command, ValueSource};
-use roc_build::link::{LinkType, LinkingStrategy};
-use roc_build::program::{
+use broc_build::link::{LinkType, LinkingStrategy};
+use broc_build::program::{
     handle_error_module, handle_loading_problem, standard_load_config, BuildFileError,
     BuildOrdering, BuiltFile, CodeGenBackend, CodeGenOptions, DEFAULT_ROC_FILENAME,
 };
-use roc_error_macros::{internal_error, user_error};
-use roc_gen_llvm::llvm::build::LlvmBackendMode;
-use roc_load::{ExpectMetadata, Threading};
-use roc_mono::ir::OptLevel;
-use roc_packaging::cache::RocCacheDir;
-use roc_packaging::tarball::Compression;
+use broc_error_macros::{internal_error, user_error};
+use broc_gen_llvm::llvm::build::LlvmBackendMode;
+use broc_load::{ExpectMetadata, Threading};
+use broc_mono::ir::OptLevel;
+use broc_packaging::cache::BrocCacheDir;
+use broc_packaging::tarball::Compression;
 use std::env;
 use std::ffi::{CString, OsStr};
 use std::io;
@@ -112,7 +112,7 @@ pub fn build_app<'a>() -> Command<'a> {
 
     let flag_prebuilt = Arg::new(FLAG_PREBUILT)
         .long(FLAG_PREBUILT)
-        .help("Assume the platform has been prebuilt and skip rebuilding the platform\n(This is enabled by default when using `roc build` with a --target other than `--target <current machine>`.)")
+        .help("Assume the platform has been prebuilt and skip rebuilding the platform\n(This is enabled by default when using `broc build` with a --target other than `--target <current machine>`.)")
         .possible_values(["true", "false"])
         .required(false);
 
@@ -123,25 +123,25 @@ pub fn build_app<'a>() -> Command<'a> {
         .validator(|s| s.parse::<u32>())
         .required(false);
 
-    let roc_file_to_run = Arg::new(ROC_FILE)
-        .help("The .roc file of an app to run")
+    let broc_file_to_run = Arg::new(ROC_FILE)
+        .help("The .broc file of an app to run")
         .allow_invalid_utf8(true)
         .required(false)
         .default_value(DEFAULT_ROC_FILENAME);
 
     let args_for_app = Arg::new(ARGS_FOR_APP)
-        .help("Arguments to pass into the app being run\ne.g. `roc run -- arg1 arg2`")
+        .help("Arguments to pass into the app being run\ne.g. `broc run -- arg1 arg2`")
         .allow_invalid_utf8(true)
         .multiple_values(true)
         .takes_value(true)
         .allow_hyphen_values(true)
         .last(true);
 
-    let app = Command::new("roc")
+    let app = Command::new("broc")
         .version(concatcp!(VERSION, "\n"))
-        .about("Run the given .roc file, if there are no compilation errors.\nYou can use one of the SUBCOMMANDS below to do something else!")
+        .about("Run the given .broc file, if there are no compilation errors.\nYou can use one of the SUBCOMMANDS below to do something else!")
         .subcommand(Command::new(CMD_BUILD)
-            .about("Build a binary from the given .roc file, but don't run it")
+            .about("Build a binary from the given .broc file, but don't run it")
             .arg(flag_optimize.clone())
             .arg(flag_max_threads.clone())
             .arg(flag_opt_size.clone())
@@ -183,7 +183,7 @@ pub fn build_app<'a>() -> Command<'a> {
             )
             .arg(
                 Arg::new(ROC_FILE)
-                    .help("The .roc file to build")
+                    .help("The .broc file to build")
                     .allow_invalid_utf8(true)
                     .required(false)
                     .default_value(DEFAULT_ROC_FILENAME),
@@ -201,7 +201,7 @@ pub fn build_app<'a>() -> Command<'a> {
             .arg(flag_prebuilt.clone())
             .arg(
                 Arg::new(ROC_FILE)
-                    .help("The .roc file for the main module")
+                    .help("The .broc file for the main module")
                     .allow_invalid_utf8(true)
                     .required(false)
                     .default_value(DEFAULT_ROC_FILENAME)
@@ -212,7 +212,7 @@ pub fn build_app<'a>() -> Command<'a> {
             .about("Launch the interactive Read Eval Print Loop (REPL)")
         )
         .subcommand(Command::new(CMD_RUN)
-            .about("Run a .roc file even if it has build errors")
+            .about("Run a .broc file even if it has build errors")
             .arg(flag_optimize.clone())
             .arg(flag_max_threads.clone())
             .arg(flag_opt_size.clone())
@@ -221,11 +221,11 @@ pub fn build_app<'a>() -> Command<'a> {
             .arg(flag_time.clone())
             .arg(flag_linker.clone())
             .arg(flag_prebuilt.clone())
-            .arg(roc_file_to_run.clone())
+            .arg(broc_file_to_run.clone())
             .arg(args_for_app.clone())
         )
         .subcommand(Command::new(CMD_DEV)
-            .about("`check` a .roc file, and then run it if there were no errors")
+            .about("`check` a .broc file, and then run it if there were no errors")
             .arg(flag_optimize.clone())
             .arg(flag_max_threads.clone())
             .arg(flag_opt_size.clone())
@@ -234,11 +234,11 @@ pub fn build_app<'a>() -> Command<'a> {
             .arg(flag_time.clone())
             .arg(flag_linker.clone())
             .arg(flag_prebuilt.clone())
-            .arg(roc_file_to_run.clone())
+            .arg(broc_file_to_run.clone())
             .arg(args_for_app.clone())
         )
         .subcommand(Command::new(CMD_FORMAT)
-            .about("Format a .roc file using standard Roc formatting")
+            .about("Format a .broc file using standard Broc formatting")
             .arg(
                 Arg::new(DIRECTORY_OR_FILES)
                     .index(1)
@@ -253,14 +253,14 @@ pub fn build_app<'a>() -> Command<'a> {
             )
         )
         .subcommand(Command::new(CMD_VERSION)
-            .about(concatcp!("Print the Roc compiler’s version, which is currently ", VERSION)))
+            .about(concatcp!("Print the Broc compiler’s version, which is currently ", VERSION)))
         .subcommand(Command::new(CMD_CHECK)
             .about("Check the code for problems, but don’t build or run it")
             .arg(flag_time.clone())
             .arg(flag_max_threads.clone())
             .arg(
                 Arg::new(ROC_FILE)
-                    .help("The .roc file of an app to check")
+                    .help("The .broc file of an app to check")
                     .allow_invalid_utf8(true)
                     .required(false)
                     .default_value(DEFAULT_ROC_FILENAME),
@@ -268,20 +268,20 @@ pub fn build_app<'a>() -> Command<'a> {
             )
         .subcommand(
             Command::new(CMD_DOCS)
-                .about("Generate documentation for a Roc package")
+                .about("Generate documentation for a Broc package")
                 .arg(Arg::new(ROC_FILE)
                     .multiple_values(true)
-                    .help("The package's main .roc file")
+                    .help("The package's main .broc file")
                     .allow_invalid_utf8(true)
                     .required(false)
                     .default_value(DEFAULT_ROC_FILENAME),
                 )
         )
         .subcommand(Command::new(CMD_GLUE)
-            .about("Generate glue code between a platform's Roc API and its host language")
+            .about("Generate glue code between a platform's Broc API and its host language")
             .arg(
                 Arg::new(GLUE_SPEC)
-                    .help("The specification for how to translate Roc types into output files.")
+                    .help("The specification for how to translate Broc types into output files.")
                     .allow_invalid_utf8(true)
                     .required(true)
             )
@@ -293,17 +293,17 @@ pub fn build_app<'a>() -> Command<'a> {
             )
             .arg(
                 Arg::new(ROC_FILE)
-                    .help("The .roc file whose exposed types should be translated.")
+                    .help("The .broc file whose exposed types should be translated.")
                     .allow_invalid_utf8(true)
                     .required(false)
                     .default_value(DEFAULT_ROC_FILENAME)
             )
         )
         .subcommand(Command::new(CMD_GEN_STUB_LIB)
-            .about("Generate a stubbed shared library that can be used for linking a platform binary.\nThe stubbed library has prototypes, but no function bodies.\n\nNote: This command will be removed in favor of just using `roc build` once all platforms support the surgical linker")
+            .about("Generate a stubbed shared library that can be used for linking a platform binary.\nThe stubbed library has prototypes, but no function bodies.\n\nNote: This command will be removed in favor of just using `broc build` once all platforms support the surgical linker")
             .arg(
                 Arg::new(ROC_FILE)
-                    .help("The .roc file for an app using the platform")
+                    .help("The .broc file for an app using the platform")
                     .allow_invalid_utf8(true)
                     .required(true)
             )
@@ -327,13 +327,13 @@ pub fn build_app<'a>() -> Command<'a> {
         .arg(flag_time)
         .arg(flag_linker)
         .arg(flag_prebuilt)
-        .arg(roc_file_to_run.required(false))
+        .arg(broc_file_to_run.required(false))
         .arg(args_for_app);
 
     if cfg!(feature = "editor") {
         app.subcommand(
             Command::new(CMD_EDIT)
-                .about("Launch the Roc editor (Work In Progress)")
+                .about("Launch the Broc editor (Work In Progress)")
                 .arg(
                     Arg::new(DIRECTORY_OR_FILES)
                         .multiple_values(true)
@@ -366,10 +366,10 @@ pub fn test(_matches: &ArgMatches, _triple: Triple) -> io::Result<i32> {
 
 #[cfg(not(windows))]
 pub fn test(matches: &ArgMatches, triple: Triple) -> io::Result<i32> {
-    use roc_build::program::report_problems_monomorphized;
-    use roc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError};
-    use roc_packaging::cache;
-    use roc_target::TargetInfo;
+    use broc_build::program::report_problems_monomorphized;
+    use broc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError};
+    use broc_packaging::cache;
+    use broc_target::TargetInfo;
 
     let start_time = Instant::now();
     let arena = Bump::new();
@@ -402,15 +402,15 @@ pub fn test(matches: &ArgMatches, triple: Triple) -> io::Result<i32> {
     if !path.exists() {
         let path_string = path.to_string_lossy();
 
-        // TODO these should use roc_reporting to display nicer error messages.
+        // TODO these should use broc_reporting to display nicer error messages.
         match matches.value_source(ROC_FILE) {
             Some(ValueSource::DefaultValue) => {
                 eprintln!(
-                    "\nNo `.roc` file was specified, and the current directory does not contain a {} file to use as a default.\n\nYou can run `roc help` for more information on how to provide a .roc file.\n",
+                    "\nNo `.broc` file was specified, and the current directory does not contain a {} file to use as a default.\n\nYou can run `broc help` for more information on how to provide a .broc file.\n",
                     DEFAULT_ROC_FILENAME
                 )
             }
-            _ => eprintln!("\nThis file was not found: {}\n\nYou can run `roc help` for more information on how to provide a .roc file.\n", path_string),
+            _ => eprintln!("\nThis file was not found: {}\n\nYou can run `broc help` for more information on how to provide a .broc file.\n", path_string),
         }
 
         process::exit(1);
@@ -425,15 +425,15 @@ pub fn test(matches: &ArgMatches, triple: Triple) -> io::Result<i32> {
     let load_config = LoadConfig {
         target_info,
         // TODO: expose this from CLI?
-        render: roc_reporting::report::RenderTarget::ColorTerminal,
-        palette: roc_reporting::report::DEFAULT_PALETTE,
+        render: broc_reporting::report::RenderTarget::ColorTerminal,
+        palette: broc_reporting::report::DEFAULT_PALETTE,
         threading,
         exec_mode: ExecutionMode::Test,
     };
-    let load_result = roc_load::load_and_monomorphize(
+    let load_result = broc_load::load_and_monomorphize(
         arena,
         path.to_path_buf(),
-        RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+        BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
         load_config,
     );
 
@@ -452,7 +452,7 @@ pub fn test(matches: &ArgMatches, triple: Triple) -> io::Result<i32> {
 
     let interns = loaded.interns.clone();
 
-    let (lib, expects, layout_interner) = roc_repl_expect::run::expect_mono_module_to_dylib(
+    let (lib, expects, layout_interner) = broc_repl_expect::run::expect_mono_module_to_dylib(
         arena,
         target.clone(),
         loaded,
@@ -479,9 +479,9 @@ pub fn test(matches: &ArgMatches, triple: Triple) -> io::Result<i32> {
 
     let mut writer = std::io::stdout();
 
-    let (failed, passed) = roc_repl_expect::run::run_toplevel_expects(
+    let (failed, passed) = broc_repl_expect::run::run_toplevel_expects(
         &mut writer,
-        roc_reporting::report::RenderTarget::ColorTerminal,
+        broc_reporting::report::RenderTarget::ColorTerminal,
         arena,
         interns,
         &layout_interner.into_global(),
@@ -523,10 +523,10 @@ pub fn build(
     matches: &ArgMatches,
     config: BuildConfig,
     triple: Triple,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     link_type: LinkType,
 ) -> io::Result<i32> {
-    use roc_build::program::build_file;
+    use broc_build::program::build_file;
     use BuildConfig::*;
 
     let filename = matches.value_of_os(ROC_FILE).unwrap();
@@ -537,15 +537,15 @@ pub fn build(
         if !path.exists() {
             let path_string = path.to_string_lossy();
 
-            // TODO these should use roc_reporting to display nicer error messages.
+            // TODO these should use broc_reporting to display nicer error messages.
             match matches.value_source(ROC_FILE) {
                 Some(ValueSource::DefaultValue) => {
                     eprintln!(
-                        "\nNo `.roc` file was specified, and the current directory does not contain a {} file to use as a default.\n\nYou can run `roc help` for more information on how to provide a .roc file.\n",
+                        "\nNo `.broc` file was specified, and the current directory does not contain a {} file to use as a default.\n\nYou can run `broc help` for more information on how to provide a .broc file.\n",
                         DEFAULT_ROC_FILENAME
                     )
                 }
-                _ => eprintln!("\nThis file was not found: {}\n\nYou can run `roc help` for more information on how to provide a .roc file.\n", path_string),
+                _ => eprintln!("\nThis file was not found: {}\n\nYou can run `broc help` for more information on how to provide a .broc file.\n", path_string),
             }
 
             process::exit(1);
@@ -575,7 +575,7 @@ pub fn build(
 
             // Rather than building an executable or library, we're building
             // a tarball so this code can be distributed via a HTTPS
-            let filename = roc_packaging::tarball::build(path, compression)?;
+            let filename = broc_packaging::tarball::build(path, compression)?;
             let total_time_ms = start_time.elapsed().as_millis();
             let total_time = if total_time_ms > 1000 {
                 format!("{}s {}ms", total_time_ms / 1000, total_time_ms % 1000)
@@ -652,7 +652,7 @@ pub fn build(
 
     let linking_strategy = if wasm_dev_backend {
         LinkingStrategy::Additive
-    } else if !roc_linker::supported(link_type, &triple)
+    } else if !broc_linker::supported(link_type, &triple)
         || matches.value_of(FLAG_LINKER) == Some("legacy")
     {
         LinkingStrategy::Legacy
@@ -699,7 +699,7 @@ pub fn build(
         linking_strategy,
         prebuilt,
         wasm_dev_stack_bytes,
-        roc_cache_dir,
+        broc_cache_dir,
         load_config,
     );
 
@@ -754,7 +754,7 @@ pub fn build(
                     // ManuallyDrop will leak the bytes because we don't drop manually
                     let bytes = &ManuallyDrop::new(std::fs::read(&binary_path).unwrap());
 
-                    roc_run(&arena, opt_level, triple, args, bytes, expect_metadata)
+                    broc_run(&arena, opt_level, triple, args, bytes, expect_metadata)
                 }
                 BuildAndRunIfNoErrors => {
                     if problems.fatally_errored {
@@ -786,7 +786,7 @@ pub fn build(
                     // ManuallyDrop will leak the bytes because we don't drop manually
                     let bytes = &ManuallyDrop::new(std::fs::read(&binary_path).unwrap());
 
-                    roc_run(&arena, opt_level, triple, args, bytes, expect_metadata)
+                    broc_run(&arena, opt_level, triple, args, bytes, expect_metadata)
                 }
             }
         }
@@ -797,7 +797,7 @@ pub fn build(
     }
 }
 
-fn roc_run<'a, I: IntoIterator<Item = &'a OsStr>>(
+fn broc_run<'a, I: IntoIterator<Item = &'a OsStr>>(
     arena: &Bump,
     opt_level: OptLevel,
     triple: Triple,
@@ -807,7 +807,7 @@ fn roc_run<'a, I: IntoIterator<Item = &'a OsStr>>(
 ) -> io::Result<i32> {
     match triple.architecture {
         Architecture::Wasm32 => {
-            let executable = roc_run_executable_file_path(binary_bytes)?;
+            let executable = broc_run_executable_file_path(binary_bytes)?;
             let path = executable.as_path();
             // If possible, report the generated executable name relative to the current dir.
             let generated_filename = path
@@ -830,7 +830,7 @@ fn roc_run<'a, I: IntoIterator<Item = &'a OsStr>>(
                     generated_filename,
                     args.into_iter().map(|os_str| {
                         os_str.to_str().expect(
-                            "Roc does not currently support passing non-UTF8 arguments to Wasm.",
+                            "Broc does not currently support passing non-UTF8 arguments to Wasm.",
                         )
                     }),
                 );
@@ -838,7 +838,7 @@ fn roc_run<'a, I: IntoIterator<Item = &'a OsStr>>(
 
             Ok(0)
         }
-        _ => roc_run_native(arena, opt_level, args, binary_bytes, expect_metadata),
+        _ => broc_run_native(arena, opt_level, args, binary_bytes, expect_metadata),
     }
 }
 
@@ -900,7 +900,7 @@ fn make_argv_envp<'a, I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
 
 /// Run on the native OS (not on wasm)
 #[cfg(target_family = "unix")]
-fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
+fn broc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     arena: &Bump,
     opt_level: OptLevel,
     args: I,
@@ -910,7 +910,7 @@ fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     use bumpalo::collections::CollectIn;
 
     unsafe {
-        let executable = roc_run_executable_file_path(binary_bytes)?;
+        let executable = broc_run_executable_file_path(binary_bytes)?;
         let (argv_cstrings, envp_cstrings) = make_argv_envp(arena, &executable, args);
 
         let argv: bumpalo::collections::Vec<*const c_char> = argv_cstrings
@@ -926,9 +926,9 @@ fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
             .collect_in(arena);
 
         match opt_level {
-            OptLevel::Development => roc_dev_native(arena, executable, argv, envp, expect_metadata),
+            OptLevel::Development => broc_dev_native(arena, executable, argv, envp, expect_metadata),
             OptLevel::Normal | OptLevel::Size | OptLevel::Optimize => {
-                roc_run_native_fast(executable, &argv, &envp);
+                broc_run_native_fast(executable, &argv, &envp);
             }
         }
     }
@@ -936,7 +936,7 @@ fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     Ok(1)
 }
 
-unsafe fn roc_run_native_fast(
+unsafe fn broc_run_native_fast(
     executable: ExecutableFile,
     argv: &[*const c_char],
     envp: &[*const c_char],
@@ -1000,7 +1000,7 @@ impl ExecutableFile {
 
 // with Expect
 #[cfg(target_family = "unix")]
-fn roc_dev_native(
+fn broc_dev_native(
     arena: &Bump,
     executable: ExecutableFile,
     argv: bumpalo::collections::Vec<*const c_char>,
@@ -1009,7 +1009,7 @@ fn roc_dev_native(
 ) -> ! {
     use std::sync::{atomic::AtomicBool, Arc};
 
-    use roc_repl_expect::run::{ChildProcessMsg, ExpectMemory};
+    use broc_repl_expect::run::{ChildPbrocessMsg, ExpectMemory};
 
     let ExpectMetadata {
         mut expectations,
@@ -1018,7 +1018,7 @@ fn roc_dev_native(
     } = expect_metadata;
 
     // let shm_name =
-    let shm_name = format!("/roc_expect_buffer_{}", std::process::id());
+    let shm_name = format!("/broc_expect_buffer_{}", std::process::id());
     let mut memory = ExpectMemory::create_or_reuse_mmap(&shm_name);
 
     let layout_interner = layout_interner.into_global();
@@ -1051,9 +1051,9 @@ fn roc_dev_native(
 
             loop {
                 match memory.wait_for_child(sigchld.clone()) {
-                    ChildProcessMsg::Terminate => break,
-                    ChildProcessMsg::Expect => {
-                        roc_repl_expect::run::render_expects_in_memory(
+                    ChildPbrocessMsg::Terminate => break,
+                    ChildPbrocessMsg::Expect => {
+                        broc_repl_expect::run::render_expects_in_memory(
                             &mut writer,
                             arena,
                             &mut expectations,
@@ -1065,8 +1065,8 @@ fn roc_dev_native(
 
                         memory.reset();
                     }
-                    ChildProcessMsg::Dbg => {
-                        roc_repl_expect::run::render_dbgs_in_memory(
+                    ChildPbrocessMsg::Dbg => {
+                        broc_repl_expect::run::render_dbgs_in_memory(
                             &mut writer,
                             arena,
                             &mut expectations,
@@ -1088,10 +1088,10 @@ fn roc_dev_native(
 }
 
 #[cfg(target_os = "linux")]
-fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<ExecutableFile> {
+fn broc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<ExecutableFile> {
     // on linux, we use the `memfd_create` function to create an in-memory anonymous file.
     let flags = 0;
-    let anonymous_file_name = "roc_file_descriptor\0";
+    let anonymous_file_name = "broc_file_descriptor\0";
     let fd = unsafe { libc::memfd_create(anonymous_file_name.as_ptr().cast(), flags) };
 
     if fd == 0 {
@@ -1102,7 +1102,7 @@ fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<Executab
         );
     }
 
-    let path = PathBuf::from(format!("/proc/self/fd/{}", fd));
+    let path = PathBuf::from(format!("/pbroc/self/fd/{}", fd));
 
     std::fs::write(&path, binary_bytes)?;
 
@@ -1110,7 +1110,7 @@ fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<Executab
 }
 
 #[cfg(all(target_family = "unix", not(target_os = "linux")))]
-fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<ExecutableFile> {
+fn broc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<ExecutableFile> {
     use std::fs::OpenOptions;
     use std::io::Write;
     use std::os::unix::fs::OpenOptionsExt;
@@ -1119,7 +1119,7 @@ fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<Executab
 
     // We have not found a way to use a virtual file on non-Linux OSes.
     // Hence we fall back to just writing the file to the file system, and using that file.
-    let app_path_buf = temp_dir.path().join("roc_app_binary");
+    let app_path_buf = temp_dir.path().join("broc_app_binary");
     let mut file = OpenOptions::new()
         .create(true)
         .write(true)
@@ -1136,7 +1136,7 @@ fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<Executab
 }
 
 #[cfg(all(target_family = "windows"))]
-fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<ExecutableFile> {
+fn broc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<ExecutableFile> {
     use std::fs::OpenOptions;
     use std::io::Write;
 
@@ -1144,7 +1144,7 @@ fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<Executab
 
     // We have not found a way to use a virtual file on non-Linux OSes.
     // Hence we fall back to just writing the file to the file system, and using that file.
-    let app_path_buf = temp_dir.path().join("roc_app_binary.exe");
+    let app_path_buf = temp_dir.path().join("broc_app_binary.exe");
     let mut file = OpenOptions::new()
         .create(true)
         .write(true)
@@ -1162,7 +1162,7 @@ fn roc_run_executable_file_path(binary_bytes: &[u8]) -> std::io::Result<Executab
 
 /// Run on the native OS (not on wasm)
 #[cfg(not(target_family = "unix"))]
-fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
+fn broc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     arena: &Bump, // This should be passed an owned value, not a reference, so we can usefully mem::forget it!
     opt_level: OptLevel,
     args: I,
@@ -1172,7 +1172,7 @@ fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
     use bumpalo::collections::CollectIn;
 
     unsafe {
-        let executable = roc_run_executable_file_path(binary_bytes)?;
+        let executable = broc_run_executable_file_path(binary_bytes)?;
 
         // TODO forward the arguments
         let (argv_cstrings, envp_cstrings) = make_argv_envp(&arena, &executable, args);
@@ -1191,11 +1191,11 @@ fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
 
         match opt_level {
             OptLevel::Development => {
-                // roc_run_native_debug(executable, &argv, &envp, expectations, interns)
+                // broc_run_native_debug(executable, &argv, &envp, expectations, interns)
                 internal_error!("running `expect`s does not currently work on windows")
             }
             OptLevel::Normal | OptLevel::Size | OptLevel::Optimize => {
-                roc_run_native_fast(executable, &argv, &envp);
+                broc_run_native_fast(executable, &argv, &envp);
             }
         }
     }
@@ -1206,7 +1206,7 @@ fn roc_run_native<I: IntoIterator<Item = S>, S: AsRef<OsStr>>(
 #[cfg(feature = "run-wasm32")]
 fn run_wasm<I: Iterator<Item = S>, S: AsRef<[u8]>>(wasm_path: &std::path::Path, args: I) {
     use bumpalo::collections::Vec;
-    use roc_wasm_interp::{DefaultImportDispatcher, Instance};
+    use broc_wasm_interp::{DefaultImportDispatcher, Instance};
 
     let bytes = std::fs::read(wasm_path).unwrap();
     let arena = Bump::new();
@@ -1314,7 +1314,7 @@ impl std::str::FromStr for Target {
             "linux64" => Ok(Target::Linux64),
             "windows64" => Ok(Target::Windows64),
             "wasm32" => Ok(Target::Wasm32),
-            _ => Err(format!("Roc does not know how to compile to {}", string)),
+            _ => Err(format!("Broc does not know how to compile to {}", string)),
         }
     }
 }

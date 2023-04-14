@@ -1,0 +1,6 @@
+app "app"
+    packages { pf: "platform.broc" }
+    imports []
+    provides [main] to pf
+
+main = Foo "This is a test"

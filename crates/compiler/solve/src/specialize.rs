@@ -3,26 +3,26 @@
 use std::collections::VecDeque;
 
 use bumpalo::Bump;
-use roc_can::{
+use broc_can::{
     abilities::{AbilitiesStore, ImplKey},
     module::ExposedByModule,
 };
-use roc_collections::{VecMap, VecSet};
-use roc_debug_flags::dbg_do;
+use broc_collections::{VecMap, VecSet};
+use broc_debug_flags::dbg_do;
 #[cfg(debug_assertions)]
-use roc_debug_flags::ROC_TRACE_COMPACTION;
-use roc_derive::SharedDerivedModule;
-use roc_derive_key::{DeriveError, DeriveKey};
-use roc_error_macros::{internal_error, todo_abilities};
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_types::{
+use broc_debug_flags::ROC_TRACE_COMPACTION;
+use broc_derive::SharedDerivedModule;
+use broc_derive_key::{DeriveError, DeriveKey};
+use broc_error_macros::{internal_error, todo_abilities};
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_types::{
     subs::{
         get_member_lambda_sets_at_region, Content, Descriptor, GetSubsSlice, LambdaSet, Mark,
         OptVariable, Rank, Subs, SubsSlice, UlsOfVar, Variable,
     },
     types::{AliasKind, MemberImpl, Polarity, Uls},
 };
-use roc_unify::unify::{unify, Env as UEnv, Mode, MustImplementConstraints};
+use broc_unify::unify::{unify, Env as UEnv, Mode, MustImplementConstraints};
 
 use crate::{
     ability::builtin_module_with_unlisted_ability_impl,
@@ -185,13 +185,13 @@ pub struct CompactionResult {
 
 #[cfg(debug_assertions)]
 fn trace_compaction_step_1(subs: &Subs, c_a: Variable, uls_a: &[Variable]) {
-    let c_a = roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(c_a), subs);
+    let c_a = broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(c_a), subs);
     let uls_a = uls_a
         .iter()
         .map(|v| {
             format!(
                 "{:?}",
-                roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(*v), subs)
+                broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(*v), subs)
             )
         })
         .collect::<Vec<_>>()
@@ -209,7 +209,7 @@ fn trace_compaction_step_2(subs: &Subs, uls_a: &[Variable]) {
         .map(|v| {
             format!(
                 "{:?}",
-                roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(*v), subs)
+                broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(*v), subs)
             )
         })
         .collect::<Vec<_>>()
@@ -230,12 +230,12 @@ fn trace_compaction_step_3iter_start(
     t_f1: Variable,
     t_f2: Variable,
 ) {
-    let iteration_lambda_set = roc_types::subs::SubsFmtContent(
+    let iteration_lambda_set = broc_types::subs::SubsFmtContent(
         subs.get_content_without_compacting(iteration_lambda_set),
         subs,
     );
-    let t_f1 = roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(t_f1), subs);
-    let t_f2 = roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(t_f2), subs);
+    let t_f1 = broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(t_f1), subs);
+    let t_f2 = broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(t_f2), subs);
     eprintln!("    - iteration: {:?}", iteration_lambda_set);
     eprintln!("         {:?}", t_f1);
     eprintln!("      ~  {:?}", t_f2);
@@ -245,7 +245,7 @@ fn trace_compaction_step_3iter_start(
 #[rustfmt::skip]
 fn trace_compaction_step_3iter_end(subs: &Subs, t_f_result: Variable, skipped: bool) {
     let t_f_result =
-        roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(t_f_result), subs);
+        broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(t_f_result), subs);
     if skipped {
     eprintln!("      SKIP");
     }
@@ -506,7 +506,7 @@ fn compact_lambda_set<P: Phase>(
     debug_assert!(subs.equivalent_without_compacting(c, resolved_concrete));
 
     // Now decide: do we
-    // - proceed with specialization
+    // - pbroceed with specialization
     // - simply drop the specialization lambda set (due to an error)
     // - or do we need to wait, because we don't know enough information for the specialization yet?
     let specialization_decision = make_specialization_decision(subs, phase, c, f);
@@ -669,15 +669,15 @@ fn make_specialization_decision<P: Phase>(
             };
 
             // This is a structural type, find the derived ability function it should use.
-            match roc_derive_key::Derived::builtin(builtin, subs, var) {
+            match broc_derive_key::Derived::builtin(builtin, subs, var) {
                 Ok(derived) => match derived {
-                    roc_derive_key::Derived::Immediate(imm) => {
+                    broc_derive_key::Derived::Immediate(imm) => {
                         SpecializeDecision::Specialize(Immediate(imm))
                     }
-                    roc_derive_key::Derived::SingleLambdaSetImmediate(imm) => {
+                    broc_derive_key::Derived::SingleLambdaSetImmediate(imm) => {
                         SpecializeDecision::Specialize(SingleLambdaSetImmediate(imm))
                     }
-                    roc_derive_key::Derived::Key(derive_key) => {
+                    broc_derive_key::Derived::Key(derive_key) => {
                         SpecializeDecision::Specialize(Derived(derive_key))
                     }
                 },
@@ -720,7 +720,7 @@ fn get_specialization_lambda_set_ambient_function<P: Phase>(
             let opaque_home = opaque.module_id();
             let external_specialized_lset =
                 phase.with_module_abilities_store(opaque_home, |abilities_store| {
-                    let impl_key = roc_can::abilities::ImplKey {
+                    let impl_key = broc_can::abilities::ImplKey {
                         opaque,
                         ability_member,
                     };
@@ -818,7 +818,7 @@ fn get_specialization_lambda_set_ambient_function<P: Phase>(
                 .storage_subs
                 .export_variable_to(subs, *storage_var);
 
-            roc_types::subs::instantiate_rigids(subs, imported.variable);
+            broc_types::subs::instantiate_rigids(subs, imported.variable);
 
             Ok(imported.variable)
         }

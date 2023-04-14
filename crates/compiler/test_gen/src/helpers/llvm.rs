@@ -3,23 +3,23 @@ use std::path::PathBuf;
 
 use inkwell::module::Module;
 use libloading::Library;
-use roc_build::link::llvm_module_to_dylib;
-use roc_collections::all::MutSet;
-use roc_command_utils::zig;
-use roc_gen_llvm::llvm::externs::add_default_roc_externs;
-use roc_gen_llvm::{llvm::build::LlvmBackendMode, run_roc::RocCallResult};
-use roc_load::{EntryPoint, ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
-use roc_mono::ir::{CrashTag, OptLevel, SingleEntryPoint};
-use roc_packaging::cache::RocCacheDir;
-use roc_region::all::LineInfo;
-use roc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
+use broc_build::link::llvm_module_to_dylib;
+use broc_collections::all::MutSet;
+use broc_command_utils::zig;
+use broc_gen_llvm::llvm::externs::add_default_broc_externs;
+use broc_gen_llvm::{llvm::build::LlvmBackendMode, run_broc::BrocCallResult};
+use broc_load::{EntryPoint, ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
+use broc_mono::ir::{CrashTag, OptLevel, SingleEntryPoint};
+use broc_packaging::cache::BrocCacheDir;
+use broc_region::all::LineInfo;
+use broc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
 use target_lexicon::Triple;
 
 #[cfg(feature = "gen-llvm-wasm")]
 use crate::helpers::from_wasm32_memory::FromWasm32Memory;
 
 #[cfg(feature = "gen-llvm-wasm")]
-use roc_gen_wasm::wasm32_result::Wasm32Result;
+use broc_gen_wasm::wasm32_result::Wasm32Result;
 
 #[cfg(feature = "gen-llvm-wasm")]
 const TEST_WRAPPER_NAME: &str = "test_wrapper";
@@ -52,9 +52,9 @@ fn create_llvm_module<'a>(
     context: &'a inkwell::context::Context,
     target: &Triple,
 ) -> (&'static str, String, &'a Module<'a>) {
-    let target_info = roc_target::TargetInfo::from(target);
+    let target_info = broc_target::TargetInfo::from(target);
 
-    let filename = PathBuf::from("Test.roc");
+    let filename = PathBuf::from("Test.broc");
     let src_dir = PathBuf::from("fake/test/path");
 
     let module_src;
@@ -75,18 +75,18 @@ fn create_llvm_module<'a>(
         threading: Threading::Single,
         exec_mode: ExecutionMode::Executable,
     };
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
         filename,
         module_src,
         src_dir,
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         load_config,
     );
 
     let mut loaded = match loaded {
         Ok(x) => x,
-        Err(LoadMonomorphizedError::LoadingProblem(roc_load::LoadingProblem::FormattedReport(
+        Err(LoadMonomorphizedError::LoadingProblem(broc_load::LoadingProblem::FormattedReport(
             report,
         ))) => {
             println!("{}", report);
@@ -95,7 +95,7 @@ fn create_llvm_module<'a>(
         Err(e) => panic!("{:?}", e),
     };
 
-    use roc_load::MonomorphizedModule;
+    use broc_load::MonomorphizedModule;
     let MonomorphizedModule {
         procedures,
         interns,
@@ -108,7 +108,7 @@ fn create_llvm_module<'a>(
     let mut delayed_errors = Vec::new();
 
     for (home, (module_path, src)) in loaded.sources {
-        use roc_reporting::report::{can_problem, type_problem, RocDocAllocator};
+        use broc_reporting::report::{can_problem, type_problem, BrocDocAllocator};
 
         let can_problems = loaded.can_problems.remove(&home).unwrap_or_default();
         let type_problems = loaded.type_problems.remove(&home).unwrap_or_default();
@@ -124,9 +124,9 @@ fn create_llvm_module<'a>(
         let palette = DEFAULT_PALETTE;
 
         // Report parsing and canonicalization problems
-        let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+        let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
-        use roc_problem::can::Problem::*;
+        use broc_problem::can::Problem::*;
         for problem in can_problems.into_iter() {
             match problem {
                 // Ignore "unused" problems
@@ -178,13 +178,13 @@ fn create_llvm_module<'a>(
     }
 
     let builder = context.create_builder();
-    let module = roc_gen_llvm::llvm::build::module_from_builtins(target, context, "app");
+    let module = broc_gen_llvm::llvm::build::module_from_builtins(target, context, "app");
 
     let module = arena.alloc(module);
     let (module_pass, function_pass) =
-        roc_gen_llvm::llvm::build::construct_optimization_passes(module, config.opt_level);
+        broc_gen_llvm::llvm::build::construct_optimization_passes(module, config.opt_level);
 
-    let (dibuilder, compile_unit) = roc_gen_llvm::llvm::build::Env::new_debug_info(module);
+    let (dibuilder, compile_unit) = broc_gen_llvm::llvm::build::Env::new_debug_info(module);
 
     // mark our zig-defined builtins as internal
     use inkwell::attributes::{Attribute, AttributeLoc};
@@ -196,25 +196,25 @@ fn create_llvm_module<'a>(
 
     for function in module.get_functions() {
         let name = function.get_name().to_str().unwrap();
-        if name.starts_with("roc_builtins") {
-            if name.starts_with("roc_builtins.expect") {
+        if name.starts_with("broc_builtins") {
+            if name.starts_with("broc_builtins.expect") {
                 function.set_linkage(Linkage::External);
             } else {
                 function.set_linkage(Linkage::Internal);
             }
         }
 
-        if name.starts_with("roc_builtins.dict") {
+        if name.starts_with("broc_builtins.dict") {
             function.add_attribute(AttributeLoc::Function, attr);
         }
 
-        if name.starts_with("roc_builtins.list") {
+        if name.starts_with("broc_builtins.list") {
             function.add_attribute(AttributeLoc::Function, attr);
         }
     }
 
-    // Compile and add all the Procs before adding main
-    let env = roc_gen_llvm::llvm::build::Env {
+    // Compile and add all the Pbrocs before adding main
+    let env = broc_gen_llvm::llvm::build::Env {
         arena,
         builder: &builder,
         dibuilder: &dibuilder,
@@ -231,9 +231,9 @@ fn create_llvm_module<'a>(
     // strip Zig debug stuff
     module.strip_debug_info();
 
-    // Add roc_alloc, roc_realloc, and roc_dealloc, since the repl has no
+    // Add broc_alloc, broc_realloc, and broc_dealloc, since the repl has no
     // platform to provide them.
-    add_default_roc_externs(&env);
+    add_default_broc_externs(&env);
 
     let entry_point = match loaded.entry_point {
         EntryPoint::Executable {
@@ -255,14 +255,14 @@ fn create_llvm_module<'a>(
         LlvmBackendMode::BinaryDev => unreachable!(),
         LlvmBackendMode::BinaryGlue => unreachable!(),
         LlvmBackendMode::CliTest => unreachable!(),
-        LlvmBackendMode::WasmGenTest => roc_gen_llvm::llvm::build::build_wasm_test_wrapper(
+        LlvmBackendMode::WasmGenTest => broc_gen_llvm::llvm::build::build_wasm_test_wrapper(
             &env,
             &mut layout_interner,
             config.opt_level,
             procedures,
             entry_point,
         ),
-        LlvmBackendMode::GenTest => roc_gen_llvm::llvm::build::build_procedures_return_main(
+        LlvmBackendMode::GenTest => broc_gen_llvm::llvm::build::build_procedures_return_main(
             &env,
             &mut layout_interner,
             config.opt_level,
@@ -348,9 +348,9 @@ fn annotate_with_debug_info<'ctx>(
 ) -> Module<'ctx> {
     use std::process::Command;
 
-    let app_ll_file = "/tmp/roc-debugir.ll";
-    let app_dbg_ll_file = "/tmp/roc-debugir.dbg.ll";
-    let app_bc_file = "/tmp/roc-debugir.bc";
+    let app_ll_file = "/tmp/broc-debugir.ll";
+    let app_dbg_ll_file = "/tmp/broc-debugir.dbg.ll";
+    let app_bc_file = "/tmp/broc-debugir.bc";
 
     // write the ll code to a file, so we can modify it
     module.print_to_file(app_ll_file).unwrap();
@@ -395,7 +395,7 @@ fn wasm32_target_tripple() -> Triple {
 #[allow(dead_code)]
 fn write_final_wasm() -> bool {
     #[allow(unused_imports)]
-    use roc_debug_flags::{dbg_do, ROC_WRITE_FINAL_WASM};
+    use broc_debug_flags::{dbg_do, ROC_WRITE_FINAL_WASM};
 
     dbg_do!(ROC_WRITE_FINAL_WASM, {
         return true;
@@ -449,7 +449,7 @@ fn llvm_module_to_wasm_file(
     let triple = TargetTriple::create("wasm32-unknown-unknown-wasm");
 
     llvm_module.set_triple(&triple);
-    llvm_module.set_source_file_name("Test.roc");
+    llvm_module.set_source_file_name("Test.broc");
 
     let target_machine = Target::from_name("wasm32")
         .unwrap()
@@ -560,7 +560,7 @@ pub fn try_run_lib_function<T>(
     lib: &libloading::Library,
 ) -> Result<T, (String, CrashTag)> {
     unsafe {
-        let main: libloading::Symbol<unsafe extern "C" fn(*mut RocCallResult<T>)> = lib
+        let main: libloading::Symbol<unsafe extern "C" fn(*mut BrocCallResult<T>)> = lib
             .get(main_fn_name.as_bytes())
             .ok()
             .ok_or(format!("Unable to JIT compile `{}`", main_fn_name))
@@ -606,12 +606,12 @@ where
             let given = transform(raw);
             assert_eq!(&given, &expected, "LLVM test failed");
 
-            // on Windows, there are issues with the drop instances of some roc_std
+            // on Windows, there are issues with the drop instances of some broc_std
             #[cfg(windows)]
             std::mem::forget(given);
         }
         Err((msg, tag)) => match tag {
-            CrashTag::Roc => panic!(r#"Roc failed with message: "{}""#, msg),
+            CrashTag::Broc => panic!(r#"Broc failed with message: "{}""#, msg),
             CrashTag::User => panic!(r#"User crash with message: "{}""#, msg),
         },
     }

@@ -1,5 +1,5 @@
 [package]
-name = "roc_alias_analysis"
+name = "broc_alias_analysis"
 
 authors.workspace = true
 edition.workspace = true
@@ -8,10 +8,10 @@ version.workspace = true
 
 [dependencies]
 morphic_lib = { path = "../../vendor/morphic_lib" }
-roc_collections = { path = "../collections" }
-roc_debug_flags = { path = "../debug_flags" }
-roc_error_macros = { path = "../../error_macros" }
-roc_module = { path = "../module" }
-roc_mono = { path = "../mono" }
+broc_collections = { path = "../collections" }
+broc_debug_flags = { path = "../debug_flags" }
+broc_error_macros = { path = "../../error_macros" }
+broc_module = { path = "../module" }
+broc_mono = { path = "../mono" }
 
 bumpalo.workspace = true

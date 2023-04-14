@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use roc_wasm_module::Value;
+use broc_wasm_module::Value;
 use std::io::{self, Read, StderrLock, StdoutLock, Write};
 use std::process::exit;
 
@@ -264,11 +264,11 @@ impl<'a> WasiDispatcher<'a> {
             "path_symlink" => todo!("WASI {}({:?})", function_name, arguments),
             "path_unlink_file" => todo!("WASI {}({:?})", function_name, arguments),
             "poll_oneoff" => todo!("WASI {}({:?})", function_name, arguments),
-            "proc_exit" => {
+            "pbroc_exit" => {
                 let exit_code = arguments[0].expect_i32().unwrap();
                 exit(exit_code);
             }
-            "proc_raise" => todo!("WASI {}({:?})", function_name, arguments),
+            "pbroc_raise" => todo!("WASI {}({:?})", function_name, arguments),
             "sched_yield" => todo!("WASI {}({:?})", function_name, arguments),
             "random_get" => {
                 // A pointer to a buffer where the random bytes will be written

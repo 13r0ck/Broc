@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::test_op_example;
-use roc_wasm_module::{opcodes::OpCode, opcodes::OpCode::*, Value};
+use broc_wasm_module::{opcodes::OpCode, opcodes::OpCode::*, Value};
 
 fn test_f32_comparison(op: OpCode, arg1: f32, arg2: f32, expected: bool) {
     test_op_example(

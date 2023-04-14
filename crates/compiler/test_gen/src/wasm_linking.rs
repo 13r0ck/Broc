@@ -1,25 +1,25 @@
 #![cfg(feature = "gen-wasm")]
 
 use bumpalo::Bump;
-use roc_gen_wasm::Env;
-use roc_target::TargetInfo;
+use broc_gen_wasm::Env;
+use broc_target::TargetInfo;
 use std::fs;
 use std::process::Command;
 
-use roc_collections::{MutMap, MutSet};
-use roc_module::ident::{ForeignSymbol, ModuleName};
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::{
+use broc_collections::{MutMap, MutSet};
+use broc_module::ident::{ForeignSymbol, ModuleName};
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::{
     IdentIds, IdentIdsByModule, Interns, ModuleId, ModuleIds, PackageModuleIds, PackageQualified,
     Symbol,
 };
-use roc_mono::ir::{
-    Call, CallType, Expr, HostExposedLayouts, Literal, Proc, ProcLayout, SelfRecursive, Stmt,
+use broc_mono::ir::{
+    Call, CallType, Expr, HostExposedLayouts, Literal, Pbroc, PbrocLayout, SelfRecursive, Stmt,
     UpdateModeId,
 };
-use roc_mono::layout::{LambdaName, Layout, Niche, STLayoutInterner};
-use roc_wasm_interp::{wasi, ImportDispatcher, Instance, WasiDispatcher};
-use roc_wasm_module::{Value, WasmModule};
+use broc_mono::layout::{LambdaName, Layout, Niche, STLayoutInterner};
+use broc_wasm_interp::{wasi, ImportDispatcher, Instance, WasiDispatcher};
+use broc_wasm_module::{Value, WasmModule};
 
 const LINKING_TEST_HOST_WASM: &str = "build/wasm_linking_test_host.wasm";
 const LINKING_TEST_HOST_NATIVE: &str = "build/wasm_linking_test_host";
@@ -29,16 +29,16 @@ fn create_symbol(home: ModuleId, ident_ids: &mut IdentIds, debug_name: &str) -> 
     Symbol::new(home, ident_id)
 }
 
-// Build a fake Roc app in mono IR
+// Build a fake Broc app in mono IR
 // Calls two host functions, one Wasm and one JS
 fn build_app_mono<'a>(
     arena: &'a Bump,
     home: ModuleId,
     ident_ids: &mut IdentIds,
-) -> (Symbol, MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>) {
+) -> (Symbol, MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>) {
     let int_layout = Layout::I32;
 
-    let app_proc = create_symbol(home, ident_ids, "app_proc");
+    let app_pbroc = create_symbol(home, ident_ids, "app_pbroc");
     let js_call_result = create_symbol(home, ident_ids, "js_call_result");
     let host_call_result = create_symbol(home, ident_ids, "host_call_result");
     let bitflag = create_symbol(home, ident_ids, "bitflag");
@@ -47,7 +47,7 @@ fn build_app_mono<'a>(
 
     let js_call = Expr::Call(Call {
         call_type: CallType::Foreign {
-            foreign_symbol: ForeignSymbol::from("js_called_directly_from_roc"),
+            foreign_symbol: ForeignSymbol::from("js_called_directly_from_broc"),
             ret_layout: int_layout,
         },
         arguments: &[],
@@ -55,7 +55,7 @@ fn build_app_mono<'a>(
 
     let host_call = Expr::Call(Call {
         call_type: CallType::Foreign {
-            foreign_symbol: ForeignSymbol::from("host_called_directly_from_roc"),
+            foreign_symbol: ForeignSymbol::from("host_called_directly_from_broc"),
             ret_layout: int_layout,
         },
         arguments: &[],
@@ -109,8 +109,8 @@ fn build_app_mono<'a>(
         )),
     );
 
-    let proc = Proc {
-        name: LambdaName::no_niche(app_proc),
+    let pbroc = Pbroc {
+        name: LambdaName::no_niche(app_pbroc),
         args: &[],
         body,
         closure_data_layout: None,
@@ -120,30 +120,30 @@ fn build_app_mono<'a>(
         host_exposed_layouts: HostExposedLayouts::NotHostExposed,
     };
 
-    let proc_layout = ProcLayout {
+    let pbroc_layout = PbrocLayout {
         arguments: &[],
         result: int_layout,
         niche: Niche::NONE,
     };
 
     let mut app = MutMap::default();
-    app.insert((app_proc, proc_layout), proc);
+    app.insert((app_pbroc, pbroc_layout), pbroc);
 
-    (app_proc, app)
+    (app_pbroc, app)
 }
 
 struct BackendInputs<'a> {
     env: Env<'a>,
     interns: Interns,
     host_module: WasmModule<'a>,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
 }
 
 impl<'a> BackendInputs<'a> {
     fn new(arena: &'a Bump) -> Self {
         // Compile the host from an external source file
         let host_bytes = fs::read(LINKING_TEST_HOST_WASM).unwrap();
-        let host_module: WasmModule = roc_gen_wasm::parse_host(arena, &host_bytes).unwrap();
+        let host_module: WasmModule = broc_gen_wasm::parse_host(arena, &host_bytes).unwrap();
 
         // Identifier stuff to build the mono IR
         let module_name = ModuleName::from("UserApp");
@@ -153,9 +153,9 @@ impl<'a> BackendInputs<'a> {
         let mut ident_ids = IdentIds::default();
 
         // IR for the app
-        let (roc_main_sym, procedures) = build_app_mono(arena, module_id, &mut ident_ids);
+        let (broc_main_sym, procedures) = build_app_mono(arena, module_id, &mut ident_ids);
         let mut exposed_to_host = MutSet::default();
-        exposed_to_host.insert(roc_main_sym);
+        exposed_to_host.insert(broc_main_sym);
         let env = Env {
             arena,
             module_id,
@@ -197,8 +197,8 @@ impl ImportDispatcher for TestDispatcher<'_> {
             self.wasi.dispatch(function_name, arguments, memory)
         } else if module_name == "env" {
             match function_name {
-                "js_called_directly_from_roc" => Some(Value::I32(0x01)),
-                "js_called_indirectly_from_roc" => Some(Value::I32(0x02)),
+                "js_called_directly_from_broc" => Some(Value::I32(0x01)),
+                "js_called_indirectly_from_broc" => Some(Value::I32(0x02)),
                 "js_called_directly_from_main" => Some(Value::I32(0x04)),
                 "js_called_indirectly_from_main" => Some(Value::I32(0x08)),
                 "js_unused" => Some(Value::I32(0x10)),
@@ -275,7 +275,7 @@ fn test_help(
 
     assert!(&host_module.names.function_names.is_empty());
 
-    let (mut final_module, called_fns, _roc_main_index) = roc_gen_wasm::build_app_module(
+    let (mut final_module, called_fns, _broc_main_index) = broc_gen_wasm::build_app_module(
         &env,
         &mut layout_interner,
         &mut interns,
@@ -310,11 +310,11 @@ fn test_help(
 const EXPECTED_HOST_IMPORT_NAMES: [&'static str; 9] = [
     "__linear_memory",
     "__stack_pointer",
-    "js_called_indirectly_from_roc",
+    "js_called_indirectly_from_broc",
     "js_unused",
-    "js_called_directly_from_roc",
+    "js_called_directly_from_broc",
     "js_called_directly_from_main",
-    "roc__app_proc_1_exposed",
+    "broc__app_pbroc_1_exposed",
     "js_called_indirectly_from_main",
     "__indirect_function_table",
 ];
@@ -322,17 +322,17 @@ const EXPECTED_HOST_IMPORT_NAMES: [&'static str; 9] = [
 #[test]
 fn test_linking_without_dce() {
     let expected_final_import_names = &[
-        "js_called_indirectly_from_roc",
+        "js_called_indirectly_from_broc",
         "js_unused", // not eliminated
-        "js_called_directly_from_roc",
+        "js_called_directly_from_broc",
         "js_called_directly_from_main",
         "js_called_indirectly_from_main",
     ];
 
     let expected_name_section_start = &[
-        (0, "js_called_indirectly_from_roc"),
+        (0, "js_called_indirectly_from_broc"),
         (1, "js_unused"), // not eliminated
-        (2, "js_called_directly_from_roc"),
+        (2, "js_called_directly_from_broc"),
         (3, "js_called_directly_from_main"),
         (4, "js_called_indirectly_from_main"),
     ];
@@ -352,16 +352,16 @@ fn test_linking_without_dce() {
 #[test]
 fn test_linking_with_dce() {
     let expected_final_import_names = &[
-        "js_called_indirectly_from_roc",
+        "js_called_indirectly_from_broc",
         // "js_unused", // eliminated
-        "js_called_directly_from_roc",
+        "js_called_directly_from_broc",
         "js_called_directly_from_main",
         "js_called_indirectly_from_main",
     ];
 
     let expected_name_section_start = &[
-        (0, "js_called_indirectly_from_roc"),
-        (1, "js_called_directly_from_roc"),    // index changed
+        (0, "js_called_indirectly_from_broc"),
+        (1, "js_called_directly_from_broc"),    // index changed
         (2, "js_called_directly_from_main"),   // index changed
         (3, "js_called_indirectly_from_main"), // index changed
         (4, "js_unused"), // still exists, but now an internal dummy, with index changed

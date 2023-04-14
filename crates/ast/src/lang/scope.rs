@@ -10,15 +10,15 @@ use crate::mem_pool::pool::Pool;
 use crate::mem_pool::pool_str::PoolStr;
 use crate::mem_pool::pool_vec::PoolVec;
 use crate::mem_pool::shallow_clone::ShallowClone;
-use roc_collections::all::{MutMap, MutSet};
-use roc_module::ident::{Ident, Lowercase};
-use roc_module::symbol::{
+use broc_collections::all::{MutMap, MutSet};
+use broc_module::ident::{Ident, Lowercase};
+use broc_module::symbol::{
     get_module_ident_ids, get_module_ident_ids_mut, IdentIds, IdentIdsByModule, Interns, ModuleId,
     Symbol,
 };
-use roc_problem::can::RuntimeError;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarId, VarStore, Variable};
+use broc_problem::can::RuntimeError;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarId, VarStore, Variable};
 
 use super::core::types::{Alias, Type2, TypeId};
 use super::env::Env;
@@ -139,7 +139,7 @@ impl Scope {
 
             let mut free_vars = FreeVars::default();
 
-            // roc_types::solved_types::to_type(&typ, &mut free_vars, var_store);
+            // broc_types::solved_types::to_type(&typ, &mut free_vars, var_store);
             let actual = solved_type_to_type_id(pool, &typ, &mut free_vars, var_store);
 
             // make sure to sort these variables to make them line up with the type arguments

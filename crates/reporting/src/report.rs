@@ -1,8 +1,8 @@
-use roc_module::ident::Ident;
-use roc_module::ident::{Lowercase, ModuleName, TagName, Uppercase};
-use roc_module::symbol::{Interns, ModuleId, ModuleIds, PQModuleName, PackageQualified, Symbol};
-use roc_problem::Severity;
-use roc_region::all::LineColumnRegion;
+use broc_module::ident::Ident;
+use broc_module::ident::{Lowercase, ModuleName, TagName, Uppercase};
+use broc_module::symbol::{Interns, ModuleId, ModuleIds, PQModuleName, PackageQualified, Symbol};
+use broc_problem::Severity;
+use broc_region::all::LineColumnRegion;
 use std::path::{Path, PathBuf};
 use std::{fmt, io};
 use ven_pretty::{BoxAllocator, DocAllocator, DocBuilder, Render, RenderAnnotated};
@@ -30,11 +30,11 @@ const ERROR_UNDERLINE: &str = "^";
 const GUTTER_BAR_WIDTH: usize = 1;
 
 pub fn cycle<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     indent: usize,
-    name: RocDocBuilder<'b>,
-    names: Vec<RocDocBuilder<'b>>,
-) -> RocDocBuilder<'b> {
+    name: BrocDocBuilder<'b>,
+    names: Vec<BrocDocBuilder<'b>>,
+) -> BrocDocBuilder<'b> {
     let mut lines = Vec::with_capacity(4 + (2 * names.len() - 1));
 
     lines.push(alloc.text(CYCLE_TOP));
@@ -110,7 +110,7 @@ pub enum RenderTarget {
 pub struct Report<'b> {
     pub title: String,
     pub filename: PathBuf,
-    pub doc: RocDocBuilder<'b>,
+    pub doc: BrocDocBuilder<'b>,
     pub severity: Severity,
 }
 
@@ -119,7 +119,7 @@ impl<'b> Report<'b> {
         self,
         target: RenderTarget,
         buf: &'b mut String,
-        alloc: &'b RocDocAllocator<'b>,
+        alloc: &'b BrocDocAllocator<'b>,
         palette: &'b Palette,
     ) {
         match target {
@@ -129,7 +129,7 @@ impl<'b> Report<'b> {
     }
 
     /// Render to CI console output, where no colors are available.
-    pub fn render_ci(self, buf: &'b mut String, alloc: &'b RocDocAllocator<'b>) {
+    pub fn render_ci(self, buf: &'b mut String, alloc: &'b BrocDocAllocator<'b>) {
         let err_msg = "<buffer is not a utf-8 encoded string>";
 
         self.pretty(alloc)
@@ -143,7 +143,7 @@ impl<'b> Report<'b> {
     pub fn render_color_terminal(
         self,
         buf: &mut String,
-        alloc: &'b RocDocAllocator<'b>,
+        alloc: &'b BrocDocAllocator<'b>,
         palette: &'b Palette,
     ) {
         let err_msg = "<buffer is not a utf-8 encoded string>";
@@ -154,7 +154,7 @@ impl<'b> Report<'b> {
             .expect(err_msg);
     }
 
-    pub fn pretty(self, alloc: &'b RocDocAllocator<'b>) -> RocDocBuilder<'b> {
+    pub fn pretty(self, alloc: &'b BrocDocAllocator<'b>) -> BrocDocBuilder<'b> {
         if self.title.is_empty() {
             self.doc
         } else {
@@ -284,17 +284,17 @@ pub const HTML_STYLE_CODES: StyleCodes = StyleCodes {
     color_reset: "</span>",
 };
 
-// define custom allocator struct so we can `impl RocDocAllocator` custom helpers
-pub struct RocDocAllocator<'a> {
+// define custom allocator struct so we can `impl BrocDocAllocator` custom helpers
+pub struct BrocDocAllocator<'a> {
     upstream: BoxAllocator,
     pub src_lines: &'a [&'a str],
     pub home: ModuleId,
     pub interns: &'a Interns,
 }
 
-pub type RocDocBuilder<'b> = DocBuilder<'b, RocDocAllocator<'b>, Annotation>;
+pub type BrocDocBuilder<'b> = DocBuilder<'b, BrocDocAllocator<'b>, Annotation>;
 
-impl<'a, A> DocAllocator<'a, A> for RocDocAllocator<'a>
+impl<'a, A> DocAllocator<'a, A> for BrocDocAllocator<'a>
 where
     A: 'a,
 {
@@ -319,9 +319,9 @@ where
     }
 }
 
-impl<'a> RocDocAllocator<'a> {
+impl<'a> BrocDocAllocator<'a> {
     pub fn new(src_lines: &'a [&'a str], home: ModuleId, interns: &'a Interns) -> Self {
-        RocDocAllocator {
+        BrocDocAllocator {
             upstream: BoxAllocator,
             home,
             src_lines,
@@ -481,7 +481,7 @@ impl<'a> RocDocAllocator<'a> {
 
     pub fn binop(
         &'a self,
-        content: roc_module::called_via::BinOp,
+        content: broc_module::called_via::BinOp,
     ) -> DocBuilder<'a, Self, Annotation> {
         self.text(content.to_string()).annotate(Annotation::BinOp)
     }
@@ -1088,7 +1088,7 @@ pub fn to_file_problem_report_string(filename: &Path, error: io::ErrorKind) -> S
     let interns = Interns::default();
 
     // Report parsing and canonicalization problems
-    let alloc = RocDocAllocator::new(&src_lines, module_id, &interns);
+    let alloc = BrocDocAllocator::new(&src_lines, module_id, &interns);
 
     let mut buf = String::new();
     let palette = DEFAULT_PALETTE;
@@ -1099,7 +1099,7 @@ pub fn to_file_problem_report_string(filename: &Path, error: io::ErrorKind) -> S
 }
 
 pub fn to_file_problem_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     filename: &Path,
     error: io::ErrorKind,
 ) -> Report<'b> {
@@ -1119,7 +1119,7 @@ pub fn to_file_problem_report<'b>(
             ]);
 
             Report {
-                filename: "UNKNOWN.roc".into(),
+                filename: "UNKNOWN.broc".into(),
                 doc,
                 title: "FILE NOT FOUND".to_string(),
                 severity: Severity::Fatal,
@@ -1137,7 +1137,7 @@ pub fn to_file_problem_report<'b>(
             ]);
 
             Report {
-                filename: "UNKNOWN.roc".into(),
+                filename: "UNKNOWN.broc".into(),
                 doc,
                 title: "FILE PERMISSION DENIED".to_string(),
                 severity: Severity::Fatal,
@@ -1154,7 +1154,7 @@ pub fn to_file_problem_report<'b>(
             ]);
 
             Report {
-                filename: "UNKNOWN.roc".into(),
+                filename: "UNKNOWN.broc".into(),
                 doc,
                 title: "FILE PROBLEM".to_string(),
                 severity: Severity::Fatal,

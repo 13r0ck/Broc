@@ -1,27 +1,27 @@
-//! Crate roc_late_solve exposes type unification and solving primitives from the perspective of
+//! Crate broc_late_solve exposes type unification and solving primitives from the perspective of
 //! the compiler backend.
 
 use std::sync::{Arc, RwLock};
 
 use bumpalo::Bump;
-use roc_can::abilities::AbilitiesStore;
-use roc_can::module::ExposedByModule;
-use roc_collections::MutMap;
-use roc_derive::SharedDerivedModule;
-use roc_error_macros::internal_error;
-use roc_module::symbol::ModuleId;
-use roc_module::symbol::Symbol;
-use roc_solve::ability::AbilityResolver;
-use roc_solve::solve::Pools;
-use roc_solve::specialize::{compact_lambda_sets_of_vars, DerivedEnv, Phase};
-use roc_types::subs::{get_member_lambda_sets_at_region, Content, FlatType, LambdaSet};
-use roc_types::subs::{ExposedTypesStorageSubs, Subs, Variable};
-use roc_types::types::Polarity;
-use roc_unify::unify::MetaCollector;
-use roc_unify::unify::{Env, Mode, Unified};
+use broc_can::abilities::AbilitiesStore;
+use broc_can::module::ExposedByModule;
+use broc_collections::MutMap;
+use broc_derive::SharedDerivedModule;
+use broc_error_macros::internal_error;
+use broc_module::symbol::ModuleId;
+use broc_module::symbol::Symbol;
+use broc_solve::ability::AbilityResolver;
+use broc_solve::solve::Pools;
+use broc_solve::specialize::{compact_lambda_sets_of_vars, DerivedEnv, Phase};
+use broc_types::subs::{get_member_lambda_sets_at_region, Content, FlatType, LambdaSet};
+use broc_types::subs::{ExposedTypesStorageSubs, Subs, Variable};
+use broc_types::types::Polarity;
+use broc_unify::unify::MetaCollector;
+use broc_unify::unify::{Env, Mode, Unified};
 
-pub use roc_solve::ability::{ResolveError, Resolved};
-pub use roc_types::subs::instantiate_rigids;
+pub use broc_solve::ability::{ResolveError, Resolved};
+pub use broc_types::subs::instantiate_rigids;
 
 pub mod storage;
 
@@ -110,9 +110,9 @@ pub struct LateResolver<'a> {
 impl<'a> AbilityResolver for LateResolver<'a> {
     fn member_parent_and_signature_var(
         &self,
-        ability_member: roc_module::symbol::Symbol,
+        ability_member: broc_module::symbol::Symbol,
         home_subs: &mut Subs,
-    ) -> Option<(roc_module::symbol::Symbol, Variable)> {
+    ) -> Option<(broc_module::symbol::Symbol, Variable)> {
         let (parent_ability, signature_var) =
             self.abilities
                 .with_module_abilities_store(ability_member.module_id(), |store| {
@@ -146,8 +146,8 @@ impl<'a> AbilityResolver for LateResolver<'a> {
 
     fn get_implementation(
         &self,
-        impl_key: roc_can::abilities::ImplKey,
-    ) -> Option<roc_types::types::MemberImpl> {
+        impl_key: broc_can::abilities::ImplKey,
+    ) -> Option<broc_types::types::MemberImpl> {
         self.abilities
             .with_module_abilities_store(impl_key.opaque.module_id(), |store| {
                 store.get_implementation(impl_key).copied()
@@ -163,7 +163,7 @@ pub fn resolve_ability_specialization(
     specialization_var: Variable,
 ) -> Result<Resolved, ResolveError> {
     let late_resolver = LateResolver { home, abilities };
-    roc_solve::ability::resolve_ability_specialization(
+    broc_solve::ability::resolve_ability_specialization(
         subs,
         &late_resolver,
         ability_member,
@@ -239,7 +239,7 @@ impl Phase for LatePhase<'_> {
     #[inline(always)]
     fn get_and_copy_ability_member_ambient_function(
         &self,
-        ability_member: roc_module::symbol::Symbol,
+        ability_member: broc_module::symbol::Symbol,
         region: u8,
         target_subs: &mut Subs,
     ) -> Variable {
@@ -358,7 +358,7 @@ pub fn unify(
         ModuleId::DERIVED_SYNTH,
         "derived module can only unify its subs in its own context!"
     );
-    let unified = roc_unify::unify::unify_with_collector::<ChangedVariableCollector>(
+    let unified = broc_unify::unify::unify_with_collector::<ChangedVariableCollector>(
         &mut Env::new(subs),
         left,
         right,
@@ -391,7 +391,7 @@ pub fn unify(
             );
             // At this point we can't do anything with must-implement constraints, since we're no
             // longer solving. We must assume that they were totally caught during solving.
-            // After we land https://github.com/roc-lang/roc/issues/3207 this concern should totally
+            // After we land https://github.com/roc-lang/broc/issues/3207 this concern should totally
             // go away.
             let _ = must_implement_constraints;
             // Pools are only used to keep track of variable ranks for generalization purposes.

@@ -1,6 +1,6 @@
 [package]
-name = "roc_gen_wasm"
-description = "Provides the WASM backend to generate Roc binaries."
+name = "broc_gen_wasm"
+description = "Provides the WASM backend to generate Broc binaries."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,14 +8,14 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_builtins = { path = "../builtins" }
-roc_collections = { path = "../collections" }
-roc_error_macros = { path = "../../error_macros" }
-roc_module = { path = "../module" }
-roc_mono = { path = "../mono" }
-roc_std = { path = "../../roc_std" }
-roc_target = { path = "../roc_target" }
-roc_wasm_module = { path = "../../wasm_module" }
+broc_builtins = { path = "../builtins" }
+broc_collections = { path = "../collections" }
+broc_error_macros = { path = "../../error_macros" }
+broc_module = { path = "../module" }
+broc_mono = { path = "../mono" }
+broc_std = { path = "../../broc_std" }
+broc_target = { path = "../broc_target" }
+broc_wasm_module = { path = "../../wasm_module" }
 
 bitvec.workspace = true
 bumpalo.workspace = true

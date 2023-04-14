@@ -1,6 +1,6 @@
-use roc_module::{ident::Ident, module_err::ModuleError};
-use roc_parse::parser::SyntaxError;
-use roc_region::all::{Loc, Region};
+use broc_module::{ident::Ident, module_err::ModuleError};
+use broc_parse::parser::SyntaxError;
+use broc_region::all::{Loc, Region};
 use snafu::{Backtrace, Snafu};
 
 use crate::lang::core::ast::ASTNodeId;

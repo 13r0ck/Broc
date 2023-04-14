@@ -1,7 +1,7 @@
 /// Helpers for interacting with the zig that generates bitcode
 use crate::debug_info_init;
 use crate::llvm::build::{
-    complex_bitcast_check_size, load_roc_value, struct_from_fields, to_cc_return, CCReturn, Env,
+    complex_bitcast_check_size, load_broc_value, struct_from_fields, to_cc_return, CCReturn, Env,
     C_CALL_CONV, FAST_CALL_CONV,
 };
 use crate::llvm::convert::basic_type_from_layout;
@@ -15,9 +15,9 @@ use inkwell::values::{
     StructValue,
 };
 use inkwell::AddressSpace;
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{
     Builtin, InLayout, LambdaSet, Layout, LayoutIds, LayoutInterner, STLayoutInterner,
 };
 
@@ -62,7 +62,7 @@ fn call_bitcode_fn_help<'a, 'ctx, 'env>(
     let fn_val = env
         .module
         .get_function(fn_name)
-        .unwrap_or_else(|| panic!("Unrecognized builtin function: {:?} - if you're working on the Roc compiler, do you need to rebuild the bitcode? See compiler/builtins/bitcode/README.md", fn_name));
+        .unwrap_or_else(|| panic!("Unrecognized builtin function: {:?} - if you're working on the Broc compiler, do you need to rebuild the bitcode? See compiler/builtins/bitcode/README.md", fn_name));
 
     let call = env.builder.build_call(fn_val, &arguments, "call_builtin");
 
@@ -112,7 +112,7 @@ pub fn call_bitcode_fn_fixing_for_convention<'a, 'ctx, 'env>(
         }
         CCReturn::ByPointer => {
             // We need to pass the return value by pointer.
-            let roc_return_type = basic_type_from_layout(env, layout_interner, return_layout);
+            let broc_return_type = basic_type_from_layout(env, layout_interner, return_layout);
 
             let cc_return_type: BasicTypeEnum<'ctx> = bitcode_return_type.into();
 
@@ -135,16 +135,16 @@ pub fn call_bitcode_fn_fixing_for_convention<'a, 'ctx, 'env>(
             let cc_return_value =
                 env.builder
                     .new_build_load(cc_return_type, cc_return_value_ptr, "read_result");
-            if roc_return_type.size_of() == cc_return_type.size_of() {
+            if broc_return_type.size_of() == cc_return_type.size_of() {
                 cc_return_value
             } else {
-                // We need to convert the C-callconv return type, which may be larger than the Roc
-                // return type, into the Roc return type.
+                // We need to convert the C-callconv return type, which may be larger than the Broc
+                // return type, into the Broc return type.
                 complex_bitcast_check_size(
                     env,
                     cc_return_value,
-                    roc_return_type,
-                    "c_value_to_roc_value",
+                    broc_return_type,
+                    "c_value_to_broc_value",
                 )
             }
         }
@@ -195,7 +195,7 @@ pub(crate) fn build_transform_caller<'a, 'ctx, 'env>(
 fn build_transform_caller_help<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     closure_data_layout: LambdaSet<'a>,
     argument_layouts: &[InLayout<'a>],
     result_layout: InLayout<'a>,
@@ -252,7 +252,7 @@ fn build_transform_caller_help<'a, 'ctx, 'env>(
             "cast_ptr_to_tag_build_transform_caller_help",
         );
 
-        let argument = load_roc_value(
+        let argument = load_broc_value(
             env,
             layout_interner,
             *layout,
@@ -281,16 +281,16 @@ fn build_transform_caller_help<'a, 'ctx, 'env>(
                     .build_pointer_cast(closure_ptr, closure_type, "cast_opaque_closure");
 
             let closure_data =
-                load_roc_value(env, layout_interner, layout, closure_cast, "load_closure");
+                load_broc_value(env, layout_interner, layout, closure_cast, "load_closure");
 
             arguments_cast.push(closure_data);
         }
     }
 
-    let result = crate::llvm::build::call_roc_function(
+    let result = crate::llvm::build::call_broc_function(
         env,
         layout_interner,
-        roc_function,
+        broc_function,
         result_layout,
         arguments_cast.as_slice(),
     );
@@ -300,7 +300,7 @@ fn build_transform_caller_help<'a, 'ctx, 'env>(
         .unwrap()
         .into_pointer_value();
 
-    crate::llvm::build::store_roc_value_opaque(
+    crate::llvm::build::store_broc_value_opaque(
         env,
         layout_interner,
         result_layout,
@@ -415,9 +415,9 @@ fn build_rc_wrapper<'a, 'ctx, 'env>(
                 env.builder
                     .build_pointer_cast(generic_value_ptr, value_ptr_type, "load_opaque");
 
-            // even though this looks like a `load_roc_value`, that gives segfaults in practice.
+            // even though this looks like a `load_broc_value`, that gives segfaults in practice.
             // I suspect it has something to do with the lifetime of the alloca that is created by
-            // `load_roc_value`
+            // `load_broc_value`
             let value = if layout_interner.is_passed_by_reference(layout) {
                 value_ptr.into()
             } else {
@@ -510,9 +510,9 @@ pub fn build_eq_wrapper<'a, 'ctx, 'env>(
                 .builder
                 .build_pointer_cast(value_ptr2, value_type, "load_opaque");
 
-            // load_roc_value(env, *element_layout, elem_ptr, "get_elem")
-            let value1 = load_roc_value(env, layout_interner, layout, value_cast1, "load_opaque");
-            let value2 = load_roc_value(env, layout_interner, layout, value_cast2, "load_opaque");
+            // load_broc_value(env, *element_layout, elem_ptr, "get_elem")
+            let value1 = load_broc_value(env, layout_interner, layout, value_cast1, "load_opaque");
+            let value2 = load_broc_value(env, layout_interner, layout, value_cast2, "load_opaque");
 
             let result = crate::llvm::compare::generic_eq(
                 env,
@@ -539,7 +539,7 @@ pub fn build_eq_wrapper<'a, 'ctx, 'env>(
 pub fn build_compare_wrapper<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     closure_data_layout: LambdaSet<'a>,
     layout: InLayout<'a>,
 ) -> FunctionValue<'ctx> {
@@ -548,7 +548,7 @@ pub fn build_compare_wrapper<'a, 'ctx, 'env>(
 
     let fn_name: &str = &format!(
         "{}_compare_wrapper",
-        roc_function.get_name().to_string_lossy()
+        broc_function.get_name().to_string_lossy()
     );
 
     let function_value = match env.module.get_function(fn_name) {
@@ -639,7 +639,7 @@ pub fn build_compare_wrapper<'a, 'ctx, 'env>(
             };
 
             let call = env.builder.build_call(
-                roc_function,
+                broc_function,
                 arguments_cast,
                 "call_user_defined_compare_function",
             );
@@ -756,9 +756,9 @@ impl BitcodeReturns {
 
         match self {
             BitcodeReturns::List => {
-                receive_zig_roc_list_32bit(env, value.into_struct_value()).into()
+                receive_zig_broc_list_32bit(env, value.into_struct_value()).into()
             }
-            BitcodeReturns::Str => receive_zig_roc_str_32bit(env, value.into_struct_value()).into(),
+            BitcodeReturns::Str => receive_zig_broc_str_32bit(env, value.into_struct_value()).into(),
             BitcodeReturns::Basic => value,
         }
     }
@@ -807,8 +807,8 @@ fn ptr_len_cap<'a, 'ctx, 'env>(
     (ptr, len, cap)
 }
 
-/// Converts the { i64, i32 } struct that zig returns into `list.RocList = type { i8*, i32, i32 }`
-fn receive_zig_roc_list_32bit<'a, 'ctx, 'env>(
+/// Converts the { i64, i32 } struct that zig returns into `list.BrocList = type { i8*, i32, i32 }`
+fn receive_zig_broc_list_32bit<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     value: StructValue<'ctx>,
 ) -> StructValue<'ctx> {
@@ -823,8 +823,8 @@ fn receive_zig_roc_list_32bit<'a, 'ctx, 'env>(
     )
 }
 
-/// Converts the { i64, i32 } struct that zig returns into `list.RocList = type { i8*, i32, i32 }`
-fn receive_zig_roc_str_32bit<'a, 'ctx, 'env>(
+/// Converts the { i64, i32 } struct that zig returns into `list.BrocList = type { i8*, i32, i32 }`
+fn receive_zig_broc_str_32bit<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     value: StructValue<'ctx>,
 ) -> StructValue<'ctx> {
@@ -917,7 +917,7 @@ pub(crate) fn call_str_bitcode_fn<'a, 'ctx, 'env>(
     use bumpalo::collections::Vec;
 
     match env.target_info.ptr_width() {
-        roc_target::PtrWidth::Bytes4 => {
+        broc_target::PtrWidth::Bytes4 => {
             let mut arguments: Vec<BasicValueEnum> =
                 Vec::with_capacity_in(other_arguments.len() + 2 * strings.len(), env.arena);
 
@@ -931,7 +931,7 @@ pub(crate) fn call_str_bitcode_fn<'a, 'ctx, 'env>(
 
             returns.call_and_load_32bit(env, &arguments, fn_name)
         }
-        roc_target::PtrWidth::Bytes8 => {
+        broc_target::PtrWidth::Bytes8 => {
             let capacity = other_arguments.len() + strings.len() + returns.additional_arguments();
             let mut arguments: Vec<BasicValueEnum> = Vec::with_capacity_in(capacity, env.arena);
 
@@ -958,7 +958,7 @@ pub(crate) fn call_list_bitcode_fn<'a, 'ctx, 'env>(
     use bumpalo::collections::Vec;
 
     match env.target_info.ptr_width() {
-        roc_target::PtrWidth::Bytes4 => {
+        broc_target::PtrWidth::Bytes4 => {
             let mut arguments: Vec<BasicValueEnum> =
                 Vec::with_capacity_in(other_arguments.len() + 2 * lists.len(), env.arena);
 
@@ -972,7 +972,7 @@ pub(crate) fn call_list_bitcode_fn<'a, 'ctx, 'env>(
 
             returns.call_and_load_32bit(env, &arguments, fn_name)
         }
-        roc_target::PtrWidth::Bytes8 => {
+        broc_target::PtrWidth::Bytes8 => {
             let capacity = other_arguments.len() + lists.len() + returns.additional_arguments();
             let mut arguments: Vec<BasicValueEnum> = Vec::with_capacity_in(capacity, env.arena);
 

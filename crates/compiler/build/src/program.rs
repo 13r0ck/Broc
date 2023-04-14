@@ -3,20 +3,20 @@ use crate::link::{
 };
 use bumpalo::Bump;
 use inkwell::memory_buffer::MemoryBuffer;
-use roc_error_macros::internal_error;
-use roc_gen_llvm::llvm::build::{module_from_builtins, LlvmBackendMode};
-use roc_gen_llvm::llvm::externs::add_default_roc_externs;
-use roc_load::{
+use broc_error_macros::internal_error;
+use broc_gen_llvm::llvm::build::{module_from_builtins, LlvmBackendMode};
+use broc_gen_llvm::llvm::externs::add_default_broc_externs;
+use broc_load::{
     EntryPoint, ExecutionMode, ExpectMetadata, LoadConfig, LoadMonomorphizedError, LoadedModule,
     LoadingProblem, MonomorphizedModule, Threading,
 };
-use roc_mono::ir::{OptLevel, SingleEntryPoint};
-use roc_packaging::cache::RocCacheDir;
-use roc_reporting::{
+use broc_mono::ir::{OptLevel, SingleEntryPoint};
+use broc_packaging::cache::BrocCacheDir;
+use broc_reporting::{
     cli::{report_problems, Problems},
     report::{RenderTarget, DEFAULT_PALETTE},
 };
-use roc_target::TargetInfo;
+use broc_target::TargetInfo;
 use std::ffi::OsStr;
 use std::ops::Deref;
 use std::{
@@ -27,9 +27,9 @@ use std::{
 use target_lexicon::Triple;
 
 #[cfg(feature = "target-wasm32")]
-use roc_collections::all::MutSet;
+use broc_collections::all::MutSet;
 
-pub const DEFAULT_ROC_FILENAME: &str = "main.roc";
+pub const DEFAULT_ROC_FILENAME: &str = "main.broc";
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CodeGenTiming {
@@ -92,13 +92,13 @@ type GenFromMono<'a> = (CodeObject, CodeGenTiming, ExpectMetadata<'a>);
 pub fn gen_from_mono_module<'a>(
     arena: &'a bumpalo::Bump,
     loaded: MonomorphizedModule<'a>,
-    roc_file_path: &Path,
+    broc_file_path: &Path,
     target: &target_lexicon::Triple,
     code_gen_options: CodeGenOptions,
     preprocessed_host_path: &Path,
     wasm_dev_stack_bytes: Option<u32>,
 ) -> GenFromMono<'a> {
-    let path = roc_file_path;
+    let path = broc_file_path;
     let debug = code_gen_options.emit_debug_info;
     let opt = code_gen_options.opt_level;
 
@@ -132,7 +132,7 @@ pub fn gen_from_mono_module<'a>(
 fn gen_from_mono_module_llvm<'a>(
     arena: &'a bumpalo::Bump,
     mut loaded: MonomorphizedModule<'a>,
-    roc_file_path: &Path,
+    broc_file_path: &Path,
     target: &target_lexicon::Triple,
     opt_level: OptLevel,
     backend_mode: LlvmBackendMode,
@@ -147,7 +147,7 @@ fn gen_from_mono_module_llvm<'a>(
     let code_gen_start = Instant::now();
 
     // Generate the binary
-    let target_info = roc_target::TargetInfo::from(target);
+    let target_info = broc_target::TargetInfo::from(target);
     let context = Context::create();
     let module = arena.alloc(module_from_builtins(target, &context, "app"));
 
@@ -156,7 +156,7 @@ fn gen_from_mono_module_llvm<'a>(
 
     // mark our zig-defined builtins as internal
     let app_ll_file = {
-        let mut temp = PathBuf::from(roc_file_path);
+        let mut temp = PathBuf::from(broc_file_path);
         temp.set_extension("ll");
 
         temp
@@ -170,15 +170,15 @@ fn gen_from_mono_module_llvm<'a>(
         let name = function.get_name().to_str().unwrap();
 
         // mark our zig-defined builtins as internal
-        if name.starts_with("roc_builtins") {
+        if name.starts_with("broc_builtins") {
             function.set_linkage(Linkage::Internal);
         }
 
-        if name.starts_with("roc_builtins.dict")
-            || name.starts_with("roc_builtins.list")
-            || name.starts_with("roc_builtins.dec")
-            || name.starts_with("list.RocList")
-            || name.starts_with("dict.RocDict")
+        if name.starts_with("broc_builtins.dict")
+            || name.starts_with("broc_builtins.list")
+            || name.starts_with("broc_builtins.dec")
+            || name.starts_with("list.BrocList")
+            || name.starts_with("dict.BrocDict")
             || name.contains("incref")
             || name.contains("decref")
         {
@@ -187,11 +187,11 @@ fn gen_from_mono_module_llvm<'a>(
     }
 
     let builder = context.create_builder();
-    let (dibuilder, compile_unit) = roc_gen_llvm::llvm::build::Env::new_debug_info(module);
-    let (mpm, _fpm) = roc_gen_llvm::llvm::build::construct_optimization_passes(module, opt_level);
+    let (dibuilder, compile_unit) = broc_gen_llvm::llvm::build::Env::new_debug_info(module);
+    let (mpm, _fpm) = broc_gen_llvm::llvm::build::construct_optimization_passes(module, opt_level);
 
-    // Compile and add all the Procs before adding main
-    let env = roc_gen_llvm::llvm::build::Env {
+    // Compile and add all the Pbrocs before adding main
+    let env = broc_gen_llvm::llvm::build::Env {
         arena,
         builder: &builder,
         dibuilder: &dibuilder,
@@ -212,7 +212,7 @@ fn gen_from_mono_module_llvm<'a>(
 
     // does not add any externs for this mode (we have a host) but cleans up some functions around
     // expects that would confuse the surgical linker
-    add_default_roc_externs(&env);
+    add_default_broc_externs(&env);
 
     let entry_point = match loaded.entry_point {
         EntryPoint::Executable {
@@ -223,12 +223,12 @@ fn gen_from_mono_module_llvm<'a>(
             debug_assert_eq!(exposed_to_host.len(), 1);
             let (symbol, layout) = exposed_to_host[0];
 
-            roc_mono::ir::EntryPoint::Single(SingleEntryPoint { symbol, layout })
+            broc_mono::ir::EntryPoint::Single(SingleEntryPoint { symbol, layout })
         }
-        EntryPoint::Test => roc_mono::ir::EntryPoint::Expects { symbols: &[] },
+        EntryPoint::Test => broc_mono::ir::EntryPoint::Expects { symbols: &[] },
     };
 
-    roc_gen_llvm::llvm::build::build_procedures(
+    broc_gen_llvm::llvm::build::build_procedures(
         &env,
         &mut loaded.layout_interner,
         opt_level,
@@ -358,10 +358,10 @@ fn gen_from_mono_module_llvm<'a>(
     } else if emit_debug_info {
         module.strip_debug_info();
 
-        let mut app_ll_dbg_file = PathBuf::from(roc_file_path);
+        let mut app_ll_dbg_file = PathBuf::from(broc_file_path);
         app_ll_dbg_file.set_extension("dbg.ll");
 
-        let mut app_o_file = PathBuf::from(roc_file_path);
+        let mut app_o_file = PathBuf::from(broc_file_path);
         app_o_file.set_extension("o");
 
         use std::process::Command;
@@ -517,11 +517,11 @@ fn gen_from_mono_module_dev_wasm32<'a>(
         .copied()
         .collect::<MutSet<_>>();
 
-    let env = roc_gen_wasm::Env {
+    let env = broc_gen_wasm::Env {
         arena,
         module_id,
         exposed_to_host,
-        stack_bytes: wasm_dev_stack_bytes.unwrap_or(roc_gen_wasm::Env::DEFAULT_STACK_BYTES),
+        stack_bytes: wasm_dev_stack_bytes.unwrap_or(broc_gen_wasm::Env::DEFAULT_STACK_BYTES),
     };
 
     let host_bytes = std::fs::read(preprocessed_host_path).unwrap_or_else(|_| {
@@ -531,7 +531,7 @@ fn gen_from_mono_module_dev_wasm32<'a>(
         )
     });
 
-    let host_module = roc_gen_wasm::parse_host(arena, &host_bytes).unwrap_or_else(|e| {
+    let host_module = broc_gen_wasm::parse_host(arena, &host_bytes).unwrap_or_else(|e| {
         internal_error!(
             "I ran into a problem with the host object file, {} at offset 0x{:x}:\n{}",
             preprocessed_host_path.display(),
@@ -540,7 +540,7 @@ fn gen_from_mono_module_dev_wasm32<'a>(
         )
     });
 
-    let final_binary_bytes = roc_gen_wasm::build_app_binary(
+    let final_binary_bytes = broc_gen_wasm::build_app_binary(
         &env,
         &mut layout_interner,
         &mut interns,
@@ -580,7 +580,7 @@ fn gen_from_mono_module_dev_assembly<'a>(
         ..
     } = loaded;
 
-    let env = roc_gen_dev::Env {
+    let env = broc_gen_dev::Env {
         arena,
         module_id,
         exposed_to_host: exposed_to_host.top_level_values.keys().copied().collect(),
@@ -589,7 +589,7 @@ fn gen_from_mono_module_dev_assembly<'a>(
     };
 
     let module_object =
-        roc_gen_dev::build_module(&env, &mut interns, &mut layout_interner, target, procedures);
+        broc_gen_dev::build_module(&env, &mut interns, &mut layout_interner, target, procedures);
 
     let code_gen = code_gen_start.elapsed();
 
@@ -630,7 +630,7 @@ pub struct BuiltFile<'a> {
 pub enum BuildOrdering {
     /// Run up through typechecking first; continue building iff that is successful.
     BuildIfChecks,
-    /// Always build the Roc binary, even if there are type errors.
+    /// Always build the Broc binary, even if there are type errors.
     AlwaysBuild,
 }
 
@@ -659,7 +659,7 @@ impl<'a> BuildFileError<'a> {
 }
 
 pub fn handle_error_module(
-    mut module: roc_load::LoadedModule,
+    mut module: broc_load::LoadedModule,
     total_time: std::time::Duration,
     filename: &OsStr,
     print_run_anyway_hint: bool,
@@ -671,9 +671,9 @@ pub fn handle_error_module(
     problems.print_to_stdout(total_time);
 
     if print_run_anyway_hint {
-        // If you're running "main.roc" then you can just do `roc run`
+        // If you're running "main.broc" then you can just do `broc run`
         // to re-run the program.
-        print!(".\n\nYou can run the program anyway with \x1B[32mroc run");
+        print!(".\n\nYou can run the program anyway with \x1B[32mbroc run");
 
         if filename != DEFAULT_ROC_FILENAME {
             print!(" {}", &filename.to_string_lossy());
@@ -732,14 +732,14 @@ pub fn build_file<'a>(
     linking_strategy: LinkingStrategy,
     prebuilt_requested: bool,
     wasm_dev_stack_bytes: Option<u32>,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     load_config: LoadConfig,
 ) -> Result<BuiltFile<'a>, BuildFileError<'a>> {
     let compilation_start = Instant::now();
 
     // Step 1: compile the app and generate the .o file
     let loaded =
-        roc_load::load_and_monomorphize(arena, app_module_path.clone(), roc_cache_dir, load_config)
+        broc_load::load_and_monomorphize(arena, app_module_path.clone(), broc_cache_dir, load_config)
             .map_err(|e| BuildFileError::from_mono_error(e, compilation_start))?;
 
     build_loaded_file(
@@ -768,27 +768,27 @@ fn build_loaded_file<'a>(
     linking_strategy: LinkingStrategy,
     prebuilt_requested: bool,
     wasm_dev_stack_bytes: Option<u32>,
-    loaded: roc_load::MonomorphizedModule<'a>,
+    loaded: broc_load::MonomorphizedModule<'a>,
     compilation_start: Instant,
 ) -> Result<BuiltFile<'a>, BuildFileError<'a>> {
-    let operating_system = roc_target::OperatingSystem::from(target.operating_system);
+    let operating_system = broc_target::OperatingSystem::from(target.operating_system);
 
-    let platform_main_roc = match &loaded.entry_point {
+    let platform_main_broc = match &loaded.entry_point {
         EntryPoint::Executable { platform_path, .. } => platform_path.to_path_buf(),
         _ => unreachable!(),
     };
 
-    // the preprocessed host is stored beside the platform's main.roc
+    // the preprocessed host is stored beside the platform's main.broc
     let preprocessed_host_path = if linking_strategy == LinkingStrategy::Legacy {
-        if let roc_target::OperatingSystem::Wasi = operating_system {
+        if let broc_target::OperatingSystem::Wasi = operating_system {
             // when compiling a wasm application, we implicitly assume here that the host is in zig
             // and has a file called "host.zig"
-            platform_main_roc.with_file_name("host.zig")
+            platform_main_broc.with_file_name("host.zig")
         } else {
-            platform_main_roc.with_file_name(legacy_host_filename(target).unwrap())
+            platform_main_broc.with_file_name(legacy_host_filename(target).unwrap())
         }
     } else {
-        platform_main_roc.with_file_name(roc_linker::preprocessed_host_filename(target).unwrap())
+        platform_main_broc.with_file_name(broc_linker::preprocessed_host_filename(target).unwrap())
     };
 
     // For example, if we're loading the platform from a URL, it's automatically prebuilt
@@ -825,7 +825,7 @@ fn build_loaded_file<'a>(
         // Also, we should no longer need to do this once we have platforms on
         // a package repository, as we can then get prebuilt platforms from there.
 
-        let dll_stub_symbols = roc_linker::ExposedSymbols::from_exposed_to_host(
+        let dll_stub_symbols = broc_linker::ExposedSymbols::from_exposed_to_host(
             &loaded.interns,
             &loaded.exposed_to_host,
         );
@@ -833,7 +833,7 @@ fn build_loaded_file<'a>(
         let join_handle = spawn_rebuild_thread(
             code_gen_options.opt_level,
             linking_strategy,
-            platform_main_roc.clone(),
+            platform_main_broc.clone(),
             preprocessed_host_path.clone(),
             output_exe_path.clone(),
             target,
@@ -900,7 +900,7 @@ fn build_loaded_file<'a>(
         None
     };
 
-    let (roc_app_bytes, code_gen_timing, expect_metadata) = gen_from_mono_module(
+    let (broc_app_bytes, code_gen_timing, expect_metadata) = gen_from_mono_module(
         arena,
         loaded,
         &app_module_path,
@@ -922,7 +922,7 @@ fn build_loaded_file<'a>(
     );
 
     let compilation_end = compilation_start.elapsed();
-    let size = roc_app_bytes.len();
+    let size = broc_app_bytes.len();
 
     if emit_timings {
         println!(
@@ -953,29 +953,29 @@ fn build_loaded_file<'a>(
 
     match (linking_strategy, link_type) {
         (LinkingStrategy::Surgical, _) => {
-            roc_linker::link_preprocessed_host(
+            broc_linker::link_preprocessed_host(
                 target,
-                &platform_main_roc,
-                &roc_app_bytes,
+                &platform_main_broc,
+                &broc_app_bytes,
                 &output_exe_path,
             );
         }
         (LinkingStrategy::Additive, _) | (LinkingStrategy::Legacy, LinkType::None) => {
             // Just copy the object file to the output folder.
             output_exe_path.set_extension(operating_system.object_file_ext());
-            std::fs::write(&output_exe_path, &*roc_app_bytes).unwrap();
+            std::fs::write(&output_exe_path, &*broc_app_bytes).unwrap();
         }
         (LinkingStrategy::Legacy, _) => {
             let app_o_file = tempfile::Builder::new()
-                .prefix("roc_app")
+                .prefix("broc_app")
                 .suffix(&format!(".{}", operating_system.object_file_ext()))
                 .tempfile()
                 .map_err(|err| todo!("TODO Gracefully handle tempfile creation error {:?}", err))?;
             let app_o_file = app_o_file.path();
 
-            std::fs::write(app_o_file, &*roc_app_bytes).unwrap();
+            std::fs::write(app_o_file, &*broc_app_bytes).unwrap();
 
-            let builtins_host_tempfile = roc_bitcode::host_tempfile()
+            let builtins_host_tempfile = broc_bitcode::host_tempfile()
                 .expect("failed to write host builtins object to tempfile");
 
             let mut inputs = vec![app_o_file.to_str().unwrap()];
@@ -1033,7 +1033,7 @@ fn invalid_prebuilt_platform(prebuilt_requested: bool, preprocessed_host_path: P
 
     let preprocessed_host_path_str = preprocessed_host_path.to_string_lossy();
     let extra_err_msg = if preprocessed_host_path_str.ends_with(".rh") {
-        "\n\n\tNote: If the platform does have an .rh1 file but no .rh file, it's because it's been built with an older version of roc. Contact the author to release a new build of the platform using a roc release newer than March 21 2023.\n"
+        "\n\n\tNote: If the platform does have an .rh1 file but no .rh file, it's because it's been built with an older version of broc. Contact the author to release a new build of the platform using a broc release newer than March 21 2023.\n"
     } else {
         ""
     };
@@ -1060,7 +1060,7 @@ fn invalid_prebuilt_platform(prebuilt_requested: bool, preprocessed_host_path: P
 fn spawn_rebuild_thread(
     opt_level: OptLevel,
     linking_strategy: LinkingStrategy,
-    platform_main_roc: PathBuf,
+    platform_main_broc: PathBuf,
     preprocessed_host_path: PathBuf,
     output_exe_path: PathBuf,
     target: &Triple,
@@ -1068,7 +1068,7 @@ fn spawn_rebuild_thread(
 ) -> std::thread::JoinHandle<u128> {
     let thread_local_target = target.clone();
     std::thread::spawn(move || {
-        // Printing to stderr because we want stdout to contain only the output of the roc program.
+        // Printing to stderr because we want stdout to contain only the output of the broc program.
         // We are aware of the trade-offs.
         // `cargo run` follows the same approach
         eprintln!("🔨 Rebuilding platform...");
@@ -1080,7 +1080,7 @@ fn spawn_rebuild_thread(
                 let host_dest = rebuild_host(
                     opt_level,
                     &thread_local_target,
-                    platform_main_roc.as_path(),
+                    platform_main_broc.as_path(),
                     None,
                 );
 
@@ -1090,7 +1090,7 @@ fn spawn_rebuild_thread(
                 build_and_preprocess_host_lowlevel(
                     opt_level,
                     &thread_local_target,
-                    platform_main_roc.as_path(),
+                    platform_main_broc.as_path(),
                     preprocessed_host_path.as_path(),
                     &dll_stub_symbols,
                 );
@@ -1103,7 +1103,7 @@ fn spawn_rebuild_thread(
                 rebuild_host(
                     opt_level,
                     &thread_local_target,
-                    platform_main_roc.as_path(),
+                    platform_main_broc.as_path(),
                     None,
                 );
             }
@@ -1116,16 +1116,16 @@ fn spawn_rebuild_thread(
 pub fn build_and_preprocess_host(
     opt_level: OptLevel,
     target: &Triple,
-    platform_main_roc: &Path,
+    platform_main_broc: &Path,
     preprocessed_host_path: &Path,
-    exposed_symbols: roc_linker::ExposedSymbols,
+    exposed_symbols: broc_linker::ExposedSymbols,
 ) {
     let stub_dll_symbols = exposed_symbols.stub_dll_symbols();
 
     build_and_preprocess_host_lowlevel(
         opt_level,
         target,
-        platform_main_roc,
+        platform_main_broc,
         preprocessed_host_path,
         &stub_dll_symbols,
     )
@@ -1134,20 +1134,20 @@ pub fn build_and_preprocess_host(
 fn build_and_preprocess_host_lowlevel(
     opt_level: OptLevel,
     target: &Triple,
-    platform_main_roc: &Path,
+    platform_main_broc: &Path,
     preprocessed_host_path: &Path,
     stub_dll_symbols: &[String],
 ) {
     let stub_lib =
-        roc_linker::generate_stub_lib_from_loaded(target, platform_main_roc, stub_dll_symbols);
+        broc_linker::generate_stub_lib_from_loaded(target, platform_main_broc, stub_dll_symbols);
 
     debug_assert!(stub_lib.exists());
 
-    rebuild_host(opt_level, target, platform_main_roc, Some(&stub_lib));
+    rebuild_host(opt_level, target, platform_main_broc, Some(&stub_lib));
 
-    roc_linker::preprocess_host(
+    broc_linker::preprocess_host(
         target,
-        platform_main_roc,
+        platform_main_broc,
         preprocessed_host_path,
         &stub_lib,
         stub_dll_symbols,
@@ -1157,9 +1157,9 @@ fn build_and_preprocess_host_lowlevel(
 #[allow(clippy::too_many_arguments)]
 pub fn check_file<'a>(
     arena: &'a Bump,
-    roc_file_path: PathBuf,
+    broc_file_path: PathBuf,
     emit_timings: bool,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     threading: Threading,
 ) -> Result<(Problems, Duration), LoadingProblem<'a>> {
     let compilation_start = Instant::now();
@@ -1179,7 +1179,7 @@ pub fn check_file<'a>(
         exec_mode: ExecutionMode::Check,
     };
     let mut loaded =
-        roc_load::load_and_typecheck(arena, roc_file_path, roc_cache_dir, load_config)?;
+        broc_load::load_and_typecheck(arena, broc_file_path, broc_cache_dir, load_config)?;
 
     let buf = &mut String::with_capacity(1024);
 
@@ -1198,7 +1198,7 @@ pub fn check_file<'a>(
 
         buf.push('\n');
 
-        report_timing(buf, "Read .roc file from disk", module_timing.read_roc_file);
+        report_timing(buf, "Read .broc file from disk", module_timing.read_broc_file);
         report_timing(buf, "Parse header", module_timing.parse_header);
         report_timing(buf, "Parse body", module_timing.parse_body);
         report_timing(buf, "Canonicalize", module_timing.canonicalize);
@@ -1246,7 +1246,7 @@ pub fn build_str_test<'a>(
     let linking_strategy = LinkingStrategy::Surgical;
     let wasm_dev_stack_bytes = None;
 
-    let roc_cache_dir = roc_packaging::cache::RocCacheDir::Disallowed;
+    let broc_cache_dir = broc_packaging::cache::BrocCacheDir::Disallowed;
     let build_ordering = BuildOrdering::AlwaysBuild;
     let threading = Threading::AtMost(2);
 
@@ -1255,12 +1255,12 @@ pub fn build_str_test<'a>(
     let compilation_start = std::time::Instant::now();
 
     // Step 1: compile the app and generate the .o file
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
-        PathBuf::from("valgrind_test.roc"),
+        PathBuf::from("valgrind_test.broc"),
         app_module_source,
         app_module_path.to_path_buf(),
-        roc_cache_dir,
+        broc_cache_dir,
         load_config,
     )
     .map_err(|e| BuildFileError::from_mono_error(e, compilation_start))?;

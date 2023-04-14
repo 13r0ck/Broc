@@ -1,8 +1,8 @@
 [package]
-name = "roc_repl_wasm"
-description = "Provides a build of the REPL for the Roc website using WebAssembly."
+name = "broc_repl_wasm"
+description = "Provides a build of the REPL for the Broc website using WebAssembly."
 
-authors = ["The Roc Contributors"]
+authors = ["The Broc Contributors"]
 edition = "2021"
 license = "UPL-1.0"
 version = "0.0.1"
@@ -11,8 +11,8 @@ version = "0.0.1"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-roc_bitcode = { path = "../compiler/builtins/bitcode" }
-roc_builtins = { path = "../compiler/builtins" }
+broc_bitcode = { path = "../compiler/builtins/bitcode" }
+broc_builtins = { path = "../compiler/builtins" }
 wasi_libc_sys = { path = "../wasi-libc-sys" }
 
 tempfile.workspace = true
@@ -26,14 +26,14 @@ js-sys.workspace = true
 wasm-bindgen-futures.workspace = true
 wasm-bindgen.workspace = true
 
-roc_collections = { path = "../compiler/collections" }
-roc_gen_wasm = { path = "../compiler/gen_wasm" }
-roc_load = { path = "../compiler/load" }
-roc_parse = { path = "../compiler/parse" }
-roc_repl_eval = { path = "../repl_eval" }
-roc_reporting = { path = "../reporting" }
-roc_target = { path = "../compiler/roc_target" }
-roc_types = { path = "../compiler/types" }
+broc_collections = { path = "../compiler/collections" }
+broc_gen_wasm = { path = "../compiler/gen_wasm" }
+broc_load = { path = "../compiler/load" }
+broc_parse = { path = "../compiler/parse" }
+broc_repl_eval = { path = "../repl_eval" }
+broc_reporting = { path = "../reporting" }
+broc_target = { path = "../compiler/broc_target" }
+broc_types = { path = "../compiler/types" }
 
 [features]
 wasi_test = ["futures"]

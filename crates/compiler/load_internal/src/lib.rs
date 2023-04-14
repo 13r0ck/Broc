@@ -1,9 +1,9 @@
-//! The internal implementation of roc_load, separate from roc_load to support caching.
+//! The internal implementation of broc_load, separate from broc_load to support caching.
 #![warn(clippy::dbg_macro)]
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #![allow(clippy::large_enum_variant)]
 
-use roc_module::symbol::ModuleId;
+use broc_module::symbol::ModuleId;
 pub mod docs;
 pub mod file;
 mod work;

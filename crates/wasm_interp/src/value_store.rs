@@ -1,5 +1,5 @@
 use bumpalo::{collections::Vec, Bump};
-use roc_wasm_module::{Value, ValueType};
+use broc_wasm_module::{Value, ValueType};
 use std::fmt::Debug;
 
 use crate::Error;

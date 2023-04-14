@@ -1,18 +1,18 @@
-//! Generates html documentation from Roc files. Used for
+//! Generates html documentation from Broc files. Used for
 //! [roc-lang.org/builtins/Num](https://www.roc-lang.org/builtins/Num).
 extern crate pulldown_cmark;
-extern crate roc_load;
+extern crate broc_load;
 use bumpalo::Bump;
-use roc_can::scope::Scope;
-use roc_collections::VecSet;
-use roc_load::docs::{DocEntry, TypeAnnotation};
-use roc_load::docs::{ModuleDocumentation, RecordField};
-use roc_load::{ExecutionMode, LoadConfig, LoadedModule, LoadingProblem, Threading};
-use roc_module::symbol::{Interns, Symbol};
-use roc_packaging::cache::{self, RocCacheDir};
-use roc_parse::ident::{parse_ident, Accessor, Ident};
-use roc_parse::state::State;
-use roc_region::all::Region;
+use broc_can::scope::Scope;
+use broc_collections::VecSet;
+use broc_load::docs::{DocEntry, TypeAnnotation};
+use broc_load::docs::{ModuleDocumentation, RecordField};
+use broc_load::{ExecutionMode, LoadConfig, LoadedModule, LoadingProblem, Threading};
+use broc_module::symbol::{Interns, Symbol};
+use broc_packaging::cache::{self, BrocCacheDir};
+use broc_parse::ident::{parse_ident, Accessor, Ident};
+use broc_parse::state::State;
+use broc_region::all::Region;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -352,16 +352,16 @@ fn render_sidebar<'a, I: Iterator<Item = &'a ModuleDocumentation>>(modules: I) -
 pub fn load_module_for_docs(filename: PathBuf) -> LoadedModule {
     let arena = Bump::new();
     let load_config = LoadConfig {
-        target_info: roc_target::TargetInfo::default_x86_64(), // This is just type-checking for docs, so "target" doesn't matter
-        render: roc_reporting::report::RenderTarget::ColorTerminal,
-        palette: roc_reporting::report::DEFAULT_PALETTE,
+        target_info: broc_target::TargetInfo::default_x86_64(), // This is just type-checking for docs, so "target" doesn't matter
+        render: broc_reporting::report::RenderTarget::ColorTerminal,
+        palette: broc_reporting::report::DEFAULT_PALETTE,
         threading: Threading::AllAvailable,
         exec_mode: ExecutionMode::Check,
     };
-    match roc_load::load_and_typecheck(
+    match broc_load::load_and_typecheck(
         &arena,
         filename,
-        RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+        BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
         load_config,
     ) {
         Ok(loaded) => loaded,
@@ -720,7 +720,7 @@ fn doc_url<'a>(
                 }
 
                 // This is a valid symbol for this dependency,
-                // so proceed using the current module's name.
+                // so pbroceed using the current module's name.
                 //
                 // TODO: In the future, this is where we'll
                 // incorporate the package name into the link.
@@ -832,7 +832,7 @@ fn markdown_to_html(
         match event {
             Event::Code(cow_str) => {
                 let highlighted_html =
-                    roc_highlight::highlight_roc_code_inline(cow_str.to_string().as_str());
+                    broc_highlight::highlight_broc_code_inline(cow_str.to_string().as_str());
                 docs_parser.push(Event::Html(CowStr::from(highlighted_html)));
             }
             Event::End(Link(LinkType::ShortcutUnknown, ref _url, ref _title)) => {
@@ -865,13 +865,13 @@ fn markdown_to_html(
                         }
 
                         // TODO HANDLE CHECKING BY DEFAULT
-                        let highlighted_html = roc_highlight::highlight_roc_code(&to_highlight);
+                        let highlighted_html = broc_highlight::highlight_broc_code(&to_highlight);
                         docs_parser.push(Event::Html(CowStr::from(highlighted_html)));
                     }
                     None => {
                         // Indented code block
 
-                        let highlighted_html = roc_highlight::highlight_roc_code(&to_highlight);
+                        let highlighted_html = broc_highlight::highlight_broc_code(&to_highlight);
                         docs_parser.push(Event::Html(CowStr::from(highlighted_html)));
                     }
                 }

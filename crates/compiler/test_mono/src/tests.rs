@@ -1,6 +1,6 @@
 #![cfg(test)]
 #![warn(clippy::dbg_macro)]
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #![allow(clippy::large_enum_variant)]
 // we actually want to compare against the literal float bits
 #![allow(clippy::float_cmp)]
@@ -14,19 +14,19 @@ extern crate indoc;
 const EXPANDED_STACK_SIZE: usize = 8 * 1024 * 1024;
 
 use bumpalo::Bump;
-use roc_collections::all::MutMap;
-use roc_load::ExecutionMode;
-use roc_load::LoadConfig;
-use roc_load::LoadMonomorphizedError;
-use roc_load::Threading;
-use roc_module::symbol::Interns;
-use roc_module::symbol::Symbol;
-use roc_mono::ir::Proc;
-use roc_mono::ir::ProcLayout;
-use roc_mono::layout::STLayoutInterner;
+use broc_collections::all::MutMap;
+use broc_load::ExecutionMode;
+use broc_load::LoadConfig;
+use broc_load::LoadMonomorphizedError;
+use broc_load::Threading;
+use broc_module::symbol::Interns;
+use broc_module::symbol::Symbol;
+use broc_mono::ir::Pbroc;
+use broc_mono::ir::PbrocLayout;
+use broc_mono::layout::STLayoutInterner;
 use test_mono_macros::*;
 
-const TARGET_INFO: roc_target::TargetInfo = roc_target::TargetInfo::default_x86_64();
+const TARGET_INFO: broc_target::TargetInfo = broc_target::TargetInfo::default_x86_64();
 
 /// Without this, some tests pass in `cargo test --release` but fail without
 /// the --release flag because they run out of stack space. This increases
@@ -77,7 +77,7 @@ fn promote_expr_to_module(src: &str) -> String {
 }
 
 fn compiles_to_ir(test_name: &str, src: &str, mode: &str, no_check: bool) {
-    use roc_packaging::cache::RocCacheDir;
+    use broc_packaging::cache::BrocCacheDir;
     use std::path::PathBuf;
 
     let exec_mode = match mode {
@@ -88,7 +88,7 @@ fn compiles_to_ir(test_name: &str, src: &str, mode: &str, no_check: bool) {
 
     let arena = &Bump::new();
 
-    let filename = PathBuf::from("Test.roc");
+    let filename = PathBuf::from("Test.broc");
     let src_dir = PathBuf::from("fake/test/path");
 
     let module_src;
@@ -105,22 +105,22 @@ fn compiles_to_ir(test_name: &str, src: &str, mode: &str, no_check: bool) {
     let load_config = LoadConfig {
         target_info: TARGET_INFO,
         threading: Threading::Single,
-        render: roc_reporting::report::RenderTarget::Generic,
-        palette: roc_reporting::report::DEFAULT_PALETTE,
+        render: broc_reporting::report::RenderTarget::Generic,
+        palette: broc_reporting::report::DEFAULT_PALETTE,
         exec_mode,
     };
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
         filename,
         module_src,
         src_dir,
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         load_config,
     );
 
     let mut loaded = match loaded {
         Ok(x) => x,
-        Err(LoadMonomorphizedError::LoadingProblem(roc_load::LoadingProblem::FormattedReport(
+        Err(LoadMonomorphizedError::LoadingProblem(broc_load::LoadingProblem::FormattedReport(
             report,
         ))) => {
             println!("{}", report);
@@ -129,7 +129,7 @@ fn compiles_to_ir(test_name: &str, src: &str, mode: &str, no_check: bool) {
         Err(e) => panic!("{:?}", e),
     };
 
-    use roc_load::MonomorphizedModule;
+    use broc_load::MonomorphizedModule;
     let MonomorphizedModule {
         module_id: home,
         procedures,
@@ -161,10 +161,10 @@ fn check_procedures<'a>(
     arena: &'a Bump,
     interns: &Interns,
     interner: &mut STLayoutInterner<'a>,
-    procedures: &MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: &MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
 ) {
-    use roc_mono::debug::{check_procs, format_problems};
-    let problems = check_procs(arena, interner, procedures);
+    use broc_mono::debug::{check_pbrocs, format_problems};
+    let problems = check_pbrocs(arena, interner, procedures);
     if problems.is_empty() {
         return;
     }
@@ -175,12 +175,12 @@ fn check_procedures<'a>(
 fn verify_procedures<'a>(
     test_name: &str,
     interner: STLayoutInterner<'a>,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
     opt_main_fn_symbol: Option<Symbol>,
 ) {
-    let mut procs_string = procedures
+    let mut pbrocs_string = procedures
         .values()
-        .map(|proc| proc.to_pretty(&interner, 200, false))
+        .map(|pbroc| pbroc.to_pretty(&interner, 200, false))
         .collect::<Vec<_>>();
 
     let opt_main_fn = opt_main_fn_symbol.map(|main_fn_symbol| {
@@ -188,16 +188,16 @@ fn verify_procedures<'a>(
             .keys()
             .position(|(s, _)| *s == main_fn_symbol)
             .unwrap();
-        procs_string.swap_remove(index)
+        pbrocs_string.swap_remove(index)
     });
 
-    procs_string.sort();
+    pbrocs_string.sort();
 
     if let Some(main_fn) = opt_main_fn {
-        procs_string.push(main_fn);
+        pbrocs_string.push(main_fn);
     }
 
-    let result = procs_string.join("\n");
+    let result = pbrocs_string.join("\n");
 
     let path = format!("generated/{}.txt", test_name);
     std::fs::create_dir_all("generated").unwrap();
@@ -1108,7 +1108,7 @@ fn specialize_lowlevel() {
 
 #[mono_test]
 fn empty_list_of_function_type() {
-    // see https://github.com/roc-lang/roc/issues/1732
+    // see https://github.com/roc-lang/broc/issues/1732
     indoc!(
         r#"
          app "test" provides [main] to "./platform"
@@ -2229,7 +2229,7 @@ fn issue_4749() {
         expect
             input = [82, 111, 99]
             got = Decode.fromBytes input Json.fromUtf8
-            got == Ok "Roc"
+            got == Ok "Broc"
         "###
     )
 }
@@ -2422,7 +2422,7 @@ fn pattern_as_of_symbol() {
 
 #[mono_test]
 fn function_specialization_information_in_lambda_set_thunk() {
-    // https://github.com/roc-lang/roc/issues/4734
+    // https://github.com/roc-lang/broc/issues/4734
     // https://rwx.notion.site/Let-generalization-Let-s-not-742a3ab23ff742619129dcc848a271cf#6b08b0a203fb443db2d7238a0eb154eb
     indoc!(
         r###"
@@ -2441,7 +2441,7 @@ fn function_specialization_information_in_lambda_set_thunk() {
 
 #[mono_test]
 fn function_specialization_information_in_lambda_set_thunk_independent_defs() {
-    // https://github.com/roc-lang/roc/issues/4734
+    // https://github.com/roc-lang/broc/issues/4734
     // https://rwx.notion.site/Let-generalization-Let-s-not-742a3ab23ff742619129dcc848a271cf#6b08b0a203fb443db2d7238a0eb154eb
     indoc!(
         r###"
@@ -2550,7 +2550,7 @@ fn recursively_build_effect() {
 }
 
 #[mono_test]
-#[ignore = "roc glue code generation cannot handle a type that this test generates"]
+#[ignore = "broc glue code generation cannot handle a type that this test generates"]
 fn recursive_lambda_set_has_nested_non_recursive_lambda_sets_issue_5026() {
     indoc!(
         r#"

@@ -3,7 +3,7 @@ use std::hash::Hash;
 use std::ops::Deref;
 
 // use std::collections::HashMap;
-use roc_collections::MutMap as HashMap;
+use broc_collections::MutMap as HashMap;
 
 use crate::util::id_type::Id;
 use crate::util::id_vec::IdVec;

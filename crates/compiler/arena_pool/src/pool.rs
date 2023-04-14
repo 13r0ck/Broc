@@ -1,4 +1,4 @@
-use roc_error_macros::internal_error;
+use broc_error_macros::internal_error;
 use std::marker::PhantomPinned;
 use std::ptr::{copy_nonoverlapping, NonNull};
 

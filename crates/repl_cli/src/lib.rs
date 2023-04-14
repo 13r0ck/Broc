@@ -10,9 +10,9 @@ use repl_state::ReplState;
 use crate::repl_state::PROMPT;
 
 pub const WELCOME_MESSAGE: &str = concatcp!(
-    "\n  The rockin’ ",
+    "\n  The brockin’ ",
     BLUE,
-    "roc repl",
+    "broc repl",
     END_COL,
     "\n",
     PINK,

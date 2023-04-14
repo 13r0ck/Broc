@@ -3,22 +3,22 @@ use std::{error::Error, io, path::PathBuf};
 use bumpalo::Bump;
 use lazy_static::lazy_static;
 use regex::Regex;
-use roc_can::{
+use broc_can::{
     abilities::AbilitiesStore,
     expr::Declarations,
     module::ExposedByModule,
     traverse::{find_declaration, find_symbol_at, find_type_at, FoundSymbol},
 };
-use roc_derive::SharedDerivedModule;
-use roc_late_solve::AbilitiesView;
-use roc_load::LoadedModule;
-use roc_module::symbol::{Interns, ModuleId};
-use roc_packaging::cache::RocCacheDir;
-use roc_problem::can::Problem;
-use roc_region::all::{LineColumn, LineColumnRegion, LineInfo, Region};
-use roc_reporting::report::{can_problem, type_problem, RocDocAllocator};
-use roc_solve_problem::TypeError;
-use roc_types::{
+use broc_derive::SharedDerivedModule;
+use broc_late_solve::AbilitiesView;
+use broc_load::LoadedModule;
+use broc_module::symbol::{Interns, ModuleId};
+use broc_packaging::cache::BrocCacheDir;
+use broc_problem::can::Problem;
+use broc_region::all::{LineColumn, LineColumnRegion, LineInfo, Region};
+use broc_reporting::report::{can_problem, type_problem, BrocDocAllocator};
+use broc_solve_problem::TypeError;
+use broc_types::{
     pretty_print::{name_and_print_var, DebugPrint},
     subs::{instantiate_rigids, Subs, Variable},
 };
@@ -68,20 +68,20 @@ pub fn run_load_and_infer<'a>(
         let dir = tempdir()?;
 
         for (file, source) in dependencies {
-            std::fs::write(dir.path().join(format!("{file}.roc")), source)?;
+            std::fs::write(dir.path().join(format!("{file}.broc")), source)?;
         }
 
-        let filename = PathBuf::from("Test.roc");
+        let filename = PathBuf::from("Test.broc");
         let file_path = dir.path().join(filename);
-        let result = roc_load::load_and_typecheck_str(
+        let result = broc_load::load_and_typecheck_str(
             arena,
             file_path,
             module_src,
             dir.path().to_path_buf(),
-            roc_target::TargetInfo::default_x86_64(),
-            roc_reporting::report::RenderTarget::Generic,
-            RocCacheDir::Disallowed,
-            roc_reporting::report::DEFAULT_PALETTE,
+            broc_target::TargetInfo::default_x86_64(),
+            broc_reporting::report::RenderTarget::Generic,
+            BrocCacheDir::Disallowed,
+            broc_reporting::report::DEFAULT_PALETTE,
         );
 
         dir.close()?;
@@ -100,10 +100,10 @@ pub fn format_problems(
     can_problems: Vec<Problem>,
     type_problems: Vec<TypeError>,
 ) -> (String, String) {
-    let filename = PathBuf::from("test.roc");
+    let filename = PathBuf::from("test.broc");
     let src_lines: Vec<&str> = src.split('\n').collect();
     let lines = LineInfo::new(src);
-    let alloc = RocDocAllocator::new(&src_lines, home, interns);
+    let alloc = BrocDocAllocator::new(&src_lines, home, interns);
 
     let mut can_reports = vec![];
     let mut type_reports = vec![];
@@ -121,7 +121,7 @@ pub fn format_problems(
 
     let mut can_reports_buf = String::new();
     let mut type_reports_buf = String::new();
-    use roc_reporting::report::CiWrite;
+    use broc_reporting::report::CiWrite;
     alloc
         .stack(can_reports)
         .1
@@ -167,7 +167,7 @@ pub struct TypeQuery {
     source_line_column: LineColumn,
 }
 
-/// Parse inference queries in a Roc program.
+/// Parse inference queries in a Broc program.
 /// See [RE_TYPE_QUERY].
 fn parse_queries(src: &str, line_info: &LineInfo) -> Vec<TypeQuery> {
     let mut queries = vec![];
@@ -297,7 +297,7 @@ pub struct Program {
 
 impl Program {
     pub fn write_can_decls(&self, writer: &mut impl io::Write) -> io::Result<()> {
-        use roc_can::debug::{pretty_write_declarations, PPCtx};
+        use broc_can::debug::{pretty_write_declarations, PPCtx};
         let ctx = PPCtx {
             home: self.home,
             interns: &self.interns,
@@ -542,7 +542,7 @@ impl<'a> QueryCtx<'a> {
         let def_source = &self.source[start_pos.offset as usize..end_pos.offset as usize];
 
         instantiate_rigids(self.subs, def.var());
-        roc_late_solve::unify(
+        broc_late_solve::unify(
             self.home,
             self.arena,
             self.subs,

@@ -8,28 +8,28 @@ extern crate pretty_assertions;
 extern crate maplit;
 
 extern crate bumpalo;
-extern crate roc_collections;
-extern crate roc_load_internal;
-extern crate roc_module;
+extern crate broc_collections;
+extern crate broc_load_internal;
+extern crate broc_module;
 
 mod helpers;
 
 use crate::helpers::fixtures_dir;
 use bumpalo::Bump;
-use roc_can::module::ExposedByModule;
-use roc_load_internal::file::{ExecutionMode, LoadConfig, Threading};
-use roc_load_internal::file::{LoadResult, LoadStart, LoadedModule, LoadingProblem};
-use roc_module::ident::ModuleName;
-use roc_module::symbol::{Interns, ModuleId};
-use roc_packaging::cache::RocCacheDir;
-use roc_problem::can::Problem;
-use roc_region::all::LineInfo;
-use roc_reporting::report::RenderTarget;
-use roc_reporting::report::RocDocAllocator;
-use roc_reporting::report::{can_problem, DEFAULT_PALETTE};
-use roc_target::TargetInfo;
-use roc_types::pretty_print::name_and_print_var;
-use roc_types::pretty_print::DebugPrint;
+use broc_can::module::ExposedByModule;
+use broc_load_internal::file::{ExecutionMode, LoadConfig, Threading};
+use broc_load_internal::file::{LoadResult, LoadStart, LoadedModule, LoadingProblem};
+use broc_module::ident::ModuleName;
+use broc_module::symbol::{Interns, ModuleId};
+use broc_packaging::cache::BrocCacheDir;
+use broc_problem::can::Problem;
+use broc_region::all::LineInfo;
+use broc_reporting::report::RenderTarget;
+use broc_reporting::report::BrocDocAllocator;
+use broc_reporting::report::{can_problem, DEFAULT_PALETTE};
+use broc_target::TargetInfo;
+use broc_types::pretty_print::name_and_print_var;
+use broc_types::pretty_print::DebugPrint;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -45,7 +45,7 @@ fn load_and_typecheck(
         arena,
         filename,
         RenderTarget::Generic,
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         DEFAULT_PALETTE,
     )?;
     let load_config = LoadConfig {
@@ -56,12 +56,12 @@ fn load_and_typecheck(
         exec_mode: ExecutionMode::Check,
     };
 
-    match roc_load_internal::file::load(
+    match broc_load_internal::file::load(
         arena,
         load_start,
         exposed_types,
         Default::default(), // these tests will re-compile the builtins
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         load_config,
     )? {
         Monomorphized(_) => unreachable!(""),
@@ -69,7 +69,7 @@ fn load_and_typecheck(
     }
 }
 
-const TARGET_INFO: roc_target::TargetInfo = roc_target::TargetInfo::default_x86_64();
+const TARGET_INFO: broc_target::TargetInfo = broc_target::TargetInfo::default_x86_64();
 
 // HELPERS
 
@@ -84,7 +84,7 @@ fn format_can_problems(
 
     let src_lines: Vec<&str> = src.split('\n').collect();
     let lines = LineInfo::new(src);
-    let alloc = RocDocAllocator::new(&src_lines, home, interns);
+    let alloc = BrocDocAllocator::new(&src_lines, home, interns);
     let reports = problems
         .into_iter()
         .map(|problem| can_problem(&alloc, &lines, filename.clone(), problem).pretty(&alloc));
@@ -94,7 +94,7 @@ fn format_can_problems(
         .stack(reports)
         .append(alloc.line())
         .1
-        .render_raw(70, &mut roc_reporting::report::CiWrite::new(&mut buf))
+        .render_raw(70, &mut broc_reporting::report::CiWrite::new(&mut buf))
         .unwrap();
     buf
 }
@@ -137,7 +137,7 @@ fn multiple_modules_help<'a>(
     subdir: &str,
     arena: &'a Bump,
     mut files: Vec<(&str, &str)>,
-) -> Result<Result<LoadedModule, roc_load_internal::file::LoadingProblem<'a>>, std::io::Error> {
+) -> Result<Result<LoadedModule, broc_load_internal::file::LoadingProblem<'a>>, std::io::Error> {
     use std::fs::{self, File};
     use std::io::Write;
 
@@ -147,13 +147,13 @@ fn multiple_modules_help<'a>(
     // We can't have all tests use "tmp" because tests run in parallel,
     // so append the test name to the tmp path.
     let tmp = format!("tmp/{}", subdir);
-    let dir = roc_test_utils::TmpDir::new(&tmp);
+    let dir = broc_test_utils::TmpDir::new(&tmp);
 
     let app_module = files.pop().unwrap();
 
     for (name, source) in files {
         let mut filename = PathBuf::from(name);
-        filename.set_extension("roc");
+        filename.set_extension("broc");
         let file_path = dir.path().join(filename.clone());
 
         // Create any necessary intermediate directories (e.g. /platform)
@@ -186,12 +186,12 @@ fn load_fixture(
     subs_by_module: ExposedByModule,
 ) -> LoadedModule {
     let src_dir = fixtures_dir().join(dir_name);
-    let filename = src_dir.join(format!("{}.roc", module_name));
+    let filename = src_dir.join(format!("{}.broc", module_name));
     let arena = Bump::new();
     let loaded = load_and_typecheck(&arena, filename, subs_by_module, TARGET_INFO);
     let mut loaded_module = match loaded {
         Ok(x) => x,
-        Err(roc_load_internal::file::LoadingProblem::FormattedReport(report)) => {
+        Err(broc_load_internal::file::LoadingProblem::FormattedReport(report)) => {
             println!("{}", report);
             panic!("{}", report);
         }
@@ -243,7 +243,7 @@ fn expect_types(mut loaded_module: LoadedModule, mut expected_types: HashMap<&st
     let interns = &loaded_module.interns;
     let declarations = loaded_module.declarations_by_id.remove(&home).unwrap();
     for index in 0..declarations.len() {
-        use roc_can::expr::DeclarationTag::*;
+        use broc_can::expr::DeclarationTag::*;
 
         match declarations.declarations[index] {
             Value | Function(_) | Recursive(_) | TailRecursive(_) => {
@@ -343,7 +343,7 @@ fn import_transitive_alias() {
 fn interface_with_deps() {
     let subs_by_module = Default::default();
     let src_dir = fixtures_dir().join("interface_with_deps");
-    let filename = src_dir.join("Primary.roc");
+    let filename = src_dir.join("Primary.broc");
     let arena = Bump::new();
     let loaded = load_and_typecheck(&arena, filename, subs_by_module, TARGET_INFO);
 
@@ -363,7 +363,7 @@ fn interface_with_deps() {
     let mut def_count = 0;
     let declarations = loaded_module.declarations_by_id.remove(&home).unwrap();
     for index in 0..declarations.len() {
-        use roc_can::expr::DeclarationTag::*;
+        use broc_can::expr::DeclarationTag::*;
 
         match declarations.declarations[index] {
             Value | Function(_) | Recursive(_) | TailRecursive(_) => {
@@ -688,7 +688,7 @@ fn platform_does_not_exist() {
         indoc!(
             r#"
                 app "example"
-                    packages { pf: "./zzz-does-not-exist/main.roc" }
+                    packages { pf: "./zzz-does-not-exist/main.broc" }
                     imports []
                     provides [main] to pf
 
@@ -702,7 +702,7 @@ fn platform_does_not_exist() {
             // TODO restore this assert once it can pass.
             // assert!(report.contains("FILE NOT FOUND"), "report=({})", report);
             assert!(
-                report.contains("zzz-does-not-exist/main.roc"),
+                report.contains("zzz-does-not-exist/main.broc"),
                 "report=({})",
                 report
             );
@@ -715,7 +715,7 @@ fn platform_does_not_exist() {
 fn platform_parse_error() {
     let modules = vec![
         (
-            "platform/main.roc",
+            "platform/main.broc",
             indoc!(
                 r#"
                         platform "hello-c"
@@ -735,7 +735,7 @@ fn platform_parse_error() {
             indoc!(
                 r#"
                         app "hello-world"
-                            packages { pf: "platform/main.roc" }
+                            packages { pf: "platform/main.broc" }
                             imports []
                             provides [main] to pf
 
@@ -755,11 +755,11 @@ fn platform_parse_error() {
 }
 
 #[test]
-// See https://github.com/roc-lang/roc/issues/2413
+// See https://github.com/roc-lang/broc/issues/2413
 fn platform_exposes_main_return_by_pointer_issue() {
     let modules = vec![
         (
-            "platform/main.roc",
+            "platform/main.broc",
             indoc!(
                 r#"
                     platform "hello-world"
@@ -779,7 +779,7 @@ fn platform_exposes_main_return_by_pointer_issue() {
             indoc!(
                 r#"
                     app "hello-world"
-                        packages { pf: "platform/main.roc" }
+                        packages { pf: "platform/main.broc" }
                         imports []
                         provides [main] to pf
 
@@ -872,7 +872,7 @@ fn opaque_wrapped_unwrapped_outside_defining_module() {
 fn issue_2863_module_type_does_not_exist() {
     let modules = vec![
         (
-            "platform/main.roc",
+            "platform/main.broc",
             indoc!(
                 r#"
                     platform "testplatform"
@@ -892,7 +892,7 @@ fn issue_2863_module_type_does_not_exist() {
             indoc!(
                 r#"
                     app "test"
-                        packages { pf: "platform/main.roc" }
+                        packages { pf: "platform/main.broc" }
                         provides [main] to pf
 
                     main : DoesNotExist
@@ -933,7 +933,7 @@ fn issue_2863_module_type_does_not_exist() {
 fn import_builtin_in_platform_and_check_app() {
     let modules = vec![
         (
-            "platform/main.roc",
+            "platform/main.broc",
             indoc!(
                 r#"
                     platform "testplatform"
@@ -953,7 +953,7 @@ fn import_builtin_in_platform_and_check_app() {
             indoc!(
                 r#"
                     app "test"
-                        packages { pf: "platform/main.roc" }
+                        packages { pf: "platform/main.broc" }
                         provides [main] to pf
 
                     main = ""
@@ -993,8 +993,8 @@ fn module_doesnt_match_file_path() {
                           ^^^^^^
 
             Module names must correspond with the file paths they are defined in.
-            For example, I expect to see BigNum defined in BigNum.roc, or Math.Sin
-            defined in Math/Sin.roc."#
+            For example, I expect to see BigNum defined in BigNum.broc, or Math.Sin
+            defined in Math/Sin.broc."#
         ),
         "\n{}",
         err
@@ -1028,7 +1028,7 @@ fn module_cyclic_import_itself() {
                 │     Age
                 └─────┘
 
-            Cyclic dependencies are not allowed in Roc! Can you restructure a
+            Cyclic dependencies are not allowed in Broc! Can you restructure a
             module in this import chain so that it doesn't have to depend on
             itself?"#
         ),
@@ -1063,7 +1063,7 @@ fn module_cyclic_import_transitive() {
         err,
         indoc!(
             r#"
-            ── IMPORT CYCLE ────────────────── tmp/module_cyclic_import_transitive/Age.roc ─
+            ── IMPORT CYCLE ────────────────── tmp/module_cyclic_import_transitive/Age.broc ─
 
             I can't compile Age because it depends on itself through the following
             chain of module imports:
@@ -1076,7 +1076,7 @@ fn module_cyclic_import_transitive() {
                 │     Age
                 └─────┘
 
-            Cyclic dependencies are not allowed in Roc! Can you restructure a
+            Cyclic dependencies are not allowed in Broc! Can you restructure a
             module in this import chain so that it doesn't have to depend on
             itself?"#
         ),
@@ -1089,7 +1089,7 @@ fn module_cyclic_import_transitive() {
 fn nested_module_has_incorrect_name() {
     let modules = vec![
         (
-            "Dep/Foo.roc",
+            "Dep/Foo.broc",
             indoc!(
                 r#"
                 interface Foo exposes [] imports []
@@ -1097,7 +1097,7 @@ fn nested_module_has_incorrect_name() {
             ),
         ),
         (
-            "I.roc",
+            "I.broc",
             indoc!(
                 r#"
                 interface I exposes [] imports [Dep.Foo]
@@ -1111,7 +1111,7 @@ fn nested_module_has_incorrect_name() {
         err,
         indoc!(
             r#"
-            ── INCORRECT MODULE NAME ──── tmp/nested_module_has_incorrect_name/Dep/Foo.roc ─
+            ── INCORRECT MODULE NAME ──── tmp/nested_module_has_incorrect_name/Dep/Foo.broc ─
 
             This module has a different name than I expected:
 

@@ -3,7 +3,7 @@
 //! and for gathering context needed for pleasant error messages when a type
 //! error occurs.
 #![warn(clippy::dbg_macro)]
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #![allow(clippy::large_enum_variant)]
 pub mod builtins;
 pub mod expr;

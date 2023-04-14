@@ -1,8 +1,8 @@
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_mono::layout::{InLayout, Layout, LayoutInterner, STLayoutInterner, UnionLayout};
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_mono::layout::{InLayout, Layout, LayoutInterner, STLayoutInterner, UnionLayout};
 
 use crate::{PTR_SIZE, PTR_TYPE};
-use roc_wasm_module::ValueType;
+use broc_wasm_module::ValueType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReturnMethod {
@@ -28,7 +28,7 @@ pub enum StackMemoryFormat {
 #[derive(Debug, Clone)]
 pub enum WasmLayout {
     // Primitive number value, without any stack memory.
-    // For example, Roc i8 is represented as Primitive(ValueType::I32, 1)
+    // For example, Broc i8 is represented as Primitive(ValueType::I32, 1)
     Primitive(ValueType, u32),
 
     // Local pointer to stack memory
@@ -41,7 +41,7 @@ pub enum WasmLayout {
 
 impl WasmLayout {
     pub fn new<'a>(interner: &STLayoutInterner<'a>, layout: InLayout<'a>) -> Self {
-        use roc_mono::layout::Builtin::*;
+        use broc_mono::layout::Builtin::*;
         use UnionLayout::*;
         use ValueType::*;
 
@@ -103,18 +103,18 @@ impl WasmLayout {
     }
 
     /// The `ValueType`s to use for this layout when calling a Wasm function
-    /// One Roc argument can become 0, 1, or 2 Wasm arguments
+    /// One Broc argument can become 0, 1, or 2 Wasm arguments
     pub fn arg_types(&self, conv: CallConv) -> &'static [ValueType] {
         use ValueType::*;
 
         match self {
-            // 1 Roc argument => 1 Wasm argument (same for all calling conventions)
+            // 1 Broc argument => 1 Wasm argument (same for all calling conventions)
             Self::Primitive(I32, _) => &[I32],
             Self::Primitive(I64, _) => &[I64],
             Self::Primitive(F32, _) => &[F32],
             Self::Primitive(F64, _) => &[F64],
 
-            // 1 Roc argument => 0-2 Wasm arguments (depending on size and calling convention)
+            // 1 Broc argument => 0-2 Wasm arguments (depending on size and calling convention)
             Self::StackMemory { size, format, .. } => conv.stack_memory_arg_types(*size, *format),
         }
     }
@@ -154,7 +154,7 @@ impl CallConv {
 
             DataStructure => {
                 if size == 0 {
-                    // Zero-size Roc values like `{}` => no Wasm arguments
+                    // Zero-size Broc values like `{}` => no Wasm arguments
                     return &[];
                 }
                 match self {

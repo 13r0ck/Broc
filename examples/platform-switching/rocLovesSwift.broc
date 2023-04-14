@@ -1,0 +1,6 @@
+app "brocLovesSwift"
+    packages { pf: "swift-platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main = "Broc <3 Swift!\n"

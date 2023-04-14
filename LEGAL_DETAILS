@@ -1,8 +1,8 @@
-Except as noted below, Roc is licensed under the Universal Permissive License, Version 1.0 <LICENSE> or <https://opensource.org/licenses/UPL>.
+Except as noted below, Broc is licensed under the Universal Permissive License, Version 1.0 <LICENSE> or <https://opensource.org/licenses/UPL>.
 
-Copyrights in the Roc project are retained by their contributors. No copyright assignment is required to contribute to the Roc project. For a list of Roc contributors, see https://roc-lang.org/authors or the project's version control history.
+Copyrights in the Broc project are retained by their contributors. No copyright assignment is required to contribute to the Broc project. For a list of Broc contributors, see https://roc-lang.org/authors or the project's version control history.
 
-The Roc project source code includes source code written by third parties. This third party source code has been annotated in the Roc source code files where it occurs, and includes the following third party sources, which carry their own copyright notices and license terms:
+The Broc project source code includes source code written by third parties. This third party source code has been annotated in the Broc source code files where it occurs, and includes the following third party sources, which carry their own copyright notices and license terms:
 
 
 ===========================================================
@@ -100,7 +100,7 @@ THE SOFTWARE.
 
 * scoped_alloca - https://github.com/TheDan64/scoped_alloca
 
-This source code can be found in roc_std/src/alloca.c, roc_std/src/alloca.rs, and roc_std/build.rs, and is licensed under the following terms:
+This source code can be found in broc_std/src/alloca.c, broc_std/src/alloca.rs, and broc_std/build.rs, and is licensed under the following terms:
 
 
 Copyright 2018 Daniel Kolsoi

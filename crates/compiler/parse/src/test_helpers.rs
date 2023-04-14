@@ -6,8 +6,8 @@ use crate::parser::SourceError;
 use crate::parser::SyntaxError;
 use crate::state::State;
 use bumpalo::Bump;
-use roc_region::all::Loc;
-use roc_region::all::Position;
+use broc_region::all::Loc;
+use broc_region::all::Position;
 
 pub fn parse_expr_with<'a>(
     arena: &'a Bump,

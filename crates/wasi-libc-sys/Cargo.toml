@@ -9,4 +9,4 @@ repository.workspace = true
 version.workspace = true
 
 [build-dependencies]
-roc_command_utils = { path = "../utils/command" }
+broc_command_utils = { path = "../utils/command" }

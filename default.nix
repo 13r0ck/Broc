@@ -14,7 +14,7 @@ let
   nixGlibcPath = if pkgs.stdenv.isLinux then "${pkgs.glibc.out}/lib" else "";
 in
 rustPlatform.buildRustPackage {
-  pname = "roc";
+  pname = "broc";
   version = "0.0.1";
 
   src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
@@ -89,11 +89,11 @@ rustPlatform.buildRustPackage {
   # wrapProgram pkgs.stdenv.cc: to make ld available for compiler/build/src/link.rs
   postInstall =
     if pkgs.stdenv.isLinux then ''
-      wrapProgram $out/bin/roc --set NIX_GLIBC_PATH ${nixGlibcPath} --prefix PATH : ${
+      wrapProgram $out/bin/broc --set NIX_GLIBC_PATH ${nixGlibcPath} --prefix PATH : ${
         pkgs.lib.makeBinPath [ pkgs.stdenv.cc ]
       }
     '' else ''
-      wrapProgram $out/bin/roc --prefix PATH : ${
+      wrapProgram $out/bin/broc --prefix PATH : ${
         pkgs.lib.makeBinPath [ pkgs.stdenv.cc ]
       }
     '';

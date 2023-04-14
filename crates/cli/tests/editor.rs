@@ -8,9 +8,9 @@ mod editor_launch_test {
         thread,
     };
 
-    use cli_utils::helpers::build_roc_bin;
-    use roc_cli::CMD_EDIT;
-    use roc_command_utils::root_dir;
+    use cli_utils::helpers::build_broc_bin;
+    use broc_cli::CMD_EDIT;
+    use broc_command_utils::root_dir;
     use std::io::Read;
 
     #[ignore = "We don't want to bring up the editor window during regular tests, only on specific CI machines."]
@@ -19,10 +19,10 @@ mod editor_launch_test {
         launch(None);
 
         // with a file arg
-        launch(Some("roc-projects/new-roc-project-1/main.roc"));
+        launch(Some("broc-projects/new-broc-project-1/main.broc"));
 
         // with a folder arg
-        launch(Some("roc-projects/new-roc-project-1"));
+        launch(Some("broc-projects/new-broc-project-1"));
     }
 
     fn launch(arg_path_str_opt: Option<&str>) {
@@ -32,7 +32,7 @@ mod editor_launch_test {
         env::set_current_dir(&root_dir)
             .unwrap_or_else(|_| panic!("Failed to set current dir to {:?}", root_dir));
 
-        let roc_binary_path = build_roc_bin(&["--features", "editor"]);
+        let broc_binary_path = build_broc_bin(&["--features", "editor"]);
 
         let mut cmd_args = vec![CMD_EDIT];
 
@@ -40,7 +40,7 @@ mod editor_launch_test {
             cmd_args.push(arg_path_str)
         }
 
-        let mut roc_process = Command::new(roc_binary_path)
+        let mut broc_process = Command::new(broc_binary_path)
             .args(cmd_args)
             .stdout(Stdio::piped())
             .spawn()
@@ -51,10 +51,10 @@ mod editor_launch_test {
 
         // We extract 12 bytes from the logs for verification
         let mut stdout_buffer = [0; 12];
-        let mut stdout = roc_process.stdout.take().unwrap();
+        let mut stdout = broc_process.stdout.take().unwrap();
         stdout.read_exact(&mut stdout_buffer).unwrap();
 
-        match roc_process.try_wait() {
+        match broc_process.try_wait() {
             Ok(Some(status)) => panic!(
                 "The editor exited with status \"{status}\" but I expected it to still be running."
             ),
@@ -62,7 +62,7 @@ mod editor_launch_test {
                 // The editor is still running as desired, we check if logs are as expected:
                 assert_eq!("Loading file", std::str::from_utf8(&stdout_buffer).unwrap());
                 // Kill the editor, we don't want it to stay open forever.
-                roc_process.kill().unwrap();
+                broc_process.kill().unwrap();
             }
             Err(e) => panic!("Failed to wait launch editor cli command: {e}"),
         }

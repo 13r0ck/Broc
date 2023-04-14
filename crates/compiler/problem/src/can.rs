@@ -1,14 +1,14 @@
 use std::io;
 use std::path::PathBuf;
 
-use roc_collections::all::MutSet;
-use roc_module::called_via::BinOp;
-use roc_module::ident::{Ident, Lowercase, ModuleName, TagName};
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_parse::ast::Base;
-use roc_parse::pattern::PatternType;
-use roc_region::all::{Loc, Region};
-use roc_types::types::AliasKind;
+use broc_collections::all::MutSet;
+use broc_module::called_via::BinOp;
+use broc_module::ident::{Ident, Lowercase, ModuleName, TagName};
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_parse::ast::Base;
+use broc_parse::pattern::PatternType;
+use broc_region::all::{Loc, Region};
+use broc_types::types::AliasKind;
 
 use crate::Severity;
 
@@ -445,7 +445,7 @@ pub enum IntErrorKind {
     /// Value being parsed is empty.
     ///
     /// Among other causes, this variant will be constructed when parsing an empty string.
-    /// In roc, this can happen with non-base-10 literals, e.g. `0x` or `0b` without any digits
+    /// In broc, this can happen with non-base-10 literals, e.g. `0x` or `0b` without any digits
     Empty,
     /// Contains an invalid digit.
     ///
@@ -525,14 +525,14 @@ pub enum RuntimeError {
     /// A module was referenced, but hasn't been imported anywhere in the program
     ///
     /// An example would be:
-    /// ```roc
+    /// ```broc
     /// app "hello"
-    ///     packages { pf: "platform/main.roc" }
+    ///     packages { pf: "platform/main.broc" }
     ///     imports [pf.Stdout]
     ///     provides [main] to pf
     ///
     /// main : Task.Task {} [] // Task isn't imported!
-    /// main = Stdout.line "I'm a Roc application!"
+    /// main = Stdout.line "I'm a Broc application!"
     /// ```
     ModuleNotImported {
         /// The name of the module that was referenced
@@ -555,7 +555,7 @@ pub enum RuntimeError {
         module_exists: bool,
     },
     InvalidPrecedence(PrecedenceProblem, Region),
-    MalformedIdentifier(Box<str>, roc_parse::ident::BadIdent, Region),
+    MalformedIdentifier(Box<str>, broc_parse::ident::BadIdent, Region),
     MalformedTypeName(Box<str>, Region),
     MalformedClosure(Region),
     InvalidRecordUpdate {
@@ -613,7 +613,7 @@ pub enum MalformedPatternProblem {
     MalformedBase(Base),
     Unknown,
     QualifiedIdentifier,
-    BadIdent(roc_parse::ident::BadIdent),
+    BadIdent(broc_parse::ident::BadIdent),
     EmptySingleQuote,
     MultipleCharsInSingleQuote,
     DuplicateListRestPattern,

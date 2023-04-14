@@ -5,13 +5,13 @@ const utils = @import("utils.zig");
 
 const math = std.math;
 const always_inline = std.builtin.CallOptions.Modifier.always_inline;
-const RocStr = str.RocStr;
+const BrocStr = str.BrocStr;
 const WithOverflow = utils.WithOverflow;
-const roc_panic = @import("panic.zig").panic_help;
+const broc_panic = @import("panic.zig").panic_help;
 const U256 = num_.U256;
 const mul_u128 = num_.mul_u128;
 
-pub const RocDec = extern struct {
+pub const BrocDec = extern struct {
     num: i128,
 
     pub const decimal_places: u5 = 18;
@@ -19,17 +19,17 @@ pub const RocDec = extern struct {
     const max_digits: u6 = 39;
     const max_str_length: u6 = max_digits + 2; // + 2 here to account for the sign & decimal dot
 
-    pub const min: RocDec = .{ .num = math.minInt(i128) };
-    pub const max: RocDec = .{ .num = math.maxInt(i128) };
+    pub const min: BrocDec = .{ .num = math.minInt(i128) };
+    pub const max: BrocDec = .{ .num = math.maxInt(i128) };
 
-    pub const one_point_zero_i128: i128 = math.pow(i128, 10, RocDec.decimal_places);
-    pub const one_point_zero: RocDec = .{ .num = one_point_zero_i128 };
+    pub const one_point_zero_i128: i128 = math.pow(i128, 10, BrocDec.decimal_places);
+    pub const one_point_zero: BrocDec = .{ .num = one_point_zero_i128 };
 
-    pub fn fromU64(num: u64) RocDec {
+    pub fn fromU64(num: u64) BrocDec {
         return .{ .num = num * one_point_zero_i128 };
     }
 
-    pub fn fromF64(num: f64) ?RocDec {
+    pub fn fromF64(num: f64) ?BrocDec {
         var result: f64 = num * comptime @intToFloat(f64, one_point_zero_i128);
 
         if (result > comptime @intToFloat(f64, math.maxInt(i128))) {
@@ -40,26 +40,26 @@ pub const RocDec = extern struct {
             return null;
         }
 
-        var ret: RocDec = .{ .num = @floatToInt(i128, result) };
+        var ret: BrocDec = .{ .num = @floatToInt(i128, result) };
         return ret;
     }
 
-    pub fn fromStr(roc_str: RocStr) ?RocDec {
-        if (roc_str.isEmpty()) {
+    pub fn fromStr(broc_str: BrocStr) ?BrocDec {
+        if (broc_str.isEmpty()) {
             return null;
         }
 
-        const length = roc_str.len();
+        const length = broc_str.len();
 
-        const roc_str_slice = roc_str.asSlice();
+        const broc_str_slice = broc_str.asSlice();
 
-        var is_negative: bool = roc_str_slice[0] == '-';
+        var is_negative: bool = broc_str_slice[0] == '-';
         var initial_index: usize = if (is_negative) 1 else 0;
 
         var point_index: ?usize = null;
         var index: usize = initial_index;
         while (index < length) {
-            var byte: u8 = roc_str_slice[index];
+            var byte: u8 = broc_str_slice[index];
             if (byte == '.' and point_index == null) {
                 point_index = index;
                 index += 1;
@@ -83,12 +83,12 @@ pub const RocDec = extern struct {
             }
             var diff_decimal_places = decimal_places - after_str_len;
 
-            var after_str = roc_str_slice[pi + 1 .. length];
+            var after_str = broc_str_slice[pi + 1 .. length];
             var after_u64 = std.fmt.parseUnsigned(u64, after_str, 10) catch null;
             after_val_i128 = if (after_u64) |f| @intCast(i128, f) * math.pow(i128, 10, diff_decimal_places) else null;
         }
 
-        var before_str = roc_str_slice[initial_index..before_str_length];
+        var before_str = broc_str_slice[initial_index..before_str_length];
         var before_val_not_adjusted = std.fmt.parseUnsigned(i128, before_str, 10) catch null;
 
         var before_val_i128: ?i128 = null;
@@ -101,7 +101,7 @@ pub const RocDec = extern struct {
             before_val_i128 = result;
         }
 
-        const dec: RocDec = blk: {
+        const dec: BrocDec = blk: {
             if (before_val_i128) |before| {
                 if (after_val_i128) |after| {
                     var result: i128 = undefined;
@@ -131,10 +131,10 @@ pub const RocDec = extern struct {
         return (c -% 48) <= 9;
     }
 
-    pub fn toStr(self: RocDec) RocStr {
+    pub fn toStr(self: BrocDec) BrocStr {
         // Special case
         if (self.num == 0) {
-            return RocStr.init("0.0", 3);
+            return BrocStr.init("0.0", 3);
         }
 
         const num = self.num;
@@ -206,86 +206,86 @@ pub const RocDec = extern struct {
             }
         }
 
-        return RocStr.init(&str_bytes, position);
+        return BrocStr.init(&str_bytes, position);
     }
 
-    pub fn eq(self: RocDec, other: RocDec) bool {
+    pub fn eq(self: BrocDec, other: BrocDec) bool {
         return self.num == other.num;
     }
 
-    pub fn neq(self: RocDec, other: RocDec) bool {
+    pub fn neq(self: BrocDec, other: BrocDec) bool {
         return self.num != other.num;
     }
 
-    pub fn negate(self: RocDec) ?RocDec {
+    pub fn negate(self: BrocDec) ?BrocDec {
         var negated = math.negate(self.num) catch null;
         return if (negated) |n| .{ .num = n } else null;
     }
 
-    pub fn addWithOverflow(self: RocDec, other: RocDec) WithOverflow(RocDec) {
+    pub fn addWithOverflow(self: BrocDec, other: BrocDec) WithOverflow(BrocDec) {
         var answer: i128 = undefined;
         const overflowed = @addWithOverflow(i128, self.num, other.num, &answer);
 
-        return .{ .value = RocDec{ .num = answer }, .has_overflowed = overflowed };
+        return .{ .value = BrocDec{ .num = answer }, .has_overflowed = overflowed };
     }
 
-    pub fn add(self: RocDec, other: RocDec) RocDec {
-        const answer = RocDec.addWithOverflow(self, other);
+    pub fn add(self: BrocDec, other: BrocDec) BrocDec {
+        const answer = BrocDec.addWithOverflow(self, other);
 
         if (answer.has_overflowed) {
-            roc_panic("Decimal addition overflowed!", 0);
+            broc_panic("Decimal addition overflowed!", 0);
             unreachable;
         } else {
             return answer.value;
         }
     }
 
-    pub fn addSaturated(self: RocDec, other: RocDec) RocDec {
-        const answer = RocDec.addWithOverflow(self, other);
+    pub fn addSaturated(self: BrocDec, other: BrocDec) BrocDec {
+        const answer = BrocDec.addWithOverflow(self, other);
         if (answer.has_overflowed) {
             // We can unambiguously tell which way it wrapped, because we have 129 bits including the overflow bit
             if (answer.value.num < 0) {
-                return RocDec.max;
+                return BrocDec.max;
             } else {
-                return RocDec.min;
+                return BrocDec.min;
             }
         } else {
             return answer.value;
         }
     }
 
-    pub fn subWithOverflow(self: RocDec, other: RocDec) WithOverflow(RocDec) {
+    pub fn subWithOverflow(self: BrocDec, other: BrocDec) WithOverflow(BrocDec) {
         var answer: i128 = undefined;
         const overflowed = @subWithOverflow(i128, self.num, other.num, &answer);
 
-        return .{ .value = RocDec{ .num = answer }, .has_overflowed = overflowed };
+        return .{ .value = BrocDec{ .num = answer }, .has_overflowed = overflowed };
     }
 
-    pub fn sub(self: RocDec, other: RocDec) RocDec {
-        const answer = RocDec.subWithOverflow(self, other);
+    pub fn sub(self: BrocDec, other: BrocDec) BrocDec {
+        const answer = BrocDec.subWithOverflow(self, other);
 
         if (answer.has_overflowed) {
-            roc_panic("Decimal subtraction overflowed!", 0);
+            broc_panic("Decimal subtraction overflowed!", 0);
             unreachable;
         } else {
             return answer.value;
         }
     }
 
-    pub fn subSaturated(self: RocDec, other: RocDec) RocDec {
-        const answer = RocDec.subWithOverflow(self, other);
+    pub fn subSaturated(self: BrocDec, other: BrocDec) BrocDec {
+        const answer = BrocDec.subWithOverflow(self, other);
         if (answer.has_overflowed) {
             if (answer.value.num < 0) {
-                return RocDec.max;
+                return BrocDec.max;
             } else {
-                return RocDec.min;
+                return BrocDec.min;
             }
         } else {
             return answer.value;
         }
     }
 
-    pub fn mulWithOverflow(self: RocDec, other: RocDec) WithOverflow(RocDec) {
+    pub fn mulWithOverflow(self: BrocDec, other: BrocDec) WithOverflow(BrocDec) {
         const self_i128 = self.num;
         const other_i128 = other.num;
         // const answer = 0; //self_i256 * other_i256;
@@ -294,60 +294,60 @@ pub const RocDec = extern struct {
 
         const self_u128 = @intCast(u128, math.absInt(self_i128) catch {
             if (other_i128 == 0) {
-                return .{ .value = RocDec{ .num = 0 }, .has_overflowed = false };
-            } else if (other_i128 == RocDec.one_point_zero.num) {
+                return .{ .value = BrocDec{ .num = 0 }, .has_overflowed = false };
+            } else if (other_i128 == BrocDec.one_point_zero.num) {
                 return .{ .value = self, .has_overflowed = false };
             } else if (is_answer_negative) {
-                return .{ .value = RocDec.min, .has_overflowed = true };
+                return .{ .value = BrocDec.min, .has_overflowed = true };
             } else {
-                return .{ .value = RocDec.max, .has_overflowed = true };
+                return .{ .value = BrocDec.max, .has_overflowed = true };
             }
         });
 
         const other_u128 = @intCast(u128, math.absInt(other_i128) catch {
             if (self_i128 == 0) {
-                return .{ .value = RocDec{ .num = 0 }, .has_overflowed = false };
-            } else if (self_i128 == RocDec.one_point_zero.num) {
+                return .{ .value = BrocDec{ .num = 0 }, .has_overflowed = false };
+            } else if (self_i128 == BrocDec.one_point_zero.num) {
                 return .{ .value = other, .has_overflowed = false };
             } else if (is_answer_negative) {
-                return .{ .value = RocDec.min, .has_overflowed = true };
+                return .{ .value = BrocDec.min, .has_overflowed = true };
             } else {
-                return .{ .value = RocDec.max, .has_overflowed = true };
+                return .{ .value = BrocDec.max, .has_overflowed = true };
             }
         });
 
         const unsigned_answer: i128 = mul_and_decimalize(self_u128, other_u128);
 
         if (is_answer_negative) {
-            return .{ .value = RocDec{ .num = -unsigned_answer }, .has_overflowed = false };
+            return .{ .value = BrocDec{ .num = -unsigned_answer }, .has_overflowed = false };
         } else {
-            return .{ .value = RocDec{ .num = unsigned_answer }, .has_overflowed = false };
+            return .{ .value = BrocDec{ .num = unsigned_answer }, .has_overflowed = false };
         }
     }
 
-    pub fn mul(self: RocDec, other: RocDec) RocDec {
-        const answer = RocDec.mulWithOverflow(self, other);
+    pub fn mul(self: BrocDec, other: BrocDec) BrocDec {
+        const answer = BrocDec.mulWithOverflow(self, other);
 
         if (answer.has_overflowed) {
-            roc_panic("Decimal multiplication overflowed!", 0);
+            broc_panic("Decimal multiplication overflowed!", 0);
             unreachable;
         } else {
             return answer.value;
         }
     }
 
-    pub fn mulSaturated(self: RocDec, other: RocDec) RocDec {
-        const answer = RocDec.mulWithOverflow(self, other);
+    pub fn mulSaturated(self: BrocDec, other: BrocDec) BrocDec {
+        const answer = BrocDec.mulWithOverflow(self, other);
         return answer.value;
     }
 
-    pub fn div(self: RocDec, other: RocDec) RocDec {
+    pub fn div(self: BrocDec, other: BrocDec) BrocDec {
         const numerator_i128 = self.num;
         const denominator_i128 = other.num;
 
         // (0 / n) is always 0
         if (numerator_i128 == 0) {
-            return RocDec{ .num = 0 };
+            return BrocDec{ .num = 0 };
         }
 
         // (n / 0) is an error
@@ -408,7 +408,7 @@ pub const RocDec = extern struct {
             @panic("TODO runtime exception for overflow when dividing!");
         }
 
-        return RocDec{ .num = if (is_answer_negative) -unsigned_answer else unsigned_answer };
+        return BrocDec{ .num = if (is_answer_negative) -unsigned_answer else unsigned_answer };
     }
 };
 
@@ -727,435 +727,435 @@ const expectEqualSlices = testing.expectEqualSlices;
 const expect = testing.expect;
 
 test "fromU64" {
-    var dec = RocDec.fromU64(25);
+    var dec = BrocDec.fromU64(25);
 
-    try expectEqual(RocDec{ .num = 25000000000000000000 }, dec);
+    try expectEqual(BrocDec{ .num = 25000000000000000000 }, dec);
 }
 
 test "fromF64" {
-    var dec = RocDec.fromF64(25.5);
-    try expectEqual(RocDec{ .num = 25500000000000000000 }, dec.?);
+    var dec = BrocDec.fromF64(25.5);
+    try expectEqual(BrocDec{ .num = 25500000000000000000 }, dec.?);
 }
 
 test "fromF64 overflow" {
-    var dec = RocDec.fromF64(1e308);
+    var dec = BrocDec.fromF64(1e308);
     try expectEqual(dec, null);
 }
 
 test "fromStr: empty" {
-    var roc_str = RocStr.init("", 0);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("", 0);
+    var dec = BrocDec.fromStr(broc_str);
 
     try expectEqual(dec, null);
 }
 
 test "fromStr: 0" {
-    var roc_str = RocStr.init("0", 1);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("0", 1);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = 0 }, dec.?);
+    try expectEqual(BrocDec{ .num = 0 }, dec.?);
 }
 
 test "fromStr: 1" {
-    var roc_str = RocStr.init("1", 1);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("1", 1);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec.one_point_zero, dec.?);
+    try expectEqual(BrocDec.one_point_zero, dec.?);
 }
 
 test "fromStr: 123.45" {
-    var roc_str = RocStr.init("123.45", 6);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("123.45", 6);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = 123450000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = 123450000000000000000 }, dec.?);
 }
 
 test "fromStr: .45" {
-    var roc_str = RocStr.init(".45", 3);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init(".45", 3);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = 450000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = 450000000000000000 }, dec.?);
 }
 
 test "fromStr: 0.45" {
-    var roc_str = RocStr.init("0.45", 4);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("0.45", 4);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = 450000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = 450000000000000000 }, dec.?);
 }
 
 test "fromStr: 123" {
-    var roc_str = RocStr.init("123", 3);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("123", 3);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = 123000000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = 123000000000000000000 }, dec.?);
 }
 
 test "fromStr: -.45" {
-    var roc_str = RocStr.init("-.45", 4);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("-.45", 4);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = -450000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = -450000000000000000 }, dec.?);
 }
 
 test "fromStr: -0.45" {
-    var roc_str = RocStr.init("-0.45", 5);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("-0.45", 5);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = -450000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = -450000000000000000 }, dec.?);
 }
 
 test "fromStr: -123" {
-    var roc_str = RocStr.init("-123", 4);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("-123", 4);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = -123000000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = -123000000000000000000 }, dec.?);
 }
 
 test "fromStr: -123.45" {
-    var roc_str = RocStr.init("-123.45", 7);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("-123.45", 7);
+    var dec = BrocDec.fromStr(broc_str);
 
-    try expectEqual(RocDec{ .num = -123450000000000000000 }, dec.?);
+    try expectEqual(BrocDec{ .num = -123450000000000000000 }, dec.?);
 }
 
 test "fromStr: abc" {
-    var roc_str = RocStr.init("abc", 3);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("abc", 3);
+    var dec = BrocDec.fromStr(broc_str);
 
     try expectEqual(dec, null);
 }
 
 test "fromStr: 123.abc" {
-    var roc_str = RocStr.init("123.abc", 7);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("123.abc", 7);
+    var dec = BrocDec.fromStr(broc_str);
 
     try expectEqual(dec, null);
 }
 
 test "fromStr: abc.123" {
-    var roc_str = RocStr.init("abc.123", 7);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init("abc.123", 7);
+    var dec = BrocDec.fromStr(broc_str);
 
     try expectEqual(dec, null);
 }
 
 test "fromStr: .123.1" {
-    var roc_str = RocStr.init(".123.1", 6);
-    var dec = RocDec.fromStr(roc_str);
+    var broc_str = BrocStr.init(".123.1", 6);
+    var dec = BrocDec.fromStr(broc_str);
 
     try expectEqual(dec, null);
 }
 
 test "toStr: 123.45" {
-    var dec: RocDec = .{ .num = 123450000000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = 123450000000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "123.45"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: -123.45" {
-    var dec: RocDec = .{ .num = -123450000000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = -123450000000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "-123.45"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 123.0" {
-    var dec: RocDec = .{ .num = 123000000000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = 123000000000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "123.0"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: -123.0" {
-    var dec: RocDec = .{ .num = -123000000000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = -123000000000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "-123.0"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 0.45" {
-    var dec: RocDec = .{ .num = 450000000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = 450000000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "0.45"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: -0.45" {
-    var dec: RocDec = .{ .num = -450000000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = -450000000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "-0.45"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 0.00045" {
-    var dec: RocDec = .{ .num = 000450000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = 000450000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "0.00045"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: -0.00045" {
-    var dec: RocDec = .{ .num = -000450000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = -000450000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "-0.00045"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: -111.123456" {
-    var dec: RocDec = .{ .num = -111123456000000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = -111123456000000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "-111.123456"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 123.1111111" {
-    var dec: RocDec = .{ .num = 123111111100000000000 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = 123111111100000000000 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "123.1111111"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 123.1111111111111 (big str)" {
-    var dec: RocDec = .{ .num = 123111111111111000000 };
-    var res_roc_str = dec.toStr();
-    errdefer res_roc_str.decref();
-    defer res_roc_str.decref();
+    var dec: BrocDec = .{ .num = 123111111111111000000 };
+    var res_broc_str = dec.toStr();
+    errdefer res_broc_str.decref();
+    defer res_broc_str.decref();
 
     const res_slice: []const u8 = "123.111111111111"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 123.111111111111444444 (max number of decimal places)" {
-    var dec: RocDec = .{ .num = 123111111111111444444 };
-    var res_roc_str = dec.toStr();
-    errdefer res_roc_str.decref();
-    defer res_roc_str.decref();
+    var dec: BrocDec = .{ .num = 123111111111111444444 };
+    var res_broc_str = dec.toStr();
+    errdefer res_broc_str.decref();
+    defer res_broc_str.decref();
 
     const res_slice: []const u8 = "123.111111111111444444"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 12345678912345678912.111111111111111111 (max number of digits)" {
-    var dec: RocDec = .{ .num = 12345678912345678912111111111111111111 };
-    var res_roc_str = dec.toStr();
-    errdefer res_roc_str.decref();
-    defer res_roc_str.decref();
+    var dec: BrocDec = .{ .num = 12345678912345678912111111111111111111 };
+    var res_broc_str = dec.toStr();
+    errdefer res_broc_str.decref();
+    defer res_broc_str.decref();
 
     const res_slice: []const u8 = "12345678912345678912.111111111111111111"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: std.math.maxInt" {
-    var dec: RocDec = .{ .num = std.math.maxInt(i128) };
-    var res_roc_str = dec.toStr();
-    errdefer res_roc_str.decref();
-    defer res_roc_str.decref();
+    var dec: BrocDec = .{ .num = std.math.maxInt(i128) };
+    var res_broc_str = dec.toStr();
+    errdefer res_broc_str.decref();
+    defer res_broc_str.decref();
 
     const res_slice: []const u8 = "170141183460469231731.687303715884105727"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: std.math.minInt" {
-    var dec: RocDec = .{ .num = std.math.minInt(i128) };
-    var res_roc_str = dec.toStr();
-    errdefer res_roc_str.decref();
-    defer res_roc_str.decref();
+    var dec: BrocDec = .{ .num = std.math.minInt(i128) };
+    var res_broc_str = dec.toStr();
+    errdefer res_broc_str.decref();
+    defer res_broc_str.decref();
 
     const res_slice: []const u8 = "-170141183460469231731.687303715884105728"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "toStr: 0" {
-    var dec: RocDec = .{ .num = 0 };
-    var res_roc_str = dec.toStr();
+    var dec: BrocDec = .{ .num = 0 };
+    var res_broc_str = dec.toStr();
 
     const res_slice: []const u8 = "0.0"[0..];
-    try expectEqualSlices(u8, res_slice, res_roc_str.asSlice());
+    try expectEqualSlices(u8, res_slice, res_broc_str.asSlice());
 }
 
 test "add: 0" {
-    var dec: RocDec = .{ .num = 0 };
+    var dec: BrocDec = .{ .num = 0 };
 
-    try expectEqual(RocDec{ .num = 0 }, dec.add(.{ .num = 0 }));
+    try expectEqual(BrocDec{ .num = 0 }, dec.add(.{ .num = 0 }));
 }
 
 test "add: 1" {
-    var dec: RocDec = .{ .num = 0 };
+    var dec: BrocDec = .{ .num = 0 };
 
-    try expectEqual(RocDec{ .num = 1 }, dec.add(.{ .num = 1 }));
+    try expectEqual(BrocDec{ .num = 1 }, dec.add(.{ .num = 1 }));
 }
 
 test "sub: 0" {
-    var dec: RocDec = .{ .num = 1 };
+    var dec: BrocDec = .{ .num = 1 };
 
-    try expectEqual(RocDec{ .num = 1 }, dec.sub(.{ .num = 0 }));
+    try expectEqual(BrocDec{ .num = 1 }, dec.sub(.{ .num = 0 }));
 }
 
 test "sub: 1" {
-    var dec: RocDec = .{ .num = 1 };
+    var dec: BrocDec = .{ .num = 1 };
 
-    try expectEqual(RocDec{ .num = 0 }, dec.sub(.{ .num = 1 }));
+    try expectEqual(BrocDec{ .num = 0 }, dec.sub(.{ .num = 1 }));
 }
 
 test "mul: by 0" {
-    var dec: RocDec = .{ .num = 0 };
+    var dec: BrocDec = .{ .num = 0 };
 
-    try expectEqual(RocDec{ .num = 0 }, dec.mul(.{ .num = 0 }));
+    try expectEqual(BrocDec{ .num = 0 }, dec.mul(.{ .num = 0 }));
 }
 
 test "mul: by 1" {
-    var dec: RocDec = RocDec.fromU64(15);
+    var dec: BrocDec = BrocDec.fromU64(15);
 
-    try expectEqual(RocDec.fromU64(15), dec.mul(RocDec.fromU64(1)));
+    try expectEqual(BrocDec.fromU64(15), dec.mul(BrocDec.fromU64(1)));
 }
 
 test "mul: by 2" {
-    var dec: RocDec = RocDec.fromU64(15);
+    var dec: BrocDec = BrocDec.fromU64(15);
 
-    try expectEqual(RocDec.fromU64(30), dec.mul(RocDec.fromU64(2)));
+    try expectEqual(BrocDec.fromU64(30), dec.mul(BrocDec.fromU64(2)));
 }
 
 test "div: 0 / 2" {
-    var dec: RocDec = RocDec.fromU64(0);
+    var dec: BrocDec = BrocDec.fromU64(0);
 
-    try expectEqual(RocDec.fromU64(0), dec.div(RocDec.fromU64(2)));
+    try expectEqual(BrocDec.fromU64(0), dec.div(BrocDec.fromU64(2)));
 }
 
 test "div: 2 / 2" {
-    var dec: RocDec = RocDec.fromU64(2);
+    var dec: BrocDec = BrocDec.fromU64(2);
 
-    try expectEqual(RocDec.fromU64(1), dec.div(RocDec.fromU64(2)));
+    try expectEqual(BrocDec.fromU64(1), dec.div(BrocDec.fromU64(2)));
 }
 
 test "div: 20 / 2" {
-    var dec: RocDec = RocDec.fromU64(20);
+    var dec: BrocDec = BrocDec.fromU64(20);
 
-    try expectEqual(RocDec.fromU64(10), dec.div(RocDec.fromU64(2)));
+    try expectEqual(BrocDec.fromU64(10), dec.div(BrocDec.fromU64(2)));
 }
 
 test "div: 8 / 5" {
-    var dec: RocDec = RocDec.fromU64(8);
-    var res: RocDec = RocDec.fromStr(RocStr.init("1.6", 3)).?;
-    try expectEqual(res, dec.div(RocDec.fromU64(5)));
+    var dec: BrocDec = BrocDec.fromU64(8);
+    var res: BrocDec = BrocDec.fromStr(BrocStr.init("1.6", 3)).?;
+    try expectEqual(res, dec.div(BrocDec.fromU64(5)));
 }
 
 test "div: 10 / 3" {
-    var numer: RocDec = RocDec.fromU64(10);
-    var denom: RocDec = RocDec.fromU64(3);
+    var numer: BrocDec = BrocDec.fromU64(10);
+    var denom: BrocDec = BrocDec.fromU64(3);
 
-    var roc_str = RocStr.init("3.333333333333333333", 20);
-    errdefer roc_str.decref();
-    defer roc_str.decref();
+    var broc_str = BrocStr.init("3.333333333333333333", 20);
+    errdefer broc_str.decref();
+    defer broc_str.decref();
 
-    var res: RocDec = RocDec.fromStr(roc_str).?;
+    var res: BrocDec = BrocDec.fromStr(broc_str).?;
 
     try expectEqual(res, numer.div(denom));
 }
 
 test "div: 341 / 341" {
-    var number1: RocDec = RocDec.fromU64(341);
-    var number2: RocDec = RocDec.fromU64(341);
-    try expectEqual(RocDec.fromU64(1), number1.div(number2));
+    var number1: BrocDec = BrocDec.fromU64(341);
+    var number2: BrocDec = BrocDec.fromU64(341);
+    try expectEqual(BrocDec.fromU64(1), number1.div(number2));
 }
 
 test "div: 342 / 343" {
-    var number1: RocDec = RocDec.fromU64(342);
-    var number2: RocDec = RocDec.fromU64(343);
-    var roc_str = RocStr.init("0.997084548104956268", 20);
-    try expectEqual(RocDec.fromStr(roc_str), number1.div(number2));
+    var number1: BrocDec = BrocDec.fromU64(342);
+    var number2: BrocDec = BrocDec.fromU64(343);
+    var broc_str = BrocStr.init("0.997084548104956268", 20);
+    try expectEqual(BrocDec.fromStr(broc_str), number1.div(number2));
 }
 
 test "div: 680 / 340" {
-    var number1: RocDec = RocDec.fromU64(680);
-    var number2: RocDec = RocDec.fromU64(340);
-    try expectEqual(RocDec.fromU64(2), number1.div(number2));
+    var number1: BrocDec = BrocDec.fromU64(680);
+    var number2: BrocDec = BrocDec.fromU64(340);
+    try expectEqual(BrocDec.fromU64(2), number1.div(number2));
 }
 
 test "div: 500 / 1000" {
-    var number1: RocDec = RocDec.fromU64(500);
-    var number2: RocDec = RocDec.fromU64(1000);
-    var roc_str = RocStr.init("0.5", 3);
-    try expectEqual(RocDec.fromStr(roc_str), number1.div(number2));
+    var number1: BrocDec = BrocDec.fromU64(500);
+    var number2: BrocDec = BrocDec.fromU64(1000);
+    var broc_str = BrocStr.init("0.5", 3);
+    try expectEqual(BrocDec.fromStr(broc_str), number1.div(number2));
 }
 
 // exports
 
-pub fn fromStr(arg: RocStr) callconv(.C) num_.NumParseResult(i128) {
-    if (@call(.{ .modifier = always_inline }, RocDec.fromStr, .{arg})) |dec| {
+pub fn fromStr(arg: BrocStr) callconv(.C) num_.NumParseResult(i128) {
+    if (@call(.{ .modifier = always_inline }, BrocDec.fromStr, .{arg})) |dec| {
         return .{ .errorcode = 0, .value = dec.num };
     } else {
         return .{ .errorcode = 1, .value = 0 };
     }
 }
 
-pub fn toStr(arg: RocDec) callconv(.C) RocStr {
-    return @call(.{ .modifier = always_inline }, RocDec.toStr, .{arg});
+pub fn toStr(arg: BrocDec) callconv(.C) BrocStr {
+    return @call(.{ .modifier = always_inline }, BrocDec.toStr, .{arg});
 }
 
 pub fn fromF64C(arg: f64) callconv(.C) i128 {
-    return if (@call(.{ .modifier = always_inline }, RocDec.fromF64, .{arg})) |dec| dec.num else @panic("TODO runtime exception failing convert f64 to RocDec");
+    return if (@call(.{ .modifier = always_inline }, BrocDec.fromF64, .{arg})) |dec| dec.num else @panic("TODO runtime exception failing convert f64 to BrocDec");
 }
 
-pub fn eqC(arg1: RocDec, arg2: RocDec) callconv(.C) bool {
-    return @call(.{ .modifier = always_inline }, RocDec.eq, .{ arg1, arg2 });
+pub fn eqC(arg1: BrocDec, arg2: BrocDec) callconv(.C) bool {
+    return @call(.{ .modifier = always_inline }, BrocDec.eq, .{ arg1, arg2 });
 }
 
-pub fn neqC(arg1: RocDec, arg2: RocDec) callconv(.C) bool {
-    return @call(.{ .modifier = always_inline }, RocDec.neq, .{ arg1, arg2 });
+pub fn neqC(arg1: BrocDec, arg2: BrocDec) callconv(.C) bool {
+    return @call(.{ .modifier = always_inline }, BrocDec.neq, .{ arg1, arg2 });
 }
 
-pub fn negateC(arg: RocDec) callconv(.C) i128 {
-    return if (@call(.{ .modifier = always_inline }, RocDec.negate, .{arg})) |dec| dec.num else @panic("TODO overflow for negating RocDec");
+pub fn negateC(arg: BrocDec) callconv(.C) i128 {
+    return if (@call(.{ .modifier = always_inline }, BrocDec.negate, .{arg})) |dec| dec.num else @panic("TODO overflow for negating BrocDec");
 }
 
-pub fn addC(arg1: RocDec, arg2: RocDec) callconv(.C) WithOverflow(RocDec) {
-    return @call(.{ .modifier = always_inline }, RocDec.addWithOverflow, .{ arg1, arg2 });
+pub fn addC(arg1: BrocDec, arg2: BrocDec) callconv(.C) WithOverflow(BrocDec) {
+    return @call(.{ .modifier = always_inline }, BrocDec.addWithOverflow, .{ arg1, arg2 });
 }
 
-pub fn subC(arg1: RocDec, arg2: RocDec) callconv(.C) WithOverflow(RocDec) {
-    return @call(.{ .modifier = always_inline }, RocDec.subWithOverflow, .{ arg1, arg2 });
+pub fn subC(arg1: BrocDec, arg2: BrocDec) callconv(.C) WithOverflow(BrocDec) {
+    return @call(.{ .modifier = always_inline }, BrocDec.subWithOverflow, .{ arg1, arg2 });
 }
 
-pub fn mulC(arg1: RocDec, arg2: RocDec) callconv(.C) WithOverflow(RocDec) {
-    return @call(.{ .modifier = always_inline }, RocDec.mulWithOverflow, .{ arg1, arg2 });
+pub fn mulC(arg1: BrocDec, arg2: BrocDec) callconv(.C) WithOverflow(BrocDec) {
+    return @call(.{ .modifier = always_inline }, BrocDec.mulWithOverflow, .{ arg1, arg2 });
 }
 
-pub fn divC(arg1: RocDec, arg2: RocDec) callconv(.C) i128 {
-    return @call(.{ .modifier = always_inline }, RocDec.div, .{ arg1, arg2 }).num;
+pub fn divC(arg1: BrocDec, arg2: BrocDec) callconv(.C) i128 {
+    return @call(.{ .modifier = always_inline }, BrocDec.div, .{ arg1, arg2 }).num;
 }
 
-pub fn addOrPanicC(arg1: RocDec, arg2: RocDec) callconv(.C) RocDec {
-    return @call(.{ .modifier = always_inline }, RocDec.add, .{ arg1, arg2 });
+pub fn addOrPanicC(arg1: BrocDec, arg2: BrocDec) callconv(.C) BrocDec {
+    return @call(.{ .modifier = always_inline }, BrocDec.add, .{ arg1, arg2 });
 }
 
-pub fn addSaturatedC(arg1: RocDec, arg2: RocDec) callconv(.C) RocDec {
-    return @call(.{ .modifier = always_inline }, RocDec.addSaturated, .{ arg1, arg2 });
+pub fn addSaturatedC(arg1: BrocDec, arg2: BrocDec) callconv(.C) BrocDec {
+    return @call(.{ .modifier = always_inline }, BrocDec.addSaturated, .{ arg1, arg2 });
 }
 
-pub fn subOrPanicC(arg1: RocDec, arg2: RocDec) callconv(.C) RocDec {
-    return @call(.{ .modifier = always_inline }, RocDec.sub, .{ arg1, arg2 });
+pub fn subOrPanicC(arg1: BrocDec, arg2: BrocDec) callconv(.C) BrocDec {
+    return @call(.{ .modifier = always_inline }, BrocDec.sub, .{ arg1, arg2 });
 }
 
-pub fn subSaturatedC(arg1: RocDec, arg2: RocDec) callconv(.C) RocDec {
-    return @call(.{ .modifier = always_inline }, RocDec.subSaturated, .{ arg1, arg2 });
+pub fn subSaturatedC(arg1: BrocDec, arg2: BrocDec) callconv(.C) BrocDec {
+    return @call(.{ .modifier = always_inline }, BrocDec.subSaturated, .{ arg1, arg2 });
 }
 
-pub fn mulOrPanicC(arg1: RocDec, arg2: RocDec) callconv(.C) RocDec {
-    return @call(.{ .modifier = always_inline }, RocDec.mul, .{ arg1, arg2 });
+pub fn mulOrPanicC(arg1: BrocDec, arg2: BrocDec) callconv(.C) BrocDec {
+    return @call(.{ .modifier = always_inline }, BrocDec.mul, .{ arg1, arg2 });
 }
 
-pub fn mulSaturatedC(arg1: RocDec, arg2: RocDec) callconv(.C) RocDec {
-    return @call(.{ .modifier = always_inline }, RocDec.mulSaturated, .{ arg1, arg2 });
+pub fn mulSaturatedC(arg1: BrocDec, arg2: BrocDec) callconv(.C) BrocDec {
+    return @call(.{ .modifier = always_inline }, BrocDec.mulSaturated, .{ arg1, arg2 });
 }

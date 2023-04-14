@@ -9,12 +9,12 @@ use crate::{
             text::build_glyph_brush,
         },
     },
-    roc::{RocElem, RocElemTag},
+    broc::{BrocElem, BrocElemTag},
 };
 use cgmath::{Vector2, Vector4};
 use glyph_brush::OwnedSection;
 use pipelines::RectResources;
-use roc_std::RocStr;
+use broc_std::BrocStr;
 use std::error::Error;
 use wgpu::{CommandEncoder, LoadOp, RenderPass, TextureView};
 use wgpu_glyph::{GlyphBrush, GlyphCruncher};
@@ -32,7 +32,7 @@ use winit::{
 //
 // See this link to learn wgpu: https://sotrh.github.io/learn-wgpu/
 
-fn run_event_loop(title: &str, root: RocElem) -> Result<(), Box<dyn Error>> {
+fn run_event_loop(title: &str, root: BrocElem) -> Result<(), Box<dyn Error>> {
     // Open window and create a surface
     let mut event_loop = winit::event_loop::EventLoop::new();
 
@@ -56,7 +56,7 @@ fn run_event_loop(title: &str, root: RocElem) -> Result<(), Box<dyn Error>> {
             })
             .await
             .expect(r#"Request adapter
-            If you're running this from inside nix, follow the instructions here to resolve this: https://github.com/roc-lang/roc/blob/main/BUILDING_FROM_SOURCE.md#editor
+            If you're running this from inside nix, follow the instructions here to resolve this: https://github.com/roc-lang/broc/blob/main/BUILDING_FROM_SOURCE.md#editor
             "#);
 
         adapter
@@ -340,7 +340,7 @@ fn begin_render_pass<'a>(
     })
 }
 
-pub fn render(title: RocStr, root: RocElem) {
+pub fn render(title: BrocStr, root: BrocElem) {
     run_event_loop(title.as_str(), root).expect("Error running event loop");
 }
 
@@ -496,11 +496,11 @@ fn draw(
 }
 
 fn to_drawable(
-    elem: &RocElem,
+    elem: &BrocElem,
     bounds: Bounds,
     glyph_brush: &mut GlyphBrush<()>,
 ) -> (Bounds, Drawable) {
-    use RocElemTag::*;
+    use BrocElemTag::*;
 
     match elem.tag() {
         Button => {

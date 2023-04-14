@@ -1,5 +1,5 @@
 [package]
-name = "roc_derive_key"
+name = "broc_derive_key"
 
 authors.workspace = true
 edition.workspace = true
@@ -7,8 +7,8 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_error_macros = { path = "../../error_macros" }
-roc_module = { path = "../module" }
-roc_region = { path = "../region" }
-roc_types = { path = "../types" }
+broc_collections = { path = "../collections" }
+broc_error_macros = { path = "../../error_macros" }
+broc_module = { path = "../module" }
+broc_region = { path = "../region" }
+broc_types = { path = "../types" }

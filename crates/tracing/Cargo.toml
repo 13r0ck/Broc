@@ -1,5 +1,5 @@
 [package]
-name = "roc_tracing"
+name = "broc_tracing"
 description = "Utilities for setting up tracing at various executable entry points."
 
 authors.workspace = true

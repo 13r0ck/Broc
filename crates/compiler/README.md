@@ -1,12 +1,12 @@
-# The Roc Compiler
+# The Broc Compiler
 
 Here's how the compiler is laid out.
 
 ## Parsing
 
-The main goal of parsing is to take a plain old String (such as the contents a .roc source file read from the filesystem) and translate that String into an `Expr` value.
+The main goal of parsing is to take a plain old String (such as the contents a .broc source file read from the filesystem) and translate that String into an `Expr` value.
 
-`Expr` is an `enum` defined in the `expr` module. An `Expr` represents a Roc expression.
+`Expr` is an `enum` defined in the `expr` module. An `Expr` represents a Broc expression.
 
 For example, parsing would translate this string...
 
@@ -45,7 +45,7 @@ That said, the parser can still run into syntax errors. This won't parse:
 
 This is gibberish to the parser, so it will produce an error rather than an `Expr`.
 
-Roc's parser is implemented using the [`marwes/combine`](http://github.com/marwes/combine-language/) crate.
+Broc's parser is implemented using the [`marwes/combine`](http://github.com/marwes/combine-language/) crate.
 
 ## Evaluating
 
@@ -69,7 +69,7 @@ The `eval` function will take this `Expr` and translate it into this much simple
 
     Int(6)
 
-At this point it's become so simple that we can display it to the end user as the number `6`. So running `parse` and then `eval` on the original Roc string of `1 + 8 - 3` will result in displaying `6` as the final output.
+At this point it's become so simple that we can display it to the end user as the number `6`. So running `parse` and then `eval` on the original Broc string of `1 + 8 - 3` will result in displaying `6` as the final output.
 
 > The `expr` module includes an `impl fmt::Display for Expr` that takes care of translating `Int(6)` into `6`, `Char('x')` as `'x'`, and so on.
 
@@ -92,7 +92,7 @@ Now that it's evaluated the expressions on either side of the `Minus`, `eval` wi
 
 > Remember, this `Expr` value potentially came directly from the parser. `eval` can't be sure any type checking has been done on it!
 
-If `eval` detects a non-numeric `Expr` value (that is, the `Expr` is not `Int` or `Frac`) on either side of the `Minus`, then it will immediately give an error and halt the evaluation. This sort of runtime type error is common to dynamic languages, and you can think of `eval` as being a dynamic evaluation of Roc code that hasn't necessarily been type-checked.
+If `eval` detects a non-numeric `Expr` value (that is, the `Expr` is not `Int` or `Frac`) on either side of the `Minus`, then it will immediately give an error and halt the evaluation. This sort of runtime type error is common to dynamic languages, and you can think of `eval` as being a dynamic evaluation of Broc code that hasn't necessarily been type-checked.
 
 Assuming there's no type problem, `eval` can go ahead and run the Rust code of `8 - 3` and store the result in an `Int` expr.
 
@@ -133,7 +133,7 @@ Do list stuff using `build` passing Cons Nil (like a cons list) and then do fold
 Afterwards, we can do a separate pass to flatten nested Cons structures into properly initialized RRBTs.
 This way we get both deforestation and efficient RRBT construction. Should work for the other collection types too.
 
-It looks like we need to do some amount of inlining and beta reductions on the Roc side, rather than
+It looks like we need to do some amount of inlining and beta reductions on the Broc side, rather than
 leaving all of those to LLVM.
 
 Advanced approach:
@@ -158,9 +158,9 @@ The compiler is invoked from the CLI via `build_file` in cli/src/build.rs
 | Parse definitions                     | parse/src/module.rs: module_defs                 |
 | Canonicalize                          | can/src/def.rs: canonicalize_defs                |
 | Type check                            | solve/src/module.rs: run_solve                   |
-| Gather types to specialize            | mono/src/ir.rs: PartialProc::from_named_function |
+| Gather types to specialize            | mono/src/ir.rs: PartialPbroc::from_named_function |
 | Solve specialized types               | mono/src/ir.rs: from_can, with_hole              |
-| Insert reference counting             | mono/src/ir.rs: Proc::insert_refcount_operations |
+| Insert reference counting             | mono/src/ir.rs: Pbroc::insert_refcount_operations |
 | Code gen (optimized but slow)         | gen_llvm/src/llvm/build.rs: build_procedures     |
 | Code gen (unoptimized but fast, CPU)  | gen_dev/src/object_builder.rs: build_module      |
 | Code gen (unoptimized but fast, Wasm) | gen_wasm/src/lib.rs: build_module                |
@@ -174,7 +174,7 @@ ask the compiler to emit debug information during various stages of compilation.
 
 There are some goals for more sophisticated debugging tools:
 
-- A nicer unification debugger, see <https://github.com/roc-lang/roc/issues/2486>.
+- A nicer unification debugger, see <https://github.com/roc-lang/broc/issues/2486>.
   Any interest in helping out here is greatly appreciated.
 
 ### General Tips

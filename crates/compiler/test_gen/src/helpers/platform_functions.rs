@@ -1,23 +1,23 @@
 use core::ffi::c_void;
 
 /// # Safety
-/// The Roc application needs this.
+/// The Broc application needs this.
 #[no_mangle]
-pub unsafe fn roc_alloc(size: usize, _alignment: u32) -> *mut c_void {
+pub unsafe fn broc_alloc(size: usize, _alignment: u32) -> *mut c_void {
     libc::malloc(size)
 }
 
 /// # Safety
-/// The Roc application needs this.
+/// The Broc application needs this.
 #[no_mangle]
-pub unsafe fn roc_memcpy(dest: *mut c_void, src: *const c_void, bytes: usize) -> *mut c_void {
+pub unsafe fn broc_memcpy(dest: *mut c_void, src: *const c_void, bytes: usize) -> *mut c_void {
     libc::memcpy(dest, src, bytes)
 }
 
 /// # Safety
-/// The Roc application needs this.
+/// The Broc application needs this.
 #[no_mangle]
-pub unsafe fn roc_realloc(
+pub unsafe fn broc_realloc(
     c_ptr: *mut c_void,
     new_size: usize,
     _old_size: usize,
@@ -27,8 +27,8 @@ pub unsafe fn roc_realloc(
 }
 
 /// # Safety
-/// The Roc application needs this.
+/// The Broc application needs this.
 #[no_mangle]
-pub unsafe fn roc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
+pub unsafe fn broc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
     libc::free(c_ptr)
 }

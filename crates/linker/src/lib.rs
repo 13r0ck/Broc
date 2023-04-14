@@ -1,16 +1,16 @@
-//! Surgical linker that links platforms to Roc applications. We created our own
+//! Surgical linker that links platforms to Broc applications. We created our own
 //! linker for performance, since regular linkers add complexity that is not
-//! needed for linking Roc apps. Because we want `roc` to manage the build
+//! needed for linking Broc apps. Because we want `broc` to manage the build
 //! system and final linking of the executable, it is significantly less
 //! practical to use a regular linker.
 use memmap2::{Mmap, MmapMut};
 use object::Object;
-use roc_error_macros::internal_error;
-use roc_load::{EntryPoint, ExecutionMode, ExposedToHost, LoadConfig, Threading};
-use roc_module::symbol::Interns;
-use roc_packaging::cache::RocCacheDir;
-use roc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
-use roc_target::get_target_triple_str;
+use broc_error_macros::internal_error;
+use broc_load::{EntryPoint, ExecutionMode, ExposedToHost, LoadConfig, Threading};
+use broc_module::symbol::Interns;
+use broc_packaging::cache::BrocCacheDir;
+use broc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
+use broc_target::get_target_triple_str;
 use std::cmp::Ordering;
 use std::mem;
 use std::path::{Path, PathBuf};
@@ -62,10 +62,10 @@ pub fn supported(link_type: LinkType, target: &Triple) -> bool {
     }
 }
 
-pub const PRECOMPILED_HOST_EXT: &str = "rh"; // Short for "roc host"
+pub const PRECOMPILED_HOST_EXT: &str = "rh"; // Short for "broc host"
 
 pub fn preprocessed_host_filename(target: &Triple) -> Option<String> {
-    roc_target::get_target_triple_str(target).map(|x| format!("{}.{}", x, PRECOMPILED_HOST_EXT))
+    broc_target::get_target_triple_str(target).map(|x| format!("{}.{}", x, PRECOMPILED_HOST_EXT))
 }
 
 fn metadata_file_name(target: &Triple) -> String {
@@ -77,17 +77,17 @@ fn metadata_file_name(target: &Triple) -> String {
 pub fn link_preprocessed_host(
     target: &Triple,
     platform_path: &Path,
-    roc_app_bytes: &[u8],
+    broc_app_bytes: &[u8],
     binary_path: &Path,
 ) {
     let metadata = platform_path.with_file_name(metadata_file_name(target));
-    surgery(roc_app_bytes, &metadata, binary_path, false, false, target)
+    surgery(broc_app_bytes, &metadata, binary_path, false, false, target)
 }
 
 // Exposed function to load a platform file and generate a stub lib for it.
 pub fn generate_stub_lib(
     input_path: &Path,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     triple: &Triple,
 ) -> std::io::Result<i32> {
     // Note: this should theoretically just be able to load the host, I think.
@@ -96,10 +96,10 @@ pub fn generate_stub_lib(
     // But hopefully it will be removable once we have surgical linking on all platforms.
     let target_info = triple.into();
     let arena = &bumpalo::Bump::new();
-    let loaded = roc_load::load_and_monomorphize(
+    let loaded = broc_load::load_and_monomorphize(
         arena,
         input_path.to_path_buf(),
-        roc_cache_dir,
+        broc_cache_dir,
         LoadConfig {
             target_info,
             render: RenderTarget::Generic,
@@ -152,13 +152,13 @@ pub fn generate_stub_lib(
 
 pub fn generate_stub_lib_from_loaded(
     target: &Triple,
-    platform_main_roc: &Path,
+    platform_main_broc: &Path,
     stub_dll_symbols: &[String],
 ) -> PathBuf {
     let stub_lib_path = if let target_lexicon::OperatingSystem::Windows = target.operating_system {
-        platform_main_roc.with_file_name("libapp.dll")
+        platform_main_broc.with_file_name("libapp.dll")
     } else {
-        platform_main_roc.with_file_name("libapp.so")
+        platform_main_broc.with_file_name("libapp.so")
     };
 
     generate_dynamic_lib(target, stub_dll_symbols, &stub_lib_path);
@@ -182,9 +182,9 @@ impl ExposedSymbols {
             let sym = x.as_str(interns);
 
             custom_names.extend([
-                format!("roc__{}_1_exposed", sym),
-                format!("roc__{}_1_exposed_generic", sym),
-                format!("roc__{}_1_exposed_size", sym),
+                format!("broc__{}_1_exposed", sym),
+                format!("broc__{}_1_exposed_generic", sym),
+                format!("broc__{}_1_exposed_size", sym),
             ]);
 
             let exported_closure_types = exposed_to_host
@@ -194,9 +194,9 @@ impl ExposedSymbols {
 
             for (i, _) in exported_closure_types.enumerate() {
                 custom_names.extend([
-                    format!("roc__{}_{i}_caller", sym),
-                    format!("roc__{}_{i}_size", sym),
-                    format!("roc__{}_{i}_result_size", sym),
+                    format!("broc__{}_{i}_caller", sym),
+                    format!("broc__{}_{i}_size", sym),
+                    format!("broc__{}_{i}_result_size", sym),
                 ]);
             }
         }
@@ -213,7 +213,7 @@ impl ExposedSymbols {
         for (top_level_value, lambda_set_id) in &exposed_to_host.lambda_sets {
             let sym = top_level_value.as_str(interns);
             let id = lambda_set_id.0;
-            custom_names.extend([format!("roc__{sym}_{id}_caller")]);
+            custom_names.extend([format!("broc__{sym}_{id}_caller")]);
         }
 
         // on windows (PE) binary search is used on the symbols,
@@ -228,16 +228,16 @@ impl ExposedSymbols {
 
         for sym in &self.top_level_values {
             custom_names.extend([
-                format!("roc__{}_1_exposed", sym),
-                format!("roc__{}_1_exposed_generic", sym),
-                format!("roc__{}_size", sym),
+                format!("broc__{}_1_exposed", sym),
+                format!("broc__{}_1_exposed_generic", sym),
+                format!("broc__{}_size", sym),
             ]);
 
             for closure_type in &self.exported_closure_types {
                 custom_names.extend([
-                    format!("roc__{}_1_{}_caller", sym, closure_type),
-                    format!("roc__{}_1_{}_size", sym, closure_type),
-                    format!("roc__{}_1_{}_result_size", sym, closure_type),
+                    format!("broc__{}_1_{}_caller", sym, closure_type),
+                    format!("broc__{}_1_{}_size", sym, closure_type),
+                    format!("broc__{}_1_{}_result_size", sym, closure_type),
                 ]);
             }
         }
@@ -385,16 +385,16 @@ fn stub_lib_is_up_to_date(target: &Triple, stub_lib_path: &Path, custom_names: &
 
 pub fn preprocess_host(
     target: &Triple,
-    platform_main_roc: &Path,
+    platform_main_broc: &Path,
     preprocessed_path: &Path,
     shared_lib: &Path,
     stub_dll_symbols: &[String],
 ) {
-    let metadata_path = platform_main_roc.with_file_name(metadata_file_name(target));
+    let metadata_path = platform_main_broc.with_file_name(metadata_file_name(target));
     let host_exe_path = if let target_lexicon::OperatingSystem::Windows = target.operating_system {
-        platform_main_roc.with_file_name("dynhost.exe")
+        platform_main_broc.with_file_name("dynhost.exe")
     } else {
-        platform_main_roc.with_file_name("dynhost")
+        platform_main_broc.with_file_name("dynhost")
     };
 
     preprocess(
@@ -467,15 +467,15 @@ fn preprocess(
         }
 
         target_lexicon::BinaryFormat::Wasm => {
-            todo!("Roc does not yet support web assembly hosts!");
+            todo!("Broc does not yet support web assembly hosts!");
         }
         target_lexicon::BinaryFormat::Unknown => {
-            internal_error!("Roc does not support unknown host binary formats!");
+            internal_error!("Broc does not support unknown host binary formats!");
         }
         other => {
             internal_error!(
                 concat!(
-                    r"Roc does not yet support the {:?} binary format. ",
+                    r"Broc does not yet support the {:?} binary format. ",
                     r"Please file a bug report for this, describing what operating system you were targeting!"
                 ),
                 other,
@@ -485,7 +485,7 @@ fn preprocess(
 }
 
 fn surgery(
-    roc_app_bytes: &[u8],
+    broc_app_bytes: &[u8],
     metadata_path: &Path,
     executable_path: &Path,
     verbose: bool,
@@ -494,12 +494,12 @@ fn surgery(
 ) {
     match target.binary_format {
         target_lexicon::BinaryFormat::Elf => {
-            crate::elf::surgery_elf(roc_app_bytes, metadata_path, executable_path, verbose, time);
+            crate::elf::surgery_elf(broc_app_bytes, metadata_path, executable_path, verbose, time);
         }
 
         target_lexicon::BinaryFormat::Macho => {
             crate::macho::surgery_macho(
-                roc_app_bytes,
+                broc_app_bytes,
                 metadata_path,
                 executable_path,
                 verbose,
@@ -508,19 +508,19 @@ fn surgery(
         }
 
         target_lexicon::BinaryFormat::Coff => {
-            crate::pe::surgery_pe(executable_path, metadata_path, roc_app_bytes);
+            crate::pe::surgery_pe(executable_path, metadata_path, broc_app_bytes);
         }
 
         target_lexicon::BinaryFormat::Wasm => {
-            todo!("Roc does not yet support web assembly hosts!");
+            todo!("Broc does not yet support web assembly hosts!");
         }
         target_lexicon::BinaryFormat::Unknown => {
-            internal_error!("Roc does not support unknown host binary formats!");
+            internal_error!("Broc does not support unknown host binary formats!");
         }
         other => {
             internal_error!(
                 concat!(
-                    r"Roc does not yet support the {:?} binary format. ",
+                    r"Broc does not yet support the {:?} binary format. ",
                     r"Please file a bug report for this, describing what operating system you were targeting!"
                 ),
                 other,
@@ -631,29 +631,29 @@ macro_rules! dbg_hex {
     };
 }
 
-// These functions don't end up in the final Roc binary but Windows linker needs a definition inside the crate.
+// These functions don't end up in the final Broc binary but Windows linker needs a definition inside the crate.
 // On Windows, there seems to be less dead-code-elimination than on Linux or MacOS, or maybe it's done later.
 #[cfg(test)]
 #[cfg(windows)]
 #[allow(unused_imports)]
-use windows_roc_platform_functions::*;
+use windows_broc_platform_functions::*;
 
 #[cfg(test)]
 #[cfg(windows)]
-mod windows_roc_platform_functions {
+mod windows_broc_platform_functions {
     use core::ffi::c_void;
 
     /// # Safety
-    /// The Roc application needs this.
+    /// The Broc application needs this.
     #[no_mangle]
-    pub unsafe fn roc_alloc(size: usize, _alignment: u32) -> *mut c_void {
+    pub unsafe fn broc_alloc(size: usize, _alignment: u32) -> *mut c_void {
         libc::malloc(size)
     }
 
     /// # Safety
-    /// The Roc application needs this.
+    /// The Broc application needs this.
     #[no_mangle]
-    pub unsafe fn roc_realloc(
+    pub unsafe fn broc_realloc(
         c_ptr: *mut c_void,
         new_size: usize,
         _old_size: usize,
@@ -663,9 +663,9 @@ mod windows_roc_platform_functions {
     }
 
     /// # Safety
-    /// The Roc application needs this.
+    /// The Broc application needs this.
     #[no_mangle]
-    pub unsafe fn roc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
+    pub unsafe fn broc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
         libc::free(c_ptr)
     }
 }

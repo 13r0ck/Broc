@@ -1,6 +1,6 @@
 use bumpalo::Bump;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use roc_parse::{module, module::module_defs, parser::Parser, state::State};
+use broc_parse::{module, module::module_defs, parser::Parser, state::State};
 use std::path::PathBuf;
 
 pub fn parse_benchmark(c: &mut Criterion) {
@@ -9,7 +9,7 @@ pub fn parse_benchmark(c: &mut Criterion) {
         path.push("examples");
         path.push("cli");
         path.push("false-interpreter");
-        path.push("False.roc");
+        path.push("False.broc");
         let src = std::fs::read_to_string(&path).unwrap();
 
         b.iter(|| {
@@ -33,8 +33,8 @@ pub fn parse_benchmark(c: &mut Criterion) {
         path.push("crates");
         path.push("compiler");
         path.push("builtins");
-        path.push("roc");
-        path.push("Num.roc");
+        path.push("broc");
+        path.push("Num.broc");
         let src = std::fs::read_to_string(&path).unwrap();
 
         b.iter(|| {

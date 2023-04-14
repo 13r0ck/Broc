@@ -1,4 +1,4 @@
-use roc_command_utils::zig;
+use broc_command_utils::zig;
 use std::env;
 use std::ffi::OsString;
 use std::fs;

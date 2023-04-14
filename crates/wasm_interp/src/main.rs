@@ -6,8 +6,8 @@ use std::io;
 use std::iter::once;
 use std::process;
 
-use roc_wasm_interp::{DefaultImportDispatcher, Instance};
-use roc_wasm_module::WasmModule;
+use broc_wasm_interp::{DefaultImportDispatcher, Instance};
+use broc_wasm_module::WasmModule;
 
 pub const FLAG_FUNCTION: &str = "function";
 pub const FLAG_DEBUG: &str = "debug";
@@ -43,11 +43,11 @@ fn main() -> io::Result<()> {
         .required(true);
 
     let args_for_app = Arg::new(ARGS_FOR_APP)
-        .help("Arguments to pass into the WebAssembly app\ne.g. `roc_wasm_interp app.wasm 123 123.45`")
+        .help("Arguments to pass into the WebAssembly app\ne.g. `broc_wasm_interp app.wasm 123 123.45`")
         .multiple_values(true)
         .takes_value(true);
 
-    let app = Command::new("roc_wasm_interp")
+    let app = Command::new("broc_wasm_interp")
         .about("Run the given .wasm file")
         .arg(flag_function)
         .arg(flag_debug)
@@ -82,7 +82,7 @@ fn main() -> io::Result<()> {
         Err(e) => {
             eprintln!("I couldn't parse this WebAssembly module! There's something wrong at byte offset {:#x}.",  e.offset);
             eprintln!("{}", e.message);
-            eprintln!("If you think this could be a code generation problem in the Roc compiler, see crates/compiler/gen_wasm/README.md for debugging tips.");
+            eprintln!("If you think this could be a code generation problem in the Broc compiler, see crates/compiler/gen_wasm/README.md for debugging tips.");
             process::exit(1);
         }
     };

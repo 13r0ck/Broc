@@ -1,6 +1,6 @@
 #![cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 
 #[cfg(feature = "gen-llvm")]
@@ -13,7 +13,7 @@ use crate::helpers::llvm::assert_evals_to;
 use crate::helpers::wasm::assert_evals_to;
 
 use indoc::indoc;
-use roc_std::{RocList, RocStr};
+use broc_std::{BrocList, BrocStr};
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
@@ -179,8 +179,8 @@ fn keys() {
             Dict.keys myDict
             "#
         ),
-        RocList::from_slice(&[0, 1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -201,8 +201,8 @@ fn values() {
             Dict.values myDict
             "#
         ),
-        RocList::from_slice(&[100, 200, 300]),
-        RocList<i64>
+        BrocList::from_slice(&[100, 200, 300]),
+        BrocList<i64>
     );
 }
 
@@ -220,8 +220,8 @@ fn from_list_with_fold_simple() {
             Dict.values myDict
             "#
         ),
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 }
 
@@ -247,11 +247,11 @@ fn from_list_with_fold_reallocates() {
             Dict.values myDict
             "#
         ),
-        RocList::from_slice(&[
+        BrocList::from_slice(&[
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
             24
         ]),
-        RocList<i64>
+        BrocList<i64>
     );
 }
 
@@ -269,8 +269,8 @@ fn small_str_keys() {
             Dict.keys myDict
             "#
         ),
-        RocList::from_slice(&["a".into()]),
-        RocList<RocStr>
+        BrocList::from_slice(&["a".into()]),
+        BrocList<BrocStr>
     );
 }
 
@@ -290,12 +290,12 @@ fn big_str_keys() {
             Dict.keys myDict
             "#
         ),
-        RocList::from_slice(&[
-            RocStr::from("Leverage agile frameworks to provide a robust"),
-            RocStr::from("synopsis for high level overviews. Iterative approaches"),
-            RocStr::from("to corporate strategy foster collaborative thinking to"),
+        BrocList::from_slice(&[
+            BrocStr::from("Leverage agile frameworks to provide a robust"),
+            BrocStr::from("synopsis for high level overviews. Iterative approaches"),
+            BrocStr::from("to corporate strategy foster collaborative thinking to"),
         ]),
-        RocList<RocStr>
+        BrocList<BrocStr>
     );
 }
 
@@ -315,12 +315,12 @@ fn big_str_values() {
             Dict.values myDict
             "#
         ),
-        RocList::from_slice(&[
-            RocStr::from("Leverage agile frameworks to provide a robust"),
-            RocStr::from("synopsis for high level overviews. Iterative approaches"),
-            RocStr::from("to corporate strategy foster collaborative thinking to"),
+        BrocList::from_slice(&[
+            BrocStr::from("Leverage agile frameworks to provide a robust"),
+            BrocStr::from("synopsis for high level overviews. Iterative approaches"),
+            BrocStr::from("to corporate strategy foster collaborative thinking to"),
         ]),
-        RocList<RocStr>
+        BrocList<BrocStr>
     );
 }
 
@@ -397,8 +397,8 @@ fn insert_all_prefer_second() {
             Dict.values myDict
             "#
         ),
-        RocList::from_slice(&[200]),
-        RocList<i64>
+        BrocList::from_slice(&[200]),
+        BrocList<i64>
     );
 }
 
@@ -460,8 +460,8 @@ fn keep_shared_prefer_first() {
                 |> Dict.values
             "#
         ),
-        RocList::from_slice(&[2, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 4]),
+        BrocList<i64>
     );
 }
 
@@ -523,8 +523,8 @@ fn remove_all_prefer_first() {
                 |> Dict.values
             "#
         ),
-        RocList::from_slice(&[1, 5, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 5, 3]),
+        BrocList<i64>
     );
 }
 

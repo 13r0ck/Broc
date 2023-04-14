@@ -1,52 +1,52 @@
 //! Provides a binary that is only used for static build servers.
 use clap::{Arg, Command};
-use roc_docs::generate_docs_html;
+use broc_docs::generate_docs_html;
 use std::io;
 use std::path::PathBuf;
 
 pub const ROC_FILE: &str = "ROC_FILE";
-const DEFAULT_ROC_FILENAME: &str = "main.roc";
+const DEFAULT_ROC_FILENAME: &str = "main.broc";
 
 fn main() -> io::Result<()> {
-    let matches = Command::new("roc-docs")
-        .about("Generate documentation for a Roc package")
+    let matches = Command::new("broc-docs")
+        .about("Generate documentation for a Broc package")
         .arg(
             Arg::new(ROC_FILE)
                 .multiple_values(true)
-                .help("The package's main .roc file")
+                .help("The package's main .broc file")
                 .allow_invalid_utf8(true)
                 .required(false)
                 .default_value(DEFAULT_ROC_FILENAME),
         )
         .get_matches();
 
-    // Populate roc_files
+    // Populate broc_files
     generate_docs_html(PathBuf::from(matches.value_of_os(ROC_FILE).unwrap()));
 
     Ok(())
 }
 
-// These functions don't end up in the final Roc binary but Windows linker needs a definition inside the crate.
+// These functions don't end up in the final Broc binary but Windows linker needs a definition inside the crate.
 // On Windows, there seems to be less dead-code-elimination than on Linux or MacOS, or maybe it's done later.
 #[cfg(windows)]
 #[allow(unused_imports)]
-use windows_roc_platform_functions::*;
+use windows_broc_platform_functions::*;
 
 #[cfg(windows)]
-mod windows_roc_platform_functions {
+mod windows_broc_platform_functions {
     use core::ffi::c_void;
 
     /// # Safety
-    /// The Roc application needs this.
+    /// The Broc application needs this.
     #[no_mangle]
-    pub unsafe fn roc_alloc(size: usize, _alignment: u32) -> *mut c_void {
+    pub unsafe fn broc_alloc(size: usize, _alignment: u32) -> *mut c_void {
         libc::malloc(size)
     }
 
     /// # Safety
-    /// The Roc application needs this.
+    /// The Broc application needs this.
     #[no_mangle]
-    pub unsafe fn roc_realloc(
+    pub unsafe fn broc_realloc(
         c_ptr: *mut c_void,
         new_size: usize,
         _old_size: usize,
@@ -56,9 +56,9 @@ mod windows_roc_platform_functions {
     }
 
     /// # Safety
-    /// The Roc application needs this.
+    /// The Broc application needs this.
     #[no_mangle]
-    pub unsafe fn roc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
+    pub unsafe fn broc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
         libc::free(c_ptr)
     }
 }

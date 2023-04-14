@@ -5,14 +5,14 @@ use crate::llvm::convert::zig_str_type;
 use inkwell::module::Linkage;
 use inkwell::types::BasicType;
 use inkwell::AddressSpace;
-use roc_builtins::bitcode;
+use broc_builtins::bitcode;
 
 use super::build::get_sjlj_buffer;
 use super::intrinsics::LLVM_LONGJMP;
 
-/// Define functions for roc_alloc, roc_realloc, and roc_dealloc
+/// Define functions for broc_alloc, broc_realloc, and broc_dealloc
 /// which use libc implementations (malloc, realloc, and free)
-pub fn add_default_roc_externs(env: &Env<'_, '_, '_>) {
+pub fn add_default_broc_externs(env: &Env<'_, '_, '_>) {
     let ctx = env.context;
     let module = env.module;
     let builder = env.builder;
@@ -36,11 +36,11 @@ pub fn add_default_roc_externs(env: &Env<'_, '_, '_>) {
     }
 
     if !env.mode.has_host() {
-        // roc_alloc
+        // broc_alloc
         {
             // The type of this function (but not the implementation) should have
             // already been defined by the builtins, which rely on it.
-            let fn_val = module.get_function("roc_alloc").unwrap();
+            let fn_val = module.get_function("broc_alloc").unwrap();
             fn_val.set_linkage(Linkage::Internal);
 
             let mut params = fn_val.get_param_iter();
@@ -66,7 +66,7 @@ pub fn add_default_roc_externs(env: &Env<'_, '_, '_>) {
             }
         }
 
-        // roc_realloc
+        // broc_realloc
         {
             let libc_realloc_val = {
                 let fn_spec = FunctionSpec::cconv(
@@ -100,7 +100,7 @@ pub fn add_default_roc_externs(env: &Env<'_, '_, '_>) {
 
             // The type of this function (but not the implementation) should have
             // already been defined by the builtins, which rely on it.
-            let fn_val = module.get_function("roc_realloc").unwrap();
+            let fn_val = module.get_function("broc_realloc").unwrap();
             let mut params = fn_val.get_param_iter();
             let ptr_arg = params.next().unwrap();
             let new_size_arg = params.next().unwrap();
@@ -132,11 +132,11 @@ pub fn add_default_roc_externs(env: &Env<'_, '_, '_>) {
             }
         }
 
-        // roc_dealloc
+        // broc_dealloc
         {
             // The type of this function (but not the implementation) should have
             // already been defined by the builtins, which rely on it.
-            let fn_val = module.get_function("roc_dealloc").unwrap();
+            let fn_val = module.get_function("broc_dealloc").unwrap();
             fn_val.set_linkage(Linkage::Internal);
 
             let mut params = fn_val.get_param_iter();
@@ -160,11 +160,11 @@ pub fn add_default_roc_externs(env: &Env<'_, '_, '_>) {
             }
         }
 
-        unreachable_function(env, "roc_getppid");
-        unreachable_function(env, "roc_mmap");
-        unreachable_function(env, "roc_shm_open");
+        unreachable_function(env, "broc_getppid");
+        unreachable_function(env, "broc_mmap");
+        unreachable_function(env, "broc_shm_open");
 
-        add_sjlj_roc_panic(env)
+        add_sjlj_broc_panic(env)
     }
 }
 
@@ -188,20 +188,20 @@ fn unreachable_function(env: &Env, name: &str) {
     }
 }
 
-pub fn add_sjlj_roc_panic(env: &Env<'_, '_, '_>) {
+pub fn add_sjlj_broc_panic(env: &Env<'_, '_, '_>) {
     let ctx = env.context;
     let module = env.module;
     let builder = env.builder;
 
-    // roc_panic
+    // broc_panic
     {
         // The type of this function (but not the implementation) should have
         // already been defined by the builtins, which rely on it.
-        let fn_val = module.get_function("roc_panic").unwrap();
+        let fn_val = module.get_function("broc_panic").unwrap();
         let mut params = fn_val.get_param_iter();
-        let roc_str_arg = params.next().unwrap();
+        let broc_str_arg = params.next().unwrap();
 
-        // normally, roc_panic is marked as external so it can be provided by the host. But when we
+        // normally, broc_panic is marked as external so it can be provided by the host. But when we
         // define it here in LLVM IR, we never want it to be linked by the host (that would
         // overwrite which implementation is used.
         fn_val.set_linkage(Linkage::Internal);
@@ -210,7 +210,7 @@ pub fn add_sjlj_roc_panic(env: &Env<'_, '_, '_>) {
 
         debug_assert!(params.next().is_none());
 
-        let subprogram = env.new_subprogram("roc_panic");
+        let subprogram = env.new_subprogram("broc_panic");
         fn_val.set_subprogram(subprogram);
 
         env.dibuilder.finalize();
@@ -220,27 +220,27 @@ pub fn add_sjlj_roc_panic(env: &Env<'_, '_, '_>) {
 
         builder.position_at_end(entry);
 
-        // write our error message to the RocStr pointer
+        // write our error message to the BrocStr pointer
         {
-            let loaded_roc_str = match env.target_info.ptr_width() {
-                roc_target::PtrWidth::Bytes4 => roc_str_arg,
-                // On 64-bit we pass RocStrs by reference internally
-                roc_target::PtrWidth::Bytes8 => {
+            let loaded_broc_str = match env.target_info.ptr_width() {
+                broc_target::PtrWidth::Bytes4 => broc_str_arg,
+                // On 64-bit we pass BrocStrs by reference internally
+                broc_target::PtrWidth::Bytes8 => {
                     let str_typ = zig_str_type(env);
                     builder.new_build_load(
                         str_typ,
-                        roc_str_arg.into_pointer_value(),
-                        "load_roc_str",
+                        broc_str_arg.into_pointer_value(),
+                        "load_broc_str",
                     )
                 }
             };
 
             env.builder
-                .build_store(get_panic_msg_ptr(env), loaded_roc_str);
+                .build_store(get_panic_msg_ptr(env), loaded_broc_str);
         }
 
         // write the panic tag.
-        // increment by 1, since the tag we'll get from the Roc program is 0-based,
+        // increment by 1, since the tag we'll get from the Broc program is 0-based,
         // but we use 0 for marking a successful call.
         {
             let cast_tag_id = builder.build_int_z_extend(

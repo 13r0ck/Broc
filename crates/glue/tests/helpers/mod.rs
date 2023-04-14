@@ -1,13 +1,13 @@
-use roc_glue::load::{load_types, IgnoreErrors};
-use roc_glue::rust_glue;
-use roc_load::Threading;
+use broc_glue::load::{load_types, IgnoreErrors};
+use broc_glue::rust_glue;
+use broc_load::Threading;
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
 #[allow(dead_code)]
-pub fn generate_bindings(decl_src: &str) -> Vec<roc_glue::types::File> {
+pub fn generate_bindings(decl_src: &str) -> Vec<broc_glue::types::File> {
     use tempfile::tempdir;
 
     let mut src = indoc!(
@@ -27,7 +27,7 @@ pub fn generate_bindings(decl_src: &str) -> Vec<roc_glue::types::File> {
 
     let types = {
         let dir = tempdir().expect("Unable to create tempdir");
-        let filename = PathBuf::from("platform.roc");
+        let filename = PathBuf::from("platform.broc");
         let file_path = dir.path().join(filename);
         let full_file_path = file_path.clone();
         let mut file = File::create(file_path).unwrap();

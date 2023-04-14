@@ -1,7 +1,7 @@
 use cgmath::Vector4;
 use palette::{FromColor, Hsv, Srgb};
 
-/// This order is optimized for what Roc will send
+/// This order is optimized for what Broc will send
 #[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct Rgba {

@@ -1,6 +1,6 @@
 [package]
 name = "test_solve_helpers"
-description = "Utilities for testing the solver. This should eventually made into the roc_solve crate, but currently, solve tests have multiple harnesses."
+description = "Utilities for testing the solver. This should eventually made into the broc_solve crate, but currently, solve tests have multiple harnesses."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,19 +8,19 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_can = { path = "../can" }
-roc_derive = { path = "../derive" }
-roc_load = { path = "../load" }
-roc_module = { path = "../module" }
-roc_packaging = { path = "../../packaging" }
-roc_problem = { path = "../problem" }
-roc_region = { path = "../region" }
-roc_reporting = { path = "../../reporting" }
-roc_solve = { path = "../solve" }
-roc_late_solve = { path = "../late_solve" }
-roc_solve_problem = { path = "../solve_problem" }
-roc_target = { path = "../roc_target" }
-roc_types = { path = "../types" }
+broc_can = { path = "../can" }
+broc_derive = { path = "../derive" }
+broc_load = { path = "../load" }
+broc_module = { path = "../module" }
+broc_packaging = { path = "../../packaging" }
+broc_problem = { path = "../problem" }
+broc_region = { path = "../region" }
+broc_reporting = { path = "../../reporting" }
+broc_solve = { path = "../solve" }
+broc_late_solve = { path = "../late_solve" }
+broc_solve_problem = { path = "../solve_problem" }
+broc_target = { path = "../broc_target" }
+broc_types = { path = "../types" }
 
 bumpalo.workspace = true
 indoc.workspace = true

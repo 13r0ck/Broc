@@ -1,12 +1,12 @@
 use crate::docs::DocEntry::DetachedDoc;
 use crate::docs::TypeAnnotation::{Apply, BoundVariable, Function, NoTypeAnn, Record, TagUnion};
-use roc_can::scope::Scope;
-use roc_collections::VecSet;
-use roc_module::ident::ModuleName;
-use roc_module::symbol::{IdentIds, ModuleId, ModuleIds, Symbol};
-use roc_parse::ast::AssignedField;
-use roc_parse::ast::{self, ExtractSpaces, TypeHeader};
-use roc_parse::ast::{CommentOrNewline, TypeDef, ValueDef};
+use broc_can::scope::Scope;
+use broc_collections::VecSet;
+use broc_module::ident::ModuleName;
+use broc_module::symbol::{IdentIds, ModuleId, ModuleIds, Symbol};
+use broc_parse::ast::AssignedField;
+use broc_parse::ast::{self, ExtractSpaces, TypeHeader};
+use broc_parse::ast::{CommentOrNewline, TypeDef, ValueDef};
 
 // Documentation generation requirements
 
@@ -96,7 +96,7 @@ pub fn generate_module_docs(
     home: ModuleId,
     module_ids: &ModuleIds,
     module_name: ModuleName,
-    parsed_defs: &roc_parse::ast::Defs,
+    parsed_defs: &broc_parse::ast::Defs,
     exposed_module_ids: &[ModuleId],
     exposed_symbols: VecSet<Symbol>,
     header_comments: &[CommentOrNewline<'_>],
@@ -119,7 +119,7 @@ pub fn generate_module_docs(
 }
 
 fn detached_docs_from_comments_and_new_lines<'a>(
-    comments_or_new_lines: impl Iterator<Item = &'a roc_parse::ast::CommentOrNewline<'a>>,
+    comments_or_new_lines: impl Iterator<Item = &'a broc_parse::ast::CommentOrNewline<'a>>,
 ) -> Vec<String> {
     let mut detached_docs: Vec<String> = Vec::new();
 
@@ -149,11 +149,11 @@ fn generate_entry_docs(
     home: ModuleId,
     ident_ids: &IdentIds,
     module_ids: &ModuleIds,
-    defs: &roc_parse::ast::Defs<'_>,
+    defs: &broc_parse::ast::Defs<'_>,
     exposed_module_ids: &[ModuleId],
     header_comments: &[CommentOrNewline<'_>],
 ) -> Vec<DocEntry> {
-    use roc_parse::ast::Pattern;
+    use broc_parse::ast::Pattern;
 
     let mut acc = Vec::with_capacity(defs.tags.len() + 1);
 
@@ -614,7 +614,7 @@ fn tag_to_doc(in_func_ann: bool, tag: ast::Tag) -> Option<Tag> {
 }
 
 fn comments_or_new_lines_to_docs<'a>(
-    comments_or_new_lines: &'a [roc_parse::ast::CommentOrNewline<'a>],
+    comments_or_new_lines: &'a [broc_parse::ast::CommentOrNewline<'a>],
 ) -> Option<String> {
     let mut docs = String::new();
 

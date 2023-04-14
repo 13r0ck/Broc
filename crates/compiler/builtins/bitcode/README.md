@@ -12,7 +12,7 @@ To add a builtin:
 
 ## How it works
 
-Roc's builtins are implemented in the compiler using LLVM only.
+Broc's builtins are implemented in the compiler using LLVM only.
 When their implementations are simple enough (e.g. addition), they
 can be implemented directly in Inkwell.
 
@@ -23,8 +23,8 @@ the result to LLVM bitcode, and import that bitcode into the compiler.
 Compiling the bitcode happens automatically in a Rust build script at `compiler/builtins/build.rs`.
 Then `builtins/src/bitcode/rs` staticlly imports the compiled bitcode for use in the compiler.
 
-You can find the compiled bitcode in `target/debug/build/roc_builtins-[some random characters]/out/builtins.bc`.
-There will be two directories like `roc_builtins-[some random characters]`, look for the one that has an
+You can find the compiled bitcode in `target/debug/build/broc_builtins-[some random characters]/out/builtins.bc`.
+There will be two directories like `broc_builtins-[some random characters]`, look for the one that has an
 `out` directory as a child.
 
 > The bitcode is a bunch of bytes that aren't particularly human-readable.

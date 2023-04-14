@@ -1,25 +1,25 @@
 #[path = "../src/helpers/mod.rs"]
 mod helpers;
 
-// defines roc_alloc and friends
+// defines broc_alloc and friends
 pub use helpers::platform_functions::*;
 
 use bumpalo::Bump;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use roc_gen_llvm::{llvm::build::LlvmBackendMode, run_roc::RocCallResult, run_roc_dylib};
-use roc_mono::ir::OptLevel;
-use roc_std::RocList;
+use broc_gen_llvm::{llvm::build::LlvmBackendMode, run_broc::BrocCallResult, run_broc_dylib};
+use broc_mono::ir::OptLevel;
+use broc_std::BrocList;
 
 // results April 9, 2023
 //
-// > pure roc quicksort      time:   [106.97 us 107.27 us 107.63 us]
-// > roc zig quicksort       time:   [34.765 us 35.301 us 35.865 us]
+// > pure broc quicksort      time:   [106.97 us 107.27 us 107.63 us]
+// > broc zig quicksort       time:   [34.765 us 35.301 us 35.865 us]
 // > rust std sort           time:   [20.413 us 20.623 us 20.838 us]
 
-type Input = RocList<i64>;
-type Output = RocList<i64>;
+type Input = BrocList<i64>;
+type Output = BrocList<i64>;
 
-type Main<I, O> = unsafe extern "C" fn(I, *mut RocCallResult<O>);
+type Main<I, O> = unsafe extern "C" fn(I, *mut BrocCallResult<O>);
 
 const ZIG_ROC_QUICKSORT: &str = indoc::indoc!(
     r#"
@@ -79,7 +79,7 @@ const PURE_ROC_QUICKSORT: &str = indoc::indoc!(
     "#
 );
 
-fn roc_function<'a>(
+fn broc_function<'a>(
     arena: &'a Bump,
     source: &str,
 ) -> libloading::Symbol<'a, Main<*mut Input, Output>> {
@@ -96,45 +96,45 @@ fn roc_function<'a>(
 
     assert!(errors.is_empty(), "Encountered errors:\n{}", errors);
 
-    run_roc_dylib!(arena.alloc(lib), main_fn_name, *mut Input, Output)
+    run_broc_dylib!(arena.alloc(lib), main_fn_name, *mut Input, Output)
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let arena = Bump::new();
 
-    let pure_roc_quicksort_main = roc_function(&arena, PURE_ROC_QUICKSORT);
-    let roc_zig_quicksort_main = roc_function(&arena, ZIG_ROC_QUICKSORT);
+    let pure_broc_quicksort_main = broc_function(&arena, PURE_ROC_QUICKSORT);
+    let broc_zig_quicksort_main = broc_function(&arena, ZIG_ROC_QUICKSORT);
 
     let input_numbers: Vec<_> = std::iter::repeat([1, 2, 3, 4, 5, 6, 7, 8])
         .flatten()
         .take(1000)
         .collect();
 
-    let input = arena.alloc(RocList::from_slice(&input_numbers));
+    let input = arena.alloc(BrocList::from_slice(&input_numbers));
 
-    c.bench_function("pure roc quicksort", |b| {
+    c.bench_function("pure broc quicksort", |b| {
         b.iter(|| unsafe {
-            let mut main_result = RocCallResult::default();
+            let mut main_result = BrocCallResult::default();
 
             assert!(input.is_unique());
 
             // reset_input
             input.copy_from_slice(&input_numbers);
 
-            pure_roc_quicksort_main(black_box(input), &mut main_result);
+            pure_broc_quicksort_main(black_box(input), &mut main_result);
         })
     });
 
-    c.bench_function("roc zig quicksort", |b| {
+    c.bench_function("broc zig quicksort", |b| {
         b.iter(|| unsafe {
-            let mut main_result = RocCallResult::default();
+            let mut main_result = BrocCallResult::default();
 
             assert!(input.is_unique());
 
             // reset_input
             input.copy_from_slice(&input_numbers);
 
-            roc_zig_quicksort_main(black_box(input), &mut main_result);
+            broc_zig_quicksort_main(black_box(input), &mut main_result);
         })
     });
 

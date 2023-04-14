@@ -10,7 +10,7 @@ mod test_mem;
 
 use crate::{DefaultImportDispatcher, Instance};
 use bumpalo::{collections::Vec, Bump};
-use roc_wasm_module::{
+use broc_wasm_module::{
     opcodes::OpCode, Export, ExportType, SerialBuffer, Serialize, Signature, Value, ValueType,
     WasmModule,
 };

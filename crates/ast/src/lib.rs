@@ -1,4 +1,4 @@
-//! Library for the Roc AST
+//! Library for the Broc AST
 //!  
 //! Code to represent the [Abstract Syntax Tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree)
 //! as used by the editor. In contrast to the compiler, the types in this AST do

@@ -1,6 +1,6 @@
 use bumpalo::Bump;
-use roc_module::symbol::Interns;
-use roc_region::all::Region;
+use broc_module::symbol::Interns;
+use broc_region::all::Region;
 
 use crate::{
     ast_error::ASTResult,

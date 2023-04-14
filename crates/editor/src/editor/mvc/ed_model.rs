@@ -11,19 +11,19 @@ use crate::ui::text::text_pos::TextPos;
 use crate::ui::ui_error::UIResult;
 use bumpalo::Bump;
 use nonempty::NonEmpty;
-use roc_ast::lang::core::ast::{ASTNodeId, AST};
-use roc_ast::lang::env::Env;
-use roc_ast::mem_pool::pool_str::PoolStr;
-use roc_ast::parse::parse_ast;
-use roc_code_markup::markup::convert::from_ast::ast_to_mark_nodes;
-use roc_code_markup::markup::mark_id_ast_id_map::MarkIdAstIdMap;
-use roc_code_markup::markup::nodes;
-use roc_code_markup::slow_pool::{MarkNodeId, SlowPool};
-use roc_load::LoadedModule;
-use roc_module::symbol::Interns;
+use broc_ast::lang::core::ast::{ASTNodeId, AST};
+use broc_ast::lang::env::Env;
+use broc_ast::mem_pool::pool_str::PoolStr;
+use broc_ast::parse::parse_ast;
+use broc_code_markup::markup::convert::from_ast::ast_to_mark_nodes;
+use broc_code_markup::markup::mark_id_ast_id_map::MarkIdAstIdMap;
+use broc_code_markup::markup::nodes;
+use broc_code_markup::slow_pool::{MarkNodeId, SlowPool};
+use broc_load::LoadedModule;
+use broc_module::symbol::Interns;
 use std::path::Path;
 
-/// Contains nearly all state related to a single roc file in the editor.
+/// Contains nearly all state related to a single broc file in the editor.
 #[derive(Debug)]
 pub struct EdModel<'a> {
     pub module: EdModule<'a>, // contains Abstract Syntax Tree of code
@@ -36,13 +36,13 @@ pub struct EdModel<'a> {
     pub glyph_dim_rect_opt: Option<Rect>, // represents the width and height of single monospace glyph(char)
     pub has_focus: bool,
     pub caret_w_select_vec: NonEmpty<(CaretWSelect, Option<MarkNodeId>)>, // the editor supports multiple carets/cursors and multiple selections
-    pub selected_block_opt: Option<SelectedBlock>, // a selected AST node, the roc type of this node is shown in the editor on ctrl+shift+"up arrow"
-    pub loaded_module: LoadedModule, // contains all roc symbols, exposed values, exposed aliases, solved types... in the file(=module)
+    pub selected_block_opt: Option<SelectedBlock>, // a selected AST node, the broc type of this node is shown in the editor on ctrl+shift+"up arrow"
+    pub loaded_module: LoadedModule, // contains all broc symbols, exposed values, exposed aliases, solved types... in the file(=module)
     pub show_debug_view: bool,       // see render_debug.rs for the debug view
     pub dirty: bool, // EdModel is dirty if it has changed since the previous render.
 }
 
-// a selected AST node, the roc type of this node is shown in the editor on ctrl+shift+"up arrow"
+// a selected AST node, the broc type of this node is shown in the editor on ctrl+shift+"up arrow"
 #[derive(Debug, Copy, Clone)]
 pub struct SelectedBlock {
     pub ast_node_id: ASTNodeId,
@@ -51,10 +51,10 @@ pub struct SelectedBlock {
 }
 
 pub fn init_model<'a>(
-    code_str: &'a str, // entire roc file as one str
+    code_str: &'a str, // entire broc file as one str
     file_path: &'a Path,
     env: Env<'a>, // contains all variables, identifiers, closures, top level symbols...
-    loaded_module: LoadedModule, // contains all roc symbols, exposed values, exposed aliases, solved types... in the file(=module)
+    loaded_module: LoadedModule, // contains all broc symbols, exposed values, exposed aliases, solved types... in the file(=module)
     code_arena: &'a Bump,        // bump allocation arena, used for fast memory allocation
     caret_pos: CaretPos,         // to set caret position when the file is displayed
 ) -> EdResult<EdModel<'a>> {
@@ -197,7 +197,7 @@ impl<'a> EdModule<'a> {
     pub fn new(
         code_str: &'a str,
         mut env: Env<'a>,
-        interns: &mut Interns, // contains ids of all identifiers in this roc file
+        interns: &mut Interns, // contains ids of all identifiers in this broc file
         ast_arena: &'a Bump,
     ) -> EdResult<EdModule<'a>> {
         if !code_str.is_empty() {
@@ -231,14 +231,14 @@ pub mod test_ed_model {
     use crate::ui::ui_error::UIResult;
     use bumpalo::Bump;
     use ed_model::EdModel;
-    use roc_ast::lang::env::Env;
-    use roc_ast::mem_pool::pool::Pool;
-    use roc_ast::module::load_module;
-    use roc_load::{LoadedModule, Threading};
-    use roc_module::symbol::IdentIds;
-    use roc_module::symbol::ModuleIds;
-    use roc_packaging::cache::RocCacheDir;
-    use roc_types::subs::VarStore;
+    use broc_ast::lang::env::Env;
+    use broc_ast::mem_pool::pool::Pool;
+    use broc_ast::module::load_module;
+    use broc_load::{LoadedModule, Threading};
+    use broc_module::symbol::IdentIds;
+    use broc_module::symbol::ModuleIds;
+    use broc_packaging::cache::BrocCacheDir;
+    use broc_types::subs::VarStore;
     use std::fs;
     use std::fs::File;
     use std::io::Write;
@@ -303,7 +303,7 @@ pub mod test_ed_model {
         module_ids: &'a ModuleIds,
         code_arena: &'a Bump,
     ) -> Result<EdModel<'a>, String> {
-        // to be able to load the code as a LoadedModule we add a roc app header and a main function
+        // to be able to load the code as a LoadedModule we add a broc app header and a main function
         *clean_code_str = vec![HELLO_WORLD, clean_code_str.as_str()].join("");
         // for debugging
         //println!("{}", clean_code_str);
@@ -312,13 +312,13 @@ pub mod test_ed_model {
 
         let platform_dir = temp_dir.path().join(PLATFORM_DIR_NAME);
         fs::create_dir(platform_dir.clone()).expect("Failed to create platform directory");
-        let platform_module_path = platform_dir.join("main.roc");
+        let platform_module_path = platform_dir.join("main.broc");
         let mut platform_module_file =
-            File::create(platform_module_path).expect("Failed to create main.roc");
-        writeln!(platform_module_file, "{}", PLATFORM_STR).expect("Failed to write to main.roc");
+            File::create(platform_module_path).expect("Failed to create main.broc");
+        writeln!(platform_module_file, "{}", PLATFORM_STR).expect("Failed to write to main.broc");
 
         let temp_file_path_buf =
-            PathBuf::from([Uuid::new_v4().to_string(), ".roc".to_string()].join(""));
+            PathBuf::from([Uuid::new_v4().to_string(), ".broc".to_string()].join(""));
         let temp_file_full_path = temp_dir.path().join(temp_file_path_buf);
 
         let mut file = File::create(temp_file_full_path.clone()).unwrap_or_else(|_| {
@@ -332,7 +332,7 @@ pub mod test_ed_model {
 
         let loaded_module = load_module(
             &temp_file_full_path,
-            RocCacheDir::Disallowed,
+            BrocCacheDir::Disallowed,
             Threading::AllAvailable,
         );
 

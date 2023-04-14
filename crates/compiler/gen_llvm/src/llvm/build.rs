@@ -32,27 +32,27 @@ use inkwell::{AddressSpace, IntPredicate};
 use morphic_lib::{
     CalleeSpecVar, FuncName, FuncSpec, FuncSpecSolutions, ModSolutions, UpdateMode, UpdateModeVar,
 };
-use roc_builtins::bitcode::{self, FloatWidth, IntWidth};
-use roc_collections::all::{ImMap, MutMap, MutSet};
-use roc_debug_flags::dbg_do;
+use broc_builtins::bitcode::{self, FloatWidth, IntWidth};
+use broc_collections::all::{ImMap, MutMap, MutSet};
+use broc_debug_flags::dbg_do;
 #[cfg(debug_assertions)]
-use roc_debug_flags::ROC_PRINT_LLVM_FN_VERIFICATION;
-use roc_module::symbol::{Interns, ModuleId, Symbol};
-use roc_mono::ir::{
+use broc_debug_flags::ROC_PRINT_LLVM_FN_VERIFICATION;
+use broc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_mono::ir::{
     BranchInfo, CallType, CrashTag, EntryPoint, GlueLayouts, HostExposedLambdaSet, JoinPointId,
-    ListLiteralElement, ModifyRc, OptLevel, ProcLayout, SingleEntryPoint,
+    ListLiteralElement, ModifyRc, OptLevel, PbrocLayout, SingleEntryPoint,
 };
-use roc_mono::layout::{
+use broc_mono::layout::{
     Builtin, InLayout, LambdaName, LambdaSet, Layout, LayoutIds, LayoutInterner, Niche,
     RawFunctionLayout, STLayoutInterner, TagIdIntType, UnionLayout,
 };
-use roc_std::RocDec;
-use roc_target::{PtrWidth, TargetInfo};
+use broc_std::BrocDec;
+use broc_target::{PtrWidth, TargetInfo};
 use std::convert::TryInto;
 use std::path::Path;
 use target_lexicon::{Architecture, OperatingSystem, Triple};
 
-use super::convert::{struct_type_from_union_layout, RocUnion};
+use super::convert::{struct_type_from_union_layout, BrocUnion};
 use super::intrinsics::{
     add_intrinsics, LLVM_FRAME_ADDRESS, LLVM_MEMSET_I32, LLVM_MEMSET_I64, LLVM_SETJMP,
     LLVM_STACK_SAVE,
@@ -163,7 +163,7 @@ macro_rules! debug_info_init {
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Scope<'a, 'ctx> {
     symbols: ImMap<Symbol, (InLayout<'a>, BasicValueEnum<'ctx>)>,
-    pub top_level_thunks: ImMap<Symbol, (ProcLayout<'a>, FunctionValue<'ctx>)>,
+    pub top_level_thunks: ImMap<Symbol, (PbrocLayout<'a>, FunctionValue<'ctx>)>,
     join_points: ImMap<JoinPointId, (BasicBlock<'ctx>, std::vec::Vec<PhiValue<'ctx>>)>,
 }
 
@@ -177,7 +177,7 @@ impl<'a, 'ctx> Scope<'a, 'ctx> {
     pub(crate) fn insert_top_level_thunk(
         &mut self,
         symbol: Symbol,
-        layout: ProcLayout<'a>,
+        layout: PbrocLayout<'a>,
         function_value: FunctionValue<'ctx>,
     ) {
         self.top_level_thunks
@@ -195,11 +195,11 @@ impl<'a, 'ctx> Scope<'a, 'ctx> {
 
 #[derive(Debug, Clone, Copy)]
 pub enum LlvmBackendMode {
-    /// Assumes primitives (roc_alloc, roc_panic, etc) are provided by the host
+    /// Assumes primitives (broc_alloc, broc_panic, etc) are provided by the host
     Binary,
     BinaryDev,
-    /// Creates a test wrapper around the main roc function to catch and report panics.
-    /// Provides a testing implementation of primitives (roc_alloc, roc_panic, etc)
+    /// Creates a test wrapper around the main broc function to catch and report panics.
+    /// Provides a testing implementation of primitives (broc_alloc, broc_panic, etc)
     BinaryGlue,
     GenTest,
     WasmGenTest,
@@ -219,7 +219,7 @@ impl LlvmBackendMode {
     }
 
     /// In other words, catches exceptions and returns a result
-    fn returns_roc_result(self) -> bool {
+    fn returns_broc_result(self) -> bool {
         match self {
             LlvmBackendMode::Binary => false,
             LlvmBackendMode::BinaryDev => false,
@@ -264,8 +264,8 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
         let ctx = self.context;
 
         match self.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => ctx.i32_type(),
-            roc_target::PtrWidth::Bytes8 => ctx.i64_type(),
+            broc_target::PtrWidth::Bytes4 => ctx.i32_type(),
+            broc_target::PtrWidth::Bytes8 => ctx.i64_type(),
         }
     }
 
@@ -277,8 +277,8 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
         let ctx = self.context;
 
         match self.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => ctx.i64_type(),
-            roc_target::PtrWidth::Bytes8 => ctx.i128_type(),
+            broc_target::PtrWidth::Bytes4 => ctx.i64_type(),
+            broc_target::PtrWidth::Bytes8 => ctx.i128_type(),
         }
     }
 
@@ -351,12 +351,12 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
         number_of_bytes: IntValue<'ctx>,
         alignment: u32,
     ) -> PointerValue<'ctx> {
-        let function = self.module.get_function("roc_alloc").unwrap();
+        let function = self.module.get_function("broc_alloc").unwrap();
         let alignment = self.alignment_const(alignment);
         let call = self.builder.build_call(
             function,
             &[number_of_bytes.into(), alignment.into()],
-            "roc_alloc",
+            "broc_alloc",
         );
 
         call.set_call_convention(C_CALL_CONV);
@@ -369,11 +369,11 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
     }
 
     pub fn call_dealloc(&self, ptr: PointerValue<'ctx>, alignment: u32) -> InstructionValue<'ctx> {
-        let function = self.module.get_function("roc_dealloc").unwrap();
+        let function = self.module.get_function("broc_dealloc").unwrap();
         let alignment = self.alignment_const(alignment);
         let call =
             self.builder
-                .build_call(function, &[ptr.into(), alignment.into()], "roc_dealloc");
+                .build_call(function, &[ptr.into(), alignment.into()], "broc_dealloc");
 
         call.set_call_convention(C_CALL_CONV);
 
@@ -389,8 +389,8 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
         let false_val = self.context.bool_type().const_int(0, false);
 
         let intrinsic_name = match self.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes8 => LLVM_MEMSET_I64,
-            roc_target::PtrWidth::Bytes4 => LLVM_MEMSET_I32,
+            broc_target::PtrWidth::Bytes8 => LLVM_MEMSET_I64,
+            broc_target::PtrWidth::Bytes4 => LLVM_MEMSET_I32,
         };
 
         self.build_intrinsic_call(
@@ -410,7 +410,7 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
         message: BasicValueEnum<'ctx>,
         tag: CrashTag,
     ) {
-        let function = self.module.get_function("roc_panic").unwrap();
+        let function = self.module.get_function("broc_panic").unwrap();
         let tag_id = self.context.i32_type().const_int(tag as u32 as u64, false);
 
         let msg = match env.target_info.ptr_width() {
@@ -430,7 +430,7 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
 
         let call = self
             .builder
-            .build_call(function, &[msg.into(), tag_id.into()], "roc_panic");
+            .build_call(function, &[msg.into(), tag_id.into()], "broc_panic");
 
         call.set_call_convention(C_CALL_CONV);
     }
@@ -439,7 +439,7 @@ impl<'a, 'ctx, 'env> Env<'a, 'ctx, 'env> {
         module.create_debug_info_builder(
             true,
             /* language */ inkwell::debug_info::DWARFSourceLanguage::C,
-            /* filename */ "roc_app",
+            /* filename */ "broc_app",
             /* directory */ ".",
             /* producer */ "my llvm compiler frontend",
             /* is_optimized */ false,
@@ -619,10 +619,10 @@ fn promote_to_main_function<'a, 'ctx, 'env>(
     layout_interner: &mut STLayoutInterner<'a>,
     mod_solutions: &'a ModSolutions,
     symbol: Symbol,
-    top_level: ProcLayout<'a>,
+    top_level: PbrocLayout<'a>,
 ) -> (&'static str, FunctionValue<'ctx>) {
     let it = top_level.arguments.iter().copied();
-    let bytes = roc_alias_analysis::func_name_bytes_help(symbol, it, Niche::NONE, top_level.result);
+    let bytes = broc_alias_analysis::func_name_bytes_help(symbol, it, Niche::NONE, top_level.result);
     let func_name = FuncName(&bytes);
     let func_solutions = mod_solutions.func_solutions(func_name).unwrap();
 
@@ -634,7 +634,7 @@ fn promote_to_main_function<'a, 'ctx, 'env>(
     );
 
     // NOTE fake layout; it is only used for debug prints
-    let roc_main_fn =
+    let broc_main_fn =
         function_value_by_func_spec(env, *func_spec, symbol, &[], Niche::NONE, Layout::UNIT);
 
     let main_fn_name = "$Test.main";
@@ -644,7 +644,7 @@ fn promote_to_main_function<'a, 'ctx, 'env>(
         env,
         layout_interner,
         main_fn_name,
-        roc_main_fn,
+        broc_main_fn,
         top_level.arguments,
         top_level.result,
         main_fn_name,
@@ -658,13 +658,13 @@ fn promote_to_wasm_test_wrapper<'a, 'ctx, 'env>(
     layout_interner: &mut STLayoutInterner<'a>,
     mod_solutions: &'a ModSolutions,
     symbol: Symbol,
-    top_level: ProcLayout<'a>,
+    top_level: PbrocLayout<'a>,
 ) -> (&'static str, FunctionValue<'ctx>) {
     // generates roughly
     //
     // fn test_wrapper() -> *T {
-    //     result = roc_main();
-    //     ptr = roc_malloc(size_of::<T>)
+    //     result = broc_main();
+    //     ptr = broc_malloc(size_of::<T>)
     //     *ptr = result
     //     ret ptr;
     // }
@@ -672,7 +672,7 @@ fn promote_to_wasm_test_wrapper<'a, 'ctx, 'env>(
     let main_fn_name = "test_wrapper";
 
     let it = top_level.arguments.iter().copied();
-    let bytes = roc_alias_analysis::func_name_bytes_help(symbol, it, Niche::NONE, top_level.result);
+    let bytes = broc_alias_analysis::func_name_bytes_help(symbol, it, Niche::NONE, top_level.result);
     let func_name = FuncName(&bytes);
     let func_solutions = mod_solutions.func_solutions(func_name).unwrap();
 
@@ -684,17 +684,17 @@ fn promote_to_wasm_test_wrapper<'a, 'ctx, 'env>(
     );
 
     // NOTE fake layout; it is only used for debug prints
-    let roc_main_fn =
+    let broc_main_fn =
         function_value_by_func_spec(env, *func_spec, symbol, &[], Niche::NONE, Layout::UNIT);
 
-    let output_type = match roc_main_fn.get_type().get_return_type() {
+    let output_type = match broc_main_fn.get_type().get_return_type() {
         Some(return_type) => {
             let output_type = return_type.ptr_type(AddressSpace::default());
             output_type.into()
         }
         None => {
-            assert_eq!(roc_main_fn.get_type().get_param_types().len(), 1);
-            let output_type = roc_main_fn.get_type().get_param_types()[0];
+            assert_eq!(broc_main_fn.get_type().get_param_types().len(), 1);
+            let output_type = broc_main_fn.get_type().get_param_types()[0];
             output_type
         }
     };
@@ -720,8 +720,8 @@ fn promote_to_wasm_test_wrapper<'a, 'ctx, 'env>(
         let entry = context.append_basic_block(c_function, "entry");
         builder.position_at_end(entry);
 
-        let roc_main_fn_result =
-            call_roc_function(env, layout_interner, roc_main_fn, top_level.result, &[]);
+        let broc_main_fn_result =
+            call_broc_function(env, layout_interner, broc_main_fn, top_level.result, &[]);
 
         // For consistency, we always return with a heap-allocated value
         let (size, alignment) = layout_interner.stack_size_and_alignment(top_level.result);
@@ -730,12 +730,12 @@ fn promote_to_wasm_test_wrapper<'a, 'ctx, 'env>(
 
         let ptr = builder.build_pointer_cast(void_ptr, output_type.into_pointer_type(), "cast_ptr");
 
-        store_roc_value(
+        store_broc_value(
             env,
             layout_interner,
             top_level.result,
             ptr,
-            roc_main_fn_result,
+            broc_main_fn_result,
         );
 
         builder.build_return(Some(&ptr));
@@ -778,9 +778,9 @@ pub fn build_exp_literal<'a, 'ctx, 'env>(
     layout_interner: &STLayoutInterner<'a>,
     parent: FunctionValue<'ctx>,
     layout: InLayout<'_>,
-    literal: &roc_mono::ir::Literal<'a>,
+    literal: &broc_mono::ir::Literal<'a>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_mono::ir::Literal::*;
+    use broc_mono::ir::Literal::*;
 
     match literal {
         Int(bytes) => match layout_interner.get(layout) {
@@ -805,7 +805,7 @@ pub fn build_exp_literal<'a, 'ctx, 'env>(
         },
 
         Decimal(bytes) => {
-            let (upper_bits, lower_bits) = RocDec::from_ne_bytes(*bytes).as_bits();
+            let (upper_bits, lower_bits) = BrocDec::from_ne_bytes(*bytes).as_bits();
             env.context
                 .i128_type()
                 .const_int_arbitrary_precision(&[lower_bits, upper_bits as u64])
@@ -873,7 +873,7 @@ fn small_str_ptr_width_8<'a, 'ctx, 'env>(
 
     array[..str_literal.len()].copy_from_slice(str_literal.as_bytes());
 
-    array[env.small_str_bytes() as usize - 1] = str_literal.len() as u8 | roc_std::RocStr::MASK;
+    array[env.small_str_bytes() as usize - 1] = str_literal.len() as u8 | broc_std::BrocStr::MASK;
 
     let word1 = u64::from_ne_bytes(array[0..8].try_into().unwrap());
     let word2 = u64::from_ne_bytes(array[8..16].try_into().unwrap());
@@ -900,7 +900,7 @@ fn small_str_ptr_width_4<'a, 'ctx, 'env>(
 
     array[..str_literal.len()].copy_from_slice(str_literal.as_bytes());
 
-    array[env.small_str_bytes() as usize - 1] = str_literal.len() as u8 | roc_std::RocStr::MASK;
+    array[env.small_str_bytes() as usize - 1] = str_literal.len() as u8 | broc_std::BrocStr::MASK;
 
     let word1 = u32::from_ne_bytes(array[0..4].try_into().unwrap());
     let word2 = u32::from_ne_bytes(array[4..8].try_into().unwrap());
@@ -929,9 +929,9 @@ pub fn build_exp_call<'a, 'ctx, 'env>(
     scope: &mut Scope<'a, 'ctx>,
     parent: FunctionValue<'ctx>,
     layout: InLayout<'a>,
-    call: &roc_mono::ir::Call<'a>,
+    call: &broc_mono::ir::Call<'a>,
 ) -> BasicValueEnum<'ctx> {
-    let roc_mono::ir::Call {
+    let broc_mono::ir::Call {
         call_type,
         arguments,
     } = call;
@@ -955,7 +955,7 @@ pub fn build_exp_call<'a, 'ctx, 'env>(
             let callee_var = CalleeSpecVar(&bytes);
             let func_spec = func_spec_solutions.callee_spec(callee_var).unwrap();
 
-            roc_call_with_args(
+            broc_call_with_args(
                 env,
                 layout_interner,
                 arg_layouts,
@@ -1064,7 +1064,7 @@ fn struct_pointer_from_fields<'a, 'ctx, 'env, I>(
             .new_build_struct_gep(struct_type, struct_ptr, index as u32, "field_struct_gep")
             .unwrap();
 
-        store_roc_value(env, layout_interner, field_layout, field_ptr, field_value);
+        store_broc_value(env, layout_interner, field_layout, field_ptr, field_value);
     }
 }
 
@@ -1076,9 +1076,9 @@ pub fn build_exp_expr<'a, 'ctx, 'env>(
     scope: &mut Scope<'a, 'ctx>,
     parent: FunctionValue<'ctx>,
     layout: InLayout<'a>,
-    expr: &roc_mono::ir::Expr<'a>,
+    expr: &broc_mono::ir::Expr<'a>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_mono::ir::Expr::*;
+    use broc_mono::ir::Expr::*;
 
     match expr {
         Literal(literal) => build_exp_literal(env, layout_interner, parent, layout, literal),
@@ -1148,7 +1148,7 @@ pub fn build_exp_expr<'a, 'ctx, 'env>(
                 layout_interner.alignment_bytes(layout),
             );
 
-            store_roc_value(env, layout_interner, layout, allocation, value);
+            store_broc_value(env, layout_interner, layout, allocation, value);
 
             allocation.into()
         }
@@ -1158,7 +1158,7 @@ pub fn build_exp_expr<'a, 'ctx, 'env>(
 
             debug_assert!(value.is_pointer_value());
 
-            load_roc_value(
+            load_broc_value(
                 env,
                 layout_interner,
                 layout,
@@ -1263,7 +1263,7 @@ pub fn build_exp_expr<'a, 'ctx, 'env>(
                         .unwrap();
 
                     let field_layout = field_layouts[*index as usize];
-                    use_roc_value(
+                    use_broc_value(
                         env,
                         layout_interner,
                         field_layout,
@@ -1312,7 +1312,7 @@ pub fn build_exp_expr<'a, 'ctx, 'env>(
                             basic_type_from_layout(env, layout_interner, structure_layout)
                                 .into_struct_type(),
                             argument.into_pointer_value(),
-                            RocUnion::TAG_DATA_INDEX,
+                            BrocUnion::TAG_DATA_INDEX,
                             "get_opaque_data_ptr",
                         )
                         .unwrap();
@@ -1333,7 +1333,7 @@ pub fn build_exp_expr<'a, 'ctx, 'env>(
                         )
                         .unwrap();
 
-                    load_roc_value(
+                    load_broc_value(
                         env,
                         layout_interner,
                         field_layouts[*index as usize],
@@ -1479,7 +1479,7 @@ fn build_wrapped_tag<'a, 'ctx, 'env>(
             .new_build_struct_gep(
                 union_struct_type,
                 raw_data_ptr,
-                RocUnion::TAG_ID_INDEX,
+                BrocUnion::TAG_ID_INDEX,
                 "tag_id_index",
             )
             .unwrap();
@@ -1494,7 +1494,7 @@ fn build_wrapped_tag<'a, 'ctx, 'env>(
             .new_build_struct_gep(
                 union_struct_type,
                 raw_data_ptr,
-                RocUnion::TAG_DATA_INDEX,
+                BrocUnion::TAG_DATA_INDEX,
                 "tag_data_index",
             )
             .unwrap();
@@ -1556,7 +1556,7 @@ fn build_tag_field_value<'a, 'ctx, 'env>(
     } else if layout_interner.is_passed_by_reference(tag_field_layout) {
         debug_assert!(value.is_pointer_value());
 
-        // NOTE: we rely on this being passed to `store_roc_value` so that
+        // NOTE: we rely on this being passed to `store_broc_value` so that
         // the value is memcpy'd
         value
     } else {
@@ -1656,9 +1656,9 @@ fn build_tag<'a, 'ctx, 'env>(
 
             let data = build_struct(env, layout_interner, scope, arguments);
 
-            let roc_union =
-                RocUnion::tagged_from_slices(layout_interner, env.context, tags, env.target_info);
-            let value = roc_union.as_struct_value(env, data, Some(tag_id as _));
+            let broc_union =
+                BrocUnion::tagged_from_slices(layout_interner, env.context, tags, env.target_info);
+            let value = broc_union.as_struct_value(env, data, Some(tag_id as _));
 
             let alloca = create_entry_block_alloca(
                 env,
@@ -1757,7 +1757,7 @@ fn build_tag<'a, 'ctx, 'env>(
             nullable_id,
             other_fields,
         } => {
-            let roc_union = RocUnion::untagged_from_slices(
+            let broc_union = BrocUnion::untagged_from_slices(
                 layout_interner,
                 env.context,
                 &[other_fields],
@@ -1765,7 +1765,7 @@ fn build_tag<'a, 'ctx, 'env>(
             );
 
             if tag_id == *nullable_id as _ {
-                let output_type = roc_union.struct_type().ptr_type(AddressSpace::default());
+                let output_type = broc_union.struct_type().ptr_type(AddressSpace::default());
 
                 return output_type.const_null().into();
             }
@@ -1788,7 +1788,7 @@ fn build_tag<'a, 'ctx, 'env>(
 
             let data = build_struct(env, layout_interner, scope, arguments);
 
-            let value = roc_union.as_struct_value(env, data, None);
+            let value = broc_union.as_struct_value(env, data, None);
 
             env.builder.build_store(data_ptr, value);
 
@@ -1818,8 +1818,8 @@ fn tag_pointer_set_tag_id<'a, 'ctx, 'env>(
 
 pub fn tag_pointer_tag_id_bits_and_mask(target_info: TargetInfo) -> (u64, u64) {
     match target_info.ptr_width() {
-        roc_target::PtrWidth::Bytes8 => (3, 0b0000_0111),
-        roc_target::PtrWidth::Bytes4 => (2, 0b0000_0011),
+        broc_target::PtrWidth::Bytes8 => (3, 0b0000_0111),
+        broc_target::PtrWidth::Bytes4 => (2, 0b0000_0011),
     }
 }
 
@@ -2026,7 +2026,7 @@ fn lookup_at_index_ptr<'a, 'ctx, 'env>(
         .unwrap();
 
     let field_layout = field_layouts[index];
-    let result = load_roc_value(
+    let result = load_broc_value(
         env,
         layout_interner,
         field_layout,
@@ -2069,7 +2069,7 @@ fn lookup_at_index_ptr2<'a, 'ctx, 'env>(
         .unwrap();
 
     let field_layout = field_layouts[index];
-    let result = load_roc_value(
+    let result = load_broc_value(
         env,
         layout_interner,
         field_layout,
@@ -2103,17 +2103,17 @@ fn reserve_with_refcount_union_as_block_of_memory<'a, 'ctx, 'env>(
 ) -> PointerValue<'ctx> {
     let ptr_bytes = env.target_info;
 
-    let roc_union = if union_layout.stores_tag_id_as_data(ptr_bytes) {
-        RocUnion::tagged_from_slices(layout_interner, env.context, fields, env.target_info)
+    let broc_union = if union_layout.stores_tag_id_as_data(ptr_bytes) {
+        BrocUnion::tagged_from_slices(layout_interner, env.context, fields, env.target_info)
     } else {
-        RocUnion::untagged_from_slices(layout_interner, env.context, fields, env.target_info)
+        BrocUnion::untagged_from_slices(layout_interner, env.context, fields, env.target_info)
     };
 
     reserve_with_refcount_help(
         env,
-        roc_union.struct_type(),
-        roc_union.tag_width(),
-        roc_union.tag_alignment(),
+        broc_union.struct_type(),
+        broc_union.tag_width(),
+        broc_union.tag_alignment(),
     )
 }
 
@@ -2156,7 +2156,7 @@ pub fn allocate_with_refcount_help<'a, 'ctx, 'env>(
             number_of_data_bytes.into(),
             env.alignment_const(alignment_bytes).into(),
         ],
-        roc_builtins::bitcode::UTILS_ALLOCATE_WITH_REFCOUNT,
+        broc_builtins::bitcode::UTILS_ALLOCATE_WITH_REFCOUNT,
     )
     .into_pointer_value();
 
@@ -2257,7 +2257,7 @@ fn list_literal<'a, 'ctx, 'env>(
 
             // use None for the address space (e.g. Const does not work)
             let typ = element_type.array_type(const_elements.len() as u32);
-            let global = env.module.add_global(typ, None, "roc__list_literal");
+            let global = env.module.add_global(typ, None, "broc__list_literal");
 
             global.set_constant(true);
             global.set_alignment(alignment);
@@ -2328,14 +2328,14 @@ fn list_literal<'a, 'ctx, 'env>(
                 builder.new_build_in_bounds_gep(element_type, ptr, &[index_val], "index")
             };
 
-            store_roc_value(env, layout_interner, element_layout, elem_ptr, val);
+            store_broc_value(env, layout_interner, element_layout, elem_ptr, val);
         }
 
         super::build_list::store_list(env, ptr, list_length_intval).into()
     }
 }
 
-pub fn load_roc_value<'a, 'ctx, 'env>(
+pub fn load_broc_value<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout: InLayout<'a>,
@@ -2347,7 +2347,7 @@ pub fn load_roc_value<'a, 'ctx, 'env>(
     if layout_interner.is_passed_by_reference(layout) {
         let alloca = entry_block_alloca_zerofill(env, basic_type, name);
 
-        store_roc_value(env, layout_interner, layout, alloca, source.into());
+        store_broc_value(env, layout_interner, layout, alloca, source.into());
 
         alloca.into()
     } else {
@@ -2355,7 +2355,7 @@ pub fn load_roc_value<'a, 'ctx, 'env>(
     }
 }
 
-pub fn use_roc_value<'a, 'ctx, 'env>(
+pub fn use_broc_value<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout: InLayout<'a>,
@@ -2377,7 +2377,7 @@ pub fn use_roc_value<'a, 'ctx, 'env>(
     }
 }
 
-pub fn store_roc_value_opaque<'a, 'ctx, 'env>(
+pub fn store_broc_value_opaque<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout: InLayout<'a>,
@@ -2388,12 +2388,12 @@ pub fn store_roc_value_opaque<'a, 'ctx, 'env>(
         basic_type_from_layout(env, layout_interner, layout).ptr_type(AddressSpace::default());
     let destination =
         env.builder
-            .build_pointer_cast(opaque_destination, target_type, "store_roc_value_opaque");
+            .build_pointer_cast(opaque_destination, target_type, "store_broc_value_opaque");
 
-    store_roc_value(env, layout_interner, layout, destination, value)
+    store_broc_value(env, layout_interner, layout, destination, value)
 }
 
-pub fn store_roc_value<'a, 'ctx, 'env>(
+pub fn store_broc_value<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout: InLayout<'a>,
@@ -2441,9 +2441,9 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
     func_spec_solutions: &FuncSpecSolutions,
     scope: &mut Scope<'a, 'ctx>,
     parent: FunctionValue<'ctx>,
-    stmt: &roc_mono::ir::Stmt<'a>,
+    stmt: &broc_mono::ir::Stmt<'a>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_mono::ir::Stmt::*;
+    use broc_mono::ir::Stmt::*;
 
     match stmt {
         Let(first_symbol, first_expr, first_layout, mut cont) => {
@@ -2506,8 +2506,8 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
         Ret(symbol) => {
             let (value, layout) = load_symbol_and_layout(scope, symbol);
 
-            match RocReturn::from_layout(env, layout_interner, layout) {
-                RocReturn::Return => {
+            match BrocReturn::from_layout(env, layout_interner, layout) {
+                BrocReturn::Return => {
                     if let Some(block) = env.builder.get_insert_block() {
                         if block.get_terminator().is_none() {
                             env.builder.build_return(Some(&value));
@@ -2516,13 +2516,13 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
 
                     value
                 }
-                RocReturn::ByPointer => {
+                BrocReturn::ByPointer => {
                     // we need to write our value into the final argument of the current function
                     let parameters = parent.get_params();
                     let out_parameter = parameters.last().unwrap();
                     debug_assert!(out_parameter.is_pointer_value());
 
-                    // store_roc_value(env, *layout, out_parameter.into_pointer_value(), value);
+                    // store_broc_value(env, *layout, out_parameter.into_pointer_value(), value);
 
                     let destination = out_parameter.into_pointer_value();
                     if layout_interner.is_passed_by_reference(layout) {
@@ -2823,7 +2823,7 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
         } => {
             if env.mode.runs_expects() {
                 let shared_memory = crate::llvm::expect::SharedMemoryPointer::get(env);
-                let region = unsafe { std::mem::transmute::<_, roc_region::all::Region>(*symbol) };
+                let region = unsafe { std::mem::transmute::<_, broc_region::all::Region>(*symbol) };
 
                 crate::llvm::expect::clone_to_shared_memory(
                     env,
@@ -2879,7 +2879,7 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
                 bd.position_at_end(throw_block);
 
                 match env.target_info.ptr_width() {
-                    roc_target::PtrWidth::Bytes8 => {
+                    broc_target::PtrWidth::Bytes8 => {
                         let shared_memory = SharedMemoryPointer::get(env);
 
                         clone_to_shared_memory(
@@ -2900,7 +2900,7 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
 
                         bd.build_unconditional_branch(then_block);
                     }
-                    roc_target::PtrWidth::Bytes4 => {
+                    broc_target::PtrWidth::Bytes4 => {
                         // temporary WASM implementation
                         throw_internal_exception(env, parent, "An expectation failed!");
                     }
@@ -2951,7 +2951,7 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
                 bd.position_at_end(throw_block);
 
                 match env.target_info.ptr_width() {
-                    roc_target::PtrWidth::Bytes8 => {
+                    broc_target::PtrWidth::Bytes8 => {
                         let shared_memory = SharedMemoryPointer::get(env);
 
                         clone_to_shared_memory(
@@ -2968,7 +2968,7 @@ pub fn build_exp_stmt<'a, 'ctx, 'env>(
 
                         bd.build_unconditional_branch(then_block);
                     }
-                    roc_target::PtrWidth::Bytes4 => {
+                    broc_target::PtrWidth::Bytes4 => {
                         // temporary WASM implementation
                         throw_internal_exception(env, parent, "An expectation failed!");
                     }
@@ -3251,7 +3251,7 @@ fn get_tag_id_wrapped<'a, 'ctx, 'env>(
         .new_build_struct_gep(
             union_struct_type,
             from_value,
-            RocUnion::TAG_ID_INDEX,
+            BrocUnion::TAG_ID_INDEX,
             "tag_id_ptr",
         )
         .unwrap();
@@ -3266,7 +3266,7 @@ pub fn get_tag_id_non_recursive<'a, 'ctx, 'env>(
     tag: StructValue<'ctx>,
 ) -> IntValue<'ctx> {
     env.builder
-        .build_extract_value(tag, RocUnion::TAG_ID_INDEX, "get_tag_id")
+        .build_extract_value(tag, BrocUnion::TAG_ID_INDEX, "get_tag_id")
         .unwrap()
         .into_int_value()
 }
@@ -3274,8 +3274,8 @@ pub fn get_tag_id_non_recursive<'a, 'ctx, 'env>(
 struct SwitchArgsIr<'a, 'ctx> {
     pub cond_symbol: Symbol,
     pub cond_layout: InLayout<'a>,
-    pub branches: &'a [(u64, BranchInfo<'a>, roc_mono::ir::Stmt<'a>)],
-    pub default_branch: &'a roc_mono::ir::Stmt<'a>,
+    pub branches: &'a [(u64, BranchInfo<'a>, broc_mono::ir::Stmt<'a>)],
+    pub default_branch: &'a broc_mono::ir::Stmt<'a>,
     pub ret_type: BasicTypeEnum<'ctx>,
 }
 
@@ -3531,7 +3531,7 @@ fn expose_function_to_host<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     symbol: Symbol,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     arguments: &'a [InLayout<'a>],
     niche: Niche<'a>,
     return_layout: InLayout<'a>,
@@ -3539,21 +3539,21 @@ fn expose_function_to_host<'a, 'ctx, 'env>(
 ) {
     let ident_string = symbol.as_str(&env.interns);
 
-    let proc_layout = ProcLayout {
+    let pbroc_layout = PbrocLayout {
         arguments,
         result: return_layout,
         niche,
     };
 
     let c_function_name: String = layout_ids
-        .get_toplevel(symbol, &proc_layout)
+        .get_toplevel(symbol, &pbroc_layout)
         .to_exposed_symbol_string(symbol, &env.interns);
 
     expose_function_to_host_help_c_abi(
         env,
         layout_interner,
         ident_string,
-        roc_function,
+        broc_function,
         arguments,
         return_layout,
         &c_function_name,
@@ -3563,7 +3563,7 @@ fn expose_function_to_host<'a, 'ctx, 'env>(
 fn expose_function_to_host_help_c_abi_generic<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     arguments: &[InLayout<'a>],
     return_layout: InLayout<'a>,
     c_function_name: &str,
@@ -3576,13 +3576,13 @@ fn expose_function_to_host_help_c_abi_generic<'a, 'ctx, 'env>(
     }
 
     // STEP 1: turn `f : a,b,c -> d` into `f : a,b,c, &d -> {}`
-    // let mut argument_types = roc_function.get_type().get_param_types();
+    // let mut argument_types = broc_function.get_type().get_param_types();
     let mut argument_types = cc_argument_types;
 
-    match roc_function.get_type().get_return_type() {
+    match broc_function.get_type().get_return_type() {
         None => {
             // this function already returns by-pointer
-            let output_type = roc_function.get_type().get_param_types().pop().unwrap();
+            let output_type = broc_function.get_type().get_param_types().pop().unwrap();
             argument_types.insert(0, output_type);
         }
         Some(return_type) => {
@@ -3593,7 +3593,7 @@ fn expose_function_to_host_help_c_abi_generic<'a, 'ctx, 'env>(
     // This is not actually a function that returns a value but then became
     // return-by-pointer do to the calling convention. Instead, here we
     // explicitly are forcing the passing of values via the first parameter
-    // pointer, since they are generic and hence opaque to anything outside roc.
+    // pointer, since they are generic and hence opaque to anything outside broc.
     let c_function_spec = FunctionSpec::cconv(env, CCReturn::Void, None, &argument_types);
 
     let c_function = add_func(
@@ -3626,7 +3626,7 @@ fn expose_function_to_host_help_c_abi_generic<'a, 'ctx, 'env>(
 
     let mut arguments_for_call = Vec::with_capacity_in(args.len(), env.arena);
 
-    let it = args.iter().zip(roc_function.get_type().get_param_types());
+    let it = args.iter().zip(broc_function.get_type().get_param_types());
     for (arg, fastcc_type) in it {
         let arg_type = arg.get_type();
         if arg_type == fastcc_type {
@@ -3659,35 +3659,35 @@ fn expose_function_to_host_help_c_abi_generic<'a, 'ctx, 'env>(
 
     let arguments_for_call = &arguments_for_call.into_bump_slice();
 
-    let call_result = if env.mode.returns_roc_result() {
-        debug_assert_eq!(args.len(), roc_function.get_params().len());
+    let call_result = if env.mode.returns_broc_result() {
+        debug_assert_eq!(args.len(), broc_function.get_params().len());
 
-        let roc_wrapper_function =
-            make_exception_catcher(env, layout_interner, roc_function, return_layout);
+        let broc_wrapper_function =
+            make_exception_catcher(env, layout_interner, broc_function, return_layout);
         debug_assert_eq!(
             arguments_for_call.len(),
-            roc_wrapper_function.get_params().len()
+            broc_wrapper_function.get_params().len()
         );
 
         builder.position_at_end(entry);
 
-        let wrapped_layout = layout_interner.insert(roc_call_result_layout(
+        let wrapped_layout = layout_interner.insert(broc_call_result_layout(
             env.arena,
             return_layout,
             env.target_info,
         ));
-        call_roc_function(
+        call_broc_function(
             env,
             layout_interner,
-            roc_function,
+            broc_function,
             wrapped_layout,
             arguments_for_call,
         )
     } else {
-        call_roc_function(
+        call_broc_function(
             env,
             layout_interner,
-            roc_function,
+            broc_function,
             return_layout,
             arguments_for_call,
         )
@@ -3700,7 +3700,7 @@ fn expose_function_to_host_help_c_abi_generic<'a, 'ctx, 'env>(
         .unwrap()
         .into_pointer_value();
 
-    store_roc_value(env, layout_interner, return_layout, output_arg, call_result);
+    store_broc_value(env, layout_interner, return_layout, output_arg, call_result);
     builder.build_return(None);
 
     c_function
@@ -3710,7 +3710,7 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     ident_string: &str,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     arguments: &[InLayout<'a>],
     return_layout: InLayout<'a>,
     c_function_name: &str,
@@ -3718,7 +3718,7 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
     // a tagged union to indicate to the test loader that a panic occurred.
     // especially when running 32-bit binaries on a 64-bit machine, there
     // does not seem to be a smarter solution
-    let wrapper_return_type = roc_call_result_type(
+    let wrapper_return_type = broc_call_result_type(
         env,
         basic_type_from_layout(env, layout_interner, return_layout),
     );
@@ -3770,7 +3770,7 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
 
     let it = args
         .iter()
-        .zip(roc_function.get_type().get_param_types())
+        .zip(broc_function.get_type().get_param_types())
         .zip(arguments);
     for ((arg, fastcc_type), layout) in it {
         let arg_type = arg.get_type();
@@ -3807,8 +3807,8 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
     let call_result = {
         let last_block = builder.get_insert_block().unwrap();
 
-        let roc_wrapper_function =
-            make_exception_catcher(env, layout_interner, roc_function, return_layout);
+        let broc_wrapper_function =
+            make_exception_catcher(env, layout_interner, broc_function, return_layout);
 
         builder.position_at_end(last_block);
 
@@ -3816,10 +3816,10 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
             env.arena.alloc([Layout::U64, return_layout]),
         ));
 
-        call_roc_function(
+        call_broc_function(
             env,
             layout_interner,
-            roc_wrapper_function,
+            broc_wrapper_function,
             wrapper_result,
             arguments_for_call,
         )
@@ -3843,7 +3843,7 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
         &[],
     );
 
-    let size_function_name: String = format!("roc__{}_size", ident_string);
+    let size_function_name: String = format!("broc__{}_size", ident_string);
 
     let size_function = add_func(
         env.context,
@@ -3871,7 +3871,7 @@ fn expose_function_to_host_help_c_abi_gen_test<'a, 'ctx, 'env>(
 fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     arguments: &[InLayout<'a>],
     return_layout: InLayout<'a>,
     c_function_name: &str,
@@ -3884,7 +3884,7 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
     let return_type = basic_type_from_layout(env, layout_interner, return_layout);
 
     let cc_return = to_cc_return(env, layout_interner, return_layout);
-    let roc_return = RocReturn::from_layout(env, layout_interner, return_layout);
+    let broc_return = BrocReturn::from_layout(env, layout_interner, return_layout);
 
     let c_function_spec = FunctionSpec::cconv(env, cc_return, Some(return_type), &argument_types);
 
@@ -3896,7 +3896,7 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
         Linkage::External,
     );
 
-    let c_abi_roc_str_type = env.context.struct_type(
+    let c_abi_broc_str_type = env.context.struct_type(
         &[
             env.context
                 .i8_type()
@@ -3908,7 +3908,7 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
         false,
     );
 
-    // a temporary solution to be able to pass RocStr by-value from a host language.
+    // a temporary solution to be able to pass BrocStr by-value from a host language.
     {
         let extra = match cc_return {
             CCReturn::Return => 0,
@@ -3926,7 +3926,7 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
                 // if ret_typ is a pointer type. We need the base type here.
                 let ret_typ = c_function.get_type().get_param_types()[i + extra];
                 let ret_base_typ = if ret_typ.is_pointer_type() {
-                    c_abi_roc_str_type.as_any_type_enum()
+                    c_abi_broc_str_type.as_any_type_enum()
                 } else {
                     ret_typ.as_any_type_enum()
                 };
@@ -3951,36 +3951,36 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
 
     let params = c_function.get_params();
 
-    let param_types = Vec::from_iter_in(roc_function.get_type().get_param_types(), env.arena);
+    let param_types = Vec::from_iter_in(broc_function.get_type().get_param_types(), env.arena);
 
-    let (params, param_types) = match (&roc_return, &cc_return) {
-        // Drop the "return pointer" if it exists on the roc function
+    let (params, param_types) = match (&broc_return, &cc_return) {
+        // Drop the "return pointer" if it exists on the broc function
         // and the c function does not return via pointer
-        (RocReturn::ByPointer, CCReturn::Return) => {
-            // Roc currently puts the return pointer at the end of the argument list.
+        (BrocReturn::ByPointer, CCReturn::Return) => {
+            // Broc currently puts the return pointer at the end of the argument list.
             // As such, we drop the last element here instead of the first.
             (
                 &params[..],
                 &param_types[..param_types.len().saturating_sub(1)],
             )
         }
-        // Drop the return pointer the other way, if the C function returns by pointer but Roc
+        // Drop the return pointer the other way, if the C function returns by pointer but Broc
         // doesn't
-        (RocReturn::Return, CCReturn::ByPointer) => (&params[1..], &param_types[..]),
-        (RocReturn::ByPointer, CCReturn::ByPointer) => {
-            // Both return by pointer but Roc puts it at the end and C puts it at the beginning
+        (BrocReturn::Return, CCReturn::ByPointer) => (&params[1..], &param_types[..]),
+        (BrocReturn::ByPointer, CCReturn::ByPointer) => {
+            // Both return by pointer but Broc puts it at the end and C puts it at the beginning
             (
                 &params[1..],
                 &param_types[..param_types.len().saturating_sub(1)],
             )
         }
-        (RocReturn::Return, CCReturn::Void) => {
-            // the roc function returns a unit value. like `{}` or `{ { {}, {} }, {} }`.
+        (BrocReturn::Return, CCReturn::Void) => {
+            // the broc function returns a unit value. like `{}` or `{ { {}, {} }, {} }`.
             // In C, this is modelled as a function returning void
             (&params[..], &param_types[..])
         }
-        (RocReturn::ByPointer, CCReturn::Void) => {
-            // the roc function returns a unit value. like `{}` or `{ { {}, {} }, {} }`.
+        (BrocReturn::ByPointer, CCReturn::Void) => {
+            // the broc function returns a unit value. like `{}` or `{ { {}, {} }, {} }`.
             // In C, this is modelled as a function returning void
             (
                 &params[..],
@@ -4015,10 +4015,10 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
                     // Aarch*, just passes in the pointer directly.
                     if matches!(
                         env.target_info.architecture,
-                        roc_target::Architecture::X86_32 | roc_target::Architecture::X86_64
+                        broc_target::Architecture::X86_32 | broc_target::Architecture::X86_64
                     ) {
                         let c_abi_type = match layout_interner.get(*layout) {
-                            Layout::Builtin(Builtin::Str | Builtin::List(_)) => c_abi_roc_str_type,
+                            Layout::Builtin(Builtin::Str | Builtin::List(_)) => c_abi_broc_str_type,
                             _ => todo!("figure out what the C type is"),
                         };
 
@@ -4054,20 +4054,20 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
 
     let arguments = Vec::from_iter_in(it, env.arena);
 
-    let value = call_roc_function(
+    let value = call_broc_function(
         env,
         layout_interner,
-        roc_function,
+        broc_function,
         return_layout,
         arguments.as_slice(),
     );
 
     match cc_return {
-        CCReturn::Return => match roc_return {
-            RocReturn::Return => {
+        CCReturn::Return => match broc_return {
+            BrocReturn::Return => {
                 env.builder.build_return(Some(&value));
             }
-            RocReturn::ByPointer => {
+            BrocReturn::ByPointer => {
                 let loaded = env.builder.new_build_load(
                     return_type,
                     value.into_pointer_value(),
@@ -4078,18 +4078,18 @@ fn expose_function_to_host_help_c_abi_v2<'a, 'ctx, 'env>(
         },
         CCReturn::ByPointer => {
             let out_ptr = c_function.get_nth_param(0).unwrap().into_pointer_value();
-            match roc_return {
-                RocReturn::Return => {
+            match broc_return {
+                BrocReturn::Return => {
                     env.builder.build_store(out_ptr, value);
                 }
-                RocReturn::ByPointer => {
+                BrocReturn::ByPointer => {
                     // TODO: ideally, in this case, we should pass the C return pointer directly
-                    // into the call_roc_function rather than forcing an extra alloca, load, and
+                    // into the call_broc_function rather than forcing an extra alloca, load, and
                     // store!
                     let value = env.builder.new_build_load(
                         return_type,
                         value.into_pointer_value(),
-                        "load_roc_result",
+                        "load_broc_result",
                     );
                     env.builder.build_store(out_ptr, value);
                 }
@@ -4108,7 +4108,7 @@ fn expose_function_to_host_help_c_abi<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     ident_string: &str,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     arguments: &[InLayout<'a>],
     return_layout: InLayout<'a>,
     c_function_name: &str,
@@ -4119,7 +4119,7 @@ fn expose_function_to_host_help_c_abi<'a, 'ctx, 'env>(
                 env,
                 layout_interner,
                 ident_string,
-                roc_function,
+                broc_function,
                 arguments,
                 return_layout,
                 c_function_name,
@@ -4133,7 +4133,7 @@ fn expose_function_to_host_help_c_abi<'a, 'ctx, 'env>(
     expose_function_to_host_help_c_abi_generic(
         env,
         layout_interner,
-        roc_function,
+        broc_function,
         arguments,
         return_layout,
         &format!("{}_generic", c_function_name),
@@ -4142,7 +4142,7 @@ fn expose_function_to_host_help_c_abi<'a, 'ctx, 'env>(
     let c_function = expose_function_to_host_help_c_abi_v2(
         env,
         layout_interner,
-        roc_function,
+        broc_function,
         arguments,
         return_layout,
         c_function_name,
@@ -4176,7 +4176,7 @@ fn expose_function_to_host_help_c_abi<'a, 'ctx, 'env>(
 
     let return_type = match env.mode {
         LlvmBackendMode::GenTest | LlvmBackendMode::WasmGenTest | LlvmBackendMode::CliTest => {
-            roc_call_result_type(env, roc_function.get_type().get_return_type().unwrap()).into()
+            broc_call_result_type(env, broc_function.get_type().get_return_type().unwrap()).into()
         }
 
         LlvmBackendMode::Binary | LlvmBackendMode::BinaryDev | LlvmBackendMode::BinaryGlue => {
@@ -4208,9 +4208,9 @@ pub fn get_sjlj_buffer<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> PointerValu
     };
     let type_ = word_type.array_type(5);
 
-    let global = match env.module.get_global("roc_sjlj_buffer") {
+    let global = match env.module.get_global("broc_sjlj_buffer") {
         Some(global) => global,
-        None => env.module.add_global(type_, None, "roc_sjlj_buffer"),
+        None => env.module.add_global(type_, None, "broc_sjlj_buffer"),
     };
 
     global.set_initializer(&type_.const_zero());
@@ -4225,7 +4225,7 @@ pub fn get_sjlj_buffer<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> PointerValu
 pub fn build_setjmp_call<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> BasicValueEnum<'ctx> {
     let jmp_buf = get_sjlj_buffer(env);
     if cfg!(target_arch = "aarch64") {
-        // Due to https://github.com/roc-lang/roc/issues/2965, we use a setjmp we linked in from Zig
+        // Due to https://github.com/roc-lang/broc/issues/2965, we use a setjmp we linked in from Zig
         call_bitcode_fn(env, &[jmp_buf.into()], bitcode::UTILS_SETJMP)
     } else {
         // Anywhere else, use the LLVM intrinsic.
@@ -4288,11 +4288,11 @@ pub fn build_setjmp_call<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> BasicValu
     }
 }
 
-/// Pointer to RocStr which is the panic message.
+/// Pointer to BrocStr which is the panic message.
 pub fn get_panic_msg_ptr<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> PointerValue<'ctx> {
     let str_typ = zig_str_type(env);
 
-    let global_name = "roc_panic_msg_str";
+    let global_name = "broc_panic_msg_str";
     let global = env.module.get_global(global_name).unwrap_or_else(|| {
         let global = env.module.add_global(str_typ, None, global_name);
         global.set_initializer(&str_typ.const_zero());
@@ -4307,7 +4307,7 @@ pub fn get_panic_msg_ptr<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> PointerVa
 pub fn get_panic_tag_ptr<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> PointerValue<'ctx> {
     let i64_typ = env.context.i64_type();
 
-    let global_name = "roc_panic_msg_tag";
+    let global_name = "broc_panic_msg_tag";
     let global = env.module.get_global(global_name).unwrap_or_else(|| {
         let global = env.module.add_global(i64_typ, None, global_name);
         global.set_initializer(&i64_typ.const_zero());
@@ -4321,7 +4321,7 @@ fn set_jump_and_catch_long_jump<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     parent: FunctionValue<'ctx>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     arguments: &[BasicValueEnum<'ctx>],
     return_layout: InLayout<'a>,
 ) -> BasicValueEnum<'ctx> {
@@ -4329,7 +4329,7 @@ fn set_jump_and_catch_long_jump<'a, 'ctx, 'env>(
     let builder = env.builder;
 
     let return_type = basic_type_from_layout(env, layout_interner, return_layout);
-    let call_result_type = roc_call_result_type(env, return_type.as_basic_type_enum());
+    let call_result_type = broc_call_result_type(env, return_type.as_basic_type_enum());
     let result_alloca = builder.build_alloca(call_result_type, "result");
 
     let then_block = context.append_basic_block(parent, "then_block");
@@ -4352,9 +4352,9 @@ fn set_jump_and_catch_long_jump<'a, 'ctx, 'env>(
         builder.position_at_end(then_block);
 
         let call_result =
-            call_roc_function(env, layout_interner, roc_function, return_layout, arguments);
+            call_broc_function(env, layout_interner, broc_function, return_layout, arguments);
 
-        let return_value = make_good_roc_result(env, layout_interner, return_layout, call_result);
+        let return_value = make_good_broc_result(env, layout_interner, return_layout, call_result);
 
         builder.build_store(result_alloca, return_value);
 
@@ -4365,7 +4365,7 @@ fn set_jump_and_catch_long_jump<'a, 'ctx, 'env>(
     {
         builder.position_at_end(catch_block);
 
-        // RocStr* global
+        // BrocStr* global
         let error_msg_ptr = get_panic_msg_ptr(env);
         // i64* global
         let error_tag_ptr = get_panic_tag_ptr(env);
@@ -4402,15 +4402,15 @@ fn set_jump_and_catch_long_jump<'a, 'ctx, 'env>(
 fn make_exception_catcher<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     return_layout: InLayout<'a>,
 ) -> FunctionValue<'ctx> {
-    let wrapper_function_name = format!("{}_catcher", roc_function.get_name().to_str().unwrap());
+    let wrapper_function_name = format!("{}_catcher", broc_function.get_name().to_str().unwrap());
 
     let function_value = make_exception_catching_wrapper(
         env,
         layout_interner,
-        roc_function,
+        broc_function,
         return_layout,
         &wrapper_function_name,
     );
@@ -4420,7 +4420,7 @@ fn make_exception_catcher<'a, 'ctx, 'env>(
     function_value
 }
 
-fn roc_call_result_layout<'a>(
+fn broc_call_result_layout<'a>(
     arena: &'a Bump,
     return_layout: InLayout<'a>,
     target_info: TargetInfo,
@@ -4430,7 +4430,7 @@ fn roc_call_result_layout<'a>(
     Layout::struct_no_name_order(arena.alloc(elements))
 }
 
-fn roc_call_result_type<'a, 'ctx, 'env>(
+fn broc_call_result_type<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     return_type: BasicTypeEnum<'ctx>,
 ) -> StructType<'ctx> {
@@ -4444,7 +4444,7 @@ fn roc_call_result_type<'a, 'ctx, 'env>(
     )
 }
 
-fn make_good_roc_result<'a, 'ctx, 'env>(
+fn make_good_broc_result<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     return_layout: InLayout<'a>,
@@ -4455,7 +4455,7 @@ fn make_good_roc_result<'a, 'ctx, 'env>(
 
     let return_type = basic_type_from_layout(env, layout_interner, return_layout);
 
-    let v1 = roc_call_result_type(
+    let v1 = broc_call_result_type(
         env,
         basic_type_from_layout(env, layout_interner, return_layout),
     )
@@ -4486,7 +4486,7 @@ fn make_good_roc_result<'a, 'ctx, 'env>(
 fn make_exception_catching_wrapper<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     return_layout: InLayout<'a>,
     wrapper_function_name: &str,
 ) -> FunctionValue<'ctx> {
@@ -4495,20 +4495,20 @@ fn make_exception_catching_wrapper<'a, 'ctx, 'env>(
     let context = env.context;
     let builder = env.builder;
 
-    let roc_function_type = roc_function.get_type();
-    let argument_types = match RocReturn::from_layout(env, layout_interner, return_layout) {
-        RocReturn::Return => roc_function_type.get_param_types(),
-        RocReturn::ByPointer => {
+    let broc_function_type = broc_function.get_type();
+    let argument_types = match BrocReturn::from_layout(env, layout_interner, return_layout) {
+        BrocReturn::Return => broc_function_type.get_param_types(),
+        BrocReturn::ByPointer => {
             // Our fastcc passes the return pointer as the last parameter.
             // Remove the return pointer since we now intend to return the result by value.
-            let mut types = roc_function_type.get_param_types();
+            let mut types = broc_function_type.get_param_types();
             types.pop();
 
             types
         }
     };
 
-    let wrapper_return_type = roc_call_result_type(
+    let wrapper_return_type = broc_call_result_type(
         env,
         basic_type_from_layout(env, layout_interner, return_layout),
     );
@@ -4538,7 +4538,7 @@ fn make_exception_catching_wrapper<'a, 'ctx, 'env>(
     // our exposed main function adheres to the C calling convention
     wrapper_function.set_call_conventions(FAST_CALL_CONV);
 
-    // invoke instead of call, so that we can catch any exceptions thrown in Roc code
+    // invoke instead of call, so that we can catch any exceptions thrown in Broc code
     let arguments = wrapper_function.get_params();
 
     let basic_block = context.append_basic_block(wrapper_function, "entry");
@@ -4550,7 +4550,7 @@ fn make_exception_catching_wrapper<'a, 'ctx, 'env>(
         env,
         layout_interner,
         wrapper_function,
-        roc_function,
+        broc_function,
         &arguments,
         return_layout,
     );
@@ -4560,22 +4560,22 @@ fn make_exception_catching_wrapper<'a, 'ctx, 'env>(
     wrapper_function
 }
 
-pub fn build_proc_headers<'a, 'r, 'ctx, 'env>(
+pub fn build_pbroc_headers<'a, 'r, 'ctx, 'env>(
     env: &'r Env<'a, 'ctx, 'env>,
     layout_interner: &'r mut STLayoutInterner<'a>,
     mod_solutions: &'a ModSolutions,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), roc_mono::ir::Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), broc_mono::ir::Pbroc<'a>>,
     scope: &mut Scope<'a, 'ctx>,
     layout_ids: &mut LayoutIds<'a>,
     // alias_analysis_solutions: AliasAnalysisSolutions,
 ) -> std::vec::Vec<(
-    roc_mono::ir::Proc<'a>,
+    broc_mono::ir::Pbroc<'a>,
     std::vec::Vec<(&'a FuncSpecSolutions, FunctionValue<'ctx>)>,
 )> {
-    // Populate Procs further and get the low-level Expr from the canonical Expr
+    // Populate Pbrocs further and get the low-level Expr from the canonical Expr
     let mut headers = std::vec::Vec::with_capacity(procedures.len());
-    for ((symbol, layout), proc) in procedures {
-        let name_bytes = roc_alias_analysis::func_name_bytes(&proc);
+    for ((symbol, layout), pbroc) in procedures {
+        let name_bytes = broc_alias_analysis::func_name_bytes(&pbroc);
         let func_name = FuncName(&name_bytes);
 
         let func_solutions = mod_solutions.func_solutions(func_name).unwrap();
@@ -4583,16 +4583,16 @@ pub fn build_proc_headers<'a, 'r, 'ctx, 'env>(
         let it = func_solutions.specs();
         let mut function_values = std::vec::Vec::with_capacity(it.size_hint().0);
         for specialization in it {
-            let fn_val = build_proc_header(
+            let fn_val = build_pbroc_header(
                 env,
                 layout_interner,
                 *specialization,
                 symbol,
-                &proc,
+                &pbroc,
                 layout_ids,
             );
 
-            if proc.args.is_empty() {
+            if pbroc.args.is_empty() {
                 // this is a 0-argument thunk, i.e. a top-level constant definition
                 // it must be in-scope everywhere in the module!
                 scope.insert_top_level_thunk(symbol, layout, fn_val);
@@ -4602,7 +4602,7 @@ pub fn build_proc_headers<'a, 'r, 'ctx, 'env>(
 
             function_values.push((func_spec_solutions, fn_val));
         }
-        headers.push((proc, function_values));
+        headers.push((pbroc, function_values));
     }
 
     headers
@@ -4612,7 +4612,7 @@ pub fn build_procedures<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     opt_level: OptLevel,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), roc_mono::ir::Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), broc_mono::ir::Pbroc<'a>>,
     entry_point: EntryPoint<'a>,
     debug_output_file: Option<&Path>,
     glue_layouts: &GlueLayouts<'a>,
@@ -4630,7 +4630,7 @@ pub fn build_procedures<'a, 'ctx, 'env>(
 
     for (symbol, top_level) in glue_layouts.getters.iter().copied() {
         let it = top_level.arguments.iter().copied();
-        let bytes = roc_alias_analysis::func_name_bytes_help(symbol, it, niche, top_level.result);
+        let bytes = broc_alias_analysis::func_name_bytes_help(symbol, it, niche, top_level.result);
         let func_name = FuncName(&bytes);
         let func_solutions = mod_solutions.func_solutions(func_name).unwrap();
 
@@ -4668,7 +4668,7 @@ pub fn build_wasm_test_wrapper<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     opt_level: OptLevel,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), roc_mono::ir::Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), broc_mono::ir::Pbroc<'a>>,
     entry_point: SingleEntryPoint<'a>,
 ) -> (&'static str, FunctionValue<'ctx>) {
     let mod_solutions = build_procedures_help(
@@ -4693,7 +4693,7 @@ pub fn build_procedures_return_main<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     opt_level: OptLevel,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), roc_mono::ir::Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), broc_mono::ir::Pbroc<'a>>,
     entry_point: SingleEntryPoint<'a>,
 ) -> (&'static str, FunctionValue<'ctx>) {
     let mod_solutions = build_procedures_help(
@@ -4719,7 +4719,7 @@ pub fn build_procedures_expose_expects<'a, 'ctx, 'env>(
     layout_interner: &mut STLayoutInterner<'a>,
     opt_level: OptLevel,
     expects: &'a [Symbol],
-    procedures: MutMap<(Symbol, ProcLayout<'a>), roc_mono::ir::Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), broc_mono::ir::Pbroc<'a>>,
 ) -> Vec<'a, &'a str> {
     let entry_point = EntryPoint::Expects { symbols: expects };
 
@@ -4734,7 +4734,7 @@ pub fn build_procedures_expose_expects<'a, 'ctx, 'env>(
 
     let captures_niche = Niche::NONE;
 
-    let top_level = ProcLayout {
+    let top_level = PbrocLayout {
         arguments: &[],
         result: Layout::UNIT,
         niche: captures_niche,
@@ -4745,7 +4745,7 @@ pub fn build_procedures_expose_expects<'a, 'ctx, 'env>(
     for symbol in expects.iter().copied() {
         let it = top_level.arguments.iter().copied();
         let bytes =
-            roc_alias_analysis::func_name_bytes_help(symbol, it, captures_niche, top_level.result);
+            broc_alias_analysis::func_name_bytes_help(symbol, it, captures_niche, top_level.result);
         let func_name = FuncName(&bytes);
         let func_solutions = mod_solutions.func_solutions(func_name).unwrap();
 
@@ -4761,10 +4761,10 @@ pub fn build_procedures_expose_expects<'a, 'ctx, 'env>(
         );
 
         // NOTE fake layout; it is only used for debug prints
-        let roc_main_fn =
+        let broc_main_fn =
             function_value_by_func_spec(env, *func_spec, symbol, &[], captures_niche, Layout::UNIT);
 
-        let name = roc_main_fn.get_name().to_str().unwrap();
+        let name = broc_main_fn.get_name().to_str().unwrap();
 
         let expect_name = &format!("Expect_{}", name);
         let expect_name = env.arena.alloc_str(expect_name);
@@ -4775,7 +4775,7 @@ pub fn build_procedures_expose_expects<'a, 'ctx, 'env>(
             env,
             layout_interner,
             name,
-            roc_main_fn,
+            broc_main_fn,
             top_level.arguments,
             top_level.result,
             &format!("Expect_{}", name),
@@ -4789,16 +4789,16 @@ fn build_procedures_help<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     opt_level: OptLevel,
-    procedures: MutMap<(Symbol, ProcLayout<'a>), roc_mono::ir::Proc<'a>>,
+    procedures: MutMap<(Symbol, PbrocLayout<'a>), broc_mono::ir::Pbroc<'a>>,
     entry_point: EntryPoint<'a>,
     debug_output_file: Option<&Path>,
 ) -> &'a ModSolutions {
-    let mut layout_ids = roc_mono::layout::LayoutIds::default();
+    let mut layout_ids = broc_mono::layout::LayoutIds::default();
     let mut scope = Scope::default();
 
     let it = procedures.iter().map(|x| x.1);
 
-    let solutions = match roc_alias_analysis::spec_program(
+    let solutions = match broc_alias_analysis::spec_program(
         env.arena,
         layout_interner,
         opt_level,
@@ -4812,13 +4812,13 @@ fn build_procedures_help<'a, 'ctx, 'env>(
     let solutions = env.arena.alloc(solutions);
 
     let mod_solutions = solutions
-        .mod_solutions(roc_alias_analysis::MOD_APP)
+        .mod_solutions(broc_alias_analysis::MOD_APP)
         .unwrap();
 
-    // Add all the Proc headers to the module.
+    // Add all the Pbroc headers to the module.
     // We have to do this in a separate pass first,
     // because their bodies may reference each other.
-    let headers = build_proc_headers(
+    let headers = build_pbroc_headers(
         env,
         layout_interner,
         mod_solutions,
@@ -4829,23 +4829,23 @@ fn build_procedures_help<'a, 'ctx, 'env>(
 
     let (_, function_pass) = construct_optimization_passes(env.module, opt_level);
 
-    for (proc, fn_vals) in headers {
+    for (pbroc, fn_vals) in headers {
         for (func_spec_solutions, fn_val) in fn_vals {
             let mut current_scope = scope.clone();
 
-            // only have top-level thunks for this proc's module in scope
+            // only have top-level thunks for this pbroc's module in scope
             // this retain is not needed for correctness, but will cause less confusion when debugging
-            let home = proc.name.name().module_id();
+            let home = pbroc.name.name().module_id();
             current_scope.retain_top_level_thunks_for_module(home);
 
-            build_proc(
+            build_pbroc(
                 env,
                 layout_interner,
                 mod_solutions,
                 &mut layout_ids,
                 func_spec_solutions,
                 scope.clone(),
-                &proc,
+                &pbroc,
                 fn_val,
             );
 
@@ -4910,20 +4910,20 @@ fn func_spec_name<'a>(
     buf
 }
 
-fn build_proc_header<'a, 'ctx, 'env>(
+fn build_pbroc_header<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     func_spec: FuncSpec,
     symbol: Symbol,
-    proc: &roc_mono::ir::Proc<'a>,
+    pbroc: &broc_mono::ir::Pbroc<'a>,
     layout_ids: &mut LayoutIds<'a>,
 ) -> FunctionValue<'ctx> {
-    let args = proc.args;
+    let args = pbroc.args;
     let arena = env.arena;
 
     let fn_name = func_spec_name(env.arena, &env.interns, symbol, func_spec);
 
-    let ret_type = basic_type_from_layout(env, layout_interner, proc.ret_layout);
+    let ret_type = basic_type_from_layout(env, layout_interner, pbroc.ret_layout);
     let mut arg_basic_types = Vec::with_capacity_in(args.len(), arena);
 
     for (layout, _) in args.iter() {
@@ -4932,8 +4932,8 @@ fn build_proc_header<'a, 'ctx, 'env>(
         arg_basic_types.push(arg_type);
     }
 
-    let roc_return = RocReturn::from_layout(env, layout_interner, proc.ret_layout);
-    let fn_spec = FunctionSpec::fastcc(env, roc_return, ret_type, arg_basic_types);
+    let broc_return = BrocReturn::from_layout(env, layout_interner, pbroc.ret_layout);
+    let fn_spec = FunctionSpec::fastcc(env, broc_return, ret_type, arg_basic_types);
 
     let fn_val = add_func(
         env.context,
@@ -4947,15 +4947,15 @@ fn build_proc_header<'a, 'ctx, 'env>(
     fn_val.set_subprogram(subprogram);
 
     if env.exposed_to_host.contains(&symbol) {
-        let arguments = Vec::from_iter_in(proc.args.iter().map(|(layout, _)| *layout), env.arena);
+        let arguments = Vec::from_iter_in(pbroc.args.iter().map(|(layout, _)| *layout), env.arena);
         expose_function_to_host(
             env,
             layout_interner,
             symbol,
             fn_val,
             arguments.into_bump_slice(),
-            proc.name.niche(),
-            proc.ret_layout,
+            pbroc.name.niche(),
+            pbroc.ret_layout,
             layout_ids,
         );
     }
@@ -4989,15 +4989,15 @@ fn expose_alias_to_host<'a, 'ctx, 'env>(
         RawFunctionLayout::Function(arguments, closure, result) => {
             // define closure size and return value size, e.g.
             //
-            // * roc__mainForHost_1_Update_size() -> i64
-            // * roc__mainForHost_1_Update_result_size() -> i64
+            // * broc__mainForHost_1_Update_size() -> i64
+            // * broc__mainForHost_1_Update_result_size() -> i64
 
-            let it = hels.proc_layout.arguments.iter().copied();
-            let bytes = roc_alias_analysis::func_name_bytes_help(
+            let it = hels.pbroc_layout.arguments.iter().copied();
+            let bytes = broc_alias_analysis::func_name_bytes_help(
                 hels.symbol,
                 it,
                 Niche::NONE,
-                hels.proc_layout.result,
+                hels.pbroc_layout.result,
             );
             let func_name = FuncName(&bytes);
             let func_solutions = mod_solutions.func_solutions(func_name).unwrap();
@@ -5014,9 +5014,9 @@ fn expose_alias_to_host<'a, 'ctx, 'env>(
                         env,
                         *func_spec,
                         hels.symbol,
-                        hels.proc_layout.arguments,
+                        hels.pbroc_layout.arguments,
                         Niche::NONE,
-                        hels.proc_layout.result,
+                        hels.pbroc_layout.result,
                     )
                 }
                 None => {
@@ -5043,7 +5043,7 @@ fn expose_alias_to_host<'a, 'ctx, 'env>(
         RawFunctionLayout::ZeroArgumentThunk(result) => {
             // Define only the return value size, since this is a thunk
             //
-            // * roc__mainForHost_1_Update_result_size() -> i64
+            // * broc__mainForHost_1_Update_result_size() -> i64
 
             let result_type = basic_type_from_layout(env, layout_interner, result);
 
@@ -5096,8 +5096,8 @@ fn build_closure_caller<'a, 'ctx, 'env>(
 
     // STEP 1: build function header
 
-    // e.g. `roc__mainForHost_0_caller` (def_name is `mainForHost_0`)
-    let function_name = format!("roc__{}_caller", def_name);
+    // e.g. `broc__mainForHost_0_caller` (def_name is `mainForHost_0`)
+    let function_name = format!("broc__{}_caller", def_name);
 
     let function_spec = FunctionSpec::cconv(env, CCReturn::Void, None, &argument_types);
 
@@ -5131,7 +5131,7 @@ fn build_closure_caller<'a, 'ctx, 'env>(
         }
     }
 
-    if env.mode.returns_roc_result() {
+    if env.mode.returns_broc_result() {
         let call_result = set_jump_and_catch_long_jump(
             env,
             layout_interner,
@@ -5143,7 +5143,7 @@ fn build_closure_caller<'a, 'ctx, 'env>(
 
         builder.build_store(output, call_result);
     } else {
-        let call_result = call_roc_function(
+        let call_result = call_broc_function(
             env,
             layout_interner,
             evaluator,
@@ -5218,9 +5218,9 @@ fn build_host_exposed_alias_size_help<'a, 'ctx, 'env>(
     let i64 = env.context.i64_type().as_basic_type_enum();
     let size_function_spec = FunctionSpec::cconv(env, CCReturn::Return, Some(i64), &[]);
     let size_function_name: String = if let Some(label) = opt_label {
-        format!("roc__{}_{}_size", def_name, label)
+        format!("broc__{}_{}_size", def_name, label)
     } else {
-        format!("roc__{}_size", def_name,)
+        format!("broc__{}_size", def_name,)
     };
 
     let size_function = add_func(
@@ -5239,19 +5239,19 @@ fn build_host_exposed_alias_size_help<'a, 'ctx, 'env>(
     builder.build_return(Some(&size));
 }
 
-fn build_proc<'a, 'ctx, 'env>(
+fn build_pbroc<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     mod_solutions: &'a ModSolutions,
     layout_ids: &mut LayoutIds<'a>,
     func_spec_solutions: &FuncSpecSolutions,
     mut scope: Scope<'a, 'ctx>,
-    proc: &roc_mono::ir::Proc<'a>,
+    pbroc: &broc_mono::ir::Pbroc<'a>,
     fn_val: FunctionValue<'ctx>,
 ) {
-    use roc_mono::ir::HostExposedLayouts;
+    use broc_mono::ir::HostExposedLayouts;
 
-    match &proc.host_exposed_layouts {
+    match &pbroc.host_exposed_layouts {
         HostExposedLayouts::NotHostExposed => {}
         HostExposedLayouts::HostExposed { aliases, .. } => {
             use LlvmBackendMode::*;
@@ -5262,7 +5262,7 @@ fn build_proc<'a, 'ctx, 'env>(
                 }
                 Binary | BinaryDev | BinaryGlue => {
                     for (alias_name, hels) in aliases.iter() {
-                        let ident_string = proc.name.name().as_str(&env.interns);
+                        let ident_string = pbroc.name.name().as_str(&env.interns);
                         let fn_name: String = format!("{}_{}", ident_string, hels.id.0);
 
                         expose_alias_to_host(
@@ -5279,7 +5279,7 @@ fn build_proc<'a, 'ctx, 'env>(
         }
     };
 
-    let args = proc.args;
+    let args = pbroc.args;
     let context = &env.context;
 
     // Add a basic block for the entry point
@@ -5303,7 +5303,7 @@ fn build_proc<'a, 'ctx, 'env>(
         func_spec_solutions,
         &mut scope,
         fn_val,
-        &proc.body,
+        &pbroc.body,
     );
 
     // only add a return if codegen did not already add one
@@ -5378,7 +5378,7 @@ fn function_value_by_name_help<'a, 'ctx, 'env>(
 }
 
 #[inline(always)]
-fn roc_call_with_args<'a, 'ctx, 'env>(
+fn broc_call_with_args<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     argument_layouts: &[InLayout<'a>],
@@ -5396,20 +5396,20 @@ fn roc_call_with_args<'a, 'ctx, 'env>(
         result_layout,
     );
 
-    call_roc_function(env, layout_interner, fn_val, result_layout, arguments)
+    call_broc_function(env, layout_interner, fn_val, result_layout, arguments)
 }
 
-pub fn call_roc_function<'a, 'ctx, 'env>(
+pub fn call_broc_function<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function: FunctionValue<'ctx>,
+    broc_function: FunctionValue<'ctx>,
     result_layout: InLayout<'a>,
     arguments: &[BasicValueEnum<'ctx>],
 ) -> BasicValueEnum<'ctx> {
-    let pass_by_pointer = roc_function.get_type().get_param_types().len() == arguments.len() + 1;
+    let pass_by_pointer = broc_function.get_type().get_param_types().len() == arguments.len() + 1;
 
-    match RocReturn::from_layout(env, layout_interner, result_layout) {
-        RocReturn::ByPointer if !pass_by_pointer => {
+    match BrocReturn::from_layout(env, layout_interner, result_layout) {
+        BrocReturn::ByPointer if !pass_by_pointer => {
             // WARNING this is a hack!!
             let it = arguments.iter().map(|x| (*x).into());
             let mut arguments = Vec::from_iter_in(it, env.arena);
@@ -5421,19 +5421,19 @@ pub fn call_roc_function<'a, 'ctx, 'env>(
             arguments.push(result_alloca.into());
 
             debug_assert_eq!(
-                roc_function.get_type().get_param_types().len(),
+                broc_function.get_type().get_param_types().len(),
                 arguments.len()
             );
-            let call = env.builder.build_call(roc_function, &arguments, "call");
+            let call = env.builder.build_call(broc_function, &arguments, "call");
 
-            // roc functions should have the fast calling convention
-            debug_assert_eq!(roc_function.get_call_conventions(), FAST_CALL_CONV);
+            // broc functions should have the fast calling convention
+            debug_assert_eq!(broc_function.get_call_conventions(), FAST_CALL_CONV);
             call.set_call_convention(FAST_CALL_CONV);
 
             env.builder
                 .new_build_load(result_type, result_alloca, "load_result")
         }
-        RocReturn::ByPointer => {
+        BrocReturn::ByPointer => {
             let it = arguments.iter().map(|x| (*x).into());
             let mut arguments = Vec::from_iter_in(it, env.arena);
 
@@ -5443,13 +5443,13 @@ pub fn call_roc_function<'a, 'ctx, 'env>(
             arguments.push(result_alloca.into());
 
             debug_assert_eq!(
-                roc_function.get_type().get_param_types().len(),
+                broc_function.get_type().get_param_types().len(),
                 arguments.len()
             );
-            let call = env.builder.build_call(roc_function, &arguments, "call");
+            let call = env.builder.build_call(broc_function, &arguments, "call");
 
-            // roc functions should have the fast calling convention
-            debug_assert_eq!(roc_function.get_call_conventions(), FAST_CALL_CONV);
+            // broc functions should have the fast calling convention
+            debug_assert_eq!(broc_function.get_call_conventions(), FAST_CALL_CONV);
             call.set_call_convention(FAST_CALL_CONV);
 
             if layout_interner.is_passed_by_reference(result_layout) {
@@ -5462,24 +5462,24 @@ pub fn call_roc_function<'a, 'ctx, 'env>(
                 )
             }
         }
-        RocReturn::Return => {
+        BrocReturn::Return => {
             debug_assert_eq!(
-                roc_function.get_type().get_param_types().len(),
+                broc_function.get_type().get_param_types().len(),
                 arguments.len()
             );
             let it = arguments.iter().map(|x| (*x).into());
             let arguments = Vec::from_iter_in(it, env.arena);
 
-            let call = env.builder.build_call(roc_function, &arguments, "call");
+            let call = env.builder.build_call(broc_function, &arguments, "call");
 
-            // roc functions should have the fast calling convention
-            debug_assert_eq!(roc_function.get_call_conventions(), FAST_CALL_CONV);
+            // broc functions should have the fast calling convention
+            debug_assert_eq!(broc_function.get_call_conventions(), FAST_CALL_CONV);
             call.set_call_convention(FAST_CALL_CONV);
 
             call.try_as_basic_value().left().unwrap_or_else(|| {
                 panic!(
                     "LLVM error: Invalid call by name for name {:?}",
-                    roc_function.get_name()
+                    broc_function.get_name()
                 )
             })
         }
@@ -5507,14 +5507,14 @@ pub const C_CALL_CONV: u32 = 0;
 pub const FAST_CALL_CONV: u32 = 8;
 pub const COLD_CALL_CONV: u32 = 9;
 
-pub struct RocFunctionCall<'ctx> {
+pub struct BrocFunctionCall<'ctx> {
     pub caller: PointerValue<'ctx>,
     pub data: PointerValue<'ctx>,
     pub inc_n_data: PointerValue<'ctx>,
     pub data_is_owned: IntValue<'ctx>,
 }
 
-pub(crate) fn roc_function_call<'a, 'ctx, 'env>(
+pub(crate) fn broc_function_call<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout_ids: &mut LayoutIds<'a>,
@@ -5524,7 +5524,7 @@ pub(crate) fn roc_function_call<'a, 'ctx, 'env>(
     closure_data_is_owned: bool,
     argument_layouts: &[InLayout<'a>],
     result_layout: InLayout<'a>,
-) -> RocFunctionCall<'ctx> {
+) -> BrocFunctionCall<'ctx> {
     use crate::llvm::bitcode::{build_inc_n_wrapper, build_transform_caller};
 
     let closure_data_ptr = env
@@ -5557,7 +5557,7 @@ pub(crate) fn roc_function_call<'a, 'ctx, 'env>(
         .bool_type()
         .const_int(closure_data_is_owned as u64, false);
 
-    RocFunctionCall {
+    BrocFunctionCall {
         caller: stepper_caller,
         inc_n_data: inc_closure_data,
         data_is_owned: closure_data_is_owned,
@@ -5607,7 +5607,7 @@ fn to_cc_type_builtin<'a, 'ctx, 'env>(
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) enum RocReturn {
+pub(crate) enum BrocReturn {
     /// Return as normal
     Return,
     /// require an extra argument, a pointer
@@ -5615,8 +5615,8 @@ pub(crate) enum RocReturn {
     ByPointer,
 }
 
-impl RocReturn {
-    fn roc_return_by_pointer(
+impl BrocReturn {
+    fn broc_return_by_pointer(
         interner: &STLayoutInterner,
         target_info: TargetInfo,
         layout: InLayout,
@@ -5626,16 +5626,16 @@ impl RocReturn {
                 use Builtin::*;
 
                 match target_info.ptr_width() {
-                    roc_target::PtrWidth::Bytes4 => false,
+                    broc_target::PtrWidth::Bytes4 => false,
 
-                    roc_target::PtrWidth::Bytes8 => {
+                    broc_target::PtrWidth::Bytes8 => {
                         //
                         matches!(builtin, Str)
                     }
                 }
             }
             Layout::Union(UnionLayout::NonRecursive(_)) => true,
-            Layout::LambdaSet(lambda_set) => RocReturn::roc_return_by_pointer(
+            Layout::LambdaSet(lambda_set) => BrocReturn::broc_return_by_pointer(
                 interner,
                 target_info,
                 lambda_set.runtime_representation(),
@@ -5649,10 +5649,10 @@ impl RocReturn {
         layout_interner: &mut STLayoutInterner<'a>,
         layout: InLayout<'a>,
     ) -> Self {
-        if Self::roc_return_by_pointer(layout_interner, env.target_info, layout) {
-            RocReturn::ByPointer
+        if Self::broc_return_by_pointer(layout_interner, env.target_info, layout) {
+            BrocReturn::ByPointer
         } else {
-            RocReturn::Return
+            BrocReturn::Return
         }
     }
 }
@@ -5742,15 +5742,15 @@ impl<'ctx> FunctionSpec<'ctx> {
     /// Fastcc calling convention
     fn fastcc<'a, 'env>(
         env: &Env<'a, 'ctx, 'env>,
-        roc_return: RocReturn,
+        broc_return: BrocReturn,
         return_type: BasicTypeEnum<'ctx>,
         mut argument_types: Vec<BasicTypeEnum<'ctx>>,
     ) -> FunctionSpec<'ctx> {
-        let typ = match roc_return {
-            RocReturn::Return => {
+        let typ = match broc_return {
+            BrocReturn::Return => {
                 return_type.fn_type(&function_arguments(env, &argument_types), false)
             }
-            RocReturn::ByPointer => {
+            BrocReturn::ByPointer => {
                 argument_types.push(return_type.ptr_type(AddressSpace::default()).into());
                 env.context
                     .void_type()
@@ -5792,11 +5792,11 @@ pub fn to_cc_return<'a, 'ctx, 'env>(
 ) -> CCReturn {
     let return_size = layout_interner.stack_size(layout);
     let pass_result_by_pointer = match env.target_info.operating_system {
-        roc_target::OperatingSystem::Windows => {
+        broc_target::OperatingSystem::Windows => {
             return_size >= 2 * env.target_info.ptr_width() as u32
         }
-        roc_target::OperatingSystem::Unix => return_size > 2 * env.target_info.ptr_width() as u32,
-        roc_target::OperatingSystem::Wasi => return_size > 2 * env.target_info.ptr_width() as u32,
+        broc_target::OperatingSystem::Unix => return_size > 2 * env.target_info.ptr_width() as u32,
+        broc_target::OperatingSystem::Wasi => return_size > 2 * env.target_info.ptr_width() as u32,
     };
 
     if return_size == 0 {
@@ -5820,7 +5820,7 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     scope: &mut Scope<'a, 'ctx>,
-    foreign: &roc_module::ident::ForeignSymbol,
+    foreign: &broc_module::ident::ForeignSymbol,
     argument_symbols: &[Symbol],
     ret_layout: InLayout<'a>,
 ) -> BasicValueEnum<'ctx> {
@@ -5845,13 +5845,13 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
         None => {
             // Here we build two functions:
             //
-            // - an C_CALL_CONV extern that will be provided by the host, e.g. `roc_fx_putLine`
+            // - an C_CALL_CONV extern that will be provided by the host, e.g. `broc_fx_putLine`
             //      This is just a type signature that we make available to the linker,
             //      and can use in the wrapper
-            // - a FAST_CALL_CONV wrapper that we make here, e.g. `roc_fx_putLine_fastcc_wrapper`
+            // - a FAST_CALL_CONV wrapper that we make here, e.g. `broc_fx_putLine_fastcc_wrapper`
 
             let return_type = basic_type_from_layout(env, layout_interner, ret_layout);
-            let roc_return = RocReturn::from_layout(env, layout_interner, ret_layout);
+            let broc_return = BrocReturn::from_layout(env, layout_interner, ret_layout);
             let cc_return = to_cc_return(env, layout_interner, ret_layout);
 
             let mut cc_argument_types =
@@ -5876,7 +5876,7 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
             let cc_function = get_foreign_symbol(env, foreign.clone(), cc_type);
 
             let fastcc_type =
-                FunctionSpec::fastcc(env, roc_return, return_type, fastcc_argument_types);
+                FunctionSpec::fastcc(env, broc_return, return_type, fastcc_argument_types);
 
             let fastcc_function = add_func(
                 env.context,
@@ -5896,9 +5896,9 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
                 let mut cc_arguments =
                     Vec::with_capacity_in(fastcc_parameters.len() + 1, env.arena);
 
-                let return_pointer = match roc_return {
-                    RocReturn::Return => env.builder.build_alloca(return_type, "return_value"),
-                    RocReturn::ByPointer => fastcc_parameters.pop().unwrap().into_pointer_value(),
+                let return_pointer = match broc_return {
+                    BrocReturn::Return => env.builder.build_alloca(return_type, "return_value"),
+                    BrocReturn::ByPointer => fastcc_parameters.pop().unwrap().into_pointer_value(),
                 };
 
                 if let CCReturn::ByPointer = cc_return {
@@ -5944,8 +5944,8 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
                 let call = env.builder.build_call(cc_function, &cc_arguments, "tmp");
                 call.set_call_convention(C_CALL_CONV);
 
-                match roc_return {
-                    RocReturn::Return => {
+                match broc_return {
+                    BrocReturn::Return => {
                         let return_value = match cc_return {
                             CCReturn::Return => call.try_as_basic_value().left().unwrap(),
 
@@ -5959,7 +5959,7 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
 
                         builder.build_return(Some(&return_value));
                     }
-                    RocReturn::ByPointer => {
+                    BrocReturn::ByPointer => {
                         match cc_return {
                             CCReturn::Return => {
                                 let result = call.try_as_basic_value().left().unwrap();
@@ -5982,7 +5982,7 @@ fn build_foreign_symbol<'a, 'ctx, 'env>(
         }
     };
 
-    call_roc_function(
+    call_broc_function(
         env,
         layout_interner,
         fastcc_function,
@@ -6081,7 +6081,7 @@ pub(crate) fn throw_internal_exception<'a, 'ctx, 'env>(
 
     let str = build_string_literal(env, parent, message);
 
-    env.call_panic(env, str, CrashTag::Roc);
+    env.call_panic(env, str, CrashTag::Broc);
 
     builder.build_unreachable();
 }
@@ -6101,7 +6101,7 @@ pub(crate) fn throw_exception<'a, 'ctx, 'env>(
 
 fn get_foreign_symbol<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
-    foreign_symbol: roc_module::ident::ForeignSymbol,
+    foreign_symbol: broc_module::ident::ForeignSymbol,
     function_spec: FunctionSpec<'ctx>,
 ) -> FunctionValue<'ctx> {
     let module = env.module;

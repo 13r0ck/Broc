@@ -1,4 +1,4 @@
-use roc_types::subs::VarStore;
+use broc_types::subs::VarStore;
 
 use crate::{
     lang::core::{def::def::Def, expr::expr2::Expr2},

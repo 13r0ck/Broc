@@ -22,7 +22,7 @@ imagine.
 Et dea diebus me corpora nunc. Iam parte medium obscuraque **Acheloia** ad iubes
 inferius altera nervus! Irasci pes facit Solem, credimus, est aqua regia terrae
 mirarique spectabat, dixit. Tuta nimis Canache Quirini et fessa, de nodoso se
-procul errant.
+pbrocul errant.
 
 ## Neptune longi bis lacertis tempore conpellat est
 
@@ -55,11 +55,11 @@ Herculei undae calcata inmeriti quercus ignes parabant iam.
 ### Example Code Blocks
 
 ```sh
-# This isn't fenced roc code so its not formatted
-# Use a fence like ```roc to format code blocks
+# This isn't fenced broc code so its not formatted
+# Use a fence like ```broc to format code blocks
 ```
 
-```roc
-file:codeExample.roc
+```broc
+file:codeExample.broc
 ```
 

@@ -8,9 +8,9 @@ use crate::helpers::wasm::assert_evals_to;
 use indoc::indoc;
 
 #[cfg(all(test, any(feature = "gen-llvm", feature = "gen-wasm")))]
-use roc_std::RocList;
+use broc_std::BrocList;
 #[cfg(all(test, any(feature = "gen-llvm", feature = "gen-wasm")))]
-use roc_std::RocStr;
+use broc_std::BrocStr;
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
@@ -241,8 +241,8 @@ fn bounds_to_multiple_abilities() {
             main = lifecycle (@Hello "hello world")
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     )
 }
 
@@ -285,8 +285,8 @@ fn encode() {
             myU8Bytes = toBytes (@Rgba { r: 106, g: 90, b: 205, a: 255 }) (@Linear {})
             "#
         ),
-        RocList::from_slice(&[106, 90, 205, 255]),
-        RocList<u8>
+        BrocList::from_slice(&[106, 90, 205, 255]),
+        BrocList<u8>
     )
 }
 
@@ -371,8 +371,8 @@ fn encode_use_stdlib() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from("\"Hello, World!\n\""),
-        RocStr
+        BrocStr::from("\"Hello, World!\n\""),
+        BrocStr
     )
 }
 
@@ -396,8 +396,8 @@ fn encode_use_stdlib_without_wrapping_custom() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from("\"Hello, World!\n\""),
-        RocStr
+        BrocStr::from("\"Hello, World!\n\""),
+        BrocStr
     )
 }
 
@@ -420,8 +420,8 @@ fn encode_derive_to_encoder_for_opaque() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"a":"Hello, World!"}"#),
-        RocStr
+        BrocStr::from(r#"{"a":"Hello, World!"}"#),
+        BrocStr
     )
 }
 
@@ -448,8 +448,8 @@ fn to_encoder_encode_custom_has_capture() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from("\"Hello, World!\n\""),
-        RocStr
+        BrocStr::from("\"Hello, World!\n\""),
+        BrocStr
     )
 }
 
@@ -464,7 +464,7 @@ mod encode_immediate {
     use indoc::indoc;
 
     #[cfg(all(test, any(feature = "gen-llvm", feature = "gen-wasm")))]
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
     #[test]
     #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
@@ -480,8 +480,8 @@ mod encode_immediate {
                         _ -> "<bad>"
                 "#
             ),
-            RocStr::from("\"foo\""),
-            RocStr
+            BrocStr::from("\"foo\""),
+            BrocStr
         )
     }
 
@@ -499,8 +499,8 @@ mod encode_immediate {
                         _ -> "<bad>"
                 "#
             ),
-            RocStr::from(r"[1,2,3]"),
-            RocStr
+            BrocStr::from(r"[1,2,3]"),
+            BrocStr
         )
     }
 
@@ -518,8 +518,8 @@ mod encode_immediate {
                         _ -> "<bad>"
                 "#
             ),
-            RocStr::from(r"false"),
-            RocStr
+            BrocStr::from(r"false"),
+            BrocStr
         )
     }
 
@@ -539,8 +539,8 @@ mod encode_immediate {
                                 _ -> "<bad>"
                         "#
                     ), $num, stringify!($typ)),
-                    RocStr::from(format!(r#"{}"#, $num).as_str()),
-                    RocStr
+                    BrocStr::from(format!(r#"{}"#, $num).as_str()),
+                    BrocStr
                 )
             }
         )*}
@@ -580,8 +580,8 @@ fn encode_derived_record_one_field_string() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"a":"foo"}"#),
-        RocStr
+        BrocStr::from(r#"{"a":"foo"}"#),
+        BrocStr
     )
 }
 
@@ -603,8 +603,8 @@ fn encode_derived_record_two_fields_strings() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"a":"foo","b":"bar"}"#),
-        RocStr
+        BrocStr::from(r#"{"a":"foo","b":"bar"}"#),
+        BrocStr
     )
 }
 
@@ -627,8 +627,8 @@ fn encode_derived_nested_record_string() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"a":{"b":"bar"}}"#),
-        RocStr
+        BrocStr::from(r#"{"a":{"b":"bar"}}"#),
+        BrocStr
     )
 }
 
@@ -650,8 +650,8 @@ fn encode_derived_tag_one_payload_string() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"A":["foo"]}"#),
-        RocStr
+        BrocStr::from(r#"{"A":["foo"]}"#),
+        BrocStr
     )
 }
 
@@ -673,8 +673,8 @@ fn encode_derived_tag_two_payloads_string() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"A":["foo","bar"]}"#),
-        RocStr
+        BrocStr::from(r#"{"A":["foo","bar"]}"#),
+        BrocStr
     )
 }
 
@@ -697,8 +697,8 @@ fn encode_derived_nested_tag_string() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"A":[{"B":["foo","bar"]}]}"#),
-        RocStr
+        BrocStr::from(r#"{"A":[{"B":["foo","bar"]}]}"#),
+        BrocStr
     )
 }
 
@@ -721,8 +721,8 @@ fn encode_derived_nested_record_tag_record() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"a":{"B":[{"c":"foo"}]}}"#),
-        RocStr
+        BrocStr::from(r#"{"a":{"B":[{"c":"foo"}]}}"#),
+        BrocStr
     )
 }
 
@@ -745,8 +745,8 @@ fn encode_derived_list_string() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"["foo","bar","baz"]"#),
-        RocStr
+        BrocStr::from(r#"["foo","bar","baz"]"#),
+        BrocStr
     )
 }
 
@@ -769,8 +769,8 @@ fn encode_derived_list_of_records() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"[{"a":"foo"},{"a":"bar"},{"a":"baz"}]"#),
-        RocStr
+        BrocStr::from(r#"[{"a":"foo"},{"a":"bar"},{"a":"baz"}]"#),
+        BrocStr
     )
 }
 
@@ -793,8 +793,8 @@ fn encode_derived_list_of_lists_of_strings() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"[["a","b"],["c","d","e"],["f"]]"#),
-        RocStr
+        BrocStr::from(r#"[["a","b"],["c","d","e"],["f"]]"#),
+        BrocStr
     )
 }
 
@@ -818,10 +818,10 @@ fn encode_derived_record_with_many_types() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(
+        BrocStr::from(
             r#"{"actors":["Idris Elba","Mila Kunis"],"rating":{"average":7,"max":10,"min":1,"sentiment":{"Fresh":["tomatoes"]}},"year":2004}"#
         ),
-        RocStr
+        BrocStr
     )
 }
 
@@ -843,8 +843,8 @@ fn encode_derived_tuple_two_fields() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"["foo",10]"#),
-        RocStr
+        BrocStr::from(r#"["foo",10]"#),
+        BrocStr
     )
 }
 
@@ -866,8 +866,8 @@ fn encode_derived_tuple_of_tuples() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"[["foo",10],[23,"bar",15]]"#),
-        RocStr
+        BrocStr::from(r#"[["foo",10],[23,"bar",15]]"#),
+        BrocStr
     )
 }
 
@@ -892,8 +892,8 @@ fn encode_derived_generic_record_with_different_field_types() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"a":10,"b":"fieldb"}"#),
-        RocStr
+        BrocStr::from(r#"{"a":10,"b":"fieldb"}"#),
+        BrocStr
     )
 }
 
@@ -919,8 +919,8 @@ fn encode_derived_generic_tag_with_different_field_types() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from(r#"{"B":[67]}"#),
-        RocStr
+        BrocStr::from(r#"{"B":[67]}"#),
+        BrocStr
     )
 }
 
@@ -958,7 +958,7 @@ fn decode_use_stdlib() {
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_derive_decoder_for_opaque() {
     assert_evals_to!(
@@ -976,8 +976,8 @@ fn decode_derive_decoder_for_opaque() {
                     _ -> "FAIL"
             "#
         ),
-        RocStr::from(r#"Hello, World!"#),
-        RocStr
+        BrocStr::from(r#"Hello, World!"#),
+        BrocStr
     )
 }
 
@@ -1007,8 +1007,8 @@ fn decode_use_stdlib_json_list() {
                     _ -> []
             "#
         ),
-        RocList::from_slice(&[1u8, 2u8, 3u8]),
-        RocList<u8>
+        BrocList::from_slice(&[1u8, 2u8, 3u8]),
+        BrocList<u8>
     )
 }
 
@@ -1023,7 +1023,7 @@ mod decode_immediate {
     use indoc::indoc;
 
     #[cfg(all(test, any(feature = "gen-llvm")))]
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
     #[test]
     #[cfg(any(feature = "gen-llvm"))]
@@ -1039,8 +1039,8 @@ mod decode_immediate {
                         _ -> "<bad>"
                 "#
             ),
-            RocStr::from("foo"),
-            RocStr
+            BrocStr::from("foo"),
+            BrocStr
         )
     }
 
@@ -1126,7 +1126,7 @@ mod decode_immediate {
     #[test]
     #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
     fn dec() {
-        use roc_std::RocDec;
+        use broc_std::BrocDec;
 
         assert_evals_to!(
             indoc!(
@@ -1139,8 +1139,8 @@ mod decode_immediate {
                         _ -> 101dec
                 "#
             ),
-            RocDec::from_str("17.23").unwrap(),
-            RocDec
+            BrocDec::from_str("17.23").unwrap(),
+            BrocDec
         )
     }
 }
@@ -1159,8 +1159,8 @@ fn decode_list_of_strings() {
                     _ -> "<bad>"
             "#
         ),
-        RocStr::from("a,b,c"),
-        RocStr
+        BrocStr::from("a,b,c"),
+        BrocStr
     )
 }
 
@@ -1178,8 +1178,8 @@ fn encode_then_decode_list_of_strings() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("a,b,c"),
-        RocStr
+        BrocStr::from("a,b,c"),
+        BrocStr
     )
 }
 
@@ -1198,15 +1198,15 @@ fn encode_then_decode_list_of_lists_of_strings() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("a,b;c,d,e;f"),
-        RocStr
+        BrocStr::from("a,b;c,d,e;f"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_record_two_fields() {
     assert_evals_to!(
@@ -1220,15 +1220,15 @@ fn decode_record_two_fields() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("abcd"),
-        RocStr
+        BrocStr::from("abcd"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_record_two_fields_string_and_int() {
     assert_evals_to!(
@@ -1242,15 +1242,15 @@ fn decode_record_two_fields_string_and_int() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("ab10"),
-        RocStr
+        BrocStr::from("ab10"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_record_two_fields_string_and_string_infer() {
     assert_evals_to!(
@@ -1264,15 +1264,15 @@ fn decode_record_two_fields_string_and_string_infer() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("abcd"),
-        RocStr
+        BrocStr::from("abcd"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_record_two_fields_string_and_string_infer_local_var() {
     assert_evals_to!(
@@ -1287,15 +1287,15 @@ fn decode_record_two_fields_string_and_string_infer_local_var() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("abcd"),
-        RocStr
+        BrocStr::from("abcd"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_record_two_fields_string_and_string_infer_local_var_destructured() {
     assert_evals_to!(
@@ -1310,8 +1310,8 @@ fn decode_record_two_fields_string_and_string_infer_local_var_destructured() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("abcd"),
-        RocStr
+        BrocStr::from("abcd"),
+        BrocStr
     )
 }
 
@@ -1330,8 +1330,8 @@ fn decode_empty_record() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("empty"),
-        RocStr
+        BrocStr::from("empty"),
+        BrocStr
     )
 }
 
@@ -1339,7 +1339,7 @@ fn decode_empty_record() {
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
     not(feature = "gen-llvm-wasm"), // hits a wasm3 stack overflow
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_record_of_record() {
     assert_evals_to!(
@@ -1353,15 +1353,15 @@ fn decode_record_of_record() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("ab10"),
-        RocStr
+        BrocStr::from("ab10"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_tuple_two_elements() {
     assert_evals_to!(
@@ -1375,15 +1375,15 @@ fn decode_tuple_two_elements() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("abcd"),
-        RocStr
+        BrocStr::from("abcd"),
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(all(
     any(feature = "gen-llvm", feature = "gen-wasm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 fn decode_tuple_of_tuples() {
     assert_evals_to!(
@@ -1397,8 +1397,8 @@ fn decode_tuple_of_tuples() {
                     _ -> "something went wrong"
             "#
         ),
-        RocStr::from("abcd"),
-        RocStr
+        BrocStr::from("abcd"),
+        BrocStr
     )
 }
 
@@ -1485,14 +1485,14 @@ mod hash {
 
     mod immediate {
         use super::{assert_evals_to, build_test};
-        use roc_std::RocList;
+        use broc_std::BrocList;
 
         #[test]
         fn bool_false() {
             assert_evals_to!(
                 &build_test("Bool.false"),
-                RocList::from_slice(&[0]),
-                RocList<u8>
+                BrocList::from_slice(&[0]),
+                BrocList<u8>
             )
         }
 
@@ -1500,8 +1500,8 @@ mod hash {
         fn bool_true() {
             assert_evals_to!(
                 &build_test("Bool.true"),
-                RocList::from_slice(&[1]),
-                RocList<u8>
+                BrocList::from_slice(&[1]),
+                BrocList<u8>
             )
         }
 
@@ -1509,8 +1509,8 @@ mod hash {
         fn i8() {
             assert_evals_to!(
                 &build_test("-2i8"),
-                RocList::from_slice(&[254]),
-                RocList<u8>
+                BrocList::from_slice(&[254]),
+                BrocList<u8>
             )
         }
 
@@ -1518,8 +1518,8 @@ mod hash {
         fn u8() {
             assert_evals_to!(
                 &build_test("254u8"),
-                RocList::from_slice(&[254]),
-                RocList<u8>
+                BrocList::from_slice(&[254]),
+                BrocList<u8>
             )
         }
 
@@ -1527,8 +1527,8 @@ mod hash {
         fn i16() {
             assert_evals_to!(
                 &build_test("-2i16"),
-                RocList::from_slice(&[254, 255]),
-                RocList<u8>
+                BrocList::from_slice(&[254, 255]),
+                BrocList<u8>
             )
         }
 
@@ -1536,8 +1536,8 @@ mod hash {
         fn u16() {
             assert_evals_to!(
                 &build_test("Num.maxU16 - 1"),
-                RocList::from_slice(&[254, 255]),
-                RocList<u8>
+                BrocList::from_slice(&[254, 255]),
+                BrocList<u8>
             )
         }
 
@@ -1545,8 +1545,8 @@ mod hash {
         fn i32() {
             assert_evals_to!(
                 &build_test("-2i32"),
-                RocList::from_slice(&[254, 255, 255, 255]),
-                RocList<u8>
+                BrocList::from_slice(&[254, 255, 255, 255]),
+                BrocList<u8>
             )
         }
 
@@ -1554,8 +1554,8 @@ mod hash {
         fn u32() {
             assert_evals_to!(
                 &build_test("Num.maxU32 - 1"),
-                RocList::from_slice(&[254, 255, 255, 255]),
-                RocList<u8>
+                BrocList::from_slice(&[254, 255, 255, 255]),
+                BrocList<u8>
             )
         }
 
@@ -1563,8 +1563,8 @@ mod hash {
         fn i64() {
             assert_evals_to!(
                 &build_test("-2i64"),
-                RocList::from_slice(&[254, 255, 255, 255, 255, 255, 255, 255]),
-                RocList<u8>
+                BrocList::from_slice(&[254, 255, 255, 255, 255, 255, 255, 255]),
+                BrocList<u8>
             )
         }
 
@@ -1572,8 +1572,8 @@ mod hash {
         fn u64() {
             assert_evals_to!(
                 &build_test("Num.maxU64 - 1"),
-                RocList::from_slice(&[254, 255, 255, 255, 255, 255, 255, 255]),
-                RocList<u8>
+                BrocList::from_slice(&[254, 255, 255, 255, 255, 255, 255, 255]),
+                BrocList<u8>
             )
         }
 
@@ -1582,10 +1582,10 @@ mod hash {
         fn i128() {
             assert_evals_to!(
                 &build_test("-2i128"),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1594,10 +1594,10 @@ mod hash {
         fn u128() {
             assert_evals_to!(
                 &build_test("Num.maxU128 - 1"),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1605,8 +1605,8 @@ mod hash {
         fn string() {
             assert_evals_to!(
                 &build_test(r#""ab☃AB""#),
-                RocList::from_slice(&[97, 98, 226, 152, 131, 65, 66]),
-                RocList<u8>
+                BrocList::from_slice(&[97, 98, 226, 152, 131, 65, 66]),
+                BrocList<u8>
             )
         }
 
@@ -1614,8 +1614,8 @@ mod hash {
         fn list_u8() {
             assert_evals_to!(
                 &build_test(r#"[15u8, 23u8, 37u8]"#),
-                RocList::from_slice(&[15, 23, 37]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 23, 37]),
+                BrocList<u8>
             )
         }
 
@@ -1623,8 +1623,8 @@ mod hash {
         fn list_string() {
             assert_evals_to!(
                 &build_test(r#"["ab", "cd", "ef"]"#),
-                RocList::from_slice(&[97, 98, 99, 100, 101, 102]),
-                RocList<u8>
+                BrocList::from_slice(&[97, 98, 99, 100, 101, 102]),
+                BrocList<u8>
             )
         }
 
@@ -1632,22 +1632,22 @@ mod hash {
         fn list_list_string() {
             assert_evals_to!(
                 &build_test(r#"[[ "ab", "cd" ], [ "ef" ]]"#),
-                RocList::from_slice(&[97, 98, 99, 100, 101, 102]),
-                RocList<u8>
+                BrocList::from_slice(&[97, 98, 99, 100, 101, 102]),
+                BrocList<u8>
             )
         }
     }
 
     mod derived {
         use super::{assert_evals_to, build_test, indoc, TEST_HASHER};
-        use roc_std::RocList;
+        use broc_std::BrocList;
 
         #[test]
         fn empty_record() {
             assert_evals_to!(
                 &build_test(r#"{}"#),
-                RocList::from_slice(&[] as &[u8]),
-                RocList<u8>
+                BrocList::from_slice(&[] as &[u8]),
+                BrocList<u8>
             )
         }
 
@@ -1655,8 +1655,8 @@ mod hash {
         fn record_of_u8_and_str() {
             assert_evals_to!(
                 &build_test(r#"{ a: 15u8, b: "bc" }"#),
-                RocList::from_slice(&[15, 98, 99]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 98, 99]),
+                BrocList<u8>
             )
         }
 
@@ -1664,8 +1664,8 @@ mod hash {
         fn record_of_records() {
             assert_evals_to!(
                 &build_test(r#"{ a: { b: 15u8, c: "bc" }, d: { b: 23u8, e: "ef" } }"#),
-                RocList::from_slice(&[15, 98, 99, 23, 101, 102]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 98, 99, 23, 101, 102]),
+                BrocList<u8>
             )
         }
 
@@ -1675,8 +1675,8 @@ mod hash {
                 &build_test(
                     r#"{ a: [ { b: 15u8 }, { b: 23u8 } ], b: [ { c: 45u8 }, { c: 73u8 } ] }"#
                 ),
-                RocList::from_slice(&[15, 23, 45, 73]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 23, 45, 73]),
+                BrocList<u8>
             )
         }
 
@@ -1684,8 +1684,8 @@ mod hash {
         fn tuple_of_u8_and_str() {
             assert_evals_to!(
                 &build_test(r#"(15u8, "bc")"#),
-                RocList::from_slice(&[15, 98, 99]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 98, 99]),
+                BrocList<u8>
             )
         }
 
@@ -1693,8 +1693,8 @@ mod hash {
         fn tuple_of_tuples() {
             assert_evals_to!(
                 &build_test(r#"( (15u8, "bc"), (23u8, "ef") )"#),
-                RocList::from_slice(&[15, 98, 99, 23, 101, 102]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 98, 99, 23, 101, 102]),
+                BrocList<u8>
             )
         }
 
@@ -1704,8 +1704,8 @@ mod hash {
                 &build_test(
                     r#"( [ ( 15u8, 32u8 ), ( 23u8, 41u8 ) ], [ (45u8, 63u8), (58u8, 73u8) ] )"#
                 ),
-                RocList::from_slice(&[15, 32, 23, 41, 45, 63, 58, 73]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 32, 23, 41, 45, 63, 58, 73]),
+                BrocList<u8>
             )
         }
 
@@ -1730,10 +1730,10 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     // hash nothing because this is a newtype of a unit layout.
                 ] as &[u8]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1762,11 +1762,11 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     0, // A
                     1, // B
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1791,7 +1791,7 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     0, // A
                     1, // B
                     2, // C
@@ -1801,7 +1801,7 @@ mod hash {
                     6, // G
                     7, // H
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1826,11 +1826,11 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     // discriminant is skipped because it's a newtype
                     15, 23, 47
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1855,12 +1855,12 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     1, // Ok
                     // A is skipped because it is a newtype
                     15, 23, 47
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1893,7 +1893,7 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     0, // dicsr A
                     15, 23, // payloads A
                     1,  // discr B
@@ -1901,7 +1901,7 @@ mod hash {
                     2,  // discr C
                     97, 98, 99 // payloads C
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1928,12 +1928,12 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[
+                BrocList::from_slice(&[
                     0, 1, // Cons 1
                     0, 2, // Cons 2
                     1, // Nil
                 ]),
-                RocList<u8>
+                BrocList<u8>
             )
         }
 
@@ -1959,8 +1959,8 @@ mod hash {
                     ),
                     TEST_HASHER,
                 ),
-                RocList::from_slice(&[15, 27, 31]),
-                RocList<u8>
+                BrocList::from_slice(&[15, 27, 31]),
+                BrocList<u8>
             )
         }
     }
@@ -1975,7 +1975,7 @@ mod eq {
     use crate::helpers::wasm::assert_evals_to;
 
     use indoc::indoc;
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
     #[test]
     fn eq_tuple() {
@@ -2014,8 +2014,8 @@ mod eq {
                         "fail"
                 "#
             ),
-            RocStr::from("okay"),
-            RocStr
+            BrocStr::from("okay"),
+            BrocStr
         )
     }
 
@@ -2039,7 +2039,7 @@ mod eq {
     }
 
     #[test]
-    #[ignore = "needs https://github.com/roc-lang/roc/issues/4557 first"]
+    #[ignore = "needs https://github.com/roc-lang/broc/issues/4557 first"]
     fn custom_eq_impl_for_fn_opaque_material() {
         assert_evals_to!(
             indoc!(

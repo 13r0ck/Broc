@@ -1,9 +1,9 @@
-use roc_collections::all::{default_hasher, ImMap, MutMap};
-use roc_module::ident::{Lowercase, TagName};
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarId, Variable};
-use roc_types::types::{AliasKind, RecordField};
+use broc_collections::all::{default_hasher, ImMap, MutMap};
+use broc_module::ident::{Lowercase, TagName};
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarId, Variable};
+use broc_types::types::{AliasKind, RecordField};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -100,7 +100,7 @@ pub fn aliases() -> MutMap<Symbol, BuiltinAlias> {
 
         // TODO instead of using Region::zero for all of these,
         // instead use the Region where they were defined in their
-        // source .roc files! This can give nicer error messages.
+        // source .broc files! This can give nicer error messages.
         aliases.insert(symbol, alias);
     };
 

@@ -10,10 +10,10 @@ use crate::{
     v,
 };
 use insta::assert_snapshot;
-use roc_module::symbol::Symbol;
-use roc_types::subs::Variable;
+use broc_module::symbol::Symbol;
+use broc_types::subs::Variable;
 
-use roc_derive_key::{decoding::FlatDecodableKey, DeriveBuiltin::Decoder, DeriveError, DeriveKey};
+use broc_derive_key::{decoding::FlatDecodableKey, DeriveBuiltin::Decoder, DeriveError, DeriveKey};
 
 test_key_eq! {
     Decoder,

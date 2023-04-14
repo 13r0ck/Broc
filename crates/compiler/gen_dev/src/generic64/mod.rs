@@ -3,18 +3,18 @@ use crate::{
     Relocation,
 };
 use bumpalo::collections::{CollectIn, Vec};
-use roc_builtins::bitcode::{self, FloatWidth, IntWidth};
-use roc_collections::all::MutMap;
-use roc_error_macros::internal_error;
-use roc_module::symbol::{Interns, ModuleId, Symbol};
-use roc_mono::code_gen_help::CodeGenHelp;
-use roc_mono::ir::{
-    BranchInfo, JoinPointId, ListLiteralElement, Literal, Param, ProcLayout, SelfRecursive, Stmt,
+use broc_builtins::bitcode::{self, FloatWidth, IntWidth};
+use broc_collections::all::MutMap;
+use broc_error_macros::internal_error;
+use broc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_mono::code_gen_help::CodeGenHelp;
+use broc_mono::ir::{
+    BranchInfo, JoinPointId, ListLiteralElement, Literal, Param, PbrocLayout, SelfRecursive, Stmt,
 };
-use roc_mono::layout::{
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutInterner, STLayoutInterner, TagIdIntType, UnionLayout,
 };
-use roc_target::TargetInfo;
+use broc_target::TargetInfo;
 use std::marker::PhantomData;
 
 pub(crate) mod aarch64;
@@ -487,11 +487,11 @@ pub struct Backend64Bit<
     env: &'r Env<'a>,
     layout_interner: &'r mut STLayoutInterner<'a>,
     interns: &'r mut Interns,
-    helper_proc_gen: CodeGenHelp<'a>,
-    helper_proc_symbols: Vec<'a, (Symbol, ProcLayout<'a>)>,
+    helper_pbroc_gen: CodeGenHelp<'a>,
+    helper_pbroc_symbols: Vec<'a, (Symbol, PbrocLayout<'a>)>,
     buf: Vec<'a, u8>,
     relocs: Vec<'a, Relocation>,
-    proc_name: Option<String>,
+    pbroc_name: Option<String>,
     is_self_recursive: Option<SelfRecursive>,
 
     last_seen_map: MutMap<Symbol, *const Stmt<'a>>,
@@ -524,9 +524,9 @@ pub fn new_backend_64bit<
         env,
         interns,
         layout_interner,
-        helper_proc_gen: CodeGenHelp::new(env.arena, target_info, env.module_id),
-        helper_proc_symbols: bumpalo::vec![in env.arena],
-        proc_name: None,
+        helper_pbroc_gen: CodeGenHelp::new(env.arena, target_info, env.module_id),
+        helper_pbroc_symbols: bumpalo::vec![in env.arena],
+        pbroc_name: None,
         is_self_recursive: None,
         buf: bumpalo::vec![in env.arena],
         relocs: bumpalo::vec![in env.arena],
@@ -582,21 +582,21 @@ impl<
             self.env.module_id,
             self.layout_interner,
             self.interns,
-            &mut self.helper_proc_gen,
+            &mut self.helper_pbroc_gen,
         )
     }
-    fn helper_proc_gen_mut(&mut self) -> &mut CodeGenHelp<'a> {
-        &mut self.helper_proc_gen
+    fn helper_pbroc_gen_mut(&mut self) -> &mut CodeGenHelp<'a> {
+        &mut self.helper_pbroc_gen
     }
-    fn helper_proc_symbols_mut(&mut self) -> &mut Vec<'a, (Symbol, ProcLayout<'a>)> {
-        &mut self.helper_proc_symbols
+    fn helper_pbroc_symbols_mut(&mut self) -> &mut Vec<'a, (Symbol, PbrocLayout<'a>)> {
+        &mut self.helper_pbroc_symbols
     }
-    fn helper_proc_symbols(&self) -> &Vec<'a, (Symbol, ProcLayout<'a>)> {
-        &self.helper_proc_symbols
+    fn helper_pbroc_symbols(&self) -> &Vec<'a, (Symbol, PbrocLayout<'a>)> {
+        &self.helper_pbroc_symbols
     }
 
     fn reset(&mut self, name: String, is_self_recursive: SelfRecursive) {
-        self.proc_name = Some(name);
+        self.pbroc_name = Some(name);
         self.is_self_recursive = Some(is_self_recursive);
         self.last_seen_map.clear();
         self.layout_map.clear();
@@ -747,7 +747,7 @@ impl<
         ret_layout: &InLayout<'a>,
     ) {
         if let Some(SelfRecursive::SelfRecursive(id)) = self.is_self_recursive {
-            if &fn_name == self.proc_name.as_ref().unwrap() && self.join_map.contains_key(&id) {
+            if &fn_name == self.pbroc_name.as_ref().unwrap() && self.join_map.contains_key(&id) {
                 return self.build_jump(&id, args, arg_layouts, ret_layout);
             }
         }
@@ -1174,7 +1174,7 @@ impl<
     }
 
     fn build_num_sub(&mut self, dst: &Symbol, src1: &Symbol, src2: &Symbol, layout: &InLayout<'a>) {
-        // for the time being, `num_sub` is implemented as wrapping subtraction. In roc, the normal
+        // for the time being, `num_sub` is implemented as wrapping subtraction. In broc, the normal
         // `sub` should panic on overflow, but we just don't do that yet
         self.build_num_sub_wrap(dst, src1, src2, layout)
     }

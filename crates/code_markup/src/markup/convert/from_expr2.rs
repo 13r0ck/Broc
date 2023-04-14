@@ -15,7 +15,7 @@ use crate::{
     syntax_highlight::HighlightStyle,
 };
 
-use roc_ast::{
+use broc_ast::{
     ast_error::ASTResult,
     lang::{
         core::{
@@ -30,7 +30,7 @@ use roc_ast::{
         env::Env,
     },
 };
-use roc_module::{module_err::ModuleResult, symbol::Interns};
+use broc_module::{module_err::ModuleResult, symbol::Interns};
 
 use super::from_def2::add_node;
 

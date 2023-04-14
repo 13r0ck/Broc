@@ -1,15 +1,15 @@
 use bumpalo::Bump;
-use roc_can::expr::{IntValue, Recursive};
-use roc_can::num::{
+use broc_can::expr::{IntValue, Recursive};
+use broc_can::num::{
     finish_parsing_base, finish_parsing_float, finish_parsing_num, ParsedNumResult,
 };
-use roc_can::operator::desugar_expr;
-use roc_collections::all::MutSet;
-use roc_module::symbol::Symbol;
-use roc_parse::ident::Accessor;
-use roc_parse::{ast::Expr, pattern::PatternType};
-use roc_problem::can::{Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
+use broc_can::operator::desugar_expr;
+use broc_collections::all::MutSet;
+use broc_module::symbol::Symbol;
+use broc_parse::ident::Accessor;
+use broc_parse::{ast::Expr, pattern::PatternType};
+use broc_problem::can::{Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
 
 use super::{expr2::Expr2, output::Output};
 use crate::canonicalization::canonicalize::{
@@ -47,10 +47,10 @@ const ZERO: Region = Region::zero();
 pub fn expr_to_expr2<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
-    parse_expr: &'a roc_parse::ast::Expr<'a>,
+    parse_expr: &'a broc_parse::ast::Expr<'a>,
     region: Region,
 ) -> (Expr2, self::Output) {
-    use roc_parse::ast::Expr::*;
+    use broc_parse::ast::Expr::*;
     //dbg!("{:?}", parse_expr);
 
     match parse_expr {
@@ -108,7 +108,7 @@ pub fn expr_to_expr2<'a>(
                     // emit runtime error
                     let runtime_error = RuntimeError::InvalidInt(
                         error,
-                        roc_parse::ast::Base::Decimal,
+                        broc_parse::ast::Base::Decimal,
                         ZERO,
                         raw.into(),
                     );
@@ -216,7 +216,7 @@ pub fn expr_to_expr2<'a>(
                         field_region: _,
                         record_region: _,
                     }) => {
-                        //                        let runtime_error = roc_problem::can::RuntimeError::InvalidOptionalValue {
+                        //                        let runtime_error = broc_problem::can::RuntimeError::InvalidOptionalValue {
                         //                            field_name,
                         //                            field_region,
                         //                            record_region,
@@ -230,7 +230,7 @@ pub fn expr_to_expr2<'a>(
             } else {
                 // only (optionally qualified) variables can be updated, not arbitrary expressions
 
-                //                let error = roc_problem::can::RuntimeError::InvalidRecordUpdate {
+                //                let error = broc_problem::can::RuntimeError::InvalidRecordUpdate {
                 //                    region: can_update.region,
                 //                };
                 //
@@ -403,7 +403,7 @@ pub fn expr_to_expr2<'a>(
                 let (new_output, can_arg) = to_pattern2(
                     env,
                     &mut scope,
-                    roc_parse::pattern::PatternType::FunctionArg,
+                    broc_parse::pattern::PatternType::FunctionArg,
                     &loc_pattern.value,
                     loc_pattern.region,
                 );
@@ -630,7 +630,7 @@ pub fn expr_to_expr2<'a>(
         }
 
         PrecedenceConflict { .. } => {
-            //            use roc_problem::can::RuntimeError::*;
+            //            use broc_problem::can::RuntimeError::*;
             //
             //            let problem = PrecedenceProblem::BothNonAssociative(
             //                *whole_region,
@@ -647,12 +647,12 @@ pub fn expr_to_expr2<'a>(
             todo!()
         }
         MalformedClosure => {
-            //            use roc_problem::can::RuntimeError::*;
+            //            use broc_problem::can::RuntimeError::*;
             //            (RuntimeError(MalformedClosure(region)), Output::default())
             todo!()
         }
         MalformedIdent(_name, _problem) => {
-            //            use roc_problem::can::RuntimeError::*;
+            //            use broc_problem::can::RuntimeError::*;
             //
             //            let problem = MalformedIdentifier((*name).into(), region);
             //            env.problem(Problem::RuntimeError(problem.clone()));
@@ -661,7 +661,7 @@ pub fn expr_to_expr2<'a>(
             todo!()
         }
         Var {
-            module_name, // module_name will only be filled if the original Roc code stated something like `5 + SomeModule.myVar`, module_name will be blank if it was `5 + myVar`
+            module_name, // module_name will only be filled if the original Broc code stated something like `5 + SomeModule.myVar`, module_name will be blank if it was `5 + myVar`
             ident,
         } => canonicalize_lookup(env, scope, module_name, ident, region),
 
@@ -705,7 +705,7 @@ pub fn expr_to_expr2<'a>(
 pub fn to_expr_id<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
-    parse_expr: &'a roc_parse::ast::Expr<'a>,
+    parse_expr: &'a broc_parse::ast::Expr<'a>,
     region: Region,
 ) -> (ExprId, Output) {
     let (expr, output) = expr_to_expr2(env, scope, parse_expr, region);

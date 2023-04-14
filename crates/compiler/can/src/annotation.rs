@@ -1,14 +1,14 @@
 use crate::env::Env;
 use crate::procedure::References;
 use crate::scope::{PendingAbilitiesInScope, Scope};
-use roc_collections::{ImMap, MutSet, SendMap, VecMap, VecSet};
-use roc_module::ident::{Ident, Lowercase, TagName};
-use roc_module::symbol::Symbol;
-use roc_parse::ast::{AssignedField, ExtractSpaces, Pattern, Tag, TypeAnnotation, TypeHeader};
-use roc_problem::can::ShadowKind;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarStore, Variable};
-use roc_types::types::{
+use broc_collections::{ImMap, MutSet, SendMap, VecMap, VecSet};
+use broc_module::ident::{Ident, Lowercase, TagName};
+use broc_module::symbol::Symbol;
+use broc_parse::ast::{AssignedField, ExtractSpaces, Pattern, Tag, TypeAnnotation, TypeHeader};
+use broc_problem::can::ShadowKind;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarStore, Variable};
+use broc_types::types::{
     name_type_var, AbilitySet, Alias, AliasCommon, AliasKind, AliasVar, ExtImplicitOpenness,
     LambdaSet, OptAbleType, OptAbleVar, RecordField, Type, TypeExtension,
 };
@@ -268,10 +268,10 @@ impl IntroducedVariables {
 }
 
 fn malformed(env: &mut Env, region: Region, name: &str) {
-    use roc_problem::can::RuntimeError::*;
+    use broc_problem::can::RuntimeError::*;
 
     let problem = MalformedTypeName((*name).into(), region);
-    env.problem(roc_problem::can::Problem::RuntimeError(problem));
+    env.problem(broc_problem::can::Problem::RuntimeError(problem));
 }
 
 pub(crate) enum AnnotationFor {
@@ -389,7 +389,7 @@ pub(crate) fn make_apply_symbol(
         match scope.lookup_str(ident, region) {
             Ok(symbol) => Ok(symbol),
             Err(problem) => {
-                env.problem(roc_problem::can::Problem::RuntimeError(problem));
+                env.problem(broc_problem::can::Problem::RuntimeError(problem));
 
                 Err(Type::Error)
             }
@@ -400,10 +400,10 @@ pub(crate) fn make_apply_symbol(
             Err(problem) => {
                 // Either the module wasn't imported, or
                 // it was imported but it doesn't expose this ident.
-                env.problem(roc_problem::can::Problem::RuntimeError(problem));
+                env.problem(broc_problem::can::Problem::RuntimeError(problem));
 
                 // A failed import should have already been reported through
-                // roc_can::env::Env::qualified_lookup's checks
+                // broc_can::env::Env::qualified_lookup's checks
                 Err(Type::Error)
             }
         }
@@ -417,9 +417,9 @@ pub(crate) fn make_apply_symbol(
 /// `U8`, and `Str`.
 pub fn find_type_def_symbols(
     scope: &mut Scope,
-    initial_annotation: &roc_parse::ast::TypeAnnotation,
+    initial_annotation: &broc_parse::ast::TypeAnnotation,
 ) -> Vec<Symbol> {
-    use roc_parse::ast::TypeAnnotation::*;
+    use broc_parse::ast::TypeAnnotation::*;
 
     let mut result = Vec::new();
 
@@ -530,7 +530,7 @@ fn find_fresh_var_name(introduced_variables: &IntroducedVariables) -> Lowercase 
 fn can_annotation_help(
     env: &mut Env,
     pol: CanPolarity,
-    annotation: &roc_parse::ast::TypeAnnotation,
+    annotation: &broc_parse::ast::TypeAnnotation,
     region: Region,
     scope: &mut Scope,
     var_store: &mut VarStore,
@@ -538,7 +538,7 @@ fn can_annotation_help(
     local_aliases: &mut VecMap<Symbol, Alias>,
     references: &mut VecSet<Symbol>,
 ) -> Type {
-    use roc_parse::ast::TypeAnnotation::*;
+    use broc_parse::ast::TypeAnnotation::*;
 
     match annotation {
         Function(argument_types, return_type) => {
@@ -591,7 +591,7 @@ fn can_annotation_help(
             if scope.abilities_store.is_ability(symbol) {
                 let fresh_ty_var = find_fresh_var_name(introduced_variables);
 
-                env.problem(roc_problem::can::Problem::AbilityUsedAsType(
+                env.problem(broc_problem::can::Problem::AbilityUsedAsType(
                     fresh_ty_var.clone(),
                     symbol,
                     region,
@@ -628,7 +628,7 @@ fn can_annotation_help(
                     // use a known alias
 
                     if alias.type_variables.len() != args.len() {
-                        env.problem(roc_problem::can::Problem::BadTypeArguments {
+                        env.problem(broc_problem::can::Problem::BadTypeArguments {
                             symbol,
                             region,
                             alias_needs: alias.type_variables.len() as u8,
@@ -719,7 +719,7 @@ fn can_annotation_help(
                 Ok(symbol) => symbol,
 
                 Err((shadowed_symbol, shadow, _new_symbol)) => {
-                    env.problem(roc_problem::can::Problem::Shadowing {
+                    env.problem(broc_problem::can::Problem::Shadowing {
                         original_region: shadowed_symbol.region,
                         shadow,
                         kind: ShadowKind::Variable,
@@ -799,7 +799,7 @@ fn can_annotation_help(
 
                         if let Err(differing_recursion_region) = substitution_result {
                             env.problems
-                                .push(roc_problem::can::Problem::NestedDatatype {
+                                .push(broc_problem::can::Problem::NestedDatatype {
                                     alias: symbol,
                                     def_region: alias_header.region(),
                                     differing_recursion_region,
@@ -882,7 +882,7 @@ fn can_annotation_help(
                 local_aliases,
                 references,
                 ext,
-                roc_problem::can::ExtensionTypeKind::Record,
+                broc_problem::can::ExtensionTypeKind::Record,
             );
 
             debug_assert!(
@@ -918,7 +918,7 @@ fn can_annotation_help(
                 local_aliases,
                 references,
                 ext,
-                roc_problem::can::ExtensionTypeKind::Record,
+                broc_problem::can::ExtensionTypeKind::Record,
             );
 
             debug_assert!(
@@ -969,7 +969,7 @@ fn can_annotation_help(
                 local_aliases,
                 references,
                 ext,
-                roc_problem::can::ExtensionTypeKind::TagUnion,
+                broc_problem::can::ExtensionTypeKind::TagUnion,
             );
 
             if tags.is_empty() {
@@ -1041,7 +1041,7 @@ fn can_annotation_help(
             debug_assert!(!clauses.is_empty());
 
             // Has clauses are allowed only on the top level of a signature, which we handle elsewhere.
-            env.problem(roc_problem::can::Problem::IllegalHasClause {
+            env.problem(broc_problem::can::Problem::IllegalHasClause {
                 region: Region::across_all(clauses.iter().map(|clause| &clause.region)),
             });
 
@@ -1064,13 +1064,13 @@ fn canonicalize_has_clause(
     scope: &mut Scope,
     var_store: &mut VarStore,
     introduced_variables: &mut IntroducedVariables,
-    clause: &Loc<roc_parse::ast::HasClause<'_>>,
+    clause: &Loc<broc_parse::ast::HasClause<'_>>,
     pending_abilities_in_scope: &PendingAbilitiesInScope,
     references: &mut VecSet<Symbol>,
 ) -> Result<(), Type> {
     let Loc {
         region,
-        value: roc_parse::ast::HasClause { var, abilities },
+        value: broc_parse::ast::HasClause { var, abilities },
     } = clause;
     let region = *region;
 
@@ -1096,13 +1096,13 @@ fn canonicalize_has_clause(
                 // or an ability that was imported from elsewhere
                 && !scope.abilities_store.is_ability(symbol)
                 {
-                    env.problem(roc_problem::can::Problem::HasClauseIsNotAbility { region });
+                    env.problem(broc_problem::can::Problem::HasClauseIsNotAbility { region });
                     return Err(Type::Error);
                 }
                 symbol
             }
             _ => {
-                env.problem(roc_problem::can::Problem::HasClauseIsNotAbility { region });
+                env.problem(broc_problem::can::Problem::HasClauseIsNotAbility { region });
                 return Err(Type::Error);
             }
         };
@@ -1111,14 +1111,14 @@ fn canonicalize_has_clause(
         let already_seen = can_abilities.insert(ability);
 
         if already_seen {
-            env.problem(roc_problem::can::Problem::DuplicateHasAbility { ability, region });
+            env.problem(broc_problem::can::Problem::DuplicateHasAbility { ability, region });
         }
     }
 
     if let Some(shadowing) = introduced_variables.named_var_by_name(&var_name) {
         let var_name_ident = var_name.to_string().into();
         let shadow = Loc::at(region, var_name_ident);
-        env.problem(roc_problem::can::Problem::Shadowing {
+        env.problem(broc_problem::can::Problem::Shadowing {
             original_region: shadowing.first_seen(),
             shadow,
             kind: ShadowKind::Variable,
@@ -1143,7 +1143,7 @@ fn can_extension_type<'a>(
     local_aliases: &mut VecMap<Symbol, Alias>,
     references: &mut VecSet<Symbol>,
     opt_ext: &Option<&Loc<TypeAnnotation<'a>>>,
-    ext_problem_kind: roc_problem::can::ExtensionTypeKind,
+    ext_problem_kind: broc_problem::can::ExtensionTypeKind,
 ) -> (Type, ExtImplicitOpenness) {
     fn valid_record_ext_type(typ: &Type) -> bool {
         // Include erroneous types so that we don't overreport errors.
@@ -1159,7 +1159,7 @@ fn can_extension_type<'a>(
         )
     }
 
-    use roc_problem::can::ExtensionTypeKind;
+    use broc_problem::can::ExtensionTypeKind;
 
     let valid_extension_type: fn(&Type) -> bool = match ext_problem_kind {
         ExtensionTypeKind::Record => valid_record_ext_type,
@@ -1186,7 +1186,7 @@ fn can_extension_type<'a>(
                 {
                     // Wildcards are redundant in positive positions, since they will always be
                     // inferred as necessary there!
-                    env.problem(roc_problem::can::Problem::UnnecessaryOutputWildcard {
+                    env.problem(broc_problem::can::Problem::UnnecessaryOutputWildcard {
                         region: loc_ann.region,
                     })
                 }
@@ -1198,7 +1198,7 @@ fn can_extension_type<'a>(
                 //
                 // THEORY: invalid extension types can appear in this position. Otherwise
                 // they would be caught as errors during unification.
-                env.problem(roc_problem::can::Problem::InvalidExtensionType {
+                env.problem(broc_problem::can::Problem::InvalidExtensionType {
                     region: loc_ann.region,
                     kind: ext_problem_kind,
                 });
@@ -1346,8 +1346,8 @@ fn can_assigned_fields<'a>(
     local_aliases: &mut VecMap<Symbol, Alias>,
     references: &mut VecSet<Symbol>,
 ) -> SendMap<Lowercase, RecordField<Type>> {
-    use roc_parse::ast::AssignedField::*;
-    use roc_types::types::RecordField::*;
+    use broc_parse::ast::AssignedField::*;
+    use broc_types::types::RecordField::*;
 
     // SendMap doesn't have a `with_capacity`
     let mut field_types = SendMap::default();
@@ -1437,7 +1437,7 @@ fn can_assigned_fields<'a>(
         // ensure that the new name is not already in this record:
         // note that the right-most tag wins when there are two with the same name
         if let Some(replaced_region) = seen.insert(new_name.clone(), loc_field.region) {
-            env.problem(roc_problem::can::Problem::DuplicateRecordFieldType {
+            env.problem(broc_problem::can::Problem::DuplicateRecordFieldType {
                 field_name: new_name,
                 record_region: region,
                 field_region: loc_field.region,
@@ -1551,7 +1551,7 @@ fn can_tags<'a>(
         // ensure that the new name is not already in this tag union:
         // note that the right-most tag wins when there are two with the same name
         if let Some(replaced_region) = seen.insert(new_name.clone(), loc_tag.region) {
-            env.problem(roc_problem::can::Problem::DuplicateTag {
+            env.problem(broc_problem::can::Problem::DuplicateTag {
                 tag_name: new_name,
                 tag_region: loc_tag.region,
                 tag_union_region: region,

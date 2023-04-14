@@ -1,6 +1,6 @@
 [package]
-name = "roc_editor"
-description = "An editor for Roc"
+name = "broc_editor"
+description = "An editor for Broc"
 
 authors.workspace = true
 edition.workspace = true
@@ -17,22 +17,22 @@ normal = ["confy"]
 default = []
 
 [dependencies]
-roc_ast = { path = "../ast" }
-roc_builtins = { path = "../compiler/builtins" }
-roc_can = { path = "../compiler/can" }
-roc_code_markup = { path = "../code_markup" }
-roc_collections = { path = "../compiler/collections" }
-roc_command_utils = { path = "../utils/command" }
-roc_load = { path = "../compiler/load" }
-roc_module = { path = "../compiler/module" }
-roc_packaging = { path = "../packaging" }
-roc_parse = { path = "../compiler/parse" }
-roc_problem = { path = "../compiler/problem" }
-roc_region = { path = "../compiler/region" }
-roc_reporting = { path = "../reporting" }
-roc_solve = { path = "../compiler/solve" }
-roc_types = { path = "../compiler/types" }
-roc_unify = { path = "../compiler/unify" }
+broc_ast = { path = "../ast" }
+broc_builtins = { path = "../compiler/builtins" }
+broc_can = { path = "../compiler/can" }
+broc_code_markup = { path = "../code_markup" }
+broc_collections = { path = "../compiler/collections" }
+broc_command_utils = { path = "../utils/command" }
+broc_load = { path = "../compiler/load" }
+broc_module = { path = "../compiler/module" }
+broc_packaging = { path = "../packaging" }
+broc_parse = { path = "../compiler/parse" }
+broc_problem = { path = "../compiler/problem" }
+broc_region = { path = "../compiler/region" }
+broc_reporting = { path = "../reporting" }
+broc_solve = { path = "../compiler/solve" }
+broc_types = { path = "../compiler/types" }
+broc_unify = { path = "../compiler/unify" }
 ven_graph = { path = "../vendor/pathfinding" }
 
 arrayvec.workspace = true

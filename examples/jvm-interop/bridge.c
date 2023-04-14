@@ -26,28 +26,28 @@ jint JNI_OnLoad(JavaVM *loadedVM, void *reserved)
     return JNI_VERSION_1_2;
 }
 
-void *roc_alloc(size_t size, unsigned int alignment)
+void *broc_alloc(size_t size, unsigned int alignment)
 {
     return malloc(size);
 }
 
-void *roc_realloc(void *ptr, size_t new_size, size_t old_size,
+void *broc_realloc(void *ptr, size_t new_size, size_t old_size,
                   unsigned int alignment)
 {
     return realloc(ptr, new_size);
 }
 
-void roc_dealloc(void *ptr, unsigned int alignment)
+void broc_dealloc(void *ptr, unsigned int alignment)
 {
     free(ptr);
 }
 
-void *roc_memcpy(void *dest, const void *src, size_t n)
+void *broc_memcpy(void *dest, const void *src, size_t n)
 {
     return memcpy(dest, src, n);
 }
 
-void *roc_memset(void *str, int c, size_t n)
+void *broc_memset(void *str, int c, size_t n)
 {
     return memset(str, c, n);
 }
@@ -75,7 +75,7 @@ void incref(uint8_t* bytes, uint32_t alignment)
 }
 
 // Decrement reference count, given a pointer to the first element in a collection.
-// Then call roc_dealloc if nothing is referencing this collection anymore.
+// Then call broc_dealloc if nothing is referencing this collection anymore.
 void decref(uint8_t* bytes, uint32_t alignment)
 {
     if (bytes == NULL) {
@@ -92,23 +92,23 @@ void decref(uint8_t* bytes, uint32_t alignment)
         if (refcount == REFCOUNT_ONE) {
             void *original_allocation = (void *)(refcount_ptr - (extra_bytes - sizeof(size_t)));
 
-            roc_dealloc(original_allocation, alignment);
+            broc_dealloc(original_allocation, alignment);
         }
     }
 }
 
-struct RocListI32
+struct BrocListI32
 {
     int32_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocListI32 init_roclist_i32(int32_t *bytes, size_t len)
+struct BrocListI32 init_broclist_i32(int32_t *bytes, size_t len)
 {
     if (len == 0)
     {
-        struct RocListI32 ret = {
+        struct BrocListI32 ret = {
             .len = 0,
             .bytes = NULL,
             .capacity = 0,
@@ -119,11 +119,11 @@ struct RocListI32 init_roclist_i32(int32_t *bytes, size_t len)
     else
     {
         size_t refcount_size = sizeof(size_t);
-        ssize_t* data = (ssize_t*)roc_alloc(len + refcount_size, alignof(size_t));
+        ssize_t* data = (ssize_t*)broc_alloc(len + refcount_size, alignof(size_t));
         data[0] = REFCOUNT_ONE;
         int32_t *new_content = (int32_t *)(data + 1);
 
-        struct RocListI32 ret;
+        struct BrocListI32 ret;
 
         memcpy(new_content, bytes, len * sizeof(int32_t));
 
@@ -134,20 +134,20 @@ struct RocListI32 init_roclist_i32(int32_t *bytes, size_t len)
         return ret;
     }
 }
-// RocListU8 (List U8)
+// BrocListU8 (List U8)
 
-struct RocListU8
+struct BrocListU8
 {
     uint8_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocListU8 init_roclist_u8(uint8_t *bytes, size_t len)
+struct BrocListU8 init_broclist_u8(uint8_t *bytes, size_t len)
 {
     if (len == 0)
     {
-        struct RocListU8 ret = {
+        struct BrocListU8 ret = {
             .len = 0,
             .bytes = NULL,
             .capacity = 0,
@@ -159,11 +159,11 @@ struct RocListU8 init_roclist_u8(uint8_t *bytes, size_t len)
     {
 
         size_t refcount_size = sizeof(size_t);
-        ssize_t* data = (ssize_t*)roc_alloc(len + refcount_size, alignof(size_t));
+        ssize_t* data = (ssize_t*)broc_alloc(len + refcount_size, alignof(size_t));
         data[0] = REFCOUNT_ONE;
         uint8_t *new_content = (uint8_t *)(data + 1);
 
-        struct RocListU8 ret;
+        struct BrocListU8 ret;
 
         memcpy(new_content, bytes, len * sizeof(uint8_t));
 
@@ -175,24 +175,24 @@ struct RocListU8 init_roclist_u8(uint8_t *bytes, size_t len)
     }
 }
 
-// RocStr
+// BrocStr
 
-struct RocStr
+struct BrocStr
 {
     uint8_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocStr init_rocstr(uint8_t *bytes, size_t len)
+struct BrocStr init_brocstr(uint8_t *bytes, size_t len)
 {
-    if (len < sizeof(struct RocStr))
+    if (len < sizeof(struct BrocStr))
     {
         // Start out with zeroed memory, so that
-        // if we end up comparing two small RocStr values
+        // if we end up comparing two small BrocStr values
         // for equality, we won't risk memory garbage resulting
         // in two equal strings appearing unequal.
-        struct RocStr ret = {
+        struct BrocStr ret = {
             .len = 0,
             .bytes = NULL,
             .capacity = 0,
@@ -202,43 +202,43 @@ struct RocStr init_rocstr(uint8_t *bytes, size_t len)
         memcpy(&ret, bytes, len);
 
         // Record the string's len in the last byte of the stack allocation
-        ((uint8_t *)&ret)[sizeof(struct RocStr) - 1] = (uint8_t)len | 0b10000000;
+        ((uint8_t *)&ret)[sizeof(struct BrocStr) - 1] = (uint8_t)len | 0b10000000;
 
         return ret;
     }
     else
     {
-        // A large RocStr is the same as a List U8 (aka RocListU8) in memory.
-        struct RocListU8 roc_bytes = init_roclist_u8(bytes, len);
+        // A large BrocStr is the same as a List U8 (aka BrocListU8) in memory.
+        struct BrocListU8 broc_bytes = init_broclist_u8(bytes, len);
 
-        struct RocStr ret = {
-            .len = roc_bytes.len,
-            .bytes = roc_bytes.bytes,
-            .capacity = roc_bytes.capacity,
+        struct BrocStr ret = {
+            .len = broc_bytes.len,
+            .bytes = broc_bytes.bytes,
+            .capacity = broc_bytes.capacity,
         };
 
         return ret;
     }
 }
 
-bool is_small_str(struct RocStr str)
+bool is_small_str(struct BrocStr str)
 {
     return ((ssize_t)str.capacity) < 0;
 }
 
-bool is_seamless_str_slice(struct RocStr str)
+bool is_seamless_str_slice(struct BrocStr str)
 {
     return ((ssize_t)str.len) < 0;
 }
 
-bool is_seamless_listi32_slice(struct RocListI32 list)
+bool is_seamless_listi32_slice(struct BrocListI32 list)
 {
     return ((ssize_t)list.capacity) < 0;
 }
 
 // Determine the len of the string, taking into
 // account the small string optimization
-size_t roc_str_len(struct RocStr str)
+size_t broc_str_len(struct BrocStr str)
 {
     uint8_t *bytes = (uint8_t *)&str;
     uint8_t last_byte = bytes[sizeof(str) - 1];
@@ -259,10 +259,10 @@ size_t roc_str_len(struct RocStr str)
     }
 }
 
-__attribute__((noreturn)) void roc_panic(struct RocStr *msg, unsigned int tag_id)
+__attribute__((noreturn)) void broc_panic(struct BrocStr *msg, unsigned int tag_id)
 {
     char* bytes = is_small_str(*msg) ? (char*)msg : (char*)msg->bytes;
-    const size_t str_len = roc_str_len(*msg);
+    const size_t str_len = broc_str_len(*msg);
 
     int len = str_len > ERR_MSG_MAX_SIZE ? ERR_MSG_MAX_SIZE : str_len;
     strncpy((char*)err_msg, bytes, len);
@@ -280,11 +280,11 @@ __attribute__((noreturn)) void roc_panic(struct RocStr *msg, unsigned int tag_id
     longjmp(exception_buffer, 1);
 }
 
-extern void roc__programForHost_1__InterpolateString_caller(struct RocStr *name, char *closure_data, struct RocStr *ret);
+extern void broc__programForHost_1__InterpolateString_caller(struct BrocStr *name, char *closure_data, struct BrocStr *ret);
 
-extern void roc__programForHost_1__MulArrByScalar_caller(struct RocListI32 *arr, int32_t *scalar, char *closure_data, struct RocListI32 *ret);
+extern void broc__programForHost_1__MulArrByScalar_caller(struct BrocListI32 *arr, int32_t *scalar, char *closure_data, struct BrocListI32 *ret);
 
-extern void roc__programForHost_1__Factorial_caller(int64_t *scalar, char *closure_data, int64_t *ret);
+extern void broc__programForHost_1__Factorial_caller(int64_t *scalar, char *closure_data, int64_t *ret);
 
 
 JNIEXPORT jstring JNICALL Java_javaSource_Demo_sayHello
@@ -297,11 +297,11 @@ JNIEXPORT jstring JNICALL Java_javaSource_Demo_sayHello
     (*env)->ReleaseStringUTFChars(env, name, jnameChars);
 
 
-    struct RocStr rocName = init_rocstr(cnameChars, nameLength);
-    struct RocStr ret = {0};
+    struct BrocStr brocName = init_brocstr(cnameChars, nameLength);
+    struct BrocStr ret = {0};
 
-    // Call the Roc function to populate `ret`'s bytes.
-    roc__programForHost_1__InterpolateString_caller(&rocName, 0, &ret);
+    // Call the Broc function to populate `ret`'s bytes.
+    broc__programForHost_1__InterpolateString_caller(&brocName, 0, &ret);
     jbyte *bytes = (jbyte*)(is_small_str(ret) ? (uint8_t*)&ret : ret.bytes);
 
     // java being java making this a lot harder than it needs to be
@@ -340,11 +340,11 @@ JNIEXPORT jintArray JNICALL Java_javaSource_Demo_mulArrByScalar
     jsize len = (*env)->GetArrayLength(env, arr);
 
     // pass data to platform
-    struct RocListI32 originalArray = init_roclist_i32(jarr, len);
+    struct BrocListI32 originalArray = init_broclist_i32(jarr, len);
     incref((void *)&originalArray, alignof(int32_t*));
-    struct RocListI32 ret = {0};
+    struct BrocListI32 ret = {0};
 
-    roc__programForHost_1__MulArrByScalar_caller(&originalArray, &scalar, 0, &ret);
+    broc__programForHost_1__MulArrByScalar_caller(&originalArray, &scalar, 0, &ret);
 
     // create jvm constructs
     jintArray multiplied = (*env)->NewIntArray(env, ret.len);
@@ -367,7 +367,7 @@ JNIEXPORT jlong JNICALL Java_javaSource_Demo_factorial
    (JNIEnv *env, jobject thisObj, jlong num)
 {
     int64_t ret;
-    // can crash - meaning call roc_panic, so we set a jump here
+    // can crash - meaning call broc_panic, so we set a jump here
     if (setjmp(exception_buffer)) {
         // exception was thrown, handle it
         jclass exClass = (*env)->FindClass(env, "java/lang/RuntimeException");
@@ -376,7 +376,7 @@ JNIEXPORT jlong JNICALL Java_javaSource_Demo_factorial
     }
     else {
         int64_t n = (int64_t)num;
-        roc__programForHost_1__Factorial_caller(&n, 0, &ret);
+        broc__programForHost_1__Factorial_caller(&n, 0, &ret);
         return ret;
     }
 }

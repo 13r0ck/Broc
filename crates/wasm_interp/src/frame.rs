@@ -1,4 +1,4 @@
-use roc_wasm_module::{parse::Parse, Value, ValueType};
+use broc_wasm_module::{parse::Parse, Value, ValueType};
 use std::iter::repeat;
 
 use crate::value_store::ValueStore;

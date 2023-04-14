@@ -1,26 +1,26 @@
 use crate::enums::Enums;
-use crate::roc_type;
+use crate::broc_type;
 use crate::structs::Structs;
 use bumpalo::Bump;
 use fnv::FnvHashMap;
-use roc_builtins::bitcode::{
+use broc_builtins::bitcode::{
     FloatWidth::*,
     IntWidth::{self, *},
 };
-use roc_collections::{MutMap, VecMap};
-use roc_module::{
+use broc_collections::{MutMap, VecMap};
+use broc_module::{
     ident::TagName,
     symbol::{Interns, Symbol},
 };
-use roc_mono::{
+use broc_mono::{
     ir::LambdaSetId,
     layout::{
         cmp_fields, ext_var_is_empty_tag_union, round_up_to_alignment, Builtin, Discriminant,
         InLayout, Layout, LayoutCache, LayoutInterner, TLLayoutInterner, UnionLayout,
     },
 };
-use roc_target::{Architecture, OperatingSystem, TargetInfo};
-use roc_types::{
+use broc_target::{Architecture, OperatingSystem, TargetInfo};
+use broc_types::{
     subs::{Content, FlatType, GetSubsSlice, Label, Subs, SubsSlice, UnionLabels, Variable},
     types::{AliasKind, RecordField},
 };
@@ -46,12 +46,12 @@ impl TypeId {
     const MAX: Self = Self(Self::PENDING.0 - 1);
 }
 
-// TODO: remove this and instead generate directly into roc_type::Types
-// Probably want to fix roc_std::RocDict and update roc_type::Types to use it first.
+// TODO: remove this and instead generate directly into broc_type::Types
+// Probably want to fix broc_std::BrocDict and update broc_type::Types to use it first.
 #[derive(Debug, Clone)]
 pub struct Types {
     // These are all indexed by TypeId
-    types: Vec<RocType>,
+    types: Vec<BrocType>,
     sizes: Vec<u32>,
     aligns: Vec<u32>,
 
@@ -75,7 +75,7 @@ impl Types {
         let mut sizes = Vec::with_capacity(cap);
         let mut aligns = Vec::with_capacity(cap);
 
-        types.push(RocType::Unit);
+        types.push(BrocType::Unit);
         sizes.push(1);
         aligns.push(1);
 
@@ -95,7 +95,7 @@ impl Types {
         arena: &'a Bump,
         subs: &'a Subs,
         interns: &'a Interns,
-        glue_procs_by_layout: MutMap<Layout<'a>, &'a [String]>,
+        glue_pbrocs_by_layout: MutMap<Layout<'a>, &'a [String]>,
         layout_cache: LayoutCache<'a>,
         target: TargetInfo,
         mut entry_points: MutMap<Symbol, Variable>,
@@ -106,7 +106,7 @@ impl Types {
             subs,
             interns,
             layout_cache.interner,
-            glue_procs_by_layout,
+            glue_pbrocs_by_layout,
             target,
         );
 
@@ -137,23 +137,23 @@ impl Types {
         self.entry_points.as_slice()
     }
 
-    pub fn is_equivalent(&self, a: &RocType, b: &RocType) -> bool {
-        self.is_equivalent_help(RocTypeOrPending::Type(a), RocTypeOrPending::Type(b))
+    pub fn is_equivalent(&self, a: &BrocType, b: &BrocType) -> bool {
+        self.is_equivalent_help(BrocTypeOrPending::Type(a), BrocTypeOrPending::Type(b))
     }
 
-    fn is_equivalent_help(&self, a: RocTypeOrPending, b: RocTypeOrPending) -> bool {
-        use RocType::*;
+    fn is_equivalent_help(&self, a: BrocTypeOrPending, b: BrocTypeOrPending) -> bool {
+        use BrocType::*;
 
         let (a, b) = match (a, b) {
-            (RocTypeOrPending::Type(a), RocTypeOrPending::Type(b)) => (a, b),
-            (RocTypeOrPending::Pending, RocTypeOrPending::Pending) => return true,
+            (BrocTypeOrPending::Type(a), BrocTypeOrPending::Type(b)) => (a, b),
+            (BrocTypeOrPending::Pending, BrocTypeOrPending::Pending) => return true,
             _ => return false,
         };
 
         match (a, b) {
             (Unsized, Unsized) => true,
-            (RocStr, RocStr) | (Bool, Bool) | (EmptyTagUnion, EmptyTagUnion) | (Unit, Unit) => true,
-            (RocResult(ok_a, err_a), RocResult(ok_b, err_b)) => {
+            (BrocStr, BrocStr) | (Bool, Bool) | (EmptyTagUnion, EmptyTagUnion) | (Unit, Unit) => true,
+            (BrocResult(ok_a, err_a), BrocResult(ok_b, err_b)) => {
                 self.is_equivalent_help(
                     self.get_type_or_pending(*ok_a),
                     self.get_type_or_pending(*ok_b),
@@ -163,14 +163,14 @@ impl Types {
                 )
             }
             (Num(num_a), Num(num_b)) => num_a == num_b,
-            (RocList(elem_a), RocList(elem_b))
-            | (RocSet(elem_a), RocSet(elem_b))
-            | (RocBox(elem_a), RocBox(elem_b))
+            (BrocList(elem_a), BrocList(elem_b))
+            | (BrocSet(elem_a), BrocSet(elem_b))
+            | (BrocBox(elem_a), BrocBox(elem_b))
             | (RecursivePointer(elem_a), RecursivePointer(elem_b)) => self.is_equivalent_help(
                 self.get_type_or_pending(*elem_a),
                 self.get_type_or_pending(*elem_b),
             ),
-            (RocDict(key_a, val_a), RocDict(key_b, val_b)) => {
+            (BrocDict(key_a, val_a), BrocDict(key_b, val_b)) => {
                 self.is_equivalent_help(
                     self.get_type_or_pending(*key_a),
                     self.get_type_or_pending(*key_b),
@@ -180,7 +180,7 @@ impl Types {
                 )
             }
             (TagUnion(union_a), TagUnion(union_b)) => {
-                use RocTagUnion::*;
+                use BrocTagUnion::*;
 
                 match (union_a, union_b) {
                     (
@@ -321,21 +321,21 @@ impl Types {
             }
             (
                 TagUnionPayload {
-                    fields: RocStructFields::HasClosure { fields: fields_a },
+                    fields: BrocStructFields::HasClosure { fields: fields_a },
                     name: _,
                 },
                 TagUnionPayload {
-                    fields: RocStructFields::HasClosure { fields: fields_b },
+                    fields: BrocStructFields::HasClosure { fields: fields_b },
                     name: _,
                 },
             )
             | (
                 Struct {
-                    fields: RocStructFields::HasClosure { fields: fields_a },
+                    fields: BrocStructFields::HasClosure { fields: fields_a },
                     name: _,
                 },
                 Struct {
-                    fields: RocStructFields::HasClosure { fields: fields_b },
+                    fields: BrocStructFields::HasClosure { fields: fields_b },
                     name: _,
                 },
             ) => {
@@ -355,21 +355,21 @@ impl Types {
             }
             (
                 TagUnionPayload {
-                    fields: RocStructFields::HasNoClosure { fields: fields_a },
+                    fields: BrocStructFields::HasNoClosure { fields: fields_a },
                     name: _,
                 },
                 TagUnionPayload {
-                    fields: RocStructFields::HasNoClosure { fields: fields_b },
+                    fields: BrocStructFields::HasNoClosure { fields: fields_b },
                     name: _,
                 },
             )
             | (
                 Struct {
-                    fields: RocStructFields::HasNoClosure { fields: fields_a },
+                    fields: BrocStructFields::HasNoClosure { fields: fields_a },
                     name: _,
                 },
                 Struct {
-                    fields: RocStructFields::HasNoClosure { fields: fields_b },
+                    fields: BrocStructFields::HasNoClosure { fields: fields_b },
                     name: _,
                 },
             ) => {
@@ -390,46 +390,46 @@ impl Types {
             }
             (
                 TagUnionPayload {
-                    fields: RocStructFields::HasClosure { .. },
+                    fields: BrocStructFields::HasClosure { .. },
                     name: _,
                 },
                 TagUnionPayload {
-                    fields: RocStructFields::HasNoClosure { .. },
+                    fields: BrocStructFields::HasNoClosure { .. },
                     name: _,
                 },
             )
             | (
                 TagUnionPayload {
-                    fields: RocStructFields::HasNoClosure { .. },
+                    fields: BrocStructFields::HasNoClosure { .. },
                     name: _,
                 },
                 TagUnionPayload {
-                    fields: RocStructFields::HasClosure { .. },
+                    fields: BrocStructFields::HasClosure { .. },
                     name: _,
                 },
             )
             | (
                 Struct {
-                    fields: RocStructFields::HasNoClosure { .. },
+                    fields: BrocStructFields::HasNoClosure { .. },
                     name: _,
                 },
                 Struct {
-                    fields: RocStructFields::HasClosure { .. },
+                    fields: BrocStructFields::HasClosure { .. },
                     name: _,
                 },
             )
             | (
                 Struct {
-                    fields: RocStructFields::HasClosure { .. },
+                    fields: BrocStructFields::HasClosure { .. },
                     name: _,
                 },
                 Struct {
-                    fields: RocStructFields::HasNoClosure { .. },
+                    fields: BrocStructFields::HasNoClosure { .. },
                     name: _,
                 },
             ) => false,
             (
-                Function(RocFn {
+                Function(BrocFn {
                     function_name: name_a,
                     extern_name: extern_a,
                     args: args_a,
@@ -437,7 +437,7 @@ impl Types {
                     ret: ret_a,
                     is_toplevel: is_toplevel_a,
                 }),
-                Function(RocFn {
+                Function(BrocFn {
                     function_name: name_b,
                     extern_name: extern_b,
                     args: args_b,
@@ -473,22 +473,22 @@ impl Types {
             }
             // These are all listed explicitly so that if we ever add a new variant,
             // we'll get an exhaustiveness error here.
-            (RocStr, _)
-            | (_, RocStr)
+            (BrocStr, _)
+            | (_, BrocStr)
             | (Bool, _)
             | (_, Bool)
-            | (RocResult(_, _), _)
-            | (_, RocResult(_, _))
+            | (BrocResult(_, _), _)
+            | (_, BrocResult(_, _))
             | (Num(_), _)
             | (_, Num(_))
-            | (RocList(_), _)
-            | (_, RocList(_))
-            | (RocDict(_, _), _)
-            | (_, RocDict(_, _))
-            | (RocSet(_), _)
-            | (_, RocSet(_))
-            | (RocBox(_), _)
-            | (_, RocBox(_))
+            | (BrocList(_), _)
+            | (_, BrocList(_))
+            | (BrocDict(_, _), _)
+            | (_, BrocDict(_, _))
+            | (BrocSet(_), _)
+            | (_, BrocSet(_))
+            | (BrocBox(_), _)
+            | (_, BrocBox(_))
             | (TagUnion(_), _)
             | (_, TagUnion(_))
             | (EmptyTagUnion, _)
@@ -510,7 +510,7 @@ impl Types {
         &mut self,
         interner: &TLLayoutInterner<'a>,
         name: String,
-        typ: RocType,
+        typ: BrocType,
         layout: InLayout<'a>,
     ) -> TypeId {
         if let Some(existing_type_id) = self.types_by_name.get(&name) {
@@ -537,7 +537,7 @@ impl Types {
     pub fn add_anonymous<'a>(
         &mut self,
         interner: &TLLayoutInterner<'a>,
-        typ: RocType,
+        typ: BrocType,
         layout: InLayout<'a>,
     ) -> TypeId {
         for (id, existing_type) in self.types.iter().enumerate() {
@@ -567,17 +567,17 @@ impl Types {
         self.deps.get_or_insert(id, Vec::new).push(depends_on);
     }
 
-    pub fn get_type(&self, id: TypeId) -> &RocType {
+    pub fn get_type(&self, id: TypeId) -> &BrocType {
         match self.types.get(id.0) {
             Some(typ) => typ,
             None => unreachable!("{:?}", id),
         }
     }
 
-    fn get_type_or_pending(&self, id: TypeId) -> RocTypeOrPending {
+    fn get_type_or_pending(&self, id: TypeId) -> BrocTypeOrPending {
         match self.types.get(id.0) {
-            Some(typ) => RocTypeOrPending::Type(typ),
-            None if id == TypeId::PENDING => RocTypeOrPending::Pending,
+            Some(typ) => BrocTypeOrPending::Type(typ),
+            None if id == TypeId::PENDING => BrocTypeOrPending::Pending,
             None => unreachable!("{:?}", id),
         }
     }
@@ -605,7 +605,7 @@ impl Types {
         }
     }
 
-    pub fn replace(&mut self, id: TypeId, typ: RocType) {
+    pub fn replace(&mut self, id: TypeId, typ: BrocType) {
         debug_assert!(self.types.get(id.0).is_some());
 
         self.types[id.0] = typ;
@@ -616,7 +616,7 @@ impl Types {
     }
 
     pub fn sorted_ids(&self) -> Vec<TypeId> {
-        use roc_collections::{ReferenceMatrix, TopologicalSort};
+        use broc_collections::{ReferenceMatrix, TopologicalSort};
 
         let mut matrix = ReferenceMatrix::new(self.types.len());
 
@@ -645,69 +645,69 @@ impl Types {
     }
 }
 
-impl From<&Types> for roc_type::Types {
+impl From<&Types> for broc_type::Types {
     fn from(types: &Types) -> Self {
         let deps = types
             .deps
             .iter()
-            .map(|(k, v)| roc_type::Tuple2::T(k.0 as _, v.iter().map(|x| x.0 as _).collect()))
+            .map(|(k, v)| broc_type::Tuple2::T(k.0 as _, v.iter().map(|x| x.0 as _).collect()))
             .collect();
         let types_by_name = types
             .types_by_name
             .iter()
-            .map(|(k, v)| roc_type::Tuple1::T(k.as_str().into(), v.0 as _))
+            .map(|(k, v)| broc_type::Tuple1::T(k.as_str().into(), v.0 as _))
             .collect();
 
         let entrypoints = types
             .entry_points()
             .iter()
-            .map(|(k, v)| roc_type::Tuple1::T(k.as_str().into(), v.0 as _))
+            .map(|(k, v)| broc_type::Tuple1::T(k.as_str().into(), v.0 as _))
             .collect();
 
-        roc_type::Types {
+        broc_type::Types {
             aligns: types.aligns.as_slice().into(),
             deps,
             entrypoints,
             sizes: types.sizes.as_slice().into(),
-            types: types.types.iter().map(roc_type::RocType::from).collect(),
+            types: types.types.iter().map(broc_type::BrocType::from).collect(),
             typesByName: types_by_name,
             target: types.target.into(),
         }
     }
 }
 
-impl From<&RocType> for roc_type::RocType {
-    fn from(rc: &RocType) -> Self {
+impl From<&BrocType> for broc_type::BrocType {
+    fn from(rc: &BrocType) -> Self {
         match rc {
-            RocType::RocStr => roc_type::RocType::RocStr,
-            RocType::Bool => roc_type::RocType::Bool,
-            RocType::RocResult(ok, err) => roc_type::RocType::RocResult(ok.0 as _, err.0 as _),
-            RocType::Num(num_type) => roc_type::RocType::Num(num_type.into()),
-            RocType::RocList(elem) => roc_type::RocType::RocList(elem.0 as _),
-            RocType::RocDict(k, v) => roc_type::RocType::RocDict(k.0 as _, v.0 as _),
-            RocType::RocSet(elem) => roc_type::RocType::RocSet(elem.0 as _),
-            RocType::RocBox(elem) => roc_type::RocType::RocBox(elem.0 as _),
-            RocType::TagUnion(union) => roc_type::RocType::TagUnion(union.into()),
-            RocType::EmptyTagUnion => roc_type::RocType::EmptyTagUnion,
-            RocType::Struct { name, fields } => roc_type::RocType::Struct(roc_type::R1 {
+            BrocType::BrocStr => broc_type::BrocType::BrocStr,
+            BrocType::Bool => broc_type::BrocType::Bool,
+            BrocType::BrocResult(ok, err) => broc_type::BrocType::BrocResult(ok.0 as _, err.0 as _),
+            BrocType::Num(num_type) => broc_type::BrocType::Num(num_type.into()),
+            BrocType::BrocList(elem) => broc_type::BrocType::BrocList(elem.0 as _),
+            BrocType::BrocDict(k, v) => broc_type::BrocType::BrocDict(k.0 as _, v.0 as _),
+            BrocType::BrocSet(elem) => broc_type::BrocType::BrocSet(elem.0 as _),
+            BrocType::BrocBox(elem) => broc_type::BrocType::BrocBox(elem.0 as _),
+            BrocType::TagUnion(union) => broc_type::BrocType::TagUnion(union.into()),
+            BrocType::EmptyTagUnion => broc_type::BrocType::EmptyTagUnion,
+            BrocType::Struct { name, fields } => broc_type::BrocType::Struct(broc_type::R1 {
                 fields: fields.into(),
                 name: name.as_str().into(),
             }),
-            RocType::TagUnionPayload { name, fields } => {
-                roc_type::RocType::TagUnionPayload(roc_type::R1 {
+            BrocType::TagUnionPayload { name, fields } => {
+                broc_type::BrocType::TagUnionPayload(broc_type::R1 {
                     fields: fields.into(),
                     name: name.as_str().into(),
                 })
             }
-            RocType::RecursivePointer(elem) => roc_type::RocType::RecursivePointer(elem.0 as _),
-            RocType::Function(RocFn {
+            BrocType::RecursivePointer(elem) => broc_type::BrocType::RecursivePointer(elem.0 as _),
+            BrocType::Function(BrocFn {
                 function_name,
                 extern_name,
                 args,
                 lambda_set,
                 ret,
                 is_toplevel,
-            }) => roc_type::RocType::Function(roc_type::RocFn {
+            }) => broc_type::BrocType::Function(broc_type::BrocFn {
                 args: args.iter().map(|arg| arg.0 as _).collect(),
                 functionName: function_name.as_str().into(),
                 externName: extern_name.as_str().into(),
@@ -715,52 +715,52 @@ impl From<&RocType> for roc_type::RocType {
                 lambdaSet: lambda_set.0 as _,
                 isToplevel: *is_toplevel,
             }),
-            RocType::Unit => roc_type::RocType::Unit,
-            RocType::Unsized => roc_type::RocType::Unsized,
+            BrocType::Unit => broc_type::BrocType::Unit,
+            BrocType::Unsized => broc_type::BrocType::Unsized,
         }
     }
 }
 
-impl From<&RocNum> for roc_type::RocNum {
-    fn from(rn: &RocNum) -> Self {
+impl From<&BrocNum> for broc_type::BrocNum {
+    fn from(rn: &BrocNum) -> Self {
         match rn {
-            RocNum::I8 => roc_type::RocNum::I8,
-            RocNum::U8 => roc_type::RocNum::U8,
-            RocNum::I16 => roc_type::RocNum::I16,
-            RocNum::U16 => roc_type::RocNum::U16,
-            RocNum::I32 => roc_type::RocNum::I32,
-            RocNum::U32 => roc_type::RocNum::U32,
-            RocNum::I64 => roc_type::RocNum::I64,
-            RocNum::U64 => roc_type::RocNum::U64,
-            RocNum::I128 => roc_type::RocNum::I128,
-            RocNum::U128 => roc_type::RocNum::U128,
-            RocNum::F32 => roc_type::RocNum::F32,
-            RocNum::F64 => roc_type::RocNum::F64,
-            RocNum::Dec => roc_type::RocNum::Dec,
+            BrocNum::I8 => broc_type::BrocNum::I8,
+            BrocNum::U8 => broc_type::BrocNum::U8,
+            BrocNum::I16 => broc_type::BrocNum::I16,
+            BrocNum::U16 => broc_type::BrocNum::U16,
+            BrocNum::I32 => broc_type::BrocNum::I32,
+            BrocNum::U32 => broc_type::BrocNum::U32,
+            BrocNum::I64 => broc_type::BrocNum::I64,
+            BrocNum::U64 => broc_type::BrocNum::U64,
+            BrocNum::I128 => broc_type::BrocNum::I128,
+            BrocNum::U128 => broc_type::BrocNum::U128,
+            BrocNum::F32 => broc_type::BrocNum::F32,
+            BrocNum::F64 => broc_type::BrocNum::F64,
+            BrocNum::Dec => broc_type::BrocNum::Dec,
         }
     }
 }
 
-impl From<&RocTagUnion> for roc_type::RocTagUnion {
-    fn from(rtu: &RocTagUnion) -> Self {
+impl From<&BrocTagUnion> for broc_type::BrocTagUnion {
+    fn from(rtu: &BrocTagUnion) -> Self {
         match rtu {
-            RocTagUnion::Enumeration { name, tags, size } => {
-                roc_type::RocTagUnion::Enumeration(roc_type::R5 {
+            BrocTagUnion::Enumeration { name, tags, size } => {
+                broc_type::BrocTagUnion::Enumeration(broc_type::R5 {
                     name: name.as_str().into(),
                     tags: tags.iter().map(|name| name.as_str().into()).collect(),
                     size: *size,
                 })
             }
-            RocTagUnion::NonRecursive {
+            BrocTagUnion::NonRecursive {
                 name,
                 tags,
                 discriminant_size,
                 discriminant_offset,
-            } => roc_type::RocTagUnion::NonRecursive(roc_type::R7 {
+            } => broc_type::BrocTagUnion::NonRecursive(broc_type::R7 {
                 name: name.as_str().into(),
                 tags: tags
                     .iter()
-                    .map(|(name, payload)| roc_type::R8 {
+                    .map(|(name, payload)| broc_type::R8 {
                         name: name.as_str().into(),
                         payload: payload.into(),
                     })
@@ -768,16 +768,16 @@ impl From<&RocTagUnion> for roc_type::RocTagUnion {
                 discriminantSize: *discriminant_size,
                 discriminantOffset: *discriminant_offset,
             }),
-            RocTagUnion::Recursive {
+            BrocTagUnion::Recursive {
                 name,
                 tags,
                 discriminant_size,
                 discriminant_offset,
-            } => roc_type::RocTagUnion::Recursive(roc_type::R7 {
+            } => broc_type::BrocTagUnion::Recursive(broc_type::R7 {
                 name: name.as_str().into(),
                 tags: tags
                     .iter()
-                    .map(|(name, payload)| roc_type::R8 {
+                    .map(|(name, payload)| broc_type::R8 {
                         name: name.as_str().into(),
                         payload: payload.into(),
                     })
@@ -785,36 +785,36 @@ impl From<&RocTagUnion> for roc_type::RocTagUnion {
                 discriminantSize: *discriminant_size,
                 discriminantOffset: *discriminant_offset,
             }),
-            RocTagUnion::NonNullableUnwrapped {
+            BrocTagUnion::NonNullableUnwrapped {
                 name,
                 tag_name,
                 payload,
-            } => roc_type::RocTagUnion::NonNullableUnwrapped(roc_type::R6 {
+            } => broc_type::BrocTagUnion::NonNullableUnwrapped(broc_type::R6 {
                 name: name.as_str().into(),
                 tagName: tag_name.as_str().into(),
                 payload: payload.0 as _,
             }),
-            RocTagUnion::SingleTagStruct {
+            BrocTagUnion::SingleTagStruct {
                 name,
                 tag_name,
                 payload,
-            } => roc_type::RocTagUnion::SingleTagStruct(roc_type::R14 {
+            } => broc_type::BrocTagUnion::SingleTagStruct(broc_type::R14 {
                 name: name.as_str().into(),
                 tagName: tag_name.as_str().into(),
                 payload: payload.into(),
             }),
-            RocTagUnion::NullableWrapped {
+            BrocTagUnion::NullableWrapped {
                 name,
                 index_of_null_tag,
                 tags,
                 discriminant_size,
                 discriminant_offset,
-            } => roc_type::RocTagUnion::NullableWrapped(roc_type::R10 {
+            } => broc_type::BrocTagUnion::NullableWrapped(broc_type::R10 {
                 name: name.as_str().into(),
                 indexOfNullTag: *index_of_null_tag,
                 tags: tags
                     .iter()
-                    .map(|(name, payload)| roc_type::R8 {
+                    .map(|(name, payload)| broc_type::R8 {
                         name: name.as_str().into(),
                         payload: payload.into(),
                     })
@@ -822,46 +822,46 @@ impl From<&RocTagUnion> for roc_type::RocTagUnion {
                 discriminantSize: *discriminant_size,
                 discriminantOffset: *discriminant_offset,
             }),
-            RocTagUnion::NullableUnwrapped {
+            BrocTagUnion::NullableUnwrapped {
                 name,
                 null_tag,
                 non_null_tag,
                 non_null_payload,
                 null_represents_first_tag,
-            } => roc_type::RocTagUnion::NullableUnwrapped(roc_type::R9 {
+            } => broc_type::BrocTagUnion::NullableUnwrapped(broc_type::R9 {
                 name: name.as_str().into(),
                 nonNullPayload: non_null_payload.0 as _,
                 nonNullTag: non_null_tag.as_str().into(),
                 nullTag: null_tag.as_str().into(),
                 whichTagIsNull: if *null_represents_first_tag {
-                    roc_type::U2::FirstTagIsNull
+                    broc_type::U2::FirstTagIsNull
                 } else {
-                    roc_type::U2::SecondTagIsNull
+                    broc_type::U2::SecondTagIsNull
                 },
             }),
         }
     }
 }
 
-impl From<&RocStructFields> for roc_type::RocStructFields {
-    fn from(struct_fields: &RocStructFields) -> Self {
+impl From<&BrocStructFields> for broc_type::BrocStructFields {
+    fn from(struct_fields: &BrocStructFields) -> Self {
         match struct_fields {
-            RocStructFields::HasNoClosure { fields } => roc_type::RocStructFields::HasNoClosure(
+            BrocStructFields::HasNoClosure { fields } => broc_type::BrocStructFields::HasNoClosure(
                 fields
                     .iter()
-                    .map(|(name, id)| roc_type::R4 {
+                    .map(|(name, id)| broc_type::R4 {
                         name: name.as_str().into(),
                         id: id.0 as _,
                     })
                     .collect(),
             ),
-            RocStructFields::HasClosure { fields } => roc_type::RocStructFields::HasClosure(
+            BrocStructFields::HasClosure { fields } => broc_type::BrocStructFields::HasClosure(
                 fields
                     .iter()
-                    .map(|(name, id, accessors)| roc_type::R2 {
+                    .map(|(name, id, accessors)| broc_type::R2 {
                         name: name.as_str().into(),
                         id: id.0 as _,
-                        accessors: roc_type::R3 {
+                        accessors: broc_type::R3 {
                             getter: accessors.getter.as_str().into(),
                         },
                     })
@@ -871,22 +871,22 @@ impl From<&RocStructFields> for roc_type::RocStructFields {
     }
 }
 
-impl From<&RocSingleTagPayload> for roc_type::RocSingleTagPayload {
-    fn from(struct_fields: &RocSingleTagPayload) -> Self {
+impl From<&BrocSingleTagPayload> for broc_type::BrocSingleTagPayload {
+    fn from(struct_fields: &BrocSingleTagPayload) -> Self {
         match struct_fields {
-            RocSingleTagPayload::HasNoClosure { payload_fields } => {
-                roc_type::RocSingleTagPayload::HasNoClosure(
+            BrocSingleTagPayload::HasNoClosure { payload_fields } => {
+                broc_type::BrocSingleTagPayload::HasNoClosure(
                     payload_fields
                         .iter()
-                        .map(|id| roc_type::R16 { id: id.0 as _ })
+                        .map(|id| broc_type::R16 { id: id.0 as _ })
                         .collect(),
                 )
             }
-            RocSingleTagPayload::HasClosure { payload_getters } => {
-                roc_type::RocSingleTagPayload::HasClosure(
+            BrocSingleTagPayload::HasClosure { payload_getters } => {
+                broc_type::BrocSingleTagPayload::HasClosure(
                     payload_getters
                         .iter()
-                        .map(|(id, name)| roc_type::R4 {
+                        .map(|(id, name)| broc_type::R4 {
                             id: id.0 as _,
                             name: name.as_str().into(),
                         })
@@ -897,48 +897,48 @@ impl From<&RocSingleTagPayload> for roc_type::RocSingleTagPayload {
     }
 }
 
-impl From<&Option<TypeId>> for roc_type::U1 {
+impl From<&Option<TypeId>> for broc_type::U1 {
     fn from(opt: &Option<TypeId>) -> Self {
         match opt {
-            Some(x) => roc_type::U1::Some(x.0 as _),
-            None => roc_type::U1::None,
+            Some(x) => broc_type::U1::Some(x.0 as _),
+            None => broc_type::U1::None,
         }
     }
 }
 
-impl From<TargetInfo> for roc_type::Target {
+impl From<TargetInfo> for broc_type::Target {
     fn from(target: TargetInfo) -> Self {
-        roc_type::Target {
+        broc_type::Target {
             architecture: target.architecture.into(),
             operatingSystem: target.operating_system.into(),
         }
     }
 }
 
-impl From<Architecture> for roc_type::Architecture {
+impl From<Architecture> for broc_type::Architecture {
     fn from(arch: Architecture) -> Self {
         match arch {
-            Architecture::Aarch32 => roc_type::Architecture::Aarch32,
-            Architecture::Aarch64 => roc_type::Architecture::Aarch64,
-            Architecture::Wasm32 => roc_type::Architecture::Wasm32,
-            Architecture::X86_32 => roc_type::Architecture::X86x32,
-            Architecture::X86_64 => roc_type::Architecture::X86x64,
+            Architecture::Aarch32 => broc_type::Architecture::Aarch32,
+            Architecture::Aarch64 => broc_type::Architecture::Aarch64,
+            Architecture::Wasm32 => broc_type::Architecture::Wasm32,
+            Architecture::X86_32 => broc_type::Architecture::X86x32,
+            Architecture::X86_64 => broc_type::Architecture::X86x64,
         }
     }
 }
 
-impl From<OperatingSystem> for roc_type::OperatingSystem {
+impl From<OperatingSystem> for broc_type::OperatingSystem {
     fn from(os: OperatingSystem) -> Self {
         match os {
-            OperatingSystem::Windows => roc_type::OperatingSystem::Windows,
-            OperatingSystem::Unix => roc_type::OperatingSystem::Unix,
-            OperatingSystem::Wasi => roc_type::OperatingSystem::Wasi,
+            OperatingSystem::Windows => broc_type::OperatingSystem::Windows,
+            OperatingSystem::Unix => broc_type::OperatingSystem::Unix,
+            OperatingSystem::Wasi => broc_type::OperatingSystem::Wasi,
         }
     }
 }
 
-enum RocTypeOrPending<'a> {
-    Type(&'a RocType),
+enum BrocTypeOrPending<'a> {
+    Type(&'a BrocType),
     /// A pending recursive pointer
     Pending,
 }
@@ -951,7 +951,7 @@ pub struct Accessors {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RocStructFields {
+pub enum BrocStructFields {
     HasNoClosure {
         fields: Vec<(String, TypeId)>,
     },
@@ -961,21 +961,21 @@ pub enum RocStructFields {
     },
 }
 
-impl RocStructFields {
+impl BrocStructFields {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     pub fn len(&self) -> usize {
         match self {
-            RocStructFields::HasNoClosure { fields } => fields.len(),
-            RocStructFields::HasClosure { fields } => fields.len(),
+            BrocStructFields::HasNoClosure { fields } => fields.len(),
+            BrocStructFields::HasClosure { fields } => fields.len(),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RocFn {
+pub struct BrocFn {
     pub function_name: String,
     pub extern_name: String,
     pub is_toplevel: bool,
@@ -985,30 +985,30 @@ pub struct RocFn {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RocType {
-    RocStr,
+pub enum BrocType {
+    BrocStr,
     Bool,
-    RocResult(TypeId, TypeId),
-    Num(RocNum),
-    RocList(TypeId),
-    RocDict(TypeId, TypeId),
-    RocSet(TypeId),
-    RocBox(TypeId),
-    TagUnion(RocTagUnion),
+    BrocResult(TypeId, TypeId),
+    Num(BrocNum),
+    BrocList(TypeId),
+    BrocDict(TypeId, TypeId),
+    BrocSet(TypeId),
+    BrocBox(TypeId),
+    TagUnion(BrocTagUnion),
     EmptyTagUnion,
     Struct {
         name: String,
-        fields: RocStructFields,
+        fields: BrocStructFields,
     },
     TagUnionPayload {
         name: String,
-        fields: RocStructFields,
+        fields: BrocStructFields,
     },
     /// A recursive pointer, e.g. in StrConsList : [Nil, Cons Str StrConsList],
     /// this would be the field of Cons containing the (recursive) StrConsList type,
     /// and the TypeId is the TypeId of StrConsList itself.
     RecursivePointer(TypeId),
-    Function(RocFn),
+    Function(BrocFn),
     /// A zero-sized type, such as an empty record or a single-tag union with no payload
     Unit,
     /// A type that has a size that is not statically known
@@ -1016,7 +1016,7 @@ pub enum RocType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
-pub enum RocNum {
+pub enum BrocNum {
     I8,
     U8,
     I16,
@@ -1032,50 +1032,50 @@ pub enum RocNum {
     Dec,
 }
 
-impl RocNum {
+impl BrocNum {
     /// These sizes don't vary by target.
     pub fn size(&self) -> u32 {
         use core::mem::size_of;
 
         let answer = match self {
-            RocNum::I8 => size_of::<i8>(),
-            RocNum::U8 => size_of::<u8>(),
-            RocNum::I16 => size_of::<i16>(),
-            RocNum::U16 => size_of::<u16>(),
-            RocNum::I32 => size_of::<i32>(),
-            RocNum::U32 => size_of::<u32>(),
-            RocNum::I64 => size_of::<i64>(),
-            RocNum::U64 => size_of::<u64>(),
-            RocNum::I128 => size_of::<roc_std::I128>(),
-            RocNum::U128 => size_of::<roc_std::U128>(),
-            RocNum::F32 => size_of::<f32>(),
-            RocNum::F64 => size_of::<f64>(),
-            RocNum::Dec => size_of::<roc_std::RocDec>(),
+            BrocNum::I8 => size_of::<i8>(),
+            BrocNum::U8 => size_of::<u8>(),
+            BrocNum::I16 => size_of::<i16>(),
+            BrocNum::U16 => size_of::<u16>(),
+            BrocNum::I32 => size_of::<i32>(),
+            BrocNum::U32 => size_of::<u32>(),
+            BrocNum::I64 => size_of::<i64>(),
+            BrocNum::U64 => size_of::<u64>(),
+            BrocNum::I128 => size_of::<broc_std::I128>(),
+            BrocNum::U128 => size_of::<broc_std::U128>(),
+            BrocNum::F32 => size_of::<f32>(),
+            BrocNum::F64 => size_of::<f64>(),
+            BrocNum::Dec => size_of::<broc_std::BrocDec>(),
         };
 
         answer as u32
     }
 }
 
-impl From<IntWidth> for RocNum {
+impl From<IntWidth> for BrocNum {
     fn from(width: IntWidth) -> Self {
         match width {
-            IntWidth::U8 => RocNum::U8,
-            IntWidth::U16 => RocNum::U16,
-            IntWidth::U32 => RocNum::U32,
-            IntWidth::U64 => RocNum::U64,
-            IntWidth::U128 => RocNum::U128,
-            IntWidth::I8 => RocNum::I8,
-            IntWidth::I16 => RocNum::I16,
-            IntWidth::I32 => RocNum::I32,
-            IntWidth::I64 => RocNum::I64,
-            IntWidth::I128 => RocNum::I128,
+            IntWidth::U8 => BrocNum::U8,
+            IntWidth::U16 => BrocNum::U16,
+            IntWidth::U32 => BrocNum::U32,
+            IntWidth::U64 => BrocNum::U64,
+            IntWidth::U128 => BrocNum::U128,
+            IntWidth::I8 => BrocNum::I8,
+            IntWidth::I16 => BrocNum::I16,
+            IntWidth::I32 => BrocNum::I32,
+            IntWidth::I64 => BrocNum::I64,
+            IntWidth::I128 => BrocNum::I128,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RocSingleTagPayload {
+pub enum BrocSingleTagPayload {
     /// If at least one payload field contains a closure, we have to provide
     /// field getters and setters because the size and order of those fields can vary based on the
     /// application's implementation, so those sizes and order are not knowable at host build time.
@@ -1088,7 +1088,7 @@ pub enum RocSingleTagPayload {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RocTagUnion {
+pub enum BrocTagUnion {
     Enumeration {
         name: String,
         tags: Vec<String>,
@@ -1125,7 +1125,7 @@ pub enum RocTagUnion {
     SingleTagStruct {
         name: String,
         tag_name: String,
-        payload: RocSingleTagPayload,
+        payload: BrocSingleTagPayload,
     },
     /// A recursive tag union that has an empty variant
     /// Optimization: Represent the empty variant as null pointer => no memory usage & fast comparison
@@ -1164,7 +1164,7 @@ struct Env<'a> {
     arena: &'a Bump,
     subs: &'a Subs,
     layout_cache: LayoutCache<'a>,
-    glue_procs_by_layout: MutMap<Layout<'a>, &'a [String]>,
+    glue_pbrocs_by_layout: MutMap<Layout<'a>, &'a [String]>,
     lambda_set_ids: MutMap<Variable, LambdaSetId>,
     interns: &'a Interns,
     struct_names: Structs,
@@ -1180,7 +1180,7 @@ impl<'a> Env<'a> {
         subs: &'a Subs,
         interns: &'a Interns,
         layout_interner: TLLayoutInterner<'a>,
-        glue_procs_by_layout: MutMap<Layout<'a>, &'a [String]>,
+        glue_pbrocs_by_layout: MutMap<Layout<'a>, &'a [String]>,
         target: TargetInfo,
     ) -> Self {
         Env {
@@ -1191,7 +1191,7 @@ impl<'a> Env<'a> {
             enum_names: Default::default(),
             pending_recursive_types: Default::default(),
             known_recursive_types: Default::default(),
-            glue_procs_by_layout,
+            glue_pbrocs_by_layout,
             lambda_set_ids: Default::default(),
             layout_cache: LayoutCache::new(layout_interner, target),
             target,
@@ -1214,14 +1214,14 @@ impl<'a> Env<'a> {
                 });
 
             debug_assert!(
-                matches!(types.get_type(type_id), RocType::RecursivePointer(TypeId::PENDING)),
+                matches!(types.get_type(type_id), BrocType::RecursivePointer(TypeId::PENDING)),
                 "The TypeId {:?} was registered as a pending recursive pointer, but was not stored in Types as one.",
                 type_id
             );
 
             // size and alignment shouldn't change; this is still
             // a RecursivePointer, it's just pointing to something else.
-            types.replace(type_id, RocType::RecursivePointer(actual_type_id));
+            types.replace(type_id, BrocType::RecursivePointer(actual_type_id));
         }
     }
 
@@ -1262,8 +1262,8 @@ impl<'a> Env<'a> {
                     FlatType::FunctionOrTagUnion(_, _, ext) => {
                         // just the ext
                         match ext {
-                            roc_types::subs::TagExt::Openness(var) => stack.push(*var),
-                            roc_types::subs::TagExt::Any(_) => { /* ignore */ }
+                            broc_types::subs::TagExt::Openness(var) => stack.push(*var),
+                            broc_types::subs::TagExt::Any(_) => { /* ignore */ }
                         }
                     }
                     FlatType::TagUnion(union_tags, ext)
@@ -1278,8 +1278,8 @@ impl<'a> Env<'a> {
                         }
 
                         match ext {
-                            roc_types::subs::TagExt::Openness(var) => stack.push(*var),
-                            roc_types::subs::TagExt::Any(_) => { /* ignore */ }
+                            broc_types::subs::TagExt::Openness(var) => stack.push(*var),
+                            broc_types::subs::TagExt::Any(_) => { /* ignore */ }
                         }
                     }
                     FlatType::EmptyRecord => {}
@@ -1304,7 +1304,7 @@ impl<'a> Env<'a> {
     }
 
     fn add_toplevel_type(&mut self, var: Variable, types: &mut Types) -> TypeId {
-        roc_tracing::debug!(content=?roc_types::subs::SubsFmtContent(self.subs.get_content_without_compacting(var), self.subs), "adding toplevel type");
+        broc_tracing::debug!(content=?broc_types::subs::SubsFmtContent(self.subs.get_content_without_compacting(var), self.subs), "adding toplevel type");
 
         let layout = self
             .layout_cache
@@ -1342,10 +1342,10 @@ fn add_function_type<'a>(
     let args = env.subs.get_subs_slice(*args);
     let mut arg_type_ids = Vec::with_capacity(args.len());
 
-    let name = format!("RocFunction_{:?}", closure_var);
+    let name = format!("BrocFunction_{:?}", closure_var);
 
     let id = env.lambda_set_ids.get(&closure_var).unwrap();
-    let extern_name = format!("roc__mainForHost_{}_caller", id.0);
+    let extern_name = format!("broc__mainForHost_{}_caller", id.0);
 
     for arg_var in args {
         let arg_layout = env
@@ -1379,7 +1379,7 @@ fn add_function_type<'a>(
     };
 
     let fn_type_id = add_function(env, name, types, layout, |name| {
-        RocType::Function(RocFn {
+        BrocType::Function(BrocFn {
             function_name: name,
             extern_name,
             args: arg_type_ids.clone(),
@@ -1441,7 +1441,7 @@ fn add_type_help<'a>(
             };
 
             add_struct(env, name, it, types, layout, |name, fields| {
-                RocType::Struct { name, fields }
+                BrocType::Struct { name, fields }
             })
         }
         Content::Structure(FlatType::TagUnion(tags, ext_var)) => {
@@ -1493,13 +1493,13 @@ fn add_type_help<'a>(
             todo!()
         }
         Content::Structure(FlatType::EmptyRecord) => {
-            types.add_anonymous(&env.layout_cache.interner, RocType::Unit, layout)
+            types.add_anonymous(&env.layout_cache.interner, BrocType::Unit, layout)
         }
         Content::Structure(FlatType::EmptyTuple) => {
-            types.add_anonymous(&env.layout_cache.interner, RocType::Unit, layout)
+            types.add_anonymous(&env.layout_cache.interner, BrocType::Unit, layout)
         }
         Content::Structure(FlatType::EmptyTagUnion) => {
-            types.add_anonymous(&env.layout_cache.interner, RocType::EmptyTagUnion, layout)
+            types.add_anonymous(&env.layout_cache.interner, BrocType::EmptyTagUnion, layout)
         }
         Content::Alias(name, alias_vars, real_var, _) => {
             if name.is_builtin() {
@@ -1522,7 +1522,7 @@ fn add_type_help<'a>(
                             }
                         }
 
-                        types.add_anonymous(&env.layout_cache.interner, RocType::Bool, layout)
+                        types.add_anonymous(&env.layout_cache.interner, BrocType::Bool, layout)
                     }
                     Layout::Union(union_layout) if *name == Symbol::RESULT_RESULT => {
                         match union_layout {
@@ -1545,7 +1545,7 @@ fn add_type_help<'a>(
 
                                 let type_id = types.add_anonymous(
                                     &env.layout_cache.interner,
-                                    RocType::RocResult(ok_id, err_id),
+                                    BrocType::BrocResult(ok_id, err_id),
                                     layout,
                                 );
 
@@ -1584,7 +1584,7 @@ fn add_type_help<'a>(
 
                         let type_id = types.add_anonymous(
                             &env.layout_cache.interner,
-                            RocType::RocDict(key_id, value_id),
+                            BrocType::BrocDict(key_id, value_id),
                             layout,
                         );
 
@@ -1603,7 +1603,7 @@ fn add_type_help<'a>(
 
                         let type_id = types.add_anonymous(
                             &env.layout_cache.interner,
-                            RocType::RocSet(key_id),
+                            BrocType::BrocSet(key_id),
                             layout,
                         );
 
@@ -1626,7 +1626,7 @@ fn add_type_help<'a>(
         Content::RecursionVar { structure, .. } => {
             let type_id = types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::RecursivePointer(TypeId::PENDING),
+                BrocType::RecursivePointer(TypeId::PENDING),
                 layout,
             );
 
@@ -1649,7 +1649,7 @@ fn add_type_help<'a>(
 
             if tags.is_empty() {
                 // this function does not capture anything. Represent that at runtime as a unit value
-                types.add_anonymous(&env.layout_cache.interner, RocType::Unsized, layout)
+                types.add_anonymous(&env.layout_cache.interner, BrocType::Unsized, layout)
             } else {
                 add_tag_union(env, opt_name, &tags, var, types, layout, None)
             }
@@ -1672,71 +1672,71 @@ fn add_builtin_type<'a>(
 
     match (builtin, builtin_type) {
         (Builtin::Int(width), _) => match width {
-            U8 => types.add_anonymous(&env.layout_cache.interner, RocType::Num(RocNum::U8), layout),
+            U8 => types.add_anonymous(&env.layout_cache.interner, BrocType::Num(BrocNum::U8), layout),
             U16 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::U16),
+                BrocType::Num(BrocNum::U16),
                 layout,
             ),
             U32 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::U32),
+                BrocType::Num(BrocNum::U32),
                 layout,
             ),
             U64 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::U64),
+                BrocType::Num(BrocNum::U64),
                 layout,
             ),
             U128 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::U128),
+                BrocType::Num(BrocNum::U128),
                 layout,
             ),
-            I8 => types.add_anonymous(&env.layout_cache.interner, RocType::Num(RocNum::I8), layout),
+            I8 => types.add_anonymous(&env.layout_cache.interner, BrocType::Num(BrocNum::I8), layout),
             I16 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::I16),
+                BrocType::Num(BrocNum::I16),
                 layout,
             ),
             I32 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::I32),
+                BrocType::Num(BrocNum::I32),
                 layout,
             ),
             I64 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::I64),
+                BrocType::Num(BrocNum::I64),
                 layout,
             ),
             I128 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::I128),
+                BrocType::Num(BrocNum::I128),
                 layout,
             ),
         },
         (Builtin::Float(width), _) => match width {
             F32 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::F32),
+                BrocType::Num(BrocNum::F32),
                 layout,
             ),
             F64 => types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::Num(RocNum::F64),
+                BrocType::Num(BrocNum::F64),
                 layout,
             ),
         },
         (Builtin::Decimal, _) => types.add_anonymous(
             &env.layout_cache.interner,
-            RocType::Num(RocNum::Dec),
+            BrocType::Num(BrocNum::Dec),
             layout,
         ),
         (Builtin::Bool, _) => {
-            types.add_anonymous(&env.layout_cache.interner, RocType::Bool, layout)
+            types.add_anonymous(&env.layout_cache.interner, BrocType::Bool, layout)
         }
         (Builtin::Str, _) => {
-            types.add_anonymous(&env.layout_cache.interner, RocType::RocStr, layout)
+            types.add_anonymous(&env.layout_cache.interner, BrocType::BrocStr, layout)
         }
         (Builtin::List(elem_layout), Structure(Apply(Symbol::LIST_LIST, args))) => {
             let args = env.subs.get_subs_slice(*args);
@@ -1745,7 +1745,7 @@ fn add_builtin_type<'a>(
             let elem_id = add_type_help(env, elem_layout, args[0], opt_name, types);
             let list_id = types.add_anonymous(
                 &env.layout_cache.interner,
-                RocType::RocList(elem_id),
+                BrocType::BrocList(elem_id),
                 layout,
             );
 
@@ -1789,7 +1789,7 @@ fn add_builtin_type<'a>(
 
                     let key_id = add_type_help(env, field_layouts[0], key_var, opt_name, types);
                     let val_id = add_type_help(env, field_layouts[1], val_var, opt_name, types);
-                    let dict_id = types.add_anonymous(&env.layout_cache.interner,RocType::RocDict(key_id, val_id), layout);
+                    let dict_id = types.add_anonymous(&env.layout_cache.interner,BrocType::BrocDict(key_id, val_id), layout);
 
                     types.depends(dict_id, key_id);
                     types.depends(dict_id, val_id);
@@ -1825,7 +1825,7 @@ fn add_builtin_type<'a>(
                     debug_assert_eq!(field_layouts.len(), 2);
 
                     let elem_id = add_type_help(env, field_layouts[0], elem_var, opt_name, types);
-                    let set_id = types.add_anonymous(&env.layout_cache.interner,RocType::RocSet(elem_id), layout);
+                    let set_id = types.add_anonymous(&env.layout_cache.interner,BrocType::BrocSet(elem_id), layout);
 
                     types.depends(set_id, elem_id);
 
@@ -1855,7 +1855,7 @@ fn add_function<'a, F>(
     to_type: F,
 ) -> TypeId
 where
-    F: FnOnce(String) -> RocType,
+    F: FnOnce(String) -> BrocType,
 {
     // let subs = env.subs;
     // let arena = env.arena;
@@ -1879,7 +1879,7 @@ fn add_struct<'a, I, L, F>(
 where
     I: IntoIterator<Item = (L, Variable)>,
     L: Display + Ord,
-    F: FnOnce(String, RocStructFields) -> RocType,
+    F: FnOnce(String, BrocStructFields) -> BrocType,
 {
     let subs = env.subs;
     let arena = env.arena;
@@ -1908,16 +1908,16 @@ where
         )
     });
 
-    // This layout should have an entry in glue_procs_by_layout iff it
+    // This layout should have an entry in glue_pbrocs_by_layout iff it
     // contains closures, but we'll double-check that with a debug_assert.
     let layout = env.layout_cache.interner.get(in_layout);
-    let struct_fields = match env.glue_procs_by_layout.get(&layout) {
-        Some(&glue_procs) => {
+    let struct_fields = match env.glue_pbrocs_by_layout.get(&layout) {
+        Some(&glue_pbrocs) => {
             debug_assert!(layout.has_varying_stack_size(&env.layout_cache.interner, arena));
 
             let fields: Vec<(String, TypeId, Accessors)> = sortables
                 .into_iter()
-                .zip(glue_procs.iter())
+                .zip(glue_pbrocs.iter())
                 .map(|((label, field_var, field_layout), getter)| {
                     let type_id = add_type_help(env, field_layout, field_var, None, types);
                     let accessors = Accessors {
@@ -1928,7 +1928,7 @@ where
                 })
                 .collect();
 
-            RocStructFields::HasClosure { fields }
+            BrocStructFields::HasClosure { fields }
         }
         None => {
             // debug_assert!(!layout.has_varying_stack_size(&env.layout_cache.interner, arena));
@@ -1942,7 +1942,7 @@ where
                 })
                 .collect();
 
-            RocStructFields::HasNoClosure { fields }
+            BrocStructFields::HasNoClosure { fields }
         }
     };
 
@@ -1978,7 +1978,7 @@ fn tag_union_type_from_layout<'a>(
     var: Variable,
     types: &mut Types,
     layout: InLayout<'a>,
-) -> RocTagUnion {
+) -> BrocTagUnion {
     let subs = env.subs;
 
     match env.layout_cache.get_in(layout) {
@@ -1996,7 +1996,7 @@ fn tag_union_type_from_layout<'a>(
             let (tag_name, payload) =
                 single_tag_payload_fields(env, union_tags, subs, layout, &[payload_layout], types);
 
-            RocTagUnion::SingleTagStruct {
+            BrocTagUnion::SingleTagStruct {
                 name: name.clone(),
                 tag_name,
                 payload,
@@ -2019,7 +2019,7 @@ fn tag_union_type_from_layout<'a>(
                         .tag_id_offset(&env.layout_cache.interner, env.target)
                         .unwrap();
 
-                    RocTagUnion::NonRecursive {
+                    BrocTagUnion::NonRecursive {
                         name: name.clone(),
                         tags,
                         discriminant_size,
@@ -2037,7 +2037,7 @@ fn tag_union_type_from_layout<'a>(
                         .tag_id_offset(&env.layout_cache.interner, env.target)
                         .unwrap();
 
-                    RocTagUnion::Recursive {
+                    BrocTagUnion::Recursive {
                         name: name.clone(),
                         tags,
                         discriminant_size,
@@ -2052,7 +2052,7 @@ fn tag_union_type_from_layout<'a>(
                     // A recursive tag union with just one constructor
                     // Optimization: No need to store a tag ID (the payload is "unwrapped")
                     // e.g. `RoseTree a : [Tree a (List (RoseTree a))]`
-                    RocTagUnion::NonNullableUnwrapped {
+                    BrocTagUnion::NonNullableUnwrapped {
                         name: name.clone(),
                         tag_name,
                         payload: opt_payload.unwrap(),
@@ -2080,7 +2080,7 @@ fn tag_union_type_from_layout<'a>(
                     // the ids would be Empty = 0, More = 1, Single = 2, because that's how those tags are
                     // ordered alphabetically. Since the Empty tag will be represented at runtime as NULL,
                     // and since Empty's tag id is 0, here nullable_id would be 0.
-                    RocTagUnion::NullableWrapped {
+                    BrocTagUnion::NullableWrapped {
                         name: name.clone(),
                         index_of_null_tag: nullable_id,
                         tags,
@@ -2116,7 +2116,7 @@ fn tag_union_type_from_layout<'a>(
 
                     let (non_null_tag, non_null_payload) = non_null;
 
-                    RocTagUnion::NullableUnwrapped {
+                    BrocTagUnion::NullableUnwrapped {
                         name: name.clone(),
                         null_tag,
                         non_null_tag,
@@ -2133,7 +2133,7 @@ fn tag_union_type_from_layout<'a>(
             let (tag_name, payload) =
                 single_tag_payload_fields(env, union_tags, subs, layout, field_layouts, types);
 
-            RocTagUnion::SingleTagStruct {
+            BrocTagUnion::SingleTagStruct {
                 name: name.clone(),
                 tag_name,
                 payload,
@@ -2149,10 +2149,10 @@ fn tag_union_type_from_layout<'a>(
             let type_id = add_builtin_type(env, builtin, var, opt_name, types, layout);
             let (tag_name, _) = single_tag_payload(union_tags, subs);
 
-            RocTagUnion::SingleTagStruct {
+            BrocTagUnion::SingleTagStruct {
                 name: name.clone(),
                 tag_name,
-                payload: RocSingleTagPayload::HasNoClosure {
+                payload: BrocSingleTagPayload::HasNoClosure {
                     // Builtins have no closures
                     payload_fields: vec![type_id],
                 },
@@ -2162,7 +2162,7 @@ fn tag_union_type_from_layout<'a>(
             let (tag_name, payload_fields) =
                 single_tag_payload_fields(env, union_tags, subs, layout, &[elem_layout], types);
 
-            RocTagUnion::SingleTagStruct {
+            BrocTagUnion::SingleTagStruct {
                 name: name.clone(),
                 tag_name,
                 payload: payload_fields,
@@ -2209,7 +2209,7 @@ fn add_tag_union<'a>(
         layout,
     );
 
-    let typ = RocType::TagUnion(tag_union_type);
+    let typ = BrocType::TagUnion(tag_union_type);
     let type_id = types.add_named(&env.layout_cache.interner, name, typ, layout);
 
     if let Some(rec_var) = rec_root {
@@ -2224,12 +2224,12 @@ fn add_int_enumeration(
     subs: &Subs,
     name: &str,
     int_width: IntWidth,
-) -> RocTagUnion {
+) -> BrocTagUnion {
     let tags: Vec<String> = union_tags
         .iter_from_subs(subs)
         .map(|(tag_name, _)| tag_name.union_tag_name())
         .collect();
-    RocTagUnion::Enumeration {
+    BrocTagUnion::Enumeration {
         name: name.to_string(),
         tags,
         size: int_width.stack_size(),
@@ -2292,24 +2292,24 @@ fn single_tag_payload_fields<'a, 'b>(
     in_layout: InLayout<'a>,
     field_layouts: &[InLayout<'a>],
     types: &mut Types,
-) -> (String, RocSingleTagPayload) {
+) -> (String, BrocSingleTagPayload) {
     let layout = env.layout_cache.interner.get(in_layout);
-    // There should be a glue_procs_by_layout entry iff this layout has a closure in it,
+    // There should be a glue_pbrocs_by_layout entry iff this layout has a closure in it,
     // so we shouldn't need to separately check that. Howeevr, we still do a debug_assert
     // anyway just so we have some warning in case that relationship somehow didn't hold!
     debug_assert_eq!(
-        env.glue_procs_by_layout.get(&layout).is_some(),
+        env.glue_pbrocs_by_layout.get(&layout).is_some(),
         layout.has_varying_stack_size(&env.layout_cache.interner, env.arena)
     );
 
     let (tag_name, payload_vars) = single_tag_payload(union_tags, subs);
 
-    let payload = match env.glue_procs_by_layout.get(&layout) {
-        Some(glue_procs) => {
+    let payload = match env.glue_pbrocs_by_layout.get(&layout) {
+        Some(glue_pbrocs) => {
             let payload_getters = payload_vars
                 .iter()
                 .zip(field_layouts.iter())
-                .zip(glue_procs.iter())
+                .zip(glue_pbrocs.iter())
                 .map(|((field_var, field_layout), getter_name)| {
                     let type_id = add_type_help(env, *field_layout, *field_var, None, types);
 
@@ -2317,9 +2317,9 @@ fn single_tag_payload_fields<'a, 'b>(
                 })
                 .collect();
 
-            RocSingleTagPayload::HasClosure { payload_getters }
+            BrocSingleTagPayload::HasClosure { payload_getters }
         }
-        None => RocSingleTagPayload::HasNoClosure {
+        None => BrocSingleTagPayload::HasNoClosure {
             payload_fields: payload_vars
                 .iter()
                 .zip(field_layouts.iter())
@@ -2361,11 +2361,11 @@ fn tag_to_type<'a, D: Display>(
             (tag_name, Some(payload_id))
         }
         _ => {
-            // create a RocType for the payload and save it
+            // create a BrocType for the payload and save it
             let struct_name = format!("{}_{}", &name, tag_name); // e.g. "MyUnion_MyVariant"
             let fields = payload_vars.iter().copied().enumerate();
             let struct_id = add_struct(env, struct_name, fields, types, layout, |name, fields| {
-                RocType::TagUnionPayload { name, fields }
+                BrocType::TagUnionPayload { name, fields }
             });
 
             (tag_name, Some(struct_id))

@@ -1,14 +1,14 @@
 use arrayvec::ArrayString;
-use roc_types::subs::Variable;
+use broc_types::subs::Variable;
 
 use crate::{
     lang::core::{fun_def::FunctionDef, pattern::Pattern2, val_def::ValueDef},
     mem_pool::{pool::NodeId, pool_str::PoolStr, pool_vec::PoolVec},
 };
-use roc_can::expr::Recursive;
-use roc_module::called_via::CalledVia;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
+use broc_can::expr::Recursive;
+use broc_module::called_via::CalledVia;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
 
 use super::record_field::RecordField;
 
@@ -176,8 +176,8 @@ pub enum IntStyle {
 }
 
 impl IntStyle {
-    pub fn from_base(base: roc_parse::ast::Base) -> Self {
-        use roc_parse::ast::Base;
+    pub fn from_base(base: broc_parse::ast::Base) -> Self {
+        use broc_parse::ast::Base;
         match base {
             Base::Decimal => Self::Decimal,
             Base::Octal => Self::Octal,

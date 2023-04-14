@@ -1,14 +1,14 @@
 //! Exhaustiveness checking, based on [Warnings for pattern matching](http://moscova.inria.fr/~maranget/papers/warn/warn.pdf)
 //! (Luc Maranget, 2007).
 
-use roc_collections::all::{HumanIndex, MutMap};
-use roc_error_macros::internal_error;
-use roc_module::{
+use broc_collections::all::{HumanIndex, MutMap};
+use broc_error_macros::internal_error;
+use broc_module::{
     ident::{Lowercase, TagIdIntType, TagName},
     symbol::Symbol,
 };
-use roc_problem::Severity;
-use roc_region::all::Region;
+use broc_problem::Severity;
+use broc_region::all::Region;
 
 use self::Pattern::*;
 

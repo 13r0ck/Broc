@@ -5,7 +5,7 @@
 ## TODO
 
 - [x] JS to load and initialize WebAssembly
-- [x] Events in Roc, with CyclicStructureAccessor type, etc.
+- [x] Events in Broc, with CyclicStructureAccessor type, etc.
 - [x] Get prototype code to compile
 - [ ] Fix compiler stack overflow! (somewhere after type checking)
 - [ ] Get server-side rendering to work
@@ -15,11 +15,11 @@
 
 ## Outline
 
-The aim is to develop an example of a virtual DOM platform in Roc, with server-side rendering. The virtual DOM rendering is not working yet though!
+The aim is to develop an example of a virtual DOM platform in Broc, with server-side rendering. The virtual DOM rendering is not working yet though!
 
-This builds on the ideas in [Action-State in Roc (v5)](https://docs.google.com/document/d/16qY4NGVOHu8mvInVD-ddTajZYSsFvFBvQON_hmyHGfo/edit) about how UI frameworks in general should work in Roc.
+This builds on the ideas in [Action-State in Broc (v5)](https://docs.google.com/document/d/16qY4NGVOHu8mvInVD-ddTajZYSsFvFBvQON_hmyHGfo/edit) about how UI frameworks in general should work in Broc.
 
-> As with many aspects of Roc, this is a design that's both inspired by and similar to - but not quite the same as - [how Elm does it](https://guide.elm-lang.org/architecture/).
+> As with many aspects of Broc, this is a design that's both inspired by and similar to - but not quite the same as - [how Elm does it](https://guide.elm-lang.org/architecture/).
 
 It is also inspired by the GUI example apps in this repo, particularly the clone of the Breakout game.
 
@@ -32,11 +32,11 @@ WebAssembly does not have direct access to web APIs like the DOM. It needs to go
 - Only call out to JavaScript when we really need to! Each effect function is a thin wrapper around a DOM API function (like `document.createElement()` or `element.appendChild()`).
 - Use a virtual DOM to minimise the number of DOM operations we need to do.
 - Maintain a JS array of all our DOM nodes so that Wasm can refer to them by index.
-- Don't try to send event handler functions to JS. Instead keep them in a Roc Dict, and give each an ID. Then create a JS event listener that passes this ID to an event dispatcher in Wasm, which can look up the Roc handler and call it.
-- When decoding DOM events, don't serialize the entire JavaScript `Event` object, but only the pieces of it that the Roc handler function actually needs. (In fact, `Event`s in general are not serializable, since they contain cyclic references, so we have to do this!)
+- Don't try to send event handler functions to JS. Instead keep them in a Broc Dict, and give each an ID. Then create a JS event listener that passes this ID to an event dispatcher in Wasm, which can look up the Broc handler and call it.
+- When decoding DOM events, don't serialize the entire JavaScript `Event` object, but only the pieces of it that the Broc handler function actually needs. (In fact, `Event`s in general are not serializable, since they contain cyclic references, so we have to do this!)
 - Support region-based memory allocation for the virtual DOM
   - The virtual DOM has a very predictable lifetime. It lasts until the next render, and can be dropped immediately after the diff. We can allocate the whole tree in its own [memory region](https://en.wikipedia.org/wiki/Region-based_memory_management) and then free it all at once rather that one value at a time.
-  - We maintain a list of Roc event handler lambdas, and continually refresh it from the latest virtual DOM tree so that the old lambda values can be safely dropped.
+  - We maintain a list of Broc event handler lambdas, and continually refresh it from the latest virtual DOM tree so that the old lambda values can be safely dropped.
 
 ## Goals
 
@@ -78,7 +78,7 @@ App state initData : {
 - Client side
   - JS
     - Load the Wasm module
-    - Call `roc_alloc` in the Wasm module
+    - Call `broc_alloc` in the Wasm module
     - Write the `initData` JSON string to Wasm memory
     - Call a JS function called `indexNodes`
         - Crawl the rendered DOM in a known order, storing a reference to each node into a JS array
@@ -89,7 +89,7 @@ App state initData : {
       - Call `app.init` to convert `initData` to `state`
       - Call `app.render` to get the initial view
       - Call `translateStatic` on the view to get the static version (without event handlers)
-    - Call a Roc function called `indexNodes` (same name as the JS function mentioned above)
+    - Call a Broc function called `indexNodes` (same name as the JS function mentioned above)
       - Crawl the _virtual_ tree in the same order as JS crawled the real DOM tree, assigning an index to each node
       - This index will match the index of the corresponding _real_ DOM node in the JS array
     - Run a diff between the dynamic and static versions of the virtual DOM

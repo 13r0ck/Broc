@@ -1,8 +1,8 @@
 use crate::ident::{Ident, ModuleName};
 use crate::module_err::{IdentIdNotFoundSnafu, ModuleIdNotFoundSnafu, ModuleResult};
-use roc_collections::{SmallStringInterner, VecMap};
-use roc_ident::IdentStr;
-use roc_region::all::Region;
+use broc_collections::{SmallStringInterner, VecMap};
+use broc_ident::IdentStr;
+use broc_region::all::Region;
 use snafu::OptionExt;
 use std::num::NonZeroU32;
 use std::{fmt, u32};
@@ -251,8 +251,8 @@ fn fallback_debug_fmt(symbol: Symbol, f: &mut fmt::Formatter) -> fmt::Result {
 /// corresponds to that ID.
 ///
 #[cfg(any(debug_assertions, feature = "debug-symbols"))]
-static DEBUG_MODULE_ID_NAMES: std::sync::Mutex<roc_collections::SmallStringInterner> =
-    std::sync::Mutex::new(roc_collections::SmallStringInterner::new());
+static DEBUG_MODULE_ID_NAMES: std::sync::Mutex<broc_collections::SmallStringInterner> =
+    std::sync::Mutex::new(broc_collections::SmallStringInterner::new());
 
 #[derive(Debug, Default, Clone)]
 pub struct Interns {
@@ -329,12 +329,12 @@ pub fn get_module_ident_ids_mut<'a>(
 /// which displays not only the Module ID, but also the Module Name which
 /// corresponds to that ID.
 #[cfg(any(debug_assertions, feature = "debug-symbols"))]
-static DEBUG_IDENT_IDS_BY_MODULE_ID: std::sync::Mutex<roc_collections::VecMap<u32, IdentIds>> =
+static DEBUG_IDENT_IDS_BY_MODULE_ID: std::sync::Mutex<broc_collections::VecMap<u32, IdentIds>> =
     // This stores a u32 key instead of a ModuleId key so that if there's
     // a problem with ModuleId's Debug implementation, logging this for diagnostic
     // purposes won't recursively trigger ModuleId's Debug instance in the course of printing
     // this out.
-    std::sync::Mutex::new(roc_collections::VecMap::new());
+    std::sync::Mutex::new(broc_collections::VecMap::new());
 
 /// A globally unique ID that gets assigned to each module as it is loaded.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -645,7 +645,7 @@ impl IdentIds {
     }
 
     /// Generates a unique, new name that's just a strigified integer
-    /// (e.g. "1" or "5"), using an internal counter. Since valid Roc variable
+    /// (e.g. "1" or "5"), using an internal counter. Since valid Broc variable
     /// names cannot begin with a number, this has no chance of colliding
     /// with actual user-defined variables.
     ///
@@ -956,7 +956,7 @@ macro_rules! define_builtins {
             /// The default `Apply` types that should be in scope,
             /// and what symbols they should resolve to.
             ///
-            /// This is for type aliases that don't have a concrete Roc representation and as such
+            /// This is for type aliases that don't have a concrete Broc representation and as such
             /// we hide their implementation, like `Str` and `List`.
             pub fn apply_types_in_scope() -> VecMap<Ident, (Symbol, Region)> {
                 let mut scope = VecMap::default();
@@ -1002,7 +1002,7 @@ macro_rules! define_builtins {
                         LIST
                     }
                     )+
-                    m => roc_error_macros::internal_error!("{:?} is not a builtin module!", m),
+                    m => broc_error_macros::internal_error!("{:?} is not a builtin module!", m),
                 }
             }
 
@@ -1062,7 +1062,7 @@ define_builtins! {
         // see e.g. Set.walk
         19 USER_FUNCTION: "#user_function"
 
-        // A caller (wrapper) that we pass to zig for it to be able to call Roc functions
+        // A caller (wrapper) that we pass to zig for it to be able to call Broc functions
         20 ZIG_FUNCTION_CALLER: "#zig_function_caller"
 
         // a caller (wrapper) for comparison

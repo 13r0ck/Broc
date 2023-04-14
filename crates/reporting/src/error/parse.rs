@@ -1,13 +1,13 @@
-use roc_parse::parser::{ENumber, ESingleQuote, FileError, PList, SyntaxError};
-use roc_problem::Severity;
-use roc_region::all::{LineColumn, LineColumnRegion, LineInfo, Position, Region};
+use broc_parse::parser::{ENumber, ESingleQuote, FileError, PList, SyntaxError};
+use broc_problem::Severity;
+use broc_region::all::{LineColumn, LineColumnRegion, LineInfo, Position, Region};
 use std::path::PathBuf;
 
-use crate::report::{Report, RocDocAllocator, RocDocBuilder};
+use crate::report::{Report, BrocDocAllocator, BrocDocBuilder};
 use ven_pretty::DocAllocator;
 
 pub fn parse_problem<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     _starting_line: u32,
@@ -16,15 +16,15 @@ pub fn parse_problem<'a>(
     to_syntax_report(alloc, lines, filename, &parse_problem.problem.problem)
 }
 
-fn note_for_record_type_indent<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn note_for_record_type_indent<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.note("I may be confused by indentation")
 }
 
-fn note_for_tag_union_type_indent<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn note_for_tag_union_type_indent<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.note("I may be confused by indentation")
 }
 
-fn hint_for_tag_name<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn hint_for_tag_name<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.concat([
         alloc.hint("Tag names "),
         alloc.reflow("start with an uppercase letter, like "),
@@ -35,7 +35,7 @@ fn hint_for_tag_name<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
     ])
 }
 
-fn record_patterns_look_like<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn record_patterns_look_like<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.concat([
         alloc.reflow(r"Record pattern look like "),
         alloc.parser_suggestion("{ name, age: currentAge },"),
@@ -43,7 +43,7 @@ fn record_patterns_look_like<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilde
     ])
 }
 
-fn list_patterns_look_like<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn list_patterns_look_like<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.concat([
         alloc.reflow(r"Record pattern look like "),
         alloc.parser_suggestion("[1, 2, ..]"),
@@ -53,10 +53,10 @@ fn list_patterns_look_like<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<
 }
 
 fn to_syntax_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::SyntaxError<'a>,
+    parse_problem: &broc_parse::parser::SyntaxError<'a>,
 ) -> Report<'a> {
     use SyntaxError::*;
 
@@ -174,14 +174,14 @@ enum Node {
 }
 
 fn to_expr_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
-    parse_problem: &roc_parse::parser::EExpr<'a>,
+    parse_problem: &broc_parse::parser::EExpr<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EExpr;
+    use broc_parse::parser::EExpr;
 
     match parse_problem {
         EExpr::If(if_, pos) => to_if_report(alloc, lines, filename, context, if_, *pos),
@@ -204,7 +204,7 @@ fn to_expr_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow("Looks like you are trying to define a function. "),
-                    alloc.reflow("In roc, functions are always written as a lambda, like "),
+                    alloc.reflow("In broc, functions are always written as a lambda, like "),
                     alloc.parser_suggestion("increment = \\n -> n + 1"),
                     alloc.reflow("."),
                 ]),
@@ -258,7 +258,7 @@ fn to_expr_report<'a>(
                     Context::InDef(_pos) => {
                         vec![alloc.stack([
                             alloc.reflow("Looks like you are trying to define a function. "),
-                            alloc.reflow("In roc, functions are always written as a lambda, like "),
+                            alloc.reflow("In broc, functions are always written as a lambda, like "),
                             alloc
                                 .parser_suggestion("increment = \\n -> n + 1")
                                 .indent(4),
@@ -302,7 +302,7 @@ fn to_expr_report<'a>(
                 ],
                 _ => vec![
                     alloc.reflow("I have no specific suggestion for this operator, "),
-                    alloc.reflow("see TODO for the full list of operators in Roc."),
+                    alloc.reflow("see TODO for the full list of operators in Broc."),
                 ],
             };
 
@@ -337,7 +337,7 @@ fn to_expr_report<'a>(
                     alloc.parser_suggestion("Json.Decode.string"),
                     alloc.reflow(". Maybe you are trying to qualify a tag? Tags like "),
                     alloc.parser_suggestion("Err"),
-                    alloc.reflow(" are globally scoped in roc, and cannot be qualified."),
+                    alloc.reflow(" are globally scoped in broc, and cannot be qualified."),
                 ]),
             ]);
 
@@ -499,7 +499,7 @@ fn to_expr_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow("Looks like you are trying to define a function. "),
-                    alloc.reflow("In roc, functions are always written as a lambda, like "),
+                    alloc.reflow("In broc, functions are always written as a lambda, like "),
                     alloc.parser_suggestion("increment = \\n -> n + 1"),
                     alloc.reflow("."),
                 ]),
@@ -626,14 +626,14 @@ fn to_expr_report<'a>(
 }
 
 fn to_lambda_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     _context: Context,
-    parse_problem: &roc_parse::parser::EClosure<'a>,
+    parse_problem: &broc_parse::parser::EClosure<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EClosure;
+    use broc_parse::parser::EClosure;
 
     match *parse_problem {
         EClosure::Arrow(pos) => match what_is_next(alloc.src_lines, lines.convert_pos(pos)) {
@@ -828,12 +828,12 @@ fn to_lambda_report<'a>(
 }
 
 fn to_unfinished_lambda_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     pos: Position,
     start: Position,
-    message: RocDocBuilder<'a>,
+    message: BrocDocBuilder<'a>,
 ) -> Report<'a> {
     let surroundings = Region::new(start, pos);
     let region = LineColumnRegion::from_pos(lines.convert_pos(pos));
@@ -856,14 +856,14 @@ fn to_unfinished_lambda_report<'a>(
 }
 
 fn to_str_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
-    parse_problem: &roc_parse::parser::EString<'a>,
+    parse_problem: &broc_parse::parser::EString<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EString;
+    use broc_parse::parser::EString;
 
     match *parse_problem {
         EString::Open(_pos) => unreachable!("another branch would be taken"),
@@ -936,7 +936,7 @@ fn to_str_report<'a>(
                     alloc.parser_suggestion("\\u(00FF)"),
                     alloc.text("."),
                 ]),
-                alloc.reflow(r"Learn more about working with unicode in roc at TODO"),
+                alloc.reflow(r"Learn more about working with unicode in broc at TODO"),
             ]);
 
             Report {
@@ -1008,7 +1008,7 @@ fn to_str_report<'a>(
                             alloc.reflow(" or "),
                             alloc.parser_suggestion("'\\n'"),
                             alloc.reflow(". "),
-                            alloc.reflow("Note, roc strings use double quotes, like \"hello\".")
+                            alloc.reflow("Note, broc strings use double quotes, like \"hello\".")
                         ]),
                     ])
                 }
@@ -1025,7 +1025,7 @@ fn to_str_report<'a>(
                             alloc.reflow(" or "),
                             alloc.parser_suggestion("'\\n'"),
                             alloc.reflow(". "),
-                            alloc.reflow("Note, roc strings use double quotes, like \"hello\".")
+                            alloc.reflow("Note, broc strings use double quotes, like \"hello\".")
                         ]),
                     ])
                 }
@@ -1043,7 +1043,7 @@ fn to_str_report<'a>(
                             alloc.reflow(" or "),
                             alloc.parser_suggestion("'\\n'"),
                             alloc.reflow(". "),
-                            alloc.reflow("Note, roc strings use double quotes, like \"hello\".")
+                            alloc.reflow("Note, broc strings use double quotes, like \"hello\".")
                         ]),
                     ])
                 }
@@ -1092,7 +1092,7 @@ fn to_str_report<'a>(
                     alloc.reflow(" or even just "),
                     alloc.parser_suggestion("\"\""),
                     alloc.reflow(". "),
-                    alloc.reflow("Note, roc strings use double quotes."),
+                    alloc.reflow("Note, broc strings use double quotes."),
                 ]),
             ]);
 
@@ -1150,14 +1150,14 @@ fn to_str_report<'a>(
     }
 }
 fn to_expr_in_parens_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
-    parse_problem: &roc_parse::parser::EInParens<'a>,
+    parse_problem: &broc_parse::parser::EInParens<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EInParens;
+    use broc_parse::parser::EInParens;
 
     match *parse_problem {
         EInParens::Space(error, pos) => to_space_report(alloc, lines, filename, &error, pos),
@@ -1178,7 +1178,7 @@ fn to_expr_in_parens_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow(r"I was expecting to see an expression next."),
-                    alloc.reflow(r"Note, Roc doesn't use '()' as a null type."),
+                    alloc.reflow(r"Note, Broc doesn't use '()' as a null type."),
                 ]),
             ]);
 
@@ -1242,14 +1242,14 @@ fn to_expr_in_parens_report<'a>(
 }
 
 fn to_list_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
-    parse_problem: &roc_parse::parser::EList<'a>,
+    parse_problem: &broc_parse::parser::EList<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EList;
+    use broc_parse::parser::EList;
 
     match *parse_problem {
         EList::Space(error, pos) => to_space_report(alloc, lines, filename, &error, pos),
@@ -1327,44 +1327,44 @@ fn to_list_report<'a>(
 }
 
 fn to_dbg_or_expect_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
     node: Node,
-    parse_problem: &roc_parse::parser::EExpect<'a>,
+    parse_problem: &broc_parse::parser::EExpect<'a>,
     start: Position,
 ) -> Report<'a> {
     match parse_problem {
-        roc_parse::parser::EExpect::Space(err, pos) => {
+        broc_parse::parser::EExpect::Space(err, pos) => {
             to_space_report(alloc, lines, filename, err, *pos)
         }
 
-        roc_parse::parser::EExpect::Dbg(_) => unreachable!("another branch would be taken"),
-        roc_parse::parser::EExpect::Expect(_) => unreachable!("another branch would be taken"),
+        broc_parse::parser::EExpect::Dbg(_) => unreachable!("another branch would be taken"),
+        broc_parse::parser::EExpect::Expect(_) => unreachable!("another branch would be taken"),
 
-        roc_parse::parser::EExpect::Condition(e_expr, condition_start) => {
+        broc_parse::parser::EExpect::Condition(e_expr, condition_start) => {
             // is adding context helpful here?
             to_expr_report(alloc, lines, filename, context, e_expr, *condition_start)
         }
-        roc_parse::parser::EExpect::Continuation(e_expr, continuation_start) => {
+        broc_parse::parser::EExpect::Continuation(e_expr, continuation_start) => {
             let context = Context::InNode(node, start, Box::new(context));
             to_expr_report(alloc, lines, filename, context, e_expr, *continuation_start)
         }
 
-        roc_parse::parser::EExpect::IndentCondition(_) => todo!(),
+        broc_parse::parser::EExpect::IndentCondition(_) => todo!(),
     }
 }
 
 fn to_if_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
-    parse_problem: &roc_parse::parser::EIf<'a>,
+    parse_problem: &broc_parse::parser::EIf<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EIf;
+    use broc_parse::parser::EIf;
 
     match *parse_problem {
         EIf::Space(error, pos) => to_space_report(alloc, lines, filename, &error, pos),
@@ -1441,12 +1441,12 @@ fn to_if_report<'a>(
 }
 
 fn to_unfinished_if_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     pos: Position,
     start: Position,
-    message: RocDocBuilder<'a>,
+    message: BrocDocBuilder<'a>,
 ) -> Report<'a> {
     let surroundings = Region::new(start, pos);
     let region = LineColumnRegion::from_pos(lines.convert_pos(pos));
@@ -1470,14 +1470,14 @@ fn to_unfinished_if_report<'a>(
 }
 
 fn to_when_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     context: Context,
-    parse_problem: &roc_parse::parser::EWhen<'a>,
+    parse_problem: &broc_parse::parser::EWhen<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EWhen;
+    use broc_parse::parser::EWhen;
 
     match *parse_problem {
         EWhen::IfGuard(nested, pos) => {
@@ -1656,12 +1656,12 @@ fn to_when_report<'a>(
 }
 
 fn to_unfinished_when_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     pos: Position,
     start: Position,
-    message: RocDocBuilder<'a>,
+    message: BrocDocBuilder<'a>,
 ) -> Report<'a> {
     match what_is_next(alloc.src_lines, lines.convert_pos(pos)) {
         Next::Token("->") => to_unexpected_arrow_report(alloc, lines, filename, pos, start),
@@ -1692,7 +1692,7 @@ fn to_unfinished_when_report<'a>(
 }
 
 fn to_unexpected_arrow_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     pos: Position,
@@ -1729,7 +1729,7 @@ fn to_unexpected_arrow_report<'a>(
     }
 }
 
-fn note_for_when_error<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn note_for_when_error<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.stack([
         alloc.concat([
             alloc.note("Here is an example of a valid "),
@@ -1753,7 +1753,7 @@ fn note_for_when_error<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> 
     ])
 }
 
-fn note_for_when_indent_error<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn note_for_when_indent_error<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.stack([
         alloc.concat([
             alloc.note("Sometimes I get confused by indentation, so try to make your "),
@@ -1778,13 +1778,13 @@ fn note_for_when_indent_error<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuild
 }
 
 fn to_pattern_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EPattern<'a>,
+    parse_problem: &broc_parse::parser::EPattern<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EPattern;
+    use broc_parse::parser::EPattern;
 
     match parse_problem {
         EPattern::Start(pos) => {
@@ -1817,13 +1817,13 @@ fn to_pattern_report<'a>(
 }
 
 fn to_precord_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::PRecord<'a>,
+    parse_problem: &broc_parse::parser::PRecord<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::PRecord;
+    use broc_parse::parser::PRecord;
 
     match *parse_problem {
         PRecord::Open(pos) => match what_is_next(alloc.src_lines, lines.convert_pos(pos)) {
@@ -1989,7 +1989,7 @@ fn to_precord_report<'a>(
 }
 
 fn to_plist_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     parse_problem: &PList<'a>,
@@ -2065,13 +2065,13 @@ fn to_plist_report<'a>(
 }
 
 fn to_pattern_in_parens_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::PInParens<'a>,
+    parse_problem: &broc_parse::parser::PInParens<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::PInParens;
+    use broc_parse::parser::PInParens;
 
     match *parse_problem {
         PInParens::Open(pos) => {
@@ -2110,7 +2110,7 @@ fn to_pattern_in_parens_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow(r"I was expecting to see a pattern next."),
-                    alloc.reflow(r"Note, Roc doesn't use '()' as a null type."),
+                    alloc.reflow(r"Note, Broc doesn't use '()' as a null type."),
                 ]),
             ]);
 
@@ -2153,7 +2153,7 @@ fn to_pattern_in_parens_report<'a>(
 }
 
 fn to_malformed_number_literal_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     start: Position,
@@ -2175,13 +2175,13 @@ fn to_malformed_number_literal_report<'a>(
 }
 
 fn to_type_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EType<'a>,
+    parse_problem: &broc_parse::parser::EType<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EType;
+    use broc_parse::parser::EType;
 
     match parse_problem {
         EType::TRecord(record, pos) => to_trecord_report(alloc, lines, filename, record, *pos),
@@ -2317,13 +2317,13 @@ fn to_type_report<'a>(
 }
 
 fn to_trecord_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::ETypeRecord<'a>,
+    parse_problem: &broc_parse::parser::ETypeRecord<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::ETypeRecord;
+    use broc_parse::parser::ETypeRecord;
 
     match *parse_problem {
         ETypeRecord::Open(pos) => match what_is_next(alloc.src_lines, lines.convert_pos(pos)) {
@@ -2562,13 +2562,13 @@ fn to_trecord_report<'a>(
 }
 
 fn to_ttag_union_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::ETypeTagUnion<'a>,
+    parse_problem: &broc_parse::parser::ETypeTagUnion<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::ETypeTagUnion;
+    use broc_parse::parser::ETypeTagUnion;
 
     match *parse_problem {
         ETypeTagUnion::Open(pos) => match what_is_next(alloc.src_lines, lines.convert_pos(pos)) {
@@ -2692,13 +2692,13 @@ fn to_ttag_union_report<'a>(
 }
 
 fn to_tinparens_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::ETypeInParens<'a>,
+    parse_problem: &broc_parse::parser::ETypeInParens<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::ETypeInParens;
+    use broc_parse::parser::ETypeInParens;
 
     match *parse_problem {
         ETypeInParens::Open(pos) => {
@@ -2782,7 +2782,7 @@ fn to_tinparens_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow(r"I was expecting to see an expression next."),
-                    alloc.reflow(r"Note, Roc doesn't use '()' as a null type."),
+                    alloc.reflow(r"Note, Broc doesn't use '()' as a null type."),
                 ]),
             ]);
 
@@ -2924,13 +2924,13 @@ fn to_tinparens_report<'a>(
 }
 
 fn to_tapply_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::ETypeApply,
+    parse_problem: &broc_parse::parser::ETypeApply,
     _start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::ETypeApply;
+    use broc_parse::parser::ETypeApply;
 
     match *parse_problem {
         ETypeApply::DoubleDot(pos) => {
@@ -3039,12 +3039,12 @@ fn to_tapply_report<'a>(
 }
 
 fn to_talias_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::ETypeInlineAlias,
+    parse_problem: &broc_parse::parser::ETypeInlineAlias,
 ) -> Report<'a> {
-    use roc_parse::parser::ETypeInlineAlias;
+    use broc_parse::parser::ETypeInlineAlias;
 
     match *parse_problem {
         ETypeInlineAlias::NotAnAlias(pos) => {
@@ -3109,13 +3109,13 @@ fn to_talias_report<'a>(
 }
 
 fn to_header_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EHeader<'a>,
+    parse_problem: &broc_parse::parser::EHeader<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EHeader;
+    use broc_parse::parser::EHeader;
 
     match parse_problem {
         EHeader::Provides(provides, pos) => {
@@ -3214,11 +3214,11 @@ fn to_header_report<'a>(
                     alloc.reflow("Module names must correspond with the file paths they are defined in. For example, I expect to see "),
                     alloc.parser_suggestion("BigNum"),
                     alloc.reflow(" defined in "),
-                    alloc.parser_suggestion("BigNum.roc"),
+                    alloc.parser_suggestion("BigNum.broc"),
                     alloc.reflow(", or "),
                     alloc.parser_suggestion("Math.Sin"),
                     alloc.reflow(" defined in "),
-                    alloc.parser_suggestion("Math/Sin.roc"),
+                    alloc.parser_suggestion("Math/Sin.broc"),
                     alloc.reflow("."),
                 ]),
             ]);
@@ -3264,7 +3264,7 @@ fn to_header_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow("I am expecting a package name next, like "),
-                    alloc.parser_suggestion("\"roc/core\""),
+                    alloc.parser_suggestion("\"broc/core\""),
                     alloc.reflow(". Package names must be quoted."),
                 ]),
             ]);
@@ -3287,7 +3287,7 @@ fn to_header_report<'a>(
                 alloc.region_with_subregion(lines.convert_region(surroundings), region),
                 alloc.concat([
                     alloc.reflow("I am expecting a platform name next, like "),
-                    alloc.parser_suggestion("\"roc/core\""),
+                    alloc.parser_suggestion("\"broc/core\""),
                     alloc.reflow(". Platform names must be quoted."),
                 ]),
             ]);
@@ -3329,13 +3329,13 @@ fn to_header_report<'a>(
 }
 
 fn to_generates_with_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EGeneratesWith,
+    parse_problem: &broc_parse::parser::EGeneratesWith,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EGeneratesWith;
+    use broc_parse::parser::EGeneratesWith;
 
     match *parse_problem {
         EGeneratesWith::ListEnd(pos) | // TODO: give this its own error message
@@ -3395,13 +3395,13 @@ fn to_generates_with_report<'a>(
 }
 
 fn to_provides_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EProvides,
+    parse_problem: &broc_parse::parser::EProvides,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EProvides;
+    use broc_parse::parser::EProvides;
 
     match *parse_problem {
         EProvides::ListEnd(pos) | // TODO: give this its own error message
@@ -3461,13 +3461,13 @@ fn to_provides_report<'a>(
 }
 
 fn to_exposes_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EExposes,
+    parse_problem: &broc_parse::parser::EExposes,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EExposes;
+    use broc_parse::parser::EExposes;
 
     match *parse_problem {
         EExposes::ListEnd(pos) | // TODO: give this its own error message
@@ -3526,13 +3526,13 @@ fn to_exposes_report<'a>(
 }
 
 fn to_imports_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EImports,
+    parse_problem: &broc_parse::parser::EImports,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EImports;
+    use broc_parse::parser::EImports;
 
     match *parse_problem {
         EImports::Identifier(pos) => {
@@ -3633,13 +3633,13 @@ fn to_imports_report<'a>(
 }
 
 fn to_requires_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::ERequires<'a>,
+    parse_problem: &broc_parse::parser::ERequires<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::ERequires;
+    use broc_parse::parser::ERequires;
 
     match *parse_problem {
         ERequires::Requires(pos) => {
@@ -3757,13 +3757,13 @@ fn to_requires_report<'a>(
 }
 
 fn to_packages_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::EPackages,
+    parse_problem: &broc_parse::parser::EPackages,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EPackages;
+    use broc_parse::parser::EPackages;
 
     match *parse_problem {
         EPackages::Packages(pos) => {
@@ -3796,13 +3796,13 @@ fn to_packages_report<'a>(
 }
 
 fn to_space_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    parse_problem: &roc_parse::parser::BadInputError,
+    parse_problem: &broc_parse::parser::BadInputError,
     pos: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::BadInputError;
+    use broc_parse::parser::BadInputError;
 
     match parse_problem {
         BadInputError::HasTab => {
@@ -3827,13 +3827,13 @@ fn to_space_report<'a>(
 }
 
 fn to_ability_def_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    problem: &roc_parse::parser::EAbility<'a>,
+    problem: &broc_parse::parser::EAbility<'a>,
     start: Position,
 ) -> Report<'a> {
-    use roc_parse::parser::EAbility;
+    use broc_parse::parser::EAbility;
 
     match problem {
         EAbility::Space(error, pos) => to_space_report(alloc, lines, filename, error, *pos),
@@ -3879,12 +3879,12 @@ fn to_ability_def_report<'a>(
 }
 
 fn to_unfinished_ability_report<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
     pos: Position,
     start: Position,
-    message: RocDocBuilder<'a>,
+    message: BrocDocBuilder<'a>,
 ) -> Report<'a> {
     let surroundings = Region::new(start, pos);
     let region = LineColumnRegion::from_pos(lines.convert_pos(pos));
@@ -3921,7 +3921,7 @@ fn what_is_next<'a>(source_lines: &'a [&'a str], pos: LineColumn) -> Next<'a> {
             let chars = &line[col_index..];
             let mut it = chars.chars();
 
-            match roc_parse::keyword::KEYWORDS
+            match broc_parse::keyword::KEYWORDS
                 .iter()
                 .find(|keyword| starts_with_keyword(chars, keyword))
             {

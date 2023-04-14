@@ -16,28 +16,28 @@ if [ "$(uname -m)" == "x86_64" ] && [ "$(uname -s)" == "Linux" ]; then
     cd ../..
 fi
 
-mv $(ls -d artifact/* | grep "roc_nightly.*tar\.gz" | grep "$1") ./roc_nightly.tar.gz
+mv $(ls -d artifact/* | grep "broc_nightly.*tar\.gz" | grep "$1") ./broc_nightly.tar.gz
 
 # decompress the tar
-tar -xzvf roc_nightly.tar.gz
+tar -xzvf broc_nightly.tar.gz
 
 # delete tar
-rm roc_nightly.tar.gz
+rm broc_nightly.tar.gz
 
 # simplify dir name
-mv roc_nightly* roc_nightly
+mv broc_nightly* broc_nightly
 
-cd roc_nightly
+cd broc_nightly
 
 # build the basic cli platform
-./roc build ../basic-cli/examples/countdown.roc
+./broc build ../basic-cli/examples/countdown.broc
 
 # We need this extra variable so we can safely check if $2 is empty later
 EXTRA_ARGS=${2:-}
 
 # In some rare cases it's nice to be able to use the legacy linker, so we produce the .o file to be able to do that
 if [ -n "${EXTRA_ARGS}" ];
- then ./roc build $EXTRA_ARGS ../basic-cli/examples/countdown.roc
+ then ./broc build $EXTRA_ARGS ../basic-cli/examples/countdown.broc
 fi
 
 cd ..

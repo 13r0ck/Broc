@@ -38,6 +38,6 @@
 # for a list of authors!
 [[redirects]]
   from = "/authors"
-  to = "https://raw.githubusercontent.com/roc-lang/roc/main/AUTHORS"
+  to = "https://raw.githubusercontent.com/roc-lang/broc/main/AUTHORS"
   force = true
   status = 200

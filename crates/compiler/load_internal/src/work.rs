@@ -1,8 +1,8 @@
-use roc_collections::{
+use broc_collections::{
     all::{MutMap, MutSet},
     VecMap,
 };
-use roc_module::symbol::{ModuleId, PackageQualified};
+use broc_module::symbol::{ModuleId, PackageQualified};
 
 use std::collections::hash_map::Entry;
 
@@ -247,7 +247,7 @@ impl<'a> Dependencies<'a> {
             }
         }
         if !found_import {
-            roc_error_macros::internal_error!("calculate_import_path should only be called when an import path is known to exist!");
+            broc_error_macros::internal_error!("calculate_import_path should only be called when an import path is known to exist!");
         }
 
         let mut source = target;
@@ -449,7 +449,7 @@ impl<'a> Dependencies<'a> {
     /// Loads the dependency graph to find and make specializations, and returns the next jobs to
     /// be run.
     ///
-    /// This should be used when the compiler wants to build or run a Roc executable if and only if
+    /// This should be used when the compiler wants to build or run a Broc executable if and only if
     /// previous stages succeed; in such cases we load the dependency graph dynamically.
     pub fn load_find_and_make_specializations_after_check(&mut self) -> MutSet<(ModuleId, Phase)> {
         let mut output = MutSet::default();

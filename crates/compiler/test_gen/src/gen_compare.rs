@@ -232,7 +232,7 @@ fn large_str() {
         indoc!(
             r#"
                 x = "Unicode can represent text values which span multiple languages"
-                y = "Here are some valid Roc strings"
+                y = "Here are some valid Broc strings"
 
                 x != y
                 "#

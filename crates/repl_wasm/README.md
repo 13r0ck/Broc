@@ -2,7 +2,7 @@
 
 ## Running locally
 
-### 1. Build the Roc website
+### 1. Build the Broc website
 
 For a minimal build (when just working on the web REPL)
 
@@ -39,7 +39,7 @@ python3 -m http.server
 
 ### 3. Open your browser
 
-You should be able to find the Roc REPL at <http://127.0.0.1:8000/repl> (or whatever port your web server mentioned when it started up.)
+You should be able to find the Broc REPL at <http://127.0.0.1:8000/repl> (or whatever port your web server mentioned when it started up.)
 
 **Warning:** This is work in progress! Not all language features are implemented yet, error messages don't look nice yet, up/down arrows don't work for history, etc.
 
@@ -48,8 +48,8 @@ You should be able to find the Roc REPL at <http://127.0.0.1:8000/repl> (or what
 ## How it works
 
 - User types text into the HTML `<input />` tag
-- JS detects the `onchange` event and passes the input text to the Roc compiler WebAssembly module
-- Roc compiler WebAssembly module
+- JS detects the `onchange` event and passes the input text to the Broc compiler WebAssembly module
+- Broc compiler WebAssembly module
   - Parses the text (currently just a single line)
   - Type checks
   - Monomorphizes
@@ -60,7 +60,7 @@ You should be able to find the Roc REPL at <http://127.0.0.1:8000/repl> (or what
   - Runs the WebAssembly app
   - Gets the memory address of the result and makes a copy of the app's entire memory buffer
   - Passes the result address and the memory buffer to the compiler for analysis
-- Roc compiler WebAssembly module
+- Broc compiler WebAssembly module
   - Analyses the bytes of the result, based on the known return type from earlier
   - Traverses the copied memory buffer to find any child values
   - Produces a user-friendly String and passes it to JavaScript

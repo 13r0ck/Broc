@@ -1,6 +1,6 @@
 [package]
-name = "roc_fmt"
-description = "The roc code formatter."
+name = "broc_fmt"
+description = "The broc code formatter."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,9 +8,9 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_module = { path = "../module" }
-roc_parse = { path = "../parse" }
-roc_region = { path = "../region" }
+broc_collections = { path = "../collections" }
+broc_module = { path = "../module" }
+broc_parse = { path = "../parse" }
+broc_region = { path = "../region" }
 
 bumpalo.workspace = true

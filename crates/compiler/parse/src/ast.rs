@@ -6,9 +6,9 @@ use crate::ident::Accessor;
 use crate::parser::ESingleQuote;
 use bumpalo::collections::{String, Vec};
 use bumpalo::Bump;
-use roc_collections::soa::{EitherIndex, Index, Slice};
-use roc_module::called_via::{BinOp, CalledVia, UnaryOp};
-use roc_region::all::{Loc, Position, Region};
+use broc_collections::soa::{EitherIndex, Index, Slice};
+use broc_module::called_via::{BinOp, CalledVia, UnaryOp};
+use broc_region::all::{Loc, Position, Region};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Spaces<'a, T> {
@@ -269,7 +269,7 @@ pub enum Expr<'a> {
 
     // Lookups
     Var {
-        module_name: &'a str, // module_name will only be filled if the original Roc code stated something like `5 + SomeModule.myVar`, module_name will be blank if it was `5 + myVar`
+        module_name: &'a str, // module_name will only be filled if the original Broc code stated something like `5 + SomeModule.myVar`, module_name will be blank if it was `5 + myVar`
         ident: &'a str,
     },
 

@@ -2,8 +2,8 @@ use crate::{
     lang::core::{def::def::References, types::Alias},
     mem_pool::pool::NodeId,
 };
-use roc_collections::all::{MutMap, MutSet};
-use roc_module::symbol::Symbol;
+use broc_collections::all::{MutMap, MutSet};
+use broc_module::symbol::Symbol;
 
 use super::introduced_vars::IntroducedVariables;
 

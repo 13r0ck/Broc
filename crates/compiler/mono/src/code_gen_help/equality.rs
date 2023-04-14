@@ -1,6 +1,6 @@
 use bumpalo::collections::vec::Vec;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::{IdentIds, Symbol};
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::{IdentIds, Symbol};
 
 use crate::borrow::Ownership;
 use crate::ir::{
@@ -25,12 +25,12 @@ pub fn eq_generic<'a>(
     let main_body = match layout_interner.get(layout) {
         Layout::Builtin(Builtin::Int(_) | Builtin::Float(_) | Builtin::Bool | Builtin::Decimal) => {
             unreachable!(
-                "No generated proc for `==`. Use direct code gen for {:?}",
+                "No generated pbroc for `==`. Use direct code gen for {:?}",
                 layout
             )
         }
         Layout::Builtin(Builtin::Str) => {
-            unreachable!("No generated helper proc for `==` on Str. Use Zig function.")
+            unreachable!("No generated helper pbroc for `==` on Str. Use Zig function.")
         }
         Layout::Builtin(Builtin::List(elem_layout)) => {
             eq_list(root, ident_ids, ctx, layout_interner, elem_layout)

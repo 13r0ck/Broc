@@ -1,7 +1,7 @@
-use roc_collections::all::MutMap;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::Symbol;
-use roc_types::subs::Variable;
+use broc_collections::all::MutMap;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::Symbol;
+use broc_types::subs::Variable;
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct IntroducedVariables {

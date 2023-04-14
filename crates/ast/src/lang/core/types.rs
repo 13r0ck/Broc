@@ -1,14 +1,14 @@
 #![allow(clippy::all)]
 #![allow(dead_code)]
 #![allow(unused_imports)]
-// use roc_can::expr::Output;
-use roc_collections::all::{MutMap, MutSet};
-use roc_error_macros::todo_abilities;
-use roc_module::ident::{Ident, Lowercase, TagName, Uppercase};
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::types::{AliasKind, RecordField};
-use roc_types::{subs::Variable, types::ErrorType};
+// use broc_can::expr::Output;
+use broc_collections::all::{MutMap, MutSet};
+use broc_error_macros::todo_abilities;
+use broc_module::ident::{Ident, Lowercase, TagName, Uppercase};
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::types::{AliasKind, RecordField};
+use broc_types::{subs::Variable, types::ErrorType};
 
 use crate::lang::env::Env;
 use crate::lang::scope::Scope;
@@ -191,7 +191,7 @@ pub enum Annotation2 {
 pub fn to_annotation2<'a>(
     env: &mut Env,
     scope: &mut Scope,
-    annotation: &'a roc_parse::ast::TypeAnnotation<'a>,
+    annotation: &'a broc_parse::ast::TypeAnnotation<'a>,
     region: Region,
 ) -> Annotation2 {
     let mut references = References::default();
@@ -302,7 +302,7 @@ pub fn to_type_id<'a>(
     env: &mut Env,
     scope: &mut Scope,
     rigids: &mut References,
-    annotation: &roc_parse::ast::TypeAnnotation<'a>,
+    annotation: &broc_parse::ast::TypeAnnotation<'a>,
     region: Region,
 ) -> TypeId {
     let type2 = to_type2(env, scope, rigids, annotation, region);
@@ -315,7 +315,7 @@ pub fn as_type_id<'a>(
     scope: &mut Scope,
     rigids: &mut References,
     type_id: TypeId,
-    annotation: &roc_parse::ast::TypeAnnotation<'a>,
+    annotation: &broc_parse::ast::TypeAnnotation<'a>,
     region: Region,
 ) {
     let type2 = to_type2(env, scope, rigids, annotation, region);
@@ -328,12 +328,12 @@ pub fn to_type2<'a>(
     env: &mut Env,
     scope: &mut Scope,
     references: &mut References,
-    annotation: &roc_parse::ast::TypeAnnotation<'a>,
+    annotation: &broc_parse::ast::TypeAnnotation<'a>,
     region: Region,
 ) -> Type2 {
-    use roc_parse::ast::Pattern;
-    use roc_parse::ast::TypeAnnotation::*;
-    use roc_parse::ast::TypeHeader;
+    use broc_parse::ast::Pattern;
+    use broc_parse::ast::TypeAnnotation::*;
+    use broc_parse::ast::TypeHeader;
 
     match annotation {
         Apply(module_name, ident, targs) => {
@@ -464,7 +464,7 @@ pub fn to_type2<'a>(
                 Err((_original_region, _shadow)) => {
                     // let problem = Problem2::Shadowed(original_region, shadow.clone());
 
-                    // env.problem(roc_problem::can::Problem::ShadowingInAnnotation {
+                    // env.problem(broc_problem::can::Problem::ShadowingInAnnotation {
                     //     original_region,
                     //     shadow,
                     // });
@@ -575,11 +575,11 @@ fn can_assigned_fields<'a>(
     env: &mut Env,
     scope: &mut Scope,
     rigids: &mut References,
-    fields: &&[Loc<roc_parse::ast::AssignedField<'a, roc_parse::ast::TypeAnnotation<'a>>>],
+    fields: &&[Loc<broc_parse::ast::AssignedField<'a, broc_parse::ast::TypeAnnotation<'a>>>],
     region: Region,
 ) -> MutMap<Lowercase, RecordField<Type2>> {
-    use roc_parse::ast::AssignedField::*;
-    use roc_types::types::RecordField::*;
+    use broc_parse::ast::AssignedField::*;
+    use broc_types::types::RecordField::*;
 
     // SendMap doesn't have a `with_capacity`
     let mut field_types = MutMap::default();
@@ -647,7 +647,7 @@ fn can_assigned_fields<'a>(
         // ensure that the new name is not already in this record:
         // note that the right-most tag wins when there are two with the same name
         if let Some(replaced_region) = seen.insert(new_name.clone(), loc_field.region) {
-            env.problem(roc_problem::can::Problem::DuplicateRecordFieldType {
+            env.problem(broc_problem::can::Problem::DuplicateRecordFieldType {
                 field_name: new_name.into(),
                 record_region: region,
                 field_region: loc_field.region,
@@ -663,10 +663,10 @@ fn can_tags<'a>(
     env: &mut Env,
     scope: &mut Scope,
     rigids: &mut References,
-    tags: &'a [Loc<roc_parse::ast::Tag<'a>>],
+    tags: &'a [Loc<broc_parse::ast::Tag<'a>>],
     region: Region,
 ) -> Vec<(TagName, PoolVec<Type2>)> {
-    use roc_parse::ast::Tag;
+    use broc_parse::ast::Tag;
     let mut tag_types = Vec::with_capacity(tags.len());
 
     // tag names we've seen so far in this tag union
@@ -709,7 +709,7 @@ fn can_tags<'a>(
         // ensure that the new name is not already in this tag union:
         // note that the right-most tag wins when there are two with the same name
         if let Some(replaced_region) = seen.insert(new_name.clone(), loc_tag.region) {
-            env.problem(roc_problem::can::Problem::DuplicateTag {
+            env.problem(broc_problem::can::Problem::DuplicateTag {
                 tag_region: loc_tag.region,
                 tag_union_region: region,
                 replaced_region,
@@ -734,7 +734,7 @@ fn to_type_apply<'a>(
     rigids: &mut References,
     module_name: &str,
     ident: &str,
-    type_arguments: &[Loc<roc_parse::ast::TypeAnnotation<'a>>],
+    type_arguments: &[Loc<broc_parse::ast::TypeAnnotation<'a>>],
     region: Region,
 ) -> TypeApply {
     let symbol = if module_name.is_empty() {
@@ -745,7 +745,7 @@ fn to_type_apply<'a>(
         match scope.lookup(&ident, region) {
             Ok(symbol) => symbol,
             Err(problem) => {
-                env.problem(roc_problem::can::Problem::RuntimeError(problem));
+                env.problem(broc_problem::can::Problem::RuntimeError(problem));
 
                 return TypeApply::Erroneous;
             }
@@ -756,7 +756,7 @@ fn to_type_apply<'a>(
             Err(problem) => {
                 // Either the module wasn't imported, or
                 // it was imported but it doesn't expose this ident.
-                env.problem(roc_problem::can::Problem::RuntimeError(problem));
+                env.problem(broc_problem::can::Problem::RuntimeError(problem));
 
                 return TypeApply::Erroneous;
             }

@@ -312,8 +312,8 @@
           return 0;
         }
 
-        // proc_exit : (i32) -> nil
-        function proc_exit(exit_code) {
+        // pbroc_exit : (i32) -> nil
+        function pbroc_exit(exit_code) {
           throw new Error(`Wasm exited with code ${exit_code}`);
         }
 
@@ -385,8 +385,8 @@
             path_symlink: sig17,
             path_unlink_file: sig7,
             poll_oneoff: sig15,
-            proc_exit,
-            proc_raise: sig12,
+            pbroc_exit,
+            pbroc_raise: sig12,
             sched_yield: sig22,
             random_get: sig6,
             sock_recv: sig21,

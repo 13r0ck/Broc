@@ -7,15 +7,15 @@ use inkwell::{
     AddressSpace, IntPredicate,
 };
 use morphic_lib::{FuncSpec, UpdateMode};
-use roc_builtins::bitcode::{self, FloatWidth, IntWidth};
-use roc_error_macros::internal_error;
-use roc_module::{low_level::LowLevel, symbol::Symbol};
-use roc_mono::{
+use broc_builtins::bitcode::{self, FloatWidth, IntWidth};
+use broc_error_macros::internal_error;
+use broc_module::{low_level::LowLevel, symbol::Symbol};
+use broc_mono::{
     ir::HigherOrderLowLevel,
     layout::{Builtin, InLayout, LambdaSet, Layout, LayoutIds, LayoutInterner, STLayoutInterner},
     list_element_layout,
 };
-use roc_target::PtrWidth;
+use broc_target::PtrWidth;
 
 use crate::llvm::{
     bitcode::{
@@ -25,7 +25,7 @@ use crate::llvm::{
     },
     build::{
         complex_bitcast_check_size, create_entry_block_alloca, function_value_by_func_spec,
-        load_roc_value, roc_function_call, BuilderExt, RocReturn,
+        load_broc_value, broc_function_call, BuilderExt, BrocReturn,
     },
     build_list::{
         list_append_unsafe, list_concat, list_drop_at, list_get_unsafe, list_len, list_map,
@@ -44,7 +44,7 @@ use crate::llvm::{
     },
 };
 
-use super::{build::throw_internal_exception, convert::zig_with_overflow_roc_dec};
+use super::{build::throw_internal_exception, convert::zig_with_overflow_broc_dec};
 use super::{
     build::{load_symbol, load_symbol_and_layout, Env, Scope},
     convert::zig_dec_type,
@@ -222,7 +222,7 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
                             let return_type_name = match layout_interner.get(number_layout) {
                                 Layout::Builtin(Builtin::Int(int_width)) => int_width.type_name(),
                                 Layout::Builtin(Builtin::Decimal) => {
-                                    // zig picks 128 for dec.RocDec
+                                    // zig picks 128 for dec.BrocDec
                                     "i128"
                                 }
                                 _ => unreachable!(),
@@ -246,21 +246,21 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
                                 intrinsic,
                             );
 
-                            let roc_return_type =
+                            let broc_return_type =
                                 basic_type_from_layout(env, layout_interner, layout)
                                     .ptr_type(AddressSpace::default());
 
-                            let roc_return_alloca = env.builder.build_pointer_cast(
+                            let broc_return_alloca = env.builder.build_pointer_cast(
                                 zig_return_alloca,
-                                roc_return_type,
-                                "cast_to_roc",
+                                broc_return_type,
+                                "cast_to_broc",
                             );
 
-                            load_roc_value(
+                            load_broc_value(
                                 env,
                                 layout_interner,
                                 layout,
-                                roc_return_alloca,
+                                broc_return_alloca,
                                 "str_to_num_result",
                             )
                         }
@@ -273,7 +273,7 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
                                 .then_some(int_width.type_name())
                         }
                         Layout::Builtin(Builtin::Decimal) => {
-                            // zig picks 128 for dec.RocDec
+                            // zig picks 128 for dec.BrocDec
                             Some("i128")
                         }
                         _ => None,
@@ -470,7 +470,7 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
             // Str.getScalarUnsafe : Str, Nat -> { bytesParsed : Nat, scalar : U32 }
             arguments!(string, index);
 
-            use roc_target::OperatingSystem::*;
+            use broc_target::OperatingSystem::*;
             match env.target_info.operating_system {
                 Windows => {
                     let return_type = env.context.struct_type(
@@ -510,7 +510,7 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
                         PtrWidth::Bytes8 => result,
                         PtrWidth::Bytes4 => {
                             let to = basic_type_from_layout(env, layout_interner, layout);
-                            complex_bitcast_check_size(env, result, to, "to_roc_record")
+                            complex_bitcast_check_size(env, result, to, "to_broc_record")
                         }
                     }
                 }
@@ -897,7 +897,7 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
 
             match layout_interner.get(arg_layout) {
                 Layout::Builtin(arg_builtin) => {
-                    use roc_mono::layout::Builtin::*;
+                    use broc_mono::layout::Builtin::*;
 
                     match arg_builtin {
                         Int(int_width) => {
@@ -989,7 +989,7 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
                 (Layout::Builtin(lhs_builtin), Layout::Builtin(rhs_builtin))
                     if lhs_builtin == rhs_builtin =>
                 {
-                    use roc_mono::layout::Builtin::*;
+                    use broc_mono::layout::Builtin::*;
 
                     let tag_eq = env.context.i8_type().const_int(0_u64, false);
                     let tag_gt = env.context.i8_type().const_int(1_u64, false);
@@ -1251,12 +1251,12 @@ pub(crate) fn run_low_level<'a, 'ctx, 'env>(
             unreachable!("Not used in LLVM backend: {:?}", op);
         }
 
-        Unreachable => match RocReturn::from_layout(env, layout_interner, layout) {
-            RocReturn::Return => {
+        Unreachable => match BrocReturn::from_layout(env, layout_interner, layout) {
+            BrocReturn::Return => {
                 let basic_type = basic_type_from_layout(env, layout_interner, layout);
                 basic_type.const_zero()
             }
-            RocReturn::ByPointer => {
+            BrocReturn::ByPointer => {
                 let basic_type = basic_type_from_layout(env, layout_interner, layout);
                 let ptr = env.builder.build_alloca(basic_type, "unreachable_alloca");
                 env.builder.build_store(ptr, basic_type.const_zero());
@@ -1280,7 +1280,7 @@ fn build_int_binop<'a, 'ctx, 'env>(
     op: LowLevel,
 ) -> BasicValueEnum<'ctx> {
     use inkwell::IntPredicate::*;
-    use roc_module::low_level::LowLevel::*;
+    use broc_module::low_level::LowLevel::*;
 
     let bd = env.builder;
 
@@ -1509,7 +1509,7 @@ pub fn build_num_binop<'a, 'ctx, 'env>(
         (Layout::Builtin(lhs_builtin), Layout::Builtin(rhs_builtin))
             if lhs_builtin == rhs_builtin =>
         {
-            use roc_mono::layout::Builtin::*;
+            use broc_mono::layout::Builtin::*;
 
             match lhs_builtin {
                 Int(int_width) => build_int_binop(
@@ -1551,7 +1551,7 @@ fn build_float_binop<'a, 'ctx, 'env>(
     op: LowLevel,
 ) -> BasicValueEnum<'ctx> {
     use inkwell::FloatPredicate::*;
-    use roc_module::low_level::LowLevel::*;
+    use broc_module::low_level::LowLevel::*;
 
     let bd = env.builder;
 
@@ -1732,7 +1732,7 @@ fn dec_to_str<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     dec: BasicValueEnum<'ctx>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_target::OperatingSystem::*;
+    use broc_target::OperatingSystem::*;
 
     let dec = dec.into_int_value();
 
@@ -1768,12 +1768,12 @@ fn dec_binop_with_overflow<'a, 'ctx, 'env>(
     lhs: BasicValueEnum<'ctx>,
     rhs: BasicValueEnum<'ctx>,
 ) -> StructValue<'ctx> {
-    use roc_target::OperatingSystem::*;
+    use broc_target::OperatingSystem::*;
 
     let lhs = lhs.into_int_value();
     let rhs = rhs.into_int_value();
 
-    let return_type = zig_with_overflow_roc_dec(env);
+    let return_type = zig_with_overflow_broc_dec(env);
     let return_alloca = env.builder.build_alloca(return_type, "return_alloca");
 
     match env.target_info.operating_system {
@@ -1818,7 +1818,7 @@ pub(crate) fn dec_binop_with_unchecked<'a, 'ctx, 'env>(
     lhs: BasicValueEnum<'ctx>,
     rhs: BasicValueEnum<'ctx>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_target::OperatingSystem::*;
+    use broc_target::OperatingSystem::*;
 
     let lhs = lhs.into_int_value();
     let rhs = rhs.into_int_value();
@@ -1860,7 +1860,7 @@ fn build_dec_binop<'a, 'ctx, 'env>(
     _rhs_layout: InLayout<'a>,
     op: LowLevel,
 ) -> BasicValueEnum<'ctx> {
-    use roc_module::low_level::LowLevel::*;
+    use broc_module::low_level::LowLevel::*;
 
     match op {
         NumAddChecked => call_bitcode_fn(env, &[lhs, rhs], bitcode::DEC_ADD_WITH_OVERFLOW),
@@ -1939,7 +1939,7 @@ fn build_int_unary_op<'a, 'ctx, 'env>(
     op: LowLevel,
     return_layout: InLayout<'a>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_module::low_level::LowLevel::*;
+    use broc_module::low_level::LowLevel::*;
 
     let bd = env.builder;
 
@@ -2067,21 +2067,21 @@ fn build_int_unary_op<'a, 'ctx, 'env>(
                                     intrinsic,
                                 );
 
-                                let roc_return_type =
+                                let broc_return_type =
                                     basic_type_from_layout(env, layout_interner, return_layout)
                                         .ptr_type(AddressSpace::default());
 
-                                let roc_return_alloca = env.builder.build_pointer_cast(
+                                let broc_return_alloca = env.builder.build_pointer_cast(
                                     zig_return_alloca,
-                                    roc_return_type,
-                                    "cast_to_roc",
+                                    broc_return_type,
+                                    "cast_to_broc",
                                 );
 
-                                load_roc_value(
+                                load_broc_value(
                                     env,
                                     layout_interner,
                                     return_layout,
-                                    roc_return_alloca,
+                                    broc_return_alloca,
                                     "num_to_int",
                                 )
                             }
@@ -2241,7 +2241,7 @@ fn build_float_unary_op<'a, 'ctx, 'env>(
     op: LowLevel,
     float_width: FloatWidth, // arg width
 ) -> BasicValueEnum<'ctx> {
-    use roc_module::low_level::LowLevel::*;
+    use broc_module::low_level::LowLevel::*;
 
     let bd = env.builder;
 
@@ -2358,8 +2358,8 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
     func_spec: FuncSpec,
     higher_order: &HigherOrderLowLevel<'a>,
 ) -> BasicValueEnum<'ctx> {
-    use roc_mono::ir::PassedFunction;
-    use roc_mono::low_level::HigherOrder::*;
+    use broc_mono::ir::PassedFunction;
+    use broc_mono::low_level::HigherOrder::*;
 
     let HigherOrderLowLevel {
         op,
@@ -2412,7 +2412,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                 ) => {
                     let argument_layouts = &[element_layout];
 
-                    let roc_function_call = roc_function_call(
+                    let broc_function_call = broc_function_call(
                         env,
                         layout_interner,
                         layout_ids,
@@ -2427,7 +2427,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                     list_map(
                         env,
                         layout_interner,
-                        roc_function_call,
+                        broc_function_call,
                         list,
                         element_layout,
                         result_layout,
@@ -2454,7 +2454,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                 ) => {
                     let argument_layouts = &[element1_layout, element2_layout];
 
-                    let roc_function_call = roc_function_call(
+                    let broc_function_call = broc_function_call(
                         env,
                         layout_interner,
                         layout_ids,
@@ -2470,7 +2470,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                         env,
                         layout_interner,
                         layout_ids,
-                        roc_function_call,
+                        broc_function_call,
                         list1,
                         list2,
                         element1_layout,
@@ -2502,7 +2502,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                 ) => {
                     let argument_layouts = &[element1_layout, element2_layout, element3_layout];
 
-                    let roc_function_call = roc_function_call(
+                    let broc_function_call = broc_function_call(
                         env,
                         layout_interner,
                         layout_ids,
@@ -2518,7 +2518,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                         env,
                         layout_interner,
                         layout_ids,
-                        roc_function_call,
+                        broc_function_call,
                         list1,
                         list2,
                         list3,
@@ -2560,7 +2560,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                         element4_layout,
                     ];
 
-                    let roc_function_call = roc_function_call(
+                    let broc_function_call = broc_function_call(
                         env,
                         layout_interner,
                         layout_ids,
@@ -2576,7 +2576,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                         env,
                         layout_interner,
                         layout_ids,
-                        roc_function_call,
+                        broc_function_call,
                         list1,
                         list2,
                         list3,
@@ -2613,7 +2613,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                     .as_global_value()
                     .as_pointer_value();
 
-                    let roc_function_call = roc_function_call(
+                    let broc_function_call = broc_function_call(
                         env,
                         layout_interner,
                         layout_ids,
@@ -2628,7 +2628,7 @@ pub(crate) fn run_higher_order_low_level<'a, 'ctx, 'env>(
                     list_sort_with(
                         env,
                         layout_interner,
-                        roc_function_call,
+                        broc_function_call,
                         compare_wrapper,
                         list,
                         element_layout,

@@ -2,8 +2,8 @@ const std = @import("std");
 const time = std.time;
 const Timer = time.Timer;
 
-const RocStr = @import("../src/str.zig").RocStr;
-const RocDec = @import("../src/dec.zig").RocDec;
+const BrocStr = @import("../src/str.zig").BrocStr;
+const BrocDec = @import("../src/dec.zig").BrocDec;
 
 var timer: Timer = undefined;
 
@@ -54,11 +54,11 @@ fn avg_runs(func: fn() u64) !void {
 }
 
 fn add7() u64 {
-    var str1 = RocStr.init("1.2", 3);
-    const dec1 = RocDec.fromStr(str1).?;
+    var str1 = BrocStr.init("1.2", 3);
+    const dec1 = BrocDec.fromStr(str1).?;
 
-    var str2 = RocStr.init("3.4", 3);
-    const dec2 = RocDec.fromStr(str2).?;
+    var str2 = BrocStr.init("3.4", 3);
+    const dec2 = BrocDec.fromStr(str2).?;
 
     timer.reset();
 
@@ -84,11 +84,11 @@ fn add7() u64 {
 }
 
 fn sub7() u64 {
-    var str1 = RocStr.init("1.2", 3);
-    const dec1 = RocDec.fromStr(str1).?;
+    var str1 = BrocStr.init("1.2", 3);
+    const dec1 = BrocDec.fromStr(str1).?;
 
-    var str2 = RocStr.init("3.4", 3);
-    const dec2 = RocDec.fromStr(str2).?;
+    var str2 = BrocStr.init("3.4", 3);
+    const dec2 = BrocDec.fromStr(str2).?;
 
     timer.reset();
 
@@ -114,11 +114,11 @@ fn sub7() u64 {
 }
 
 fn mul7() u64 {
-    var str1 = RocStr.init("1.2", 3);
-    const dec1 = RocDec.fromStr(str1).?;
+    var str1 = BrocStr.init("1.2", 3);
+    const dec1 = BrocDec.fromStr(str1).?;
 
-    var str2 = RocStr.init("3.4", 3);
-    const dec2 = RocDec.fromStr(str2).?;
+    var str2 = BrocStr.init("3.4", 3);
+    const dec2 = BrocDec.fromStr(str2).?;
 
     timer.reset();
 
@@ -144,11 +144,11 @@ fn mul7() u64 {
 }
 
 fn div7() u64 {
-    var str1 = RocStr.init("1.2", 3);
-    const dec1 = RocDec.fromStr(str1).?;
+    var str1 = BrocStr.init("1.2", 3);
+    const dec1 = BrocDec.fromStr(str1).?;
 
-    var str2 = RocStr.init("3.4", 3);
-    const dec2 = RocDec.fromStr(str2).?;
+    var str2 = BrocStr.init("3.4", 3);
+    const dec2 = BrocDec.fromStr(str2).?;
 
     timer.reset();
 

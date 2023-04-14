@@ -1,12 +1,12 @@
 use crate::expr::{constrain_def_make_constraint, constrain_def_pattern, Env};
-use roc_can::abilities::{PendingAbilitiesStore, PendingMemberType};
-use roc_can::constraint::{Constraint, Constraints, Generalizable};
-use roc_can::expected::Expected;
-use roc_can::expr::Declarations;
-use roc_can::pattern::Pattern;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_region::all::{Loc, Region};
-use roc_types::types::{AnnotationSource, Category, Type, Types};
+use broc_can::abilities::{PendingAbilitiesStore, PendingMemberType};
+use broc_can::constraint::{Constraint, Constraints, Generalizable};
+use broc_can::expected::Expected;
+use broc_can::expr::Declarations;
+use broc_can::pattern::Pattern;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_region::all::{Loc, Region};
+use broc_types::types::{AnnotationSource, Category, Type, Types};
 
 pub fn constrain_module(
     types: &mut Types,
@@ -46,7 +46,7 @@ fn constrain_symbols_from_requires(
             if loc_symbol.value.module_id() == home {
                 // 1. Required symbols can only be specified in package modules
                 // 2. Required symbols come from app modules
-                // But, if we are running e.g. `roc check` on a package module, there is no app
+                // But, if we are running e.g. `broc check` on a package module, there is no app
                 // module, and we will have instead put the required symbols in the package module
                 // namespace. If this is the case, we want to introduce the symbols as if they had
                 // the types they are annotated with.
@@ -56,7 +56,7 @@ fn constrain_symbols_from_requires(
                     rigids,
                     resolutions_to_make: vec![],
                 };
-                let pattern = Loc::at_zero(roc_can::pattern::Pattern::Identifier(loc_symbol.value));
+                let pattern = Loc::at_zero(broc_can::pattern::Pattern::Identifier(loc_symbol.value));
 
                 let type_index = {
                     let typ = types.from_old_type(&loc_type.value);
@@ -123,7 +123,7 @@ pub fn frontload_ability_constraints(
                 rigids,
                 resolutions_to_make: vec![],
             };
-            let pattern = Loc::at_zero(roc_can::pattern::Pattern::Identifier(*member_name));
+            let pattern = Loc::at_zero(broc_can::pattern::Pattern::Identifier(*member_name));
 
             let signature_index = {
                 let typ = types.from_old_type(&signature.clone());

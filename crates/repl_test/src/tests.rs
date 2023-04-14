@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use indoc::indoc;
 #[allow(unused_imports)]
-use roc_test_utils::assert_multiline_str_eq;
+use broc_test_utils::assert_multiline_str_eq;
 
 #[cfg(not(feature = "wasm"))]
 use crate::cli::{expect_failure, expect_success, repl_eval};
@@ -643,7 +643,7 @@ fn too_few_args() {
                 4│      Num.add 2
                         ^^^^^^^
 
-                Roc does not allow functions to be partially applied. Use a closure to
+                Broc does not allow functions to be partially applied. Use a closure to
                 make partial application explicit.
                 "#
         ),
@@ -953,14 +953,14 @@ fn parse_problem() {
                 4│      add m n = m + n
                             ^^^
 
-                Looks like you are trying to define a function. In roc, functions are
+                Looks like you are trying to define a function. In broc, functions are
                 always written as a lambda, like increment = \n -> n + 1.
                 "#
         ),
     );
 }
 
-#[ignore] // re-enable (and fix) after https://github.com/roc-lang/roc/issues/4425 is done!
+#[ignore] // re-enable (and fix) after https://github.com/roc-lang/broc/issues/4425 is done!
 #[cfg(not(feature = "wasm"))]
 #[test]
 fn issue_2343_complete_mono_with_shadowed_vars() {

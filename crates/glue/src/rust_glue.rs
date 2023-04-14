@@ -1,9 +1,9 @@
 use crate::types::{
-    Accessors, File, RocFn, RocNum, RocSingleTagPayload, RocStructFields, RocTagUnion, RocType,
+    Accessors, File, BrocFn, BrocNum, BrocSingleTagPayload, BrocStructFields, BrocTagUnion, BrocType,
     TypeId, Types,
 };
 use indexmap::IndexMap;
-use roc_target::{Architecture, TargetInfo};
+use broc_target::{Architecture, TargetInfo};
 use std::fmt::{Display, Write};
 
 pub static HEADER: &[u8] = include_bytes!("../templates/header.rs");
@@ -30,7 +30,7 @@ const RECURSIVE_TAG_UNION_CLONE: &str = r#"fn clone(&self) -> Self {
     }"#;
 
 const RECURSIVE_TAG_UNION_STORAGE: &str = r#"#[inline(always)]
-    fn storage(&self) -> Option<&core::cell::Cell<roc_std::Storage>> {
+    fn storage(&self) -> Option<&core::cell::Cell<broc_std::Storage>> {
         let mask = match std::mem::size_of::<usize>() {
             4 => 0b11,
             8 => 0b111,
@@ -39,7 +39,7 @@ const RECURSIVE_TAG_UNION_STORAGE: &str = r#"#[inline(always)]
 
         // NOTE: pointer provenance is probably lost here
         let unmasked_address = (self.pointer as usize) & !mask;
-        let untagged = unmasked_address as *const core::cell::Cell<roc_std::Storage>;
+        let untagged = unmasked_address as *const core::cell::Cell<broc_std::Storage>;
 
         if untagged.is_null() {
             None
@@ -146,15 +146,15 @@ pub fn emit(types: &[Types]) -> Vec<File> {
 
 fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impls) {
     match types.get_type(id) {
-        RocType::Struct { name, fields } => {
+        BrocType::Struct { name, fields } => {
             add_struct(name, target_info, fields, id, types, impls, false)
         }
-        RocType::TagUnionPayload { name, fields } => {
+        BrocType::TagUnionPayload { name, fields } => {
             add_struct(name, target_info, fields, id, types, impls, true)
         }
-        RocType::TagUnion(tag_union) => {
+        BrocType::TagUnion(tag_union) => {
             match tag_union {
-                RocTagUnion::Enumeration { tags, name, size } => add_enumeration(
+                BrocTagUnion::Enumeration { tags, name, size } => add_enumeration(
                     name,
                     target_info,
                     types.get_type(id),
@@ -163,7 +163,7 @@ fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impl
                     types,
                     impls,
                 ),
-                RocTagUnion::NonRecursive {
+                BrocTagUnion::NonRecursive {
                     tags,
                     name,
                     discriminant_size,
@@ -186,7 +186,7 @@ fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impl
                         );
                     }
                 }
-                RocTagUnion::Recursive {
+                BrocTagUnion::Recursive {
                     tags,
                     name,
                     discriminant_size,
@@ -209,7 +209,7 @@ fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impl
                         );
                     }
                 }
-                RocTagUnion::NullableWrapped {
+                BrocTagUnion::NullableWrapped {
                     name,
                     index_of_null_tag,
                     tags,
@@ -234,7 +234,7 @@ fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impl
                         impls,
                     )
                 }
-                RocTagUnion::NullableUnwrapped {
+                BrocTagUnion::NullableUnwrapped {
                     name,
                     null_tag,
                     non_null_tag,
@@ -251,14 +251,14 @@ fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impl
                     types,
                     impls,
                 ),
-                RocTagUnion::SingleTagStruct {
+                BrocTagUnion::SingleTagStruct {
                     name,
                     tag_name,
                     payload,
                 } => {
                     add_single_tag_struct(name, tag_name, payload, types, impls, target_info);
                 }
-                RocTagUnion::NonNullableUnwrapped {
+                BrocTagUnion::NonNullableUnwrapped {
                     name,
                     tag_name,
                     payload,
@@ -279,29 +279,29 @@ fn add_type(target_info: TargetInfo, id: TypeId, types: &Types, impls: &mut Impl
             }
         }
         // These types don't need to be declared in Rust.
-        RocType::Unit
-        | RocType::EmptyTagUnion
-        | RocType::Num(_)
-        | RocType::Bool
-        | RocType::RocResult(_, _)
-        | RocType::RocStr
-        | RocType::RocDict(_, _)
-        | RocType::RocSet(_)
-        | RocType::RocList(_)
-        | RocType::RocBox(_)
-        | RocType::Unsized => {}
-        RocType::RecursivePointer { .. } => {
+        BrocType::Unit
+        | BrocType::EmptyTagUnion
+        | BrocType::Num(_)
+        | BrocType::Bool
+        | BrocType::BrocResult(_, _)
+        | BrocType::BrocStr
+        | BrocType::BrocDict(_, _)
+        | BrocType::BrocSet(_)
+        | BrocType::BrocList(_)
+        | BrocType::BrocBox(_)
+        | BrocType::Unsized => {}
+        BrocType::RecursivePointer { .. } => {
             // This is recursively pointing to a type that should already have been added,
             // so no extra work needs to happen.
         }
-        RocType::Function(roc_fn) => add_function(target_info, roc_fn, types, impls),
+        BrocType::Function(broc_fn) => add_function(target_info, broc_fn, types, impls),
     }
 }
 
 fn add_single_tag_struct(
     name: &str,
     tag_name: &str,
-    payload: &RocSingleTagPayload,
+    payload: &BrocSingleTagPayload,
     types: &Types,
     impls: &mut IndexMap<Option<String>, IndexMap<String, Vec<TargetInfo>>>,
     target_info: TargetInfo,
@@ -314,10 +314,10 @@ fn add_single_tag_struct(
     {
         let mut buf = String::new();
 
-        // Make a dummy RocType::Struct so that we can pass it to deriving
+        // Make a dummy BrocType::Struct so that we can pass it to deriving
         // and have that work out as normal.
         let struct_type = match payload {
-            RocSingleTagPayload::HasClosure { payload_getters } => {
+            BrocSingleTagPayload::HasClosure { payload_getters } => {
                 {
                     if payload_getters.is_empty() {
                         // A single tag with no payload is a zero-sized unit type, so
@@ -347,15 +347,15 @@ fn add_single_tag_struct(
                         })
                         .collect();
 
-                    RocType::Struct {
+                    BrocType::Struct {
                         // Deriving doesn't depend on the struct's name,
                         // so no need to clone name here.
                         name: String::new(),
-                        fields: RocStructFields::HasClosure { fields },
+                        fields: BrocStructFields::HasClosure { fields },
                     }
                 }
             }
-            RocSingleTagPayload::HasNoClosure {
+            BrocSingleTagPayload::HasNoClosure {
                 payload_fields: payloads,
             } => {
                 if payloads.is_empty() {
@@ -381,11 +381,11 @@ fn add_single_tag_struct(
                     .map(|type_id| (String::new(), *type_id))
                     .collect();
 
-                RocType::Struct {
+                BrocType::Struct {
                     // Deriving doesn't depend on the struct's name,
                     // so no need to clone name here.
                     name: String::new(),
-                    fields: RocStructFields::HasNoClosure { fields },
+                    fields: BrocStructFields::HasNoClosure { fields },
                 }
             }
         };
@@ -398,7 +398,7 @@ fn add_single_tag_struct(
 
     // the impl for the single-tag union itself
     match payload {
-        RocSingleTagPayload::HasNoClosure { payload_fields } => {
+        BrocSingleTagPayload::HasNoClosure { payload_fields } => {
             let opt_impl = Some(format!("impl {name}"));
 
             if payload_fields.is_empty() {
@@ -548,12 +548,12 @@ fn add_single_tag_struct(
                 }
             }
         }
-        RocSingleTagPayload::HasClosure { payload_getters: _ } => todo!(),
+        BrocSingleTagPayload::HasClosure { payload_getters: _ } => todo!(),
     }
 
     // The Debug impl for the single-tag union
     match payload {
-        RocSingleTagPayload::HasNoClosure { payload_fields } => {
+        BrocSingleTagPayload::HasNoClosure { payload_fields } => {
             let opt_impl = Some(format!("impl core::fmt::Debug for {name}"));
 
             let mut buf = "fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {"
@@ -582,7 +582,7 @@ fn add_single_tag_struct(
 
             add_decl(impls, opt_impl, target_info, buf);
         }
-        RocSingleTagPayload::HasClosure { payload_getters: _ } => todo!(),
+        BrocSingleTagPayload::HasClosure { payload_getters: _ } => todo!(),
     }
 }
 
@@ -602,7 +602,7 @@ fn add_discriminant(
     //     Foo,
     // }
     let discriminant_name = format!("discriminant_{name}");
-    let discriminant_type = RocType::TagUnion(RocTagUnion::Enumeration {
+    let discriminant_type = BrocType::TagUnion(BrocTagUnion::Enumeration {
         name: discriminant_name.clone(),
         tags: tag_names.clone(),
         size,
@@ -643,7 +643,7 @@ fn add_tag_union(
     let name = escape_kw(name.to_string());
 
     // We should never be attempting to generate glue for empty tag unions;
-    // RocType should not have let this happen.
+    // BrocType should not have let this happen.
     debug_assert_ne!(tags.len(), 0);
 
     let tag_names = tags.iter().map(|(name, _)| name).cloned().collect();
@@ -754,8 +754,8 @@ pub struct {name} {{
         match recursiveness {
             Recursiveness::Recursive => {
                 let storage_fn = if discriminant_size == 0 {
-                    r#"fn storage(&self) -> Option<&core::cell::Cell<roc_std::Storage>> {
-        let untagged = self.pointer as *const core::cell::Cell<roc_std::Storage>;
+                    r#"fn storage(&self) -> Option<&core::cell::Cell<broc_std::Storage>> {
+        let untagged = self.pointer as *const core::cell::Cell<broc_std::Storage>;
 
         unsafe {
             Some(&*untagged.sub(1))
@@ -843,13 +843,13 @@ pub struct {name} {{
                 // for the discriminant.
                 //
                 // The problem with this was alignment; e.g. if you have one variant with a
-                // RocStr in it and another with an I128, then the `union` has a size of 32B
+                // BrocStr in it and another with an I128, then the `union` has a size of 32B
                 // and the discriminant is right after it - making the size of the whole struct
                 // round up to 48B total, since it has an alignment of 16 from the I128.
                 //
-                // However, Roc will generate the more efficient thing here: the whole thing will
+                // However, Broc will generate the more efficient thing here: the whole thing will
                 // be 32B, and the discriminant will appear at offset 24 - right after the end of
-                // the RocStr. The current design recognizes this and works with it, by representing
+                // the BrocStr. The current design recognizes this and works with it, by representing
                 // the entire structure as a union and manually setting the tag at the appropriate offset.
                 add_decl(
                     impls,
@@ -889,7 +889,7 @@ pub struct {name} {{
             // Add a convenience constructor function to the impl, e.g.
             //
             // /// Construct a tag named Foo, with the appropriate payload
-            // pub fn Foo(payload: roc_std::RocStr) -> Self {
+            // pub fn Foo(payload: broc_std::BrocStr) -> Self {
             //     Self {
             //         tag: tag_MyTagUnion::Foo,
             //         discriminant: discriminant_MyTagUnion {
@@ -986,18 +986,18 @@ pub struct {name} {{
                 }
 
                 match payload_type {
-                    RocType::Unit
-                    | RocType::EmptyTagUnion
-                    | RocType::RocStr
-                    | RocType::Bool
-                    | RocType::Num(_)
-                    | RocType::RocList(_)
-                    | RocType::RocDict(_, _)
-                    | RocType::RocSet(_)
-                    | RocType::RocBox(_)
-                    | RocType::TagUnion(_)
-                    | RocType::RocResult(_, _)
-                    | RocType::RecursivePointer { .. } => {
+                    BrocType::Unit
+                    | BrocType::EmptyTagUnion
+                    | BrocType::BrocStr
+                    | BrocType::Bool
+                    | BrocType::Num(_)
+                    | BrocType::BrocList(_)
+                    | BrocType::BrocDict(_, _)
+                    | BrocType::BrocSet(_)
+                    | BrocType::BrocBox(_)
+                    | BrocType::TagUnion(_)
+                    | BrocType::BrocResult(_, _)
+                    | BrocType::RecursivePointer { .. } => {
                         owned_ret_type = type_name(*payload_id, types);
                         borrowed_ret_type = format!("&{}", owned_ret_type);
                         owned_ret = "payload".to_string();
@@ -1009,8 +1009,8 @@ pub struct {name} {{
                             "arg".to_string()
                         };
                     }
-                    RocType::Struct {
-                        fields: RocStructFields::HasNoClosure { fields },
+                    BrocType::Struct {
+                        fields: BrocStructFields::HasNoClosure { fields },
                         name,
                     } => {
                         let answer = tag_union_struct_help(name, fields, *payload_id, types, false);
@@ -1022,8 +1022,8 @@ pub struct {name} {{
                         payload_args = answer.payload_args;
                         args_to_payload = answer.args_to_payload;
                     }
-                    RocType::TagUnionPayload {
-                        fields: RocStructFields::HasNoClosure { fields },
+                    BrocType::TagUnionPayload {
+                        fields: BrocStructFields::HasNoClosure { fields },
                         name,
                     } => {
                         let answer = tag_union_struct_help(name, fields, *payload_id, types, true);
@@ -1035,14 +1035,14 @@ pub struct {name} {{
                         payload_args = answer.payload_args;
                         args_to_payload = answer.args_to_payload;
                     }
-                    RocType::Struct {
-                        fields: RocStructFields::HasClosure { fields: _ },
+                    BrocType::Struct {
+                        fields: BrocStructFields::HasClosure { fields: _ },
                         name: _,
                     } => {
                         todo!("struct");
                     }
-                    RocType::TagUnionPayload {
-                        fields: RocStructFields::HasClosure { fields },
+                    BrocType::TagUnionPayload {
+                        fields: BrocStructFields::HasClosure { fields },
                         name: _, // TODO call this payload_struct_name and use it to define the struct...or don't define it at all, maybe, since there are only getters and setters?
                     } => {
                         // TODO don't generate op.into_StdoutWrite() - only getters/setters instead!
@@ -1051,7 +1051,7 @@ pub struct {name} {{
                             let ret = type_name(*field, types);
                             let returns_via_pointer = true;
 
-                            let body = if let RocType::Function(_) = types.get_type(*field) {
+                            let body = if let BrocType::Function(_) = types.get_type(*field) {
                                 format!(
                                     r#"
                                     extern "C" {{
@@ -1063,9 +1063,9 @@ pub struct {name} {{
                                     }}
 
                                     // allocate memory to store this variably-sized value
-                                    // allocates with roc_alloc, but that likely still uses the heap
+                                    // allocates with broc_alloc, but that likely still uses the heap
                                     let it = std::iter::repeat(0xAAu8).take(size());
-                                    let mut bytes = roc_std::RocList::from_iter(it);
+                                    let mut bytes = broc_std::BrocList::from_iter(it);
 
                                     getter(bytes.as_mut_ptr(), self);
 
@@ -1129,8 +1129,8 @@ pub struct {name} {{
                             "arg".to_string()
                         };
                     }
-                    RocType::Unsized => todo!(),
-                    RocType::Function(RocFn { .. }) => todo!(),
+                    BrocType::Unsized => todo!(),
+                    BrocType::Function(BrocFn { .. }) => todo!(),
                 };
 
                 {
@@ -1150,7 +1150,7 @@ pub struct {name} {{
             let align = core::mem::align_of::<{union_name}>() as u32;
 
             unsafe {{
-                let ptr = roc_std::roc_alloc_refcounted::<{union_name}>();
+                let ptr = broc_std::broc_alloc_refcounted::<{union_name}>();
 
                 *ptr = {union_name} {{
                     {tag_name}: {args_to_payload}
@@ -1364,9 +1364,9 @@ pub struct {name} {{
                 {drop_payload}
 
                 // Dealloc the pointer
-                let alignment = core::mem::align_of::<Self>().max(core::mem::align_of::<roc_std::Storage>());
+                let alignment = core::mem::align_of::<Self>().max(core::mem::align_of::<broc_std::Storage>());
 
-                unsafe {{ crate::roc_dealloc(storage.as_ptr().cast(), alignment as u32); }}
+                unsafe {{ crate::broc_dealloc(storage.as_ptr().cast(), alignment as u32); }}
             }} else {{
                 // Write the storage back.
                 storage.set(new_storage);
@@ -1711,26 +1711,26 @@ pub struct {name} {{
                         };
 
                         let fields_str = match payload_type {
-                            RocType::Unit
-                            | RocType::EmptyTagUnion
-                            | RocType::RocStr
-                            | RocType::Bool
-                            | RocType::Num(_)
-                            | RocType::RocList(_)
-                            | RocType::RocDict(_, _)
-                            | RocType::RocSet(_)
-                            | RocType::RocBox(_)
-                            | RocType::TagUnion(_)
-                            | RocType::RocResult(_, _)
-                            | RocType::Struct { .. }
-                            | RocType::RecursivePointer { .. } => {
+                            BrocType::Unit
+                            | BrocType::EmptyTagUnion
+                            | BrocType::BrocStr
+                            | BrocType::Bool
+                            | BrocType::Num(_)
+                            | BrocType::BrocList(_)
+                            | BrocType::BrocDict(_, _)
+                            | BrocType::BrocSet(_)
+                            | BrocType::BrocBox(_)
+                            | BrocType::TagUnion(_)
+                            | BrocType::BrocResult(_, _)
+                            | BrocType::Struct { .. }
+                            | BrocType::RecursivePointer { .. } => {
                                 format!(".field({deref_str}{actual_self}.{tag_name})")
                             }
-                            RocType::TagUnionPayload { fields, .. } => {
+                            BrocType::TagUnionPayload { fields, .. } => {
                                 let mut buf = Vec::new();
 
                                 match fields {
-                                    RocStructFields::HasNoClosure { fields } => {
+                                    BrocStructFields::HasNoClosure { fields } => {
                                         for (label, _) in fields {
                                             // Needs an "f" prefix
                                             buf.push(format!(
@@ -1738,15 +1738,15 @@ pub struct {name} {{
                                     ));
                                         }
                                     }
-                                    RocStructFields::HasClosure { fields: _ } => {
+                                    BrocStructFields::HasClosure { fields: _ } => {
                                         buf.push("// TODO HAS CLOSURE".to_string());
                                     }
                                 }
 
                                 buf.join("\n")
                             }
-                            RocType::Unsized => todo!(),
-                            RocType::Function(RocFn { .. }) => todo!(),
+                            BrocType::Unsized => todo!(),
+                            BrocType::Function(BrocFn { .. }) => todo!(),
                         };
 
                         format!(
@@ -1801,7 +1801,7 @@ fn write_impl_tags<
 fn add_enumeration<I: ExactSizeIterator<Item = S>, S: AsRef<str> + Display>(
     name: &str,
     target_info: TargetInfo,
-    typ: &RocType,
+    typ: &BrocType,
     tags: I,
     tag_bytes: u32,
     types: &Types,
@@ -1842,11 +1842,11 @@ fn add_enumeration<I: ExactSizeIterator<Item = S>, S: AsRef<str> + Display>(
 fn add_function(
     // name: &str,
     target_info: TargetInfo,
-    roc_fn: &RocFn,
+    broc_fn: &BrocFn,
     types: &Types,
     impls: &mut Impls,
 ) {
-    let name = escape_kw(roc_fn.function_name.to_string());
+    let name = escape_kw(broc_fn.function_name.to_string());
     // let derive = derive_str(types.get_type(struct_id), types, true);
     let derive = "";
     let pub_str = "pub ";
@@ -1855,7 +1855,7 @@ fn add_function(
     let repr = "C";
     buf = format!("{derive}\n#[repr({repr})]\n{pub_str}struct {name} {{\n");
 
-    let fields = [("closure_data", &roc_fn.lambda_set)];
+    let fields = [("closure_data", &broc_fn.lambda_set)];
 
     for (label, type_id) in fields {
         let type_str = type_name(*type_id, types);
@@ -1872,14 +1872,14 @@ fn add_function(
     buf.push('\n');
     buf.push('\n');
 
-    let extern_name = &roc_fn.extern_name;
+    let extern_name = &broc_fn.extern_name;
 
-    let return_type_str = type_name(roc_fn.ret, types);
+    let return_type_str = type_name(broc_fn.ret, types);
 
     writeln!(buf, "impl {name} {{").unwrap();
 
     write!(buf, "{INDENT}pub fn force_thunk(mut self").unwrap();
-    for (i, argument_type) in roc_fn.args.iter().enumerate() {
+    for (i, argument_type) in broc_fn.args.iter().enumerate() {
         write!(buf, ", arg_{i}: {}", type_name(*argument_type, types)).unwrap();
     }
     writeln!(buf, ") -> {return_type_str} {{").unwrap();
@@ -1889,7 +1889,7 @@ fn add_function(
     // fn extern_name(output: *mut return_type, arg1: arg1_type, ..., closure_data: *mut u8);
     write!(buf, "{INDENT}{INDENT}{INDENT} fn {extern_name}(").unwrap();
 
-    for (i, argument_type) in roc_fn.args.iter().enumerate() {
+    for (i, argument_type) in broc_fn.args.iter().enumerate() {
         write!(buf, "arg_{i}: &{}, ", type_name(*argument_type, types)).unwrap();
     }
 
@@ -1919,7 +1919,7 @@ fn add_function(
 
     write!(buf, "{INDENT}{INDENT}unsafe {{ {extern_name}(").unwrap();
 
-    for (i, _) in roc_fn.args.iter().enumerate() {
+    for (i, _) in broc_fn.args.iter().enumerate() {
         write!(buf, "&arg_{i}, ").unwrap();
     }
 
@@ -1936,7 +1936,7 @@ fn add_function(
 fn add_struct(
     name: &str,
     target_info: TargetInfo,
-    fields: &RocStructFields,
+    fields: &BrocStructFields,
     struct_id: TypeId,
     types: &Types,
     impls: &mut Impls,
@@ -1948,7 +1948,7 @@ fn add_struct(
     let mut buf;
 
     match fields {
-        RocStructFields::HasNoClosure { fields } => {
+        BrocStructFields::HasNoClosure { fields } => {
             let repr = if fields.len() == 1 {
                 "transparent"
             } else {
@@ -1973,7 +1973,7 @@ fn add_struct(
 
             buf.push('}');
         }
-        RocStructFields::HasClosure { fields: _ } => {
+        BrocStructFields::HasClosure { fields: _ } => {
             buf = "//TODO HAS CLOSURE 2".to_string();
         }
     }
@@ -1983,57 +1983,57 @@ fn add_struct(
 
 fn type_name(id: TypeId, types: &Types) -> String {
     match types.get_type(id) {
-        RocType::Unit => "()".to_string(),
-        RocType::EmptyTagUnion => "std::convert::Infallible".to_string(),
-        RocType::RocStr => "roc_std::RocStr".to_string(),
-        RocType::Bool => "bool".to_string(),
-        RocType::Num(RocNum::U8) => "u8".to_string(),
-        RocType::Num(RocNum::U16) => "u16".to_string(),
-        RocType::Num(RocNum::U32) => "u32".to_string(),
-        RocType::Num(RocNum::U64) => "u64".to_string(),
-        RocType::Num(RocNum::U128) => "roc_std::U128".to_string(),
-        RocType::Num(RocNum::I8) => "i8".to_string(),
-        RocType::Num(RocNum::I16) => "i16".to_string(),
-        RocType::Num(RocNum::I32) => "i32".to_string(),
-        RocType::Num(RocNum::I64) => "i64".to_string(),
-        RocType::Num(RocNum::I128) => "roc_std::I128".to_string(),
-        RocType::Num(RocNum::F32) => "f32".to_string(),
-        RocType::Num(RocNum::F64) => "f64".to_string(),
-        RocType::Num(RocNum::Dec) => "roc_std::RocDec".to_string(),
-        RocType::RocDict(key_id, val_id) => format!(
-            "roc_std::RocDict<{}, {}>",
+        BrocType::Unit => "()".to_string(),
+        BrocType::EmptyTagUnion => "std::convert::Infallible".to_string(),
+        BrocType::BrocStr => "broc_std::BrocStr".to_string(),
+        BrocType::Bool => "bool".to_string(),
+        BrocType::Num(BrocNum::U8) => "u8".to_string(),
+        BrocType::Num(BrocNum::U16) => "u16".to_string(),
+        BrocType::Num(BrocNum::U32) => "u32".to_string(),
+        BrocType::Num(BrocNum::U64) => "u64".to_string(),
+        BrocType::Num(BrocNum::U128) => "broc_std::U128".to_string(),
+        BrocType::Num(BrocNum::I8) => "i8".to_string(),
+        BrocType::Num(BrocNum::I16) => "i16".to_string(),
+        BrocType::Num(BrocNum::I32) => "i32".to_string(),
+        BrocType::Num(BrocNum::I64) => "i64".to_string(),
+        BrocType::Num(BrocNum::I128) => "broc_std::I128".to_string(),
+        BrocType::Num(BrocNum::F32) => "f32".to_string(),
+        BrocType::Num(BrocNum::F64) => "f64".to_string(),
+        BrocType::Num(BrocNum::Dec) => "broc_std::BrocDec".to_string(),
+        BrocType::BrocDict(key_id, val_id) => format!(
+            "broc_std::BrocDict<{}, {}>",
             type_name(*key_id, types),
             type_name(*val_id, types)
         ),
-        RocType::RocSet(elem_id) => format!("roc_std::RocSet<{}>", type_name(*elem_id, types)),
-        RocType::RocList(elem_id) => format!("roc_std::RocList<{}>", type_name(*elem_id, types)),
-        RocType::RocBox(elem_id) => format!("roc_std::RocBox<{}>", type_name(*elem_id, types)),
-        RocType::Unsized => "roc_std::RocList<u8>".to_string(),
-        RocType::RocResult(ok_id, err_id) => {
+        BrocType::BrocSet(elem_id) => format!("broc_std::BrocSet<{}>", type_name(*elem_id, types)),
+        BrocType::BrocList(elem_id) => format!("broc_std::BrocList<{}>", type_name(*elem_id, types)),
+        BrocType::BrocBox(elem_id) => format!("broc_std::BrocBox<{}>", type_name(*elem_id, types)),
+        BrocType::Unsized => "broc_std::BrocList<u8>".to_string(),
+        BrocType::BrocResult(ok_id, err_id) => {
             format!(
-                "roc_std::RocResult<{}, {}>",
+                "broc_std::BrocResult<{}, {}>",
                 type_name(*ok_id, types),
                 type_name(*err_id, types)
             )
         }
-        RocType::Struct { name, .. }
-        | RocType::TagUnionPayload { name, .. }
-        | RocType::TagUnion(RocTagUnion::NonRecursive { name, .. })
-        | RocType::TagUnion(RocTagUnion::Recursive { name, .. })
-        | RocType::TagUnion(RocTagUnion::Enumeration { name, .. })
-        | RocType::TagUnion(RocTagUnion::NullableWrapped { name, .. })
-        | RocType::TagUnion(RocTagUnion::NullableUnwrapped { name, .. })
-        | RocType::TagUnion(RocTagUnion::NonNullableUnwrapped { name, .. })
-        | RocType::TagUnion(RocTagUnion::SingleTagStruct { name, .. }) => escape_kw(name.clone()),
-        RocType::RecursivePointer(content) => type_name(*content, types),
-        RocType::Function(RocFn { function_name, .. }) => escape_kw(function_name.clone()),
+        BrocType::Struct { name, .. }
+        | BrocType::TagUnionPayload { name, .. }
+        | BrocType::TagUnion(BrocTagUnion::NonRecursive { name, .. })
+        | BrocType::TagUnion(BrocTagUnion::Recursive { name, .. })
+        | BrocType::TagUnion(BrocTagUnion::Enumeration { name, .. })
+        | BrocType::TagUnion(BrocTagUnion::NullableWrapped { name, .. })
+        | BrocType::TagUnion(BrocTagUnion::NullableUnwrapped { name, .. })
+        | BrocType::TagUnion(BrocTagUnion::NonNullableUnwrapped { name, .. })
+        | BrocType::TagUnion(BrocTagUnion::SingleTagStruct { name, .. }) => escape_kw(name.clone()),
+        BrocType::RecursivePointer(content) => type_name(*content, types),
+        BrocType::Function(BrocFn { function_name, .. }) => escape_kw(function_name.clone()),
     }
 }
 
 /// This explicitly asks for whether to include Debug because in the very specific
 /// case of a struct that's a payload for a recursive tag union, typ.has_enumeration()
 /// will return true, but actually we want to derive Debug here anyway.
-fn derive_str(typ: &RocType, types: &Types, include_debug: bool) -> String {
+fn derive_str(typ: &BrocType, types: &Types, include_debug: bool) -> String {
     let mut derives = vec!["Clone"];
 
     if !cannot_derive_copy(typ, types) {
@@ -2064,7 +2064,7 @@ fn derive_str(typ: &RocType, types: &Types, include_debug: bool) -> String {
     format!("#[derive({})]", derives.join(", "))
 }
 
-fn has_functions(start: &RocType, types: &Types) -> bool {
+fn has_functions(start: &BrocType, types: &Types) -> bool {
     let mut seen: Vec<TypeId> = vec![];
     let mut stack = vec![start];
 
@@ -2079,38 +2079,38 @@ fn has_functions(start: &RocType, types: &Types) -> bool {
 
     while let Some(typ) = stack.pop() {
         match typ {
-            RocType::RocStr
-            | RocType::Bool
-            | RocType::Unit
-            | RocType::Num(_)
-            | RocType::EmptyTagUnion
-            | RocType::Unsized
-            | RocType::TagUnion(RocTagUnion::Enumeration { .. }) => { /* terminal */ }
+            BrocType::BrocStr
+            | BrocType::Bool
+            | BrocType::Unit
+            | BrocType::Num(_)
+            | BrocType::EmptyTagUnion
+            | BrocType::Unsized
+            | BrocType::TagUnion(BrocTagUnion::Enumeration { .. }) => { /* terminal */ }
 
-            RocType::TagUnion(RocTagUnion::NonRecursive { tags, .. })
-            | RocType::TagUnion(RocTagUnion::Recursive { tags, .. })
-            | RocType::TagUnion(RocTagUnion::NullableWrapped { tags, .. }) => {
+            BrocType::TagUnion(BrocTagUnion::NonRecursive { tags, .. })
+            | BrocType::TagUnion(BrocTagUnion::Recursive { tags, .. })
+            | BrocType::TagUnion(BrocTagUnion::NullableWrapped { tags, .. }) => {
                 for (_, opt_payload_id) in tags.iter() {
                     if let Some(payload_id) = opt_payload_id {
                         push!(payload_id);
                     }
                 }
             }
-            RocType::RocBox(type_id)
-            | RocType::RocList(type_id)
-            | RocType::RocSet(type_id)
-            | RocType::TagUnion(RocTagUnion::NullableUnwrapped {
+            BrocType::BrocBox(type_id)
+            | BrocType::BrocList(type_id)
+            | BrocType::BrocSet(type_id)
+            | BrocType::TagUnion(BrocTagUnion::NullableUnwrapped {
                 non_null_payload: type_id,
                 ..
             })
-            | RocType::TagUnion(RocTagUnion::NonNullableUnwrapped {
+            | BrocType::TagUnion(BrocTagUnion::NonNullableUnwrapped {
                 payload: type_id, ..
             }) => {
                 push!(type_id);
             }
 
-            RocType::TagUnion(RocTagUnion::SingleTagStruct {
-                payload: RocSingleTagPayload::HasNoClosure { payload_fields },
+            BrocType::TagUnion(BrocTagUnion::SingleTagStruct {
+                payload: BrocSingleTagPayload::HasNoClosure { payload_fields },
                 ..
             }) => {
                 for payload_id in payload_fields {
@@ -2118,8 +2118,8 @@ fn has_functions(start: &RocType, types: &Types) -> bool {
                 }
             }
 
-            RocType::TagUnion(RocTagUnion::SingleTagStruct {
-                payload: RocSingleTagPayload::HasClosure { payload_getters },
+            BrocType::TagUnion(BrocTagUnion::SingleTagStruct {
+                payload: BrocSingleTagPayload::HasClosure { payload_getters },
                 ..
             }) => {
                 for (payload_id, _) in payload_getters {
@@ -2127,12 +2127,12 @@ fn has_functions(start: &RocType, types: &Types) -> bool {
                 }
             }
 
-            RocType::TagUnionPayload {
-                fields: RocStructFields::HasNoClosure { fields },
+            BrocType::TagUnionPayload {
+                fields: BrocStructFields::HasNoClosure { fields },
                 ..
             }
-            | RocType::Struct {
-                fields: RocStructFields::HasNoClosure { fields },
+            | BrocType::Struct {
+                fields: BrocStructFields::HasNoClosure { fields },
                 ..
             } => {
                 for (_, type_id) in fields {
@@ -2140,26 +2140,26 @@ fn has_functions(start: &RocType, types: &Types) -> bool {
                 }
             }
 
-            RocType::TagUnionPayload {
-                fields: RocStructFields::HasClosure { fields },
+            BrocType::TagUnionPayload {
+                fields: BrocStructFields::HasClosure { fields },
                 ..
             }
-            | RocType::Struct {
-                fields: RocStructFields::HasClosure { fields },
+            | BrocType::Struct {
+                fields: BrocStructFields::HasClosure { fields },
                 ..
             } => {
                 for (_, type_id, _) in fields {
                     push!(type_id);
                 }
             }
-            RocType::RecursivePointer(type_id) => {
+            BrocType::RecursivePointer(type_id) => {
                 push!(type_id);
             }
-            RocType::RocResult(id1, id2) | RocType::RocDict(id1, id2) => {
+            BrocType::BrocResult(id1, id2) | BrocType::BrocDict(id1, id2) => {
                 push!(id1);
                 push!(id2);
             }
-            RocType::Function(_) => return true,
+            BrocType::Function(_) => return true,
         }
     }
 
@@ -2242,18 +2242,18 @@ pub struct {name} {{
         let borrowed_ret;
 
         match payload_type {
-            RocType::Unit
-            | RocType::EmptyTagUnion
-            | RocType::RocStr
-            | RocType::Bool
-            | RocType::Num(_)
-            | RocType::RocList(_)
-            | RocType::RocDict(_, _)
-            | RocType::RocSet(_)
-            | RocType::RocBox(_)
-            | RocType::RocResult(_, _)
-            | RocType::TagUnion(_)
-            | RocType::RecursivePointer { .. } => {
+            BrocType::Unit
+            | BrocType::EmptyTagUnion
+            | BrocType::BrocStr
+            | BrocType::Bool
+            | BrocType::Num(_)
+            | BrocType::BrocList(_)
+            | BrocType::BrocDict(_, _)
+            | BrocType::BrocSet(_)
+            | BrocType::BrocBox(_)
+            | BrocType::BrocResult(_, _)
+            | BrocType::TagUnion(_)
+            | BrocType::RecursivePointer { .. } => {
                 owned_ret_type = type_name(non_null_payload, types);
                 borrowed_ret_type = format!("&{}", owned_ret_type);
                 payload_args = format!("arg: {owned_ret_type}");
@@ -2261,8 +2261,8 @@ pub struct {name} {{
                 owned_ret = "payload".to_string();
                 borrowed_ret = format!("&{owned_ret}");
             }
-            RocType::Struct { fields, name } => match fields {
-                RocStructFields::HasNoClosure { fields } => {
+            BrocType::Struct { fields, name } => match fields {
+                BrocStructFields::HasNoClosure { fields } => {
                     let answer =
                         tag_union_struct_help(name, fields, non_null_payload, types, false);
 
@@ -2274,10 +2274,10 @@ pub struct {name} {{
                     borrowed_ret_type = answer.borrowed_ret_type;
                 }
 
-                RocStructFields::HasClosure { .. } => todo!(),
+                BrocStructFields::HasClosure { .. } => todo!(),
             },
-            RocType::TagUnionPayload { fields, name } => match fields {
-                RocStructFields::HasNoClosure { fields } => {
+            BrocType::TagUnionPayload { fields, name } => match fields {
+                BrocStructFields::HasNoClosure { fields } => {
                     let answer = tag_union_struct_help(name, fields, non_null_payload, types, true);
 
                     payload_args = answer.payload_args;
@@ -2287,22 +2287,22 @@ pub struct {name} {{
                     owned_ret_type = answer.owned_ret_type;
                     borrowed_ret_type = answer.borrowed_ret_type;
                 }
-                RocStructFields::HasClosure { .. } => todo!(),
+                BrocStructFields::HasClosure { .. } => todo!(),
             },
-            RocType::Function { .. } => todo!(),
-            RocType::Unsized => todo!(),
+            BrocType::Function { .. } => todo!(),
+            BrocType::Unsized => todo!(),
         };
 
         // Add a convenience constructor function for the tag with the payload, e.g.
         //
         // /// Construct a tag named Cons, with the appropriate payload
-        // pub fn Cons(payload: roc_std::RocStr) -> Self {
-        //     let size = core::mem::size_of::<roc_std::RocStr>();
-        //     let align = core::mem::align_of::<roc_std::RocStr>();
+        // pub fn Cons(payload: broc_std::BrocStr) -> Self {
+        //     let size = core::mem::size_of::<broc_std::BrocStr>();
+        //     let align = core::mem::align_of::<broc_std::BrocStr>();
         //
         //     unsafe {
         //         let pointer =
-        //             roc_alloc(size, align as u32) as *mut core::mem::ManuallyDrop<roc_std::RocStr>;
+        //             broc_alloc(size, align as u32) as *mut core::mem::ManuallyDrop<broc_std::BrocStr>;
         //
         //         *pointer = core::mem::ManuallyDrop::new(payload);
         //
@@ -2324,7 +2324,7 @@ pub struct {name} {{
         unsafe {{
             // Store the payload at `self_align` bytes after the allocation,
             // to leave room for the refcount.
-            let alloc_ptr = crate::roc_alloc(size, payload_align as u32);
+            let alloc_ptr = crate::broc_alloc(size, payload_align as u32);
             let payload_ptr = alloc_ptr.cast::<u8>().add(self_align).cast::<core::mem::ManuallyDrop<{payload_type_name}>>();
 
             *payload_ptr = payload;
@@ -2332,8 +2332,8 @@ pub struct {name} {{
             // The reference count is stored immediately before the payload,
             // which isn't necessarily the same as alloc_ptr - e.g. when alloc_ptr
             // needs an alignment of 16.
-            let storage_ptr = payload_ptr.cast::<roc_std::Storage>().sub(1);
-            storage_ptr.write(roc_std::Storage::new_reference_counted());
+            let storage_ptr = payload_ptr.cast::<broc_std::Storage>().sub(1);
+            storage_ptr.write(broc_std::Storage::new_reference_counted());
 
             Self {{ pointer: payload_ptr }}
         }}
@@ -2478,10 +2478,10 @@ pub struct {name} {{
                 }}
 
                 // Dealloc the pointer
-                let alignment = core::mem::align_of::<Self>().max(core::mem::align_of::<roc_std::Storage>());
+                let alignment = core::mem::align_of::<Self>().max(core::mem::align_of::<broc_std::Storage>());
 
                 unsafe {{
-                    crate::roc_dealloc(storage.as_ptr().cast(), alignment as u32);
+                    crate::broc_dealloc(storage.as_ptr().cast(), alignment as u32);
                 }}
             }} else {{
                 // Write the storage back.
@@ -2498,53 +2498,53 @@ pub struct {name} {{
         let extra_deref = if cannot_derive_copy { "*" } else { "" };
 
         let fields_str = match payload_type {
-            RocType::Unit
-            | RocType::EmptyTagUnion
-            | RocType::RocStr
-            | RocType::Bool
-            | RocType::Num(_)
-            | RocType::RocList(_)
-            | RocType::RocDict(_, _)
-            | RocType::RocSet(_)
-            | RocType::RocBox(_)
-            | RocType::RocResult(_, _)
-            | RocType::TagUnion(_)
-            | RocType::RecursivePointer { .. } => {
+            BrocType::Unit
+            | BrocType::EmptyTagUnion
+            | BrocType::BrocStr
+            | BrocType::Bool
+            | BrocType::Num(_)
+            | BrocType::BrocList(_)
+            | BrocType::BrocDict(_, _)
+            | BrocType::BrocSet(_)
+            | BrocType::BrocBox(_)
+            | BrocType::BrocResult(_, _)
+            | BrocType::TagUnion(_)
+            | BrocType::RecursivePointer { .. } => {
                 format!(
                     r#"f.debug_tuple("{non_null_tag}").field(&*{extra_deref}self.pointer).finish()"#
                 )
             }
-            RocType::Struct { fields, .. } => {
+            BrocType::Struct { fields, .. } => {
                 let mut buf = Vec::new();
 
                 match fields {
-                    RocStructFields::HasNoClosure { fields } => {
+                    BrocStructFields::HasNoClosure { fields } => {
                         for (label, _) in fields {
                             buf.push(format!(".field(&(&*{extra_deref}self.pointer).{label})"));
                         }
                     }
-                    RocStructFields::HasClosure { fields: _ } => todo!(),
+                    BrocStructFields::HasClosure { fields: _ } => todo!(),
                 }
 
                 buf.join(&format!("\n{INDENT}{INDENT}{INDENT}{INDENT}{INDENT}"))
             }
-            RocType::TagUnionPayload { fields, .. } => {
+            BrocType::TagUnionPayload { fields, .. } => {
                 let mut buf = Vec::new();
 
                 match fields {
-                    RocStructFields::HasNoClosure { fields } => {
+                    BrocStructFields::HasNoClosure { fields } => {
                         for (label, _) in fields {
                             // Needs an "f" prefix
                             buf.push(format!(".field(&(&*{extra_deref}self.pointer).f{label})"));
                         }
                     }
-                    RocStructFields::HasClosure { fields: _ } => todo!(),
+                    BrocStructFields::HasClosure { fields: _ } => todo!(),
                 }
 
                 buf.join(&format!("\n{INDENT}{INDENT}{INDENT}{INDENT}{INDENT}"))
             }
-            RocType::Unsized => todo!(),
-            RocType::Function { .. } => todo!(),
+            BrocType::Unsized => todo!(),
+            BrocType::Function { .. } => todo!(),
         };
 
         let body = format!(
@@ -2740,39 +2740,39 @@ fn tag_union_struct_help(
     }
 }
 
-fn cannot_derive_default(roc_type: &RocType, types: &Types) -> bool {
-    match roc_type {
-        RocType::Unit
-        | RocType::EmptyTagUnion
-        | RocType::TagUnion { .. }
-        | RocType::RocResult(_, _)
-        | RocType::RecursivePointer { .. }
-        | RocType::Struct {
-            fields: RocStructFields::HasClosure { .. },
+fn cannot_derive_default(broc_type: &BrocType, types: &Types) -> bool {
+    match broc_type {
+        BrocType::Unit
+        | BrocType::EmptyTagUnion
+        | BrocType::TagUnion { .. }
+        | BrocType::BrocResult(_, _)
+        | BrocType::RecursivePointer { .. }
+        | BrocType::Struct {
+            fields: BrocStructFields::HasClosure { .. },
             ..
         }
-        | RocType::TagUnionPayload {
-            fields: RocStructFields::HasClosure { .. },
+        | BrocType::TagUnionPayload {
+            fields: BrocStructFields::HasClosure { .. },
             ..
         }
-        | RocType::Unsized => true,
-        RocType::Function { .. } => true,
-        RocType::RocStr | RocType::Bool | RocType::Num(_) => false,
-        RocType::RocList(id) | RocType::RocSet(id) | RocType::RocBox(id) => {
+        | BrocType::Unsized => true,
+        BrocType::Function { .. } => true,
+        BrocType::BrocStr | BrocType::Bool | BrocType::Num(_) => false,
+        BrocType::BrocList(id) | BrocType::BrocSet(id) | BrocType::BrocBox(id) => {
             cannot_derive_default(types.get_type(*id), types)
         }
-        RocType::RocDict(key_id, val_id) => {
+        BrocType::BrocDict(key_id, val_id) => {
             cannot_derive_default(types.get_type(*key_id), types)
                 || cannot_derive_default(types.get_type(*val_id), types)
         }
-        RocType::Struct {
-            fields: RocStructFields::HasNoClosure { fields },
+        BrocType::Struct {
+            fields: BrocStructFields::HasNoClosure { fields },
             ..
         } => fields
             .iter()
             .any(|(_, type_id)| cannot_derive_default(types.get_type(*type_id), types)),
-        RocType::TagUnionPayload {
-            fields: RocStructFields::HasNoClosure { fields },
+        BrocType::TagUnionPayload {
+            fields: BrocStructFields::HasNoClosure { fields },
             ..
         } => fields
             .iter()
@@ -2781,64 +2781,64 @@ fn cannot_derive_default(roc_type: &RocType, types: &Types) -> bool {
 }
 
 /// Useful when determining whether to derive Copy in a Rust type.
-fn cannot_derive_copy(roc_type: &RocType, types: &Types) -> bool {
-    match roc_type {
-        RocType::Unit
-        | RocType::EmptyTagUnion
-        | RocType::Bool
-        | RocType::Num(_)
-        | RocType::TagUnion(RocTagUnion::Enumeration { .. })
-        | RocType::Unsized
-        | RocType::Function { .. } => false,
-        RocType::RocStr
-        | RocType::RocList(_)
-        | RocType::RocDict(_, _)
-        | RocType::RocSet(_)
-        | RocType::RocBox(_)
-        | RocType::TagUnion(RocTagUnion::NullableUnwrapped { .. })
-        | RocType::TagUnion(RocTagUnion::NullableWrapped { .. })
-        | RocType::TagUnion(RocTagUnion::Recursive { .. })
-        | RocType::RecursivePointer { .. }
-        | RocType::TagUnion(RocTagUnion::NonNullableUnwrapped { .. }) => true,
-        RocType::TagUnion(RocTagUnion::SingleTagStruct {
-            payload: RocSingleTagPayload::HasNoClosure { payload_fields },
+fn cannot_derive_copy(broc_type: &BrocType, types: &Types) -> bool {
+    match broc_type {
+        BrocType::Unit
+        | BrocType::EmptyTagUnion
+        | BrocType::Bool
+        | BrocType::Num(_)
+        | BrocType::TagUnion(BrocTagUnion::Enumeration { .. })
+        | BrocType::Unsized
+        | BrocType::Function { .. } => false,
+        BrocType::BrocStr
+        | BrocType::BrocList(_)
+        | BrocType::BrocDict(_, _)
+        | BrocType::BrocSet(_)
+        | BrocType::BrocBox(_)
+        | BrocType::TagUnion(BrocTagUnion::NullableUnwrapped { .. })
+        | BrocType::TagUnion(BrocTagUnion::NullableWrapped { .. })
+        | BrocType::TagUnion(BrocTagUnion::Recursive { .. })
+        | BrocType::RecursivePointer { .. }
+        | BrocType::TagUnion(BrocTagUnion::NonNullableUnwrapped { .. }) => true,
+        BrocType::TagUnion(BrocTagUnion::SingleTagStruct {
+            payload: BrocSingleTagPayload::HasNoClosure { payload_fields },
             ..
         }) => payload_fields
             .iter()
             .any(|type_id| cannot_derive_copy(types.get_type(*type_id), types)),
-        RocType::TagUnion(RocTagUnion::SingleTagStruct {
-            payload: RocSingleTagPayload::HasClosure { payload_getters },
+        BrocType::TagUnion(BrocTagUnion::SingleTagStruct {
+            payload: BrocSingleTagPayload::HasClosure { payload_getters },
             ..
         }) => payload_getters
             .iter()
             .any(|(type_id, _)| cannot_derive_copy(types.get_type(*type_id), types)),
-        RocType::TagUnion(RocTagUnion::NonRecursive { tags, .. }) => {
+        BrocType::TagUnion(BrocTagUnion::NonRecursive { tags, .. }) => {
             tags.iter().any(|(_, payloads)| {
                 payloads
                     .iter()
                     .any(|id| cannot_derive_copy(types.get_type(*id), types))
             })
         }
-        RocType::RocResult(ok_id, err_id) => {
+        BrocType::BrocResult(ok_id, err_id) => {
             cannot_derive_copy(types.get_type(*ok_id), types)
                 || cannot_derive_copy(types.get_type(*err_id), types)
         }
-        RocType::Struct {
-            fields: RocStructFields::HasNoClosure { fields },
+        BrocType::Struct {
+            fields: BrocStructFields::HasNoClosure { fields },
             ..
         }
-        | RocType::TagUnionPayload {
-            fields: RocStructFields::HasNoClosure { fields },
+        | BrocType::TagUnionPayload {
+            fields: BrocStructFields::HasNoClosure { fields },
             ..
         } => fields
             .iter()
             .any(|(_, type_id)| cannot_derive_copy(types.get_type(*type_id), types)),
-        RocType::Struct {
-            fields: RocStructFields::HasClosure { fields },
+        BrocType::Struct {
+            fields: BrocStructFields::HasClosure { fields },
             ..
         }
-        | RocType::TagUnionPayload {
-            fields: RocStructFields::HasClosure { fields },
+        | BrocType::TagUnionPayload {
+            fields: BrocStructFields::HasClosure { fields },
             ..
         } => fields
             .iter()
@@ -2847,83 +2847,83 @@ fn cannot_derive_copy(roc_type: &RocType, types: &Types) -> bool {
 }
 
 /// Useful when determining whether to derive Eq, Ord, and Hash in a Rust type.
-fn has_float(roc_type: &RocType, types: &Types) -> bool {
-    has_float_help(roc_type, types, &[])
+fn has_float(broc_type: &BrocType, types: &Types) -> bool {
+    has_float_help(broc_type, types, &[])
 }
 
-fn has_float_help(roc_type: &RocType, types: &Types, do_not_recurse: &[TypeId]) -> bool {
-    match roc_type {
-        RocType::Num(num) => {
-            use RocNum::*;
+fn has_float_help(broc_type: &BrocType, types: &Types, do_not_recurse: &[TypeId]) -> bool {
+    match broc_type {
+        BrocType::Num(num) => {
+            use BrocNum::*;
 
             match num {
                 F32 | F64 => true,
                 I8 | U8 | I16 | U16 | I32 | U32 | I64 | U64 | I128 | U128 | Dec => false,
             }
         }
-        RocType::Unit
-        | RocType::EmptyTagUnion
-        | RocType::RocStr
-        | RocType::Bool
-        | RocType::TagUnion(RocTagUnion::Enumeration { .. })
-        | RocType::Function { .. }
-        | RocType::Unsized => false,
-        RocType::RocList(id) | RocType::RocSet(id) | RocType::RocBox(id) => {
+        BrocType::Unit
+        | BrocType::EmptyTagUnion
+        | BrocType::BrocStr
+        | BrocType::Bool
+        | BrocType::TagUnion(BrocTagUnion::Enumeration { .. })
+        | BrocType::Function { .. }
+        | BrocType::Unsized => false,
+        BrocType::BrocList(id) | BrocType::BrocSet(id) | BrocType::BrocBox(id) => {
             has_float_help(types.get_type(*id), types, do_not_recurse)
         }
-        RocType::RocResult(ok_id, err_id) => {
+        BrocType::BrocResult(ok_id, err_id) => {
             has_float_help(types.get_type(*ok_id), types, do_not_recurse)
                 || has_float_help(types.get_type(*err_id), types, do_not_recurse)
         }
-        RocType::RocDict(key_id, val_id) => {
+        BrocType::BrocDict(key_id, val_id) => {
             has_float_help(types.get_type(*key_id), types, do_not_recurse)
                 || has_float_help(types.get_type(*val_id), types, do_not_recurse)
         }
-        RocType::TagUnionPayload {
-            fields: RocStructFields::HasNoClosure { fields },
+        BrocType::TagUnionPayload {
+            fields: BrocStructFields::HasNoClosure { fields },
             name: _,
         }
-        | RocType::Struct {
-            fields: RocStructFields::HasNoClosure { fields },
+        | BrocType::Struct {
+            fields: BrocStructFields::HasNoClosure { fields },
             name: _,
         } => fields
             .iter()
             .any(|(_, type_id)| has_float_help(types.get_type(*type_id), types, do_not_recurse)),
-        RocType::TagUnionPayload {
-            fields: RocStructFields::HasClosure { fields },
+        BrocType::TagUnionPayload {
+            fields: BrocStructFields::HasClosure { fields },
             name: _,
         }
-        | RocType::Struct {
-            fields: RocStructFields::HasClosure { fields },
+        | BrocType::Struct {
+            fields: BrocStructFields::HasClosure { fields },
             name: _,
         } => fields
             .iter()
             .any(|(_, type_id, _)| has_float_help(types.get_type(*type_id), types, do_not_recurse)),
-        RocType::TagUnion(RocTagUnion::SingleTagStruct {
-            payload: RocSingleTagPayload::HasNoClosure { payload_fields },
+        BrocType::TagUnion(BrocTagUnion::SingleTagStruct {
+            payload: BrocSingleTagPayload::HasNoClosure { payload_fields },
             ..
         }) => payload_fields
             .iter()
             .any(|type_id| has_float_help(types.get_type(*type_id), types, do_not_recurse)),
-        RocType::TagUnion(RocTagUnion::SingleTagStruct {
-            payload: RocSingleTagPayload::HasClosure { payload_getters },
+        BrocType::TagUnion(BrocTagUnion::SingleTagStruct {
+            payload: BrocSingleTagPayload::HasClosure { payload_getters },
             ..
         }) => payload_getters
             .iter()
             .any(|(type_id, _)| has_float_help(types.get_type(*type_id), types, do_not_recurse)),
-        RocType::TagUnion(RocTagUnion::Recursive {
+        BrocType::TagUnion(BrocTagUnion::Recursive {
             tags,
             name: _,
             discriminant_offset: _,
             discriminant_size: _,
         })
-        | RocType::TagUnion(RocTagUnion::NonRecursive {
+        | BrocType::TagUnion(BrocTagUnion::NonRecursive {
             tags,
             name: _,
             discriminant_offset: _,
             discriminant_size: _,
         })
-        | RocType::TagUnion(RocTagUnion::NullableWrapped {
+        | BrocType::TagUnion(BrocTagUnion::NullableWrapped {
             tags,
             name: _,
             index_of_null_tag: _,
@@ -2934,12 +2934,12 @@ fn has_float_help(roc_type: &RocType, types: &Types, do_not_recurse: &[TypeId]) 
                 .iter()
                 .any(|id| has_float_help(types.get_type(*id), types, do_not_recurse))
         }),
-        RocType::TagUnion(RocTagUnion::NonNullableUnwrapped { payload, .. })
-        | RocType::TagUnion(RocTagUnion::NullableUnwrapped {
+        BrocType::TagUnion(BrocTagUnion::NonNullableUnwrapped { payload, .. })
+        | BrocType::TagUnion(BrocTagUnion::NullableUnwrapped {
             non_null_payload: payload,
             ..
         })
-        | RocType::RecursivePointer(payload) => {
+        | BrocType::RecursivePointer(payload) => {
             if do_not_recurse.contains(payload) {
                 false
             } else {

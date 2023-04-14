@@ -1,10 +1,10 @@
 use crate::layout::{ext_var_is_empty_record, ext_var_is_empty_tag_union};
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::MutMap;
-use roc_module::symbol::Symbol;
-use roc_target::TargetInfo;
-use roc_types::subs::{self, Content, FlatType, Subs, Variable};
-use roc_types::types::RecordField;
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::MutMap;
+use broc_module::symbol::Symbol;
+use broc_target::TargetInfo;
+use broc_types::subs::{self, Content, FlatType, Subs, Variable};
+use broc_types::types::RecordField;
 use std::collections::hash_map::Entry;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -331,7 +331,7 @@ impl LambdaSet {
     fn get_closure_names(
         layouts: &mut Layouts,
         subs: &Subs,
-        subs_slice: roc_types::subs::SubsSlice<Symbol>,
+        subs_slice: broc_types::subs::SubsSlice<Symbol>,
     ) -> Slice<Symbol> {
         let slice = Slice::new(layouts.symbols.len() as u32, subs_slice.len() as u16);
 
@@ -444,8 +444,8 @@ impl Layouts {
 
     fn usize(&self) -> Layout {
         let usize_int_width = match self.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => IntWidth::U32,
-            roc_target::PtrWidth::Bytes8 => IntWidth::U64,
+            broc_target::PtrWidth::Bytes4 => IntWidth::U32,
+            broc_target::PtrWidth::Bytes8 => IntWidth::U64,
         };
 
         Layout::Int(usize_int_width)
@@ -459,8 +459,8 @@ impl Layouts {
 
     fn align_of_layout(&self, layout: Layout) -> u16 {
         let usize_int_width = match self.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => IntWidth::U32,
-            roc_target::PtrWidth::Bytes8 => IntWidth::U64,
+            broc_target::PtrWidth::Bytes4 => IntWidth::U32,
+            broc_target::PtrWidth::Bytes8 => IntWidth::U64,
         };
 
         let ptr_alignment = usize_int_width.alignment_bytes(self.target_info) as u16;
@@ -529,8 +529,8 @@ impl Layouts {
 
     pub fn size_of_layout(&self, layout: Layout) -> u16 {
         let usize_int_width = match self.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => IntWidth::U32,
-            roc_target::PtrWidth::Bytes8 => IntWidth::U64,
+            broc_target::PtrWidth::Bytes4 => IntWidth::U32,
+            broc_target::PtrWidth::Bytes8 => IntWidth::U64,
         };
 
         let ptr_width = usize_int_width.stack_size() as u16;
@@ -539,7 +539,7 @@ impl Layouts {
             Layout::Reserved => unreachable!(),
             Layout::Int(int_width) => int_width.stack_size() as _,
             Layout::Float(float_width) => float_width as _,
-            Layout::Decimal => (std::mem::size_of::<roc_std::RocDec>()) as _,
+            Layout::Decimal => (std::mem::size_of::<broc_std::BrocDec>()) as _,
             Layout::Str | Layout::Dict(_) | Layout::Set(_) | Layout::List(_) => 2 * ptr_width,
             Layout::Struct(slice) => self.size_of_layout_slice(slice),
             Layout::Boxed(_) | Layout::UnionRecursive(_) => ptr_width,
@@ -872,7 +872,7 @@ impl Layout {
     fn from_slice_variable_slice(
         layouts: &mut Layouts,
         subs: &Subs,
-        slice_variable_slice: roc_types::subs::SubsSlice<roc_types::subs::VariableSubsSlice>,
+        slice_variable_slice: broc_types::subs::SubsSlice<broc_types::subs::VariableSubsSlice>,
     ) -> Result<Slice<Slice<Layout>>, LayoutError> {
         let slice = Slice::reserve(layouts, slice_variable_slice.len());
 
@@ -889,7 +889,7 @@ impl Layout {
     fn from_variable_slice(
         layouts: &mut Layouts,
         subs: &Subs,
-        variable_subs_slice: roc_types::subs::VariableSubsSlice,
+        variable_subs_slice: broc_types::subs::VariableSubsSlice,
     ) -> Result<Slice<Layout>, LayoutError> {
         let slice = Slice::reserve(layouts, variable_subs_slice.len());
 

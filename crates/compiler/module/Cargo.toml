@@ -1,6 +1,6 @@
 [package]
-name = "roc_module"
-description = "Implements data structures used for efficiently representing unique modules and identifiers in Roc programs."
+name = "broc_module"
+description = "Implements data structures used for efficiently representing unique modules and identifiers in Broc programs."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,10 +8,10 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_error_macros = { path = "../../error_macros" }
-roc_ident = { path = "../ident" }
-roc_region = { path = "../region" }
+broc_collections = { path = "../collections" }
+broc_error_macros = { path = "../../error_macros" }
+broc_ident = { path = "../ident" }
+broc_region = { path = "../region" }
 
 bumpalo.workspace = true
 snafu.workspace = true

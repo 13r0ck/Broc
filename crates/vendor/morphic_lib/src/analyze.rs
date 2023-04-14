@@ -3,8 +3,8 @@ use std::collections::BTreeSet;
 use std::convert::TryInto;
 use typed_arena::Arena;
 
-use roc_collections::MutMap as HashMap;
-use roc_collections::MutSet as HashSet;
+use broc_collections::MutMap as HashMap;
+use broc_collections::MutSet as HashSet;
 
 use crate::api;
 use crate::ir;

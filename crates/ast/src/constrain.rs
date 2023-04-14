@@ -1,13 +1,13 @@
 use bumpalo::{collections::Vec as BumpVec, Bump};
 
-use roc_can::expected::{Expected, PExpected};
-use roc_collections::all::{BumpMap, BumpMapDefault, HumanIndex, SendMap};
-use roc_module::{
+use broc_can::expected::{Expected, PExpected};
+use broc_collections::all::{BumpMap, BumpMapDefault, HumanIndex, SendMap};
+use broc_module::{
     ident::{Lowercase, TagName},
     symbol::Symbol,
 };
-use roc_region::all::Region;
-use roc_types::{
+use broc_region::all::Region;
+use broc_types::{
     subs::Variable,
     types::{self, AnnotationSource, IndexOrField, PReason, PatternCategory},
     types::{Category, Reason},
@@ -917,7 +917,7 @@ pub fn constrain_expr<'a>(
                 body_id: *body_id,
                 function_type: env.var_store.fresh(),
                 extra: env.pool.add(extra),
-                recursive: roc_can::expr::Recursive::Recursive,
+                recursive: broc_can::expr::Recursive::Recursive,
             };
             let clos_con = constrain_expr(
                 arena,
@@ -1929,16 +1929,16 @@ fn num_num(pool: &mut Pool, type_id: TypeId) -> Type2 {
 #[cfg(test)]
 pub mod test_constrain {
     use bumpalo::Bump;
-    use roc_can::expected::Expected;
-    use roc_collections::all::MutMap;
-    use roc_module::{
+    use broc_can::expected::Expected;
+    use broc_collections::all::MutMap;
+    use broc_module::{
         ident::Lowercase,
         symbol::{IdentIds, Interns, ModuleIds, Symbol},
     };
-    use roc_parse::parser::{SourceError, SyntaxError};
-    use roc_region::all::Region;
-    use roc_solve::module::Solved;
-    use roc_types::{
+    use broc_parse::parser::{SourceError, SyntaxError};
+    use broc_region::all::Region;
+    use broc_solve::module::Solved;
+    use broc_types::{
         pretty_print::{name_and_print_var, DebugPrint},
         subs::{Subs, VarStore, Variable},
     };
@@ -1962,7 +1962,7 @@ pub mod test_constrain {
     fn run_solve<'a>(
         arena: &'a Bump,
         mempool: &mut Pool,
-        aliases: MutMap<Symbol, roc_types::types::Alias>,
+        aliases: MutMap<Symbol, broc_types::types::Alias>,
         rigid_variables: MutMap<Variable, Lowercase>,
         constraint: Constraint,
         var_store: VarStore,
@@ -2075,7 +2075,7 @@ pub mod test_constrain {
         scope: &mut Scope,
         region: Region,
     ) -> Result<(Expr2, Output), SourceError<'a, SyntaxError<'a>>> {
-        match roc_parse::test_helpers::parse_loc_with(arena, input.trim()) {
+        match broc_parse::test_helpers::parse_loc_with(arena, input.trim()) {
             Ok(loc_expr) => Ok(loc_expr_to_expr2(arena, loc_expr, env, scope, region)),
             Err(fail) => Err(fail),
         }
@@ -2258,7 +2258,7 @@ pub mod test_constrain {
         infer_eq(
             indoc!(
                 r#"
-                person = { name: "roc" }
+                person = { name: "broc" }
 
                 person
                 "#
@@ -2272,7 +2272,7 @@ pub mod test_constrain {
         infer_eq(
             indoc!(
                 r#"
-                person = { name: "roc" }
+                person = { name: "broc" }
 
                 { person & name: "bird" }
                 "#
@@ -2287,7 +2287,7 @@ pub mod test_constrain {
         infer_eq(
             indoc!(
                 r#"
-                List.map [{ name: "roc" }, { name: "bird" }] .name
+                List.map [{ name: "broc" }, { name: "bird" }] .name
                 "#
             ),
             "List Str",
@@ -2614,7 +2614,7 @@ pub mod test_constrain {
     #[test]
     fn inference_var_tag_union_ext() {
         // TODO: we should really be inferring [Blue, Orange]a -> [Lavender, Peach]a here.
-        // See https://github.com/roc-lang/roc/issues/2053
+        // See https://github.com/roc-lang/broc/issues/2053
         infer_eq(
             indoc!(
                 r#"
@@ -2637,10 +2637,10 @@ pub mod test_constrain {
         infer_eq(
             indoc!(
                 r#"
-                setRocEmail : _ -> { name: Str, email: Str }_
-                setRocEmail = \person ->
-                    { person & email: "\(person.name)@roclang.com" }
-                setRocEmail
+                setBrocEmail : _ -> { name: Str, email: Str }_
+                setBrocEmail = \person ->
+                    { person & email: "\(person.name)@broclang.com" }
+                setBrocEmail
                 "#
             ),
             "{ email : Str, name : Str }a -> { email : Str, name : Str }a",

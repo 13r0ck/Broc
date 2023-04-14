@@ -1,6 +1,6 @@
 /**
  * Node.js test file for helloWeb example
- * We are not running this in CI currently, and Node.js is not a Roc dependency.
+ * We are not running this in CI currently, and Node.js is not a Broc dependency.
  * But if you happen to have it, you can run this.
  */
 
@@ -13,12 +13,12 @@ global.fetch = (filename) =>
     },
   }));
 
-const { roc_web_platform_run } = require("./host");
+const { broc_web_platform_run } = require("./host");
 
-roc_web_platform_run("./rocLovesWebAssembly.wasm", (string_from_roc) => {
-  const expected = "Roc <3 Web Assembly!\n";
-  if (string_from_roc !== expected) {
-    console.error(`Expected "${expected}", but got "${string_from_roc}"`);
+broc_web_platform_run("./brocLovesWebAssembly.wasm", (string_from_broc) => {
+  const expected = "Broc <3 Web Assembly!\n";
+  if (string_from_broc !== expected) {
+    console.error(`Expected "${expected}", but got "${string_from_broc}"`);
     process.exit(1);
   }
   console.log("OK");

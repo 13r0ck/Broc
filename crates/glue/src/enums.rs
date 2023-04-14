@@ -1,5 +1,5 @@
-use roc_collections::MutMap;
-use roc_types::subs::Variable;
+use broc_collections::MutMap;
+use broc_types::subs::Variable;
 
 #[derive(Copy, Clone, Debug, Default)]
 struct EnumId(u64);

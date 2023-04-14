@@ -1,6 +1,6 @@
 [package]
 name = "test_mono"
-description = "Tests Roc's generation of the mono intermediate representation."
+description = "Tests Broc's generation of the mono intermediate representation."
 
 authors.workspace = true
 edition.workspace = true
@@ -12,16 +12,16 @@ name = "test_mono"
 path = "src/tests.rs"
 
 [dev-dependencies]
-roc_builtins = { path = "../builtins" }
-roc_can = { path = "../can" }
-roc_collections = { path = "../collections" }
-roc_load = { path = "../load" }
-roc_module = { path = "../module", features = ["debug-symbols"] }
-roc_mono = { path = "../mono" }
-roc_packaging = { path = "../../packaging" }
-roc_reporting = { path = "../../reporting" }
-roc_target = { path = "../roc_target" }
-roc_tracing = { path = "../../tracing" }
+broc_builtins = { path = "../builtins" }
+broc_can = { path = "../can" }
+broc_collections = { path = "../collections" }
+broc_load = { path = "../load" }
+broc_module = { path = "../module", features = ["debug-symbols"] }
+broc_mono = { path = "../mono" }
+broc_packaging = { path = "../../packaging" }
+broc_reporting = { path = "../../reporting" }
+broc_target = { path = "../broc_target" }
+broc_tracing = { path = "../../tracing" }
 
 test_mono_macros = { path = "../test_mono_macros" }
 

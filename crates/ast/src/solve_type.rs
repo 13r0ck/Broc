@@ -1,25 +1,25 @@
 #![allow(clippy::all)]
 #![allow(dead_code)]
 use bumpalo::Bump;
-use roc_can::expected::{Expected, PExpected};
-use roc_collections::all::{BumpMap, BumpMapDefault, MutMap};
-use roc_error_macros::internal_error;
-use roc_module::ident::TagName;
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_solve::module::Solved;
-use roc_types::subs::{
+use broc_can::expected::{Expected, PExpected};
+use broc_collections::all::{BumpMap, BumpMapDefault, MutMap};
+use broc_error_macros::internal_error;
+use broc_module::ident::TagName;
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_solve::module::Solved;
+use broc_types::subs::{
     self, AliasVariables, Content, Descriptor, FlatType, Mark, OptVariable, Rank, RecordFields,
     Subs, SubsSlice, TagExt, UnionLambdas, UnionTags, Variable, VariableSubsSlice,
 };
-use roc_types::types::{
+use broc_types::types::{
     gather_fields_unsorted_iter, Alias, AliasKind, Category, ErrorType, PatternCategory, Polarity,
     RecordField,
 };
-use roc_unify::unify::unify;
-use roc_unify::unify::Env as UEnv;
-use roc_unify::unify::Mode;
-use roc_unify::unify::Unified::*;
+use broc_unify::unify::unify;
+use broc_unify::unify::Env as UEnv;
+use broc_unify::unify::Mode;
+use broc_unify::unify::Unified::*;
 
 use crate::constrain::{Constraint, PresenceConstraint};
 use crate::lang::core::types::Type2;
@@ -597,7 +597,7 @@ fn solve<'a>(
                                 .iter()
                                 .filter(|var| {
                                     let current_rank =
-                                        subs.get_rank(roc_types::subs::Variable::clone(var));
+                                        subs.get_rank(broc_types::subs::Variable::clone(var));
 
                                     current_rank.into_usize() > next_rank.into_usize()
                                 })
@@ -808,8 +808,8 @@ fn type_to_variable<'a>(
             register(subs, rank, pools, content)
         }
 
-        EmptyRec => roc_types::subs::Variable::EMPTY_RECORD,
-        EmptyTagUnion => roc_types::subs::Variable::EMPTY_TAG_UNION,
+        EmptyRec => broc_types::subs::Variable::EMPTY_RECORD,
+        EmptyTagUnion => broc_types::subs::Variable::EMPTY_TAG_UNION,
 
         Record(fields, ext_id) => {
             let mut field_vars = Vec::new();
@@ -996,7 +996,7 @@ fn type_to_variable<'a>(
         //
         //            let temp_ext_var = type_to_variable(subs, rank, pools, cached, ext);
         //            let mut ext_tag_vec = Vec::new();
-        //            let new_ext_var = match roc_types::pretty_print::chase_ext_tag_union(
+        //            let new_ext_var = match broc_types::pretty_print::chase_ext_tag_union(
         //                subs,
         //                temp_ext_var,
         //                &mut ext_tag_vec,
@@ -1097,7 +1097,7 @@ fn type_to_union_tags<'a>(
     let temp_ext_var = type_to_variable(arena, mempool, subs, rank, pools, cached, ext);
 
     let ext = {
-        let (it, ext) = roc_types::types::gather_tags_unsorted_iter(
+        let (it, ext) = broc_types::types::gather_tags_unsorted_iter(
             subs,
             UnionTags::default(),
             TagExt::Any(temp_ext_var),
@@ -1327,8 +1327,8 @@ fn adjust_rank_content(
     group_rank: Rank,
     content: &Content,
 ) -> Rank {
-    use roc_types::subs::Content::*;
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::Content::*;
+    use broc_types::subs::FlatType::*;
 
     match content {
         FlexVar(_) | RigidVar(_) | FlexAbleVar(..) | RigidAbleVar(..) | Error => group_rank,
@@ -1478,7 +1478,7 @@ fn adjust_rank_content(
             }
 
             // from elm-compiler: THEORY: anything in the real_var would be Rank::toplevel()
-            // this theory is not true in Roc! aliases of function types capture the closure var
+            // this theory is not true in Broc! aliases of function types capture the closure var
             rank = rank.max(adjust_rank(
                 subs, young_mark, visit_mark, group_rank, *real_var,
             ));
@@ -1517,8 +1517,8 @@ fn instantiate_rigids_help(
     pools: &mut Pools,
     var: Variable,
 ) -> Variable {
-    use roc_types::subs::Content::*;
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::Content::*;
+    use broc_types::subs::FlatType::*;
 
     let desc = subs.get_without_compacting(var);
 
@@ -1684,8 +1684,8 @@ fn deep_copy_var_help(
     pools: &mut Pools,
     var: Variable,
 ) -> Variable {
-    use roc_types::subs::Content::*;
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::Content::*;
+    use broc_types::subs::FlatType::*;
 
     let desc = subs.get_without_compacting(var);
 

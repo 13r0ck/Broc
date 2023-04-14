@@ -1,6 +1,6 @@
 [package]
-name = "roc_mono"
-description = "Roc's main intermediate representation (IR), which is responsible for monomorphization, defunctionalization, inserting ref-count instructions, and transforming a Roc program into a form that is easy to consume by a backend."
+name = "broc_mono"
+description = "Broc's main intermediate representation (IR), which is responsible for monomorphization, defunctionalization, inserting ref-count instructions, and transforming a Broc program into a form that is easy to consume by a backend."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,22 +8,22 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_builtins = { path = "../builtins" }
-roc_can = { path = "../can" }
-roc_collections = { path = "../collections" }
-roc_debug_flags = { path = "../debug_flags" }
-roc_derive = { path = "../derive" }
-roc_derive_key = { path = "../derive_key" }
-roc_error_macros = { path = "../../error_macros" }
-roc_exhaustive = { path = "../exhaustive" }
-roc_late_solve = { path = "../late_solve" }
-roc_module = { path = "../module" }
-roc_problem = { path = "../problem" }
-roc_region = { path = "../region" }
-roc_std = { path = "../../roc_std" }
-roc_target = { path = "../roc_target" }
-roc_tracing = { path = "../../tracing" }
-roc_types = { path = "../types" }
+broc_builtins = { path = "../builtins" }
+broc_can = { path = "../can" }
+broc_collections = { path = "../collections" }
+broc_debug_flags = { path = "../debug_flags" }
+broc_derive = { path = "../derive" }
+broc_derive_key = { path = "../derive_key" }
+broc_error_macros = { path = "../../error_macros" }
+broc_exhaustive = { path = "../exhaustive" }
+broc_late_solve = { path = "../late_solve" }
+broc_module = { path = "../module" }
+broc_problem = { path = "../problem" }
+broc_region = { path = "../region" }
+broc_std = { path = "../../broc_std" }
+broc_target = { path = "../broc_target" }
+broc_tracing = { path = "../../tracing" }
+broc_types = { path = "../types" }
 ven_pretty = { path = "../../vendor/pretty" }
 
 bitvec.workspace = true

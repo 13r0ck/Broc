@@ -12,7 +12,7 @@ function setGlobalsForWasmBindgen() {
 }
 setGlobalsForWasmBindgen();
 
-import * as roc_repl_wasm from "./roc_repl_wasm.js";
+import * as broc_repl_wasm from "./broc_repl_wasm.js";
 import { getMockWasiImports } from "./wasi.js";
 
 // ----------------------------------------------------------------------------
@@ -41,11 +41,11 @@ const repl = {
 // Initialise
 repl.elemSourceInput.addEventListener("change", onInputChange);
 repl.elemSourceInput.addEventListener("keyup", onInputKeyup);
-roc_repl_wasm.default("/repl/roc_repl_wasm_bg.wasm").then((instance) => {
+broc_repl_wasm.default("/repl/broc_repl_wasm_bg.wasm").then((instance) => {
   repl.elemHistory.querySelector("#loading-message").remove();
   repl.elemSourceInput.disabled = false;
   repl.elemSourceInput.placeholder =
-    "Type some Roc code and press Enter. (Use Shift+Enter for multi-line input)";
+    "Type some Broc code and press Enter. (Use Shift+Enter for multi-line input)";
   repl.compiler = instance;
 });
 
@@ -125,7 +125,7 @@ async function processInputQueue() {
     let ok = true;
     if (inputText) {
       try {
-        outputText = await roc_repl_wasm.entrypoint_from_js(inputText);
+        outputText = await broc_repl_wasm.entrypoint_from_js(inputText);
       } catch (e) {
         outputText = `${e}`;
         ok = false;

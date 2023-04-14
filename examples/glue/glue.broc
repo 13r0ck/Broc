@@ -1,0 +1,9 @@
+app "brocLovesRust"
+    packages { pf: "rust-platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main =
+    StdoutWrite "Broc <3 Rust!\n" \{} ->
+        StdoutWrite "Broc <3 Rust!\n" \{} ->
+            Done

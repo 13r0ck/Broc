@@ -1,7 +1,7 @@
 use core::ffi::c_void;
 use libc;
 use pulldown_cmark::{html, Options, Parser};
-use roc_std::RocStr;
+use broc_std::BrocStr;
 use std::env;
 use std::ffi::CStr;
 use std::fs;
@@ -15,17 +15,17 @@ use syntect::util::{LinesWithEndings};
 use syntect::html::{ClassedHTMLGenerator, ClassStyle};
 
 extern "C" {
-    #[link_name = "roc__transformFileContentForHost_1_exposed"]
-    fn roc_transformFileContentForHost(relPath: &RocStr, content: &RocStr) -> RocStr;
+    #[link_name = "broc__transformFileContentForHost_1_exposed"]
+    fn broc_transformFileContentForHost(relPath: &BrocStr, content: &BrocStr) -> BrocStr;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn roc_alloc(size: usize, _alignment: u32) -> *mut c_void {
+pub unsafe extern "C" fn broc_alloc(size: usize, _alignment: u32) -> *mut c_void {
     libc::malloc(size)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn roc_realloc(
+pub unsafe extern "C" fn broc_realloc(
     c_ptr: *mut c_void,
     new_size: usize,
     _old_size: usize,
@@ -35,19 +35,19 @@ pub unsafe extern "C" fn roc_realloc(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn roc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
+pub unsafe extern "C" fn broc_dealloc(c_ptr: *mut c_void, _alignment: u32) {
     libc::free(c_ptr)
 }
 
 #[cfg(unix)]
 #[no_mangle]
-pub unsafe extern "C" fn roc_getppid() -> libc::pid_t {
+pub unsafe extern "C" fn broc_getppid() -> libc::pid_t {
     libc::getppid()
 }
 
 #[cfg(unix)]
 #[no_mangle]
-pub unsafe extern "C" fn roc_mmap(
+pub unsafe extern "C" fn broc_mmap(
     addr: *mut libc::c_void,
     len: libc::size_t,
     prot: libc::c_int,
@@ -60,7 +60,7 @@ pub unsafe extern "C" fn roc_mmap(
 
 #[cfg(unix)]
 #[no_mangle]
-pub unsafe extern "C" fn roc_shm_open(
+pub unsafe extern "C" fn broc_shm_open(
     name: *const libc::c_char,
     oflag: libc::c_int,
     mode: libc::mode_t,
@@ -86,12 +86,12 @@ pub extern "C" fn rust_main() -> i32 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn roc_panic(c_ptr: *mut c_void, tag_id: u32) {
+pub unsafe extern "C" fn broc_panic(c_ptr: *mut c_void, tag_id: u32) {
     match tag_id {
         0 => {
             let slice = CStr::from_ptr(c_ptr as *const c_char);
             let string = slice.to_str().unwrap();
-            eprintln!("Roc hit a panic: {}", string);
+            eprintln!("Broc hit a panic: {}", string);
             std::process::exit(1);
         }
         _ => todo!(),
@@ -99,7 +99,7 @@ pub unsafe extern "C" fn roc_panic(c_ptr: *mut c_void, tag_id: u32) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn roc_memcpy(
+pub unsafe extern "C" fn broc_memcpy(
     dest: *mut c_void,
     src: *const c_void,
     bytes: usize,
@@ -108,7 +108,7 @@ pub unsafe extern "C" fn roc_memcpy(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn roc_memset(dst: *mut c_void, c: i32, n: usize) -> *mut c_void {
+pub unsafe extern "C" fn broc_memset(dst: *mut c_void, c: i32, n: usize) -> *mut c_void {
     libc::memset(dst, c, n)
 }
 
@@ -142,7 +142,7 @@ fn run(input_dirname: &str, output_dirname: &str) -> Result<(), String> {
     find_files(&input_dir, &mut input_files)
         .map_err(|e| format!("Error finding input files: {}", e))?;
 
-    println!("Processing {} input files...", input_files.len());
+    println!("Pbrocessing {} input files...", input_files.len());
 
     // TODO: process the files asynchronously
     let num_files = input_files.len();
@@ -169,7 +169,7 @@ fn run(input_dirname: &str, output_dirname: &str) -> Result<(), String> {
     }
 
     println!(
-        "Processed {} files with {} successes and {} errors",
+        "Pbrocessed {} files with {} successes and {} errors",
         num_files, num_successes, num_errors
     );
 
@@ -215,19 +215,19 @@ fn process_file(input_dir: &Path, output_dir: &Path, input_file: &Path) -> Resul
     let mut code_to_highlight = String::new();
     // And track a little bit of state
     let mut in_code_block = false;
-    let mut is_roc_code = false;
+    let mut is_broc_code = false;
     let syntax_set : syntect::parsing::SyntaxSet = SyntaxSet::load_defaults_newlines();
     let theme_set : syntect::highlighting::ThemeSet = ThemeSet::load_defaults();
     
     for event in parser {
         match event {
             pulldown_cmark::Event::Code(code_str) => {
-                if code_str.starts_with("roc!") {
+                if code_str.starts_with("broc!") {
                     let stripped = code_str
-                        .strip_prefix("roc!")
-                        .expect("expected leading 'roc!'");
+                        .strip_prefix("broc!")
+                        .expect("expected leading 'broc!'");
 
-                    let highlighted_html = roc_highlight::highlight_roc_code_inline(stripped.to_string().as_str());
+                    let highlighted_html = broc_highlight::highlight_broc_code_inline(stripped.to_string().as_str());
                     
                     parser_with_highlighting.push(pulldown_cmark::Event::Html(
                         pulldown_cmark::CowStr::from(highlighted_html),
@@ -241,7 +241,7 @@ fn process_file(input_dir: &Path, output_dir: &Path, input_file: &Path) -> Resul
             }
             pulldown_cmark::Event::Start(pulldown_cmark::Tag::CodeBlock(cbk)) => {
                 in_code_block = true;
-                is_roc_code = is_roc_code_block(&cbk);
+                is_broc_code = is_broc_code_block(&cbk);
             }
             pulldown_cmark::Event::End(pulldown_cmark::Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(extention_str))) => {
                 if in_code_block {
@@ -251,7 +251,7 @@ fn process_file(input_dir: &Path, output_dir: &Path, input_file: &Path) -> Resul
                         // path to a static file, if so replace the code with
                         // the contents of the file.
                         // ```
-                        // file:myCodeFile.roc
+                        // file:myCodeFile.broc
                         // ```
                         Some(new_code_to_highlight) => {
                             code_to_highlight = new_code_to_highlight;
@@ -260,8 +260,8 @@ fn process_file(input_dir: &Path, output_dir: &Path, input_file: &Path) -> Resul
 
                     // Format the whole multi-line code block as HTML all at once
                     let highlighted_html: String;
-                    if is_roc_code {
-                        highlighted_html = roc_highlight::highlight_roc_code(&code_to_highlight)
+                    if is_broc_code {
+                        highlighted_html = broc_highlight::highlight_broc_code(&code_to_highlight)
                     } else if let Some(syntax) = syntax_set.find_syntax_by_token(&extention_str) {
                         let mut h = HighlightLines::new(syntax, &theme_set.themes["base16-ocean.dark"]);
 
@@ -298,13 +298,13 @@ fn process_file(input_dir: &Path, output_dir: &Path, input_file: &Path) -> Resul
 
     html::push_html(&mut content_html, parser_with_highlighting.into_iter());
 
-    let roc_relpath = RocStr::from(output_relpath.to_str().unwrap());
-    let roc_content_html = RocStr::from(content_html.as_str());
-    let roc_output_str =
-        unsafe { roc_transformFileContentForHost(&roc_relpath, &roc_content_html) };
+    let broc_relpath = BrocStr::from(output_relpath.to_str().unwrap());
+    let broc_content_html = BrocStr::from(content_html.as_str());
+    let broc_output_str =
+        unsafe { broc_transformFileContentForHost(&broc_relpath, &broc_content_html) };
 
     let output_file = output_dir.join(&output_relpath);
-    let rust_output_str: &str = &roc_output_str;
+    let rust_output_str: &str = &broc_output_str;
 
     println!("{} -> {}", input_file.display(), output_file.display());
 
@@ -346,11 +346,11 @@ pub fn strip_windows_prefix(path_buf: PathBuf) -> std::path::PathBuf {
     }
 }
 
-fn is_roc_code_block(cbk: &pulldown_cmark::CodeBlockKind) -> bool {
+fn is_broc_code_block(cbk: &pulldown_cmark::CodeBlockKind) -> bool {
     match cbk {
         pulldown_cmark::CodeBlockKind::Indented => false,
         pulldown_cmark::CodeBlockKind::Fenced(cow_str) => {
-            if cow_str.contains("roc") {
+            if cow_str.contains("broc") {
                 true
             } else {
                 false

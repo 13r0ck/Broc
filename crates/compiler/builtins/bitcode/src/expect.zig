@@ -26,14 +26,14 @@ pub fn expectFailedStartSharedBuffer() callconv(.C) [*]u8 {
 pub fn expectFailedStartSharedFile() callconv(.C) [*]u8 {
     // IMPORTANT: shared memory object names must begin with / and contain no other slashes!
     var name: [100]u8 = undefined;
-    _ = std.fmt.bufPrint(name[0..100], "/roc_expect_buffer_{}\x00", .{roc_getppid()}) catch unreachable;
+    _ = std.fmt.bufPrint(name[0..100], "/broc_expect_buffer_{}\x00", .{broc_getppid()}) catch unreachable;
 
     if (builtin.os.tag == .macos or builtin.os.tag == .linux) {
-        const shared_fd = roc_shm_open(@ptrCast(*const i8, &name), O_RDWR | O_CREAT, 0o666);
+        const shared_fd = broc_shm_open(@ptrCast(*const i8, &name), O_RDWR | O_CREAT, 0o666);
 
         const length = 4096;
 
-        const shared_ptr = roc_mmap(
+        const shared_ptr = broc_mmap(
             null,
             length,
             PROT_WRITE,
@@ -50,21 +50,21 @@ pub fn expectFailedStartSharedFile() callconv(.C) [*]u8 {
     }
 }
 
-extern fn roc_shm_open(name: *const i8, oflag: c_int, mode: c_uint) c_int;
-extern fn roc_mmap(addr: ?*anyopaque, length: c_uint, prot: c_int, flags: c_int, fd: c_int, offset: c_uint) *anyopaque;
-extern fn roc_getppid() c_int;
+extern fn broc_shm_open(name: *const i8, oflag: c_int, mode: c_uint) c_int;
+extern fn broc_mmap(addr: ?*anyopaque, length: c_uint, prot: c_int, flags: c_int, fd: c_int, offset: c_uint) *anyopaque;
+extern fn broc_getppid() c_int;
 
 pub fn readSharedBufferEnv() callconv(.C) void {
     if (builtin.os.tag == .macos or builtin.os.tag == .linux) {
 
         // IMPORTANT: shared memory object names must begin with / and contain no other slashes!
         var name: [100]u8 = undefined;
-        _ = std.fmt.bufPrint(name[0..100], "/roc_expect_buffer_{}\x00", .{roc_getppid()}) catch unreachable;
+        _ = std.fmt.bufPrint(name[0..100], "/broc_expect_buffer_{}\x00", .{broc_getppid()}) catch unreachable;
 
-        const shared_fd = roc_shm_open(@ptrCast(*const i8, &name), O_RDWR | O_CREAT, 0o666);
+        const shared_fd = broc_shm_open(@ptrCast(*const i8, &name), O_RDWR | O_CREAT, 0o666);
         const length = 4096;
 
-        const shared_ptr = roc_mmap(
+        const shared_ptr = broc_mmap(
             null,
             length,
             PROT_WRITE,
@@ -85,7 +85,7 @@ pub fn notifyParent(shared_buffer: [*]u8, tag: u32) callconv(.C) void {
         const atomic_ptr = @ptrCast(*Atomic(u32), &usize_ptr[5]);
         atomic_ptr.storeUnchecked(tag);
 
-        // wait till the parent is done before proceeding
+        // wait till the parent is done before pbroceeding
         const Ordering = std.atomic.Ordering;
         while (atomic_ptr.load(Ordering.Acquire) != 0) {
             std.atomic.spinLoopHint();

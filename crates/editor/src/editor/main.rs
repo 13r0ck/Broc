@@ -23,13 +23,13 @@ use cgmath::Vector2;
 use fs_extra::dir::{copy, ls, CopyOptions, DirEntryAttr, DirEntryValue};
 use futures::TryFutureExt;
 use pipelines::RectResources;
-use roc_ast::lang::env::Env;
-use roc_ast::mem_pool::pool::Pool;
-use roc_ast::module::load_module;
-use roc_load::Threading;
-use roc_module::symbol::IdentIds;
-use roc_packaging::cache::{self, RocCacheDir};
-use roc_types::subs::VarStore;
+use broc_ast::lang::env::Env;
+use broc_ast::mem_pool::pool::Pool;
+use broc_ast::module::load_module;
+use broc_load::Threading;
+use broc_module::symbol::IdentIds;
+use broc_packaging::cache::{self, BrocCacheDir};
+use broc_types::subs::VarStore;
 use std::collections::HashSet;
 use std::env;
 use std::fs::{self, metadata, File};
@@ -66,7 +66,7 @@ fn run_event_loop(project_path_opt: Option<&Path>) -> Result<(), Box<dyn Error>>
 
     let window = winit::window::WindowBuilder::new()
         .with_inner_size(PhysicalSize::new(1900.0, 1000.0))
-        .with_title("The Roc Editor - Work In Progress")
+        .with_title("The Broc Editor - Work In Progress")
         .build(&event_loop)
         .unwrap();
 
@@ -124,13 +124,13 @@ fn run_event_loop(project_path_opt: Option<&Path>) -> Result<(), Box<dyn Error>>
     let env_arena = Bump::new();
     let code_arena = Bump::new();
 
-    let (file_path_buf, code_str) = read_main_roc_file(project_path_opt);
+    let (file_path_buf, code_str) = read_main_broc_file(project_path_opt);
     println!("Loading file {:?}...", file_path_buf);
 
     let file_path = Path::new(&file_path_buf);
     let loaded_module = load_module(
         file_path,
-        RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+        BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
         Threading::AllAvailable,
     );
 
@@ -149,7 +149,7 @@ fn run_event_loop(project_path_opt: Option<&Path>) -> Result<(), Box<dyn Error>>
         exposed_ident_ids,
     );
 
-    let config: Config = Config::default(); //confy::load("roc_editor", None)?;
+    let config: Config = Config::default(); //confy::load("broc_editor", None)?;
     let ed_model_opt = {
         let ed_model_res = ed_model::init_model(
             &code_str,
@@ -417,7 +417,7 @@ async fn create_device(
             })
             .await
             .expect(r#"Request adapter
-            If you're running this from inside nix, follow the instructions here to resolve this: https://github.com/roc-lang/roc/blob/main/BUILDING_FROM_SOURCE.md#editor
+            If you're running this from inside nix, follow the instructions here to resolve this: https://github.com/roc-lang/broc/blob/main/BUILDING_FROM_SOURCE.md#editor
             "#);
 
     let color_format = surface.get_preferred_format(&adapter).unwrap();
@@ -484,10 +484,10 @@ fn begin_render_pass<'a>(
     })
 }
 
-const ROC_PROJECTS_FOLDER: &str = "roc-projects";
-const ROC_NEW_PROJECT_FOLDER: &str = "new-roc-project-1";
+const ROC_PROJECTS_FOLDER: &str = "broc-projects";
+const ROC_NEW_PROJECT_FOLDER: &str = "new-broc-project-1";
 
-fn read_main_roc_file(project_path_opt: Option<&Path>) -> (PathBuf, String) {
+fn read_main_broc_file(project_path_opt: Option<&Path>) -> (PathBuf, String) {
     if let Some(project_path) = project_path_opt {
         let path_metadata = metadata(project_path).unwrap_or_else(|err| panic!("You provided the path {:?}, but I could not read the metadata for the provided path; error: {:?}", &project_path, err));
 
@@ -527,92 +527,92 @@ fn read_main_roc_file(project_path_opt: Option<&Path>) -> (PathBuf, String) {
                 .collect::<Vec<&String>>()
         });
 
-        let roc_file_names: Vec<&String> = file_names
-            .filter(|file_name| file_name.contains(".roc"))
+        let broc_file_names: Vec<&String> = file_names
+            .filter(|file_name| file_name.contains(".broc"))
             .collect();
 
-        if let Some(&roc_file_name) = roc_file_names.first() {
-            let full_roc_file_path = project_path.join(roc_file_name);
-            let file_content_as_str = std::fs::read_to_string(Path::new(&full_roc_file_path))
-                .unwrap_or_else(|err| panic!("In the provided project {:?}, I found the roc file {:?}, but I failed to read it: {}", &project_path, full_roc_file_path, err));
+        if let Some(&broc_file_name) = broc_file_names.first() {
+            let full_broc_file_path = project_path.join(broc_file_name);
+            let file_content_as_str = std::fs::read_to_string(Path::new(&full_broc_file_path))
+                .unwrap_or_else(|err| panic!("In the provided project {:?}, I found the broc file {:?}, but I failed to read it: {}", &project_path, full_broc_file_path, err));
 
-            (full_roc_file_path, file_content_as_str)
+            (full_broc_file_path, file_content_as_str)
         } else {
-            init_new_roc_project(project_path)
+            init_new_broc_project(project_path)
         }
     } else {
-        init_new_roc_project(&Path::new(ROC_PROJECTS_FOLDER).join(ROC_NEW_PROJECT_FOLDER))
+        init_new_broc_project(&Path::new(ROC_PROJECTS_FOLDER).join(ROC_NEW_PROJECT_FOLDER))
     }
 }
 
 // returns path and content of app file
-fn init_new_roc_project(project_dir_path: &Path) -> (PathBuf, String) {
+fn init_new_broc_project(project_dir_path: &Path) -> (PathBuf, String) {
     let orig_platform_path = Path::new("examples")
         .join("platform-switching")
         .join(PLATFORM_DIR_NAME);
 
-    let roc_file_path = Path::new(project_dir_path).join("main.roc");
+    let broc_file_path = Path::new(project_dir_path).join("main.broc");
 
     let project_platform_path = project_dir_path.join(PLATFORM_DIR_NAME);
 
     if !project_dir_path.exists() {
-        fs::create_dir_all(project_dir_path).expect("Failed to create dir for roc project.");
+        fs::create_dir_all(project_dir_path).expect("Failed to create dir for broc project.");
     }
 
-    copy_roc_platform_if_not_exists(
+    copy_broc_platform_if_not_exists(
         &orig_platform_path,
         &project_platform_path,
         project_dir_path,
     );
 
-    let code_str = create_roc_file_if_not_exists(project_dir_path, &roc_file_path);
+    let code_str = create_broc_file_if_not_exists(project_dir_path, &broc_file_path);
 
-    (roc_file_path, code_str)
+    (broc_file_path, code_str)
 }
 
 // returns contents of file
-fn create_roc_file_if_not_exists(project_dir_path: &Path, roc_file_path: &Path) -> String {
-    if !roc_file_path.exists() {
-        let mut roc_file = File::create(roc_file_path).unwrap_or_else(|err| {
-            panic!("No roc file path was passed to the editor, so I wanted to create a new roc project with the file {:?}, but it failed: {}", roc_file_path, err)
+fn create_broc_file_if_not_exists(project_dir_path: &Path, broc_file_path: &Path) -> String {
+    if !broc_file_path.exists() {
+        let mut broc_file = File::create(broc_file_path).unwrap_or_else(|err| {
+            panic!("No broc file path was passed to the editor, so I wanted to create a new broc project with the file {:?}, but it failed: {}", broc_file_path, err)
         });
 
-        write!(roc_file, "{}", HELLO_WORLD).unwrap_or_else(|err| {
+        write!(broc_file, "{}", HELLO_WORLD).unwrap_or_else(|err| {
             panic!(
-                r#"No roc file path was passed to the editor, so I created a new roc project with the file {:?}
-                I wanted to write roc hello world to that file, but it failed: {:?}"#,
-                roc_file_path,
+                r#"No broc file path was passed to the editor, so I created a new broc project with the file {:?}
+                I wanted to write broc hello world to that file, but it failed: {:?}"#,
+                broc_file_path,
                 err
             )
         });
 
         HELLO_WORLD.to_string()
     } else {
-        std::fs::read_to_string(roc_file_path).unwrap_or_else(|err| {
+        std::fs::read_to_string(broc_file_path).unwrap_or_else(|err| {
             panic!(
                 "I detected an existing {:?} inside {:?}, but I failed to read from it: {}",
-                roc_file_path, project_dir_path, err
+                broc_file_path, project_dir_path, err
             )
         })
     }
 }
 
-fn copy_roc_platform_if_not_exists(
+fn copy_broc_platform_if_not_exists(
     orig_platform_path: &Path,
     project_platform_path: &Path,
     project_dir_path: &Path,
 ) {
     if !orig_platform_path.exists() && !project_platform_path.exists() {
         panic!(
-            r#"No roc file path was passed to the editor, so I wanted to create a new roc project but I could not find the platform at {:?}.
-            Are you at the root of the roc repository?
+            r#"No broc file path was passed to the editor, so I wanted to create a new broc project but I could not find the platform at {:?}.
+            Are you at the root of the broc repository?
             My current directory is: {:?}"#,
             orig_platform_path,
             env::current_dir()
         );
     } else if !project_platform_path.exists() {
         copy(orig_platform_path, project_dir_path, &CopyOptions::new()).unwrap_or_else(|err|{
-            panic!(r#"No roc file path was passed to the editor, so I wanted to create a new roc project and roc projects require a platform,
+            panic!(r#"No broc file path was passed to the editor, so I wanted to create a new broc project and broc projects require a platform,
             I tried to copy the platform at {:?} to {:?} but it failed: {}"#,
             orig_platform_path,
             project_platform_path,

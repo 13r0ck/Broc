@@ -1,6 +1,6 @@
 use crate::llvm::bitcode::build_dec_wrapper;
 use crate::llvm::build::{
-    allocate_with_refcount_help, cast_basic_basic, Env, RocFunctionCall, Scope,
+    allocate_with_refcount_help, cast_basic_basic, Env, BrocFunctionCall, Scope,
 };
 use crate::llvm::convert::basic_type_from_layout;
 use crate::llvm::refcounting::increment_refcount_layout;
@@ -9,13 +9,13 @@ use inkwell::types::{BasicType, PointerType};
 use inkwell::values::{BasicValueEnum, FunctionValue, IntValue, PointerValue, StructValue};
 use inkwell::{AddressSpace, IntPredicate};
 use morphic_lib::UpdateMode;
-use roc_builtins::bitcode;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{Builtin, InLayout, LayoutIds, LayoutInterner, STLayoutInterner};
+use broc_builtins::bitcode;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{Builtin, InLayout, LayoutIds, LayoutInterner, STLayoutInterner};
 
 use super::bitcode::{call_list_bitcode_fn, BitcodeReturns};
 use super::build::{
-    create_entry_block_alloca, load_roc_value, load_symbol, store_roc_value, struct_from_fields,
+    create_entry_block_alloca, load_broc_value, load_symbol, store_broc_value, struct_from_fields,
     BuilderExt,
 };
 use super::convert::zig_list_type;
@@ -69,7 +69,7 @@ fn pass_element_as_opaque<'a, 'ctx, 'env>(
     let element_ptr = env
         .builder
         .build_alloca(element_type, "element_to_pass_as_opaque");
-    store_roc_value(env, layout_interner, layout, element_ptr, element);
+    store_broc_value(env, layout_interner, layout, element_ptr, element);
 
     env.builder
         .build_pointer_cast(
@@ -148,7 +148,7 @@ pub(crate) fn list_get_unsafe<'a, 'ctx, 'env>(
         )
     };
 
-    let result = load_roc_value(
+    let result = load_broc_value(
         env,
         layout_interner,
         element_layout,
@@ -470,7 +470,7 @@ pub(crate) fn destructure<'ctx>(
 pub(crate) fn list_sort_with<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function_call: RocFunctionCall<'ctx>,
+    broc_function_call: BrocFunctionCall<'ctx>,
     compare_wrapper: PointerValue<'ctx>,
     list: BasicValueEnum<'ctx>,
     element_layout: InLayout<'a>,
@@ -480,9 +480,9 @@ pub(crate) fn list_sort_with<'a, 'ctx, 'env>(
         list.into_struct_value(),
         &[
             compare_wrapper.into(),
-            pass_as_opaque(env, roc_function_call.data),
-            roc_function_call.inc_n_data.into(),
-            roc_function_call.data_is_owned.into(),
+            pass_as_opaque(env, broc_function_call.data),
+            broc_function_call.inc_n_data.into(),
+            broc_function_call.data_is_owned.into(),
             env.alignment_intvalue(layout_interner, element_layout),
             layout_width(env, layout_interner, element_layout),
         ],
@@ -494,7 +494,7 @@ pub(crate) fn list_sort_with<'a, 'ctx, 'env>(
 pub(crate) fn list_map<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
-    roc_function_call: RocFunctionCall<'ctx>,
+    broc_function_call: BrocFunctionCall<'ctx>,
     list: BasicValueEnum<'ctx>,
     element_layout: InLayout<'a>,
     return_layout: InLayout<'a>,
@@ -503,10 +503,10 @@ pub(crate) fn list_map<'a, 'ctx, 'env>(
         env,
         list.into_struct_value(),
         &[
-            roc_function_call.caller.into(),
-            pass_as_opaque(env, roc_function_call.data),
-            roc_function_call.inc_n_data.into(),
-            roc_function_call.data_is_owned.into(),
+            broc_function_call.caller.into(),
+            pass_as_opaque(env, broc_function_call.data),
+            broc_function_call.inc_n_data.into(),
+            broc_function_call.data_is_owned.into(),
             env.alignment_intvalue(layout_interner, return_layout),
             layout_width(env, layout_interner, element_layout),
             layout_width(env, layout_interner, return_layout),
@@ -519,7 +519,7 @@ pub(crate) fn list_map2<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout_ids: &mut LayoutIds<'a>,
-    roc_function_call: RocFunctionCall<'ctx>,
+    broc_function_call: BrocFunctionCall<'ctx>,
     list1: BasicValueEnum<'ctx>,
     list2: BasicValueEnum<'ctx>,
     element1_layout: InLayout<'a>,
@@ -533,10 +533,10 @@ pub(crate) fn list_map2<'a, 'ctx, 'env>(
         env,
         &[list1.into_struct_value(), list2.into_struct_value()],
         &[
-            roc_function_call.caller.into(),
-            pass_as_opaque(env, roc_function_call.data),
-            roc_function_call.inc_n_data.into(),
-            roc_function_call.data_is_owned.into(),
+            broc_function_call.caller.into(),
+            pass_as_opaque(env, broc_function_call.data),
+            broc_function_call.inc_n_data.into(),
+            broc_function_call.data_is_owned.into(),
             env.alignment_intvalue(layout_interner, return_layout),
             layout_width(env, layout_interner, element1_layout),
             layout_width(env, layout_interner, element2_layout),
@@ -553,7 +553,7 @@ pub(crate) fn list_map3<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout_ids: &mut LayoutIds<'a>,
-    roc_function_call: RocFunctionCall<'ctx>,
+    broc_function_call: BrocFunctionCall<'ctx>,
     list1: BasicValueEnum<'ctx>,
     list2: BasicValueEnum<'ctx>,
     list3: BasicValueEnum<'ctx>,
@@ -574,10 +574,10 @@ pub(crate) fn list_map3<'a, 'ctx, 'env>(
             list3.into_struct_value(),
         ],
         &[
-            roc_function_call.caller.into(),
-            pass_as_opaque(env, roc_function_call.data),
-            roc_function_call.inc_n_data.into(),
-            roc_function_call.data_is_owned.into(),
+            broc_function_call.caller.into(),
+            pass_as_opaque(env, broc_function_call.data),
+            broc_function_call.inc_n_data.into(),
+            broc_function_call.data_is_owned.into(),
             env.alignment_intvalue(layout_interner, result_layout),
             layout_width(env, layout_interner, element1_layout),
             layout_width(env, layout_interner, element2_layout),
@@ -596,7 +596,7 @@ pub(crate) fn list_map4<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
     layout_interner: &mut STLayoutInterner<'a>,
     layout_ids: &mut LayoutIds<'a>,
-    roc_function_call: RocFunctionCall<'ctx>,
+    broc_function_call: BrocFunctionCall<'ctx>,
     list1: BasicValueEnum<'ctx>,
     list2: BasicValueEnum<'ctx>,
     list3: BasicValueEnum<'ctx>,
@@ -621,10 +621,10 @@ pub(crate) fn list_map4<'a, 'ctx, 'env>(
             list4.into_struct_value(),
         ],
         &[
-            roc_function_call.caller.into(),
-            pass_as_opaque(env, roc_function_call.data),
-            roc_function_call.inc_n_data.into(),
-            roc_function_call.data_is_owned.into(),
+            broc_function_call.caller.into(),
+            pass_as_opaque(env, broc_function_call.data),
+            broc_function_call.inc_n_data.into(),
+            broc_function_call.data_is_owned.into(),
             env.alignment_intvalue(layout_interner, result_layout),
             layout_width(env, layout_interner, element1_layout),
             layout_width(env, layout_interner, element2_layout),
@@ -690,7 +690,7 @@ where
                 builder.new_build_in_bounds_gep(element_type, ptr, &[index], "load_index")
             };
 
-            let elem = load_roc_value(
+            let elem = load_broc_value(
                 env,
                 layout_interner,
                 element_layout,

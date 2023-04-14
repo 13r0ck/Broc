@@ -9,7 +9,7 @@ use crate::tarball::Compression;
 // flate2 gets us both gzip and deflate, so there's no harm in offering deflate too.
 //
 // Here are all the officially supported options: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding
-// We can consider supporting more, but that would bloat the `roc` binary more, so
+// We can consider supporting more, but that would bloat the `broc` binary more, so
 // let's try to avoid doing that.
 const BROTLI_BUFFER_BYTES: usize = 8 * 1_000_000; // MB
 
@@ -18,7 +18,7 @@ pub struct PackageMetadata<'a> {
     pub content_hash: &'a str,
     /// On disk, this will be the subfolder inside the cache dir where the package lives
     pub cache_subdir: &'a str,
-    /// Other code will default this to main.roc, but this module isn't concerned with that default.
+    /// Other code will default this to main.broc, but this module isn't concerned with that default.
     pub root_module_filename: Option<&'a str>,
 }
 
@@ -56,12 +56,12 @@ impl<'a> PackageMetadata<'a> {
             }
         };
 
-        // Next, get the (optional) URL fragment, which must be a .roc filename
+        // Next, get the (optional) URL fragment, which must be a .broc filename
         let (without_fragment, fragment) = match without_protocol.rsplit_once('#') {
             Some((before_fragment, fragment)) => {
-                const EXT: &str = ".roc";
+                const EXT: &str = ".broc";
 
-                // The fragment must be a .roc file, and the part before ".roc" can't be empty
+                // The fragment must be a .broc file, and the part before ".broc" can't be empty
                 if fragment.ends_with(EXT) && fragment.len() > EXT.len() {
                     (before_fragment, Some(fragment))
                 } else {

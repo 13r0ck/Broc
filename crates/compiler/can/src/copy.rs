@@ -5,11 +5,11 @@ use crate::{
     },
     pattern::{DestructType, ListPatterns, Pattern, RecordDestruct, TupleDestruct},
 };
-use roc_module::{
+use broc_module::{
     ident::{Lowercase, TagName},
     symbol::Symbol,
 };
-use roc_types::{
+use broc_types::{
     subs::{
         self, AliasVariables, Descriptor, GetSubsSlice, OptVariable, RecordFields, Subs, SubsIndex,
         SubsSlice, TupleElems, UnionLambdas, UnionTags, Variable, VariableSubsSlice,
@@ -851,8 +851,8 @@ fn deep_copy_type_vars<C: CopyEnv>(
     #[must_use]
     #[inline]
     fn help<C: CopyEnv>(env: &mut C, visited: &mut Vec<Variable>, var: Variable) -> Variable {
-        use roc_types::subs::Content::*;
-        use roc_types::subs::FlatType::*;
+        use broc_types::subs::Content::*;
+        use broc_types::subs::FlatType::*;
 
         // Always deal with the root, so that unified variables are treated the same.
         let var = env.source_root_var(var);
@@ -1169,10 +1169,10 @@ mod test {
     };
 
     use super::{deep_copy_expr_across_subs, deep_copy_type_vars};
-    use roc_error_macros::internal_error;
-    use roc_module::{ident::TagName, symbol::Symbol};
-    use roc_region::all::Loc;
-    use roc_types::{
+    use broc_error_macros::internal_error;
+    use broc_module::{ident::TagName, symbol::Symbol};
+    use broc_region::all::Loc;
+    use broc_types::{
         subs::{
             self, Content, Content::*, Descriptor, FlatType, GetSubsSlice, Mark, OptVariable, Rank,
             Subs, SubsIndex, SubsSlice, Variable,

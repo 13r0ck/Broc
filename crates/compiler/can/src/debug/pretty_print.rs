@@ -7,7 +7,7 @@ use crate::expr::{
 };
 use crate::pattern::{Pattern, RecordDestruct, TupleDestruct};
 
-use roc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_module::symbol::{Interns, ModuleId, Symbol};
 
 use ven_pretty::{Arena, DocAllocator, DocBuilder};
 

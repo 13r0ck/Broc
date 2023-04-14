@@ -9,7 +9,7 @@ use crate::helpers::wasm::assert_evals_to;
 
 use indoc::indoc;
 #[allow(unused_imports)]
-use roc_std::{RocBox, RocList, RocStr};
+use broc_std::{BrocBox, BrocList, BrocStr};
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-dev", feature = "gen-wasm"))]
@@ -951,7 +951,7 @@ fn when_peano() {
     not(target_family = "windows"),
     any(feature = "gen-llvm", feature = "gen-wasm")
 ))]
-#[should_panic(expected = "Roc failed with message: ")]
+#[should_panic(expected = "Broc failed with message: ")]
 fn overflow_frees_list() {
     assert_evals_to!(
         indoc!(
@@ -976,7 +976,7 @@ fn overflow_frees_list() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = "Roc failed with message: ")]
+#[should_panic(expected = "Broc failed with message: ")]
 fn undefined_variable() {
     assert_evals_to!(
         indoc!(
@@ -994,7 +994,7 @@ fn undefined_variable() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = "Roc failed with message: ")]
+#[should_panic(expected = "Broc failed with message: ")]
 fn annotation_without_body() {
     assert_evals_to!(
         indoc!(
@@ -1059,7 +1059,7 @@ fn nested_closure() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn closure_in_list() {
-    use roc_std::RocList;
+    use broc_std::BrocList;
 
     assert_evals_to!(
         indoc!(
@@ -1079,15 +1079,15 @@ fn closure_in_list() {
                 items
             "#
         ),
-        RocList::from_slice(&[41]),
-        RocList<i64>
+        BrocList::from_slice(&[41]),
+        BrocList<i64>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn specialize_closure() {
-    use roc_std::RocList;
+    use broc_std::BrocList;
 
     assert_evals_to!(
         indoc!(
@@ -1111,8 +1111,8 @@ fn specialize_closure() {
                 List.map items apply
             "#
         ),
-        RocList::from_slice(&[41, 42]),
-        RocList<i64>
+        BrocList::from_slice(&[41, 42]),
+        BrocList<i64>
     );
 }
 
@@ -1476,8 +1476,8 @@ fn rbtree_insert() {
                 show (insert 0 {} Empty)
             "#
         ),
-        RocStr::from("Node"),
-        RocStr
+        BrocStr::from("Node"),
+        BrocStr
     );
 }
 
@@ -1546,8 +1546,8 @@ fn rbtree_layout_issue() {
             main = show (balance Red zero zero Empty)
             "#
         ),
-        RocStr::from("Empty"),
-        RocStr
+        BrocStr::from("Empty"),
+        BrocStr
     );
 }
 
@@ -1600,8 +1600,8 @@ fn rbtree_balance_mono_problem() {
             main = show (balance Red 0 0 Empty Empty)
             "#
         ),
-        RocStr::from("Empty"),
-        RocStr
+        BrocStr::from("Empty"),
+        BrocStr
     );
 }
 
@@ -2017,7 +2017,7 @@ fn hof_conditional() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 #[should_panic(
-    expected = "Roc failed with message: \"Shadowing { original_region: @55-56, shadow: @88-89 Ident"
+    expected = "Broc failed with message: \"Shadowing { original_region: @55-56, shadow: @88-89 Ident"
 )]
 fn pattern_shadowing() {
     assert_evals_to!(
@@ -2423,8 +2423,8 @@ fn build_then_apply_closure() {
                 (\_ -> x) {}
             "#
         ),
-        RocStr::from("long string that is malloced"),
-        RocStr
+        BrocStr::from("long string that is malloced"),
+        BrocStr
     );
 }
 
@@ -2511,7 +2511,7 @@ fn function_malformed_pattern() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[ignore = "causes alias analysis panics, should roc_panic"]
+#[ignore = "causes alias analysis panics, should broc_panic"]
 fn call_invalid_layout() {
     assert_evals_to!(
         indoc!(
@@ -2579,8 +2579,8 @@ fn module_thunk_is_function() {
                 helper = Str.concat
             "#
         ),
-        RocStr::from("foobar"),
-        RocStr
+        BrocStr::from("foobar"),
+        BrocStr
     );
 }
 
@@ -2602,8 +2602,8 @@ fn pass_through_unresolved_type_variable() {
                     \input -> input
             "#
         ),
-        RocStr::from("B"),
-        RocStr
+        BrocStr::from("B"),
+        BrocStr
     );
 }
 
@@ -2650,12 +2650,12 @@ fn pattern_match_unit_tag() {
     );
 }
 
-// see for why this is disabled on wasm32 https://github.com/roc-lang/roc/issues/1687
+// see for why this is disabled on wasm32 https://github.com/roc-lang/broc/issues/1687
 #[cfg(not(feature = "gen-llvm-wasm"))]
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn mirror_llvm_alignment_padding() {
-    // see https://github.com/roc-lang/roc/issues/1569
+    // see https://github.com/roc-lang/broc/issues/1569
     assert_evals_to!(
         indoc!(
             r#"
@@ -2670,8 +2670,8 @@ fn mirror_llvm_alignment_padding() {
 
             "#
         ),
-        RocStr::from("pass\npass"),
-        RocStr
+        BrocStr::from("pass\npass"),
+        BrocStr
     );
 }
 
@@ -2788,7 +2788,7 @@ fn lambda_set_enum_byte_byte() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn list_walk_until() {
-    // see https://github.com/roc-lang/roc/issues/1576
+    // see https://github.com/roc-lang/broc/issues/1576
     assert_evals_to!(
         indoc!(
             r#"
@@ -2814,7 +2814,7 @@ fn list_walk_until() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn int_literal_not_specialized_with_annotation() {
-    // see https://github.com/roc-lang/roc/issues/1600
+    // see https://github.com/roc-lang/broc/issues/1600
     assert_evals_to!(
         indoc!(
             r#"
@@ -2842,7 +2842,7 @@ fn int_literal_not_specialized_with_annotation() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn int_literal_not_specialized_no_annotation() {
-    // see https://github.com/roc-lang/roc/issues/1600
+    // see https://github.com/roc-lang/broc/issues/1600
     assert_evals_to!(
         indoc!(
             r#"
@@ -2869,7 +2869,7 @@ fn int_literal_not_specialized_no_annotation() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn unresolved_tvar_when_capture_is_unused() {
-    // see https://github.com/roc-lang/roc/issues/1585
+    // see https://github.com/roc-lang/broc/issues/1585
     assert_evals_to!(
         indoc!(
             r#"
@@ -2895,7 +2895,7 @@ fn unresolved_tvar_when_capture_is_unused() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = "Roc failed with message: ")]
+#[should_panic(expected = "Broc failed with message: ")]
 fn value_not_exposed_hits_panic() {
     assert_evals_to!(
         indoc!(
@@ -2915,7 +2915,7 @@ fn value_not_exposed_hits_panic() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn mix_function_and_closure() {
-    // see https://github.com/roc-lang/roc/pull/1706
+    // see https://github.com/roc-lang/broc/pull/1706
     assert_evals_to!(
         indoc!(
             r#"
@@ -2933,15 +2933,15 @@ fn mix_function_and_closure() {
                     (if 1 == 1 then foo else (bar "nope nope nope")) "hello world"
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn mix_function_and_closure_level_of_indirection() {
-    // see https://github.com/roc-lang/roc/pull/1706
+    // see https://github.com/roc-lang/broc/pull/1706
     assert_evals_to!(
         indoc!(
             r#"
@@ -2958,8 +2958,8 @@ fn mix_function_and_closure_level_of_indirection() {
                     f "hello world"
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     );
 }
 
@@ -2967,7 +2967,7 @@ fn mix_function_and_closure_level_of_indirection() {
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 #[cfg_attr(debug_assertions, ignore)] // this test stack-overflows the compiler in debug mode
 fn do_pass_bool_byte_closure_layout() {
-    // see https://github.com/roc-lang/roc/pull/1706
+    // see https://github.com/roc-lang/broc/pull/1706
     // the distinction is actually important, dropping that info means some functions just get
     // skipped
     assert_evals_to!(
@@ -3035,8 +3035,8 @@ fn do_pass_bool_byte_closure_layout() {
             main = [test1, test2, test3, test4] |> Str.joinWith ", "
        "#
         ),
-        RocStr::from("PASS, PASS, PASS, PASS"),
-        RocStr
+        BrocStr::from("PASS, PASS, PASS, PASS"),
+        BrocStr
     );
 }
 
@@ -3060,8 +3060,8 @@ fn nested_rigid_list() {
                         _ -> "hello world"
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     );
 }
 
@@ -3087,8 +3087,8 @@ fn nested_rigid_alias() {
                         _ -> "hello world"
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     );
 }
 
@@ -3112,8 +3112,8 @@ fn nested_rigid_tag_union() {
                         _ -> "hello world"
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     );
 }
 
@@ -3140,8 +3140,8 @@ fn call_that_needs_closure_parameter() {
             runTest manyAuxTest
             "#
         ),
-        RocStr::from("FAIL"),
-        RocStr
+        BrocStr::from("FAIL"),
+        BrocStr
     );
 }
 
@@ -3161,8 +3161,8 @@ fn alias_defined_out_of_order() {
 
             "#
         ),
-        RocStr::from("foo"),
-        RocStr
+        BrocStr::from("foo"),
+        BrocStr
     );
 }
 
@@ -3207,8 +3207,8 @@ fn recursively_build_effect() {
                             e2 {}
             "#
         ),
-        RocStr::from("Hello, World!"),
-        RocStr
+        BrocStr::from("Hello, World!"),
+        BrocStr
     );
 }
 
@@ -3265,8 +3265,8 @@ fn box_and_unbox_small_string() {
                 |> Box.unbox
             "#
         ),
-        RocStr::from("short"),
-        RocStr
+        BrocStr::from("short"),
+        BrocStr
     )
 }
 
@@ -3281,17 +3281,17 @@ fn box_and_unbox_big_string() {
                 |> Box.unbox
             "#
         ),
-        RocStr::from(
+        BrocStr::from(
             "Leverage agile frameworks to provide a robust synopsis for high level overviews"
         ),
-        RocStr
+        BrocStr
     )
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn box_num() {
-    assert_evals_to!("Box.box 123u64", RocBox::new(123), RocBox<u64>)
+    assert_evals_to!("Box.box 123u64", BrocBox::new(123), BrocBox<u64>)
 }
 
 #[test]
@@ -3300,8 +3300,8 @@ fn box_num() {
 fn box_str() {
     assert_evals_to!(
         "Box.box \"short\"",
-        RocBox::new(RocStr::from("short")),
-        RocBox<RocStr>
+        BrocBox::new(BrocStr::from("short")),
+        BrocBox<BrocStr>
     );
 }
 
@@ -3397,8 +3397,8 @@ fn closure_called_in_its_defining_scope() {
                 getG {}
             "#
         ),
-        RocStr::from("hello world"),
-        RocStr
+        BrocStr::from("hello world"),
+        BrocStr
     )
 }
 
@@ -3492,7 +3492,7 @@ fn polymorphic_lambda_set_multiple_specializations() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn list_map2_conslist() {
-    // this had an RC problem, https://github.com/roc-lang/roc/issues/2968
+    // this had an RC problem, https://github.com/roc-lang/broc/issues/2968
     assert_evals_to!(
         indoc!(
             r#"
@@ -3505,8 +3505,8 @@ fn list_map2_conslist() {
                 _ -> ""
             "#
         ),
-        RocStr::default(),
-        RocStr
+        BrocStr::default(),
+        BrocStr
     )
 }
 
@@ -3580,8 +3580,8 @@ fn lambda_capture_niche_u64_vs_u8_capture() {
             fun {}
             "#
         ),
-        RocStr::from("123"),
-        RocStr
+        BrocStr::from("123"),
+        BrocStr
     )
 }
 
@@ -3610,11 +3610,11 @@ fn lambda_capture_niches_with_other_lambda_capture() {
             "#
         ),
         (
-            RocStr::from("11"),
-            RocStr::from("lisa"),
-            RocStr::from("187128")
+            BrocStr::from("11"),
+            BrocStr::from("lisa"),
+            BrocStr::from("187128")
         ),
-        (RocStr, RocStr, RocStr)
+        (BrocStr, BrocStr, BrocStr)
     )
 }
 
@@ -3643,11 +3643,11 @@ fn lambda_capture_niches_with_non_capturing_function() {
             "#
         ),
         (
-            RocStr::from("11"),
-            RocStr::from("triv"),
-            RocStr::from("187128")
+            BrocStr::from("11"),
+            BrocStr::from("triv"),
+            BrocStr::from("187128")
         ),
-        (RocStr, RocStr, RocStr)
+        (BrocStr, BrocStr, BrocStr)
     )
 }
 
@@ -3680,8 +3680,8 @@ fn lambda_capture_niches_have_captured_function_in_closure() {
             {a: fun Bool.false, b: fun Bool.true}
             "#
         ),
-        (RocStr::from("s1"), RocStr::from("fun f")),
-        (RocStr, RocStr)
+        (BrocStr::from("s1"), BrocStr::from("fun f")),
+        (BrocStr, BrocStr)
     )
 }
 
@@ -3761,7 +3761,7 @@ fn symbol_not_bound_in_all_patterns_runs_when_bound_pattern_reached() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 #[should_panic(
-    expected = r#"Roc failed with message: "Hit a branch pattern that does not bind all symbols its body needs"#
+    expected = r#"Broc failed with message: "Hit a branch pattern that does not bind all symbols its body needs"#
 )]
 fn runtime_error_when_degenerate_pattern_reached() {
     assert_evals_to!(
@@ -3794,8 +3794,8 @@ fn recursive_lambda_set_issue_3444() {
             res "hello"
             "#
         ),
-        RocStr::from("c"),
-        RocStr
+        BrocStr::from("c"),
+        BrocStr
     )
 }
 
@@ -3818,8 +3818,8 @@ fn recursive_lambda_set_toplevel_issue_3444() {
             main = res "hello"
             "#
         ),
-        RocStr::from("c"),
-        RocStr
+        BrocStr::from("c"),
+        BrocStr
     );
 }
 
@@ -3838,8 +3838,8 @@ fn recursive_lambda_set_issue_3444_inferred() {
             res "hello"
             "#
         ),
-        RocStr::from("c"),
-        RocStr
+        BrocStr::from("c"),
+        BrocStr
     );
 }
 
@@ -3863,8 +3863,8 @@ fn compose_recursive_lambda_set_productive_toplevel() {
                 res "hello"
             "#
         ),
-        RocStr::from("(hello!)"),
-        RocStr
+        BrocStr::from("(hello!)"),
+        BrocStr
     );
 }
 
@@ -3885,8 +3885,8 @@ fn compose_recursive_lambda_set_productive_nested() {
             res "hello"
             "#
         ),
-        RocStr::from("(hello!)"),
-        RocStr
+        BrocStr::from("(hello!)"),
+        BrocStr
     );
 }
 
@@ -3906,8 +3906,8 @@ fn compose_recursive_lambda_set_productive_inferred() {
             res "hello"
             "#
         ),
-        RocStr::from("(hello!)"),
-        RocStr
+        BrocStr::from("(hello!)"),
+        BrocStr
     );
 }
 
@@ -3934,8 +3934,8 @@ fn compose_recursive_lambda_set_productive_nullable_wrapped() {
                  res "hello"
              "#
         ),
-        RocStr::from("(hello)!"),
-        RocStr
+        BrocStr::from("(hello)!"),
+        BrocStr
     )
 }
 
@@ -3957,8 +3957,8 @@ fn local_binding_aliases_function() {
                 g {}
             "#
         ),
-        RocList::<u8>::from_slice(&[]),
-        RocList<u8>
+        BrocList::<u8>::from_slice(&[]),
+        BrocList<u8>
     );
 }
 
@@ -3978,8 +3978,8 @@ fn local_binding_aliases_function_inferred() {
                 g {}
             "#
         ),
-        RocList::from_slice(&[]),
-        RocList<std::convert::Infallible>
+        BrocList::from_slice(&[]),
+        BrocList<std::convert::Infallible>
     );
 }
 
@@ -3998,8 +3998,8 @@ fn transient_captures() {
             h {}
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     );
 }
 
@@ -4018,8 +4018,8 @@ fn transient_captures_after_def_ordering() {
             h {}
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     );
 }
 
@@ -4040,8 +4040,8 @@ fn deep_transient_capture_chain() {
             h {}
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     );
 }
 
@@ -4065,8 +4065,8 @@ fn deep_transient_capture_chain_with_multiple_captures() {
             getH {}
             "#
         ),
-        RocStr::from("hxyz"),
-        RocStr
+        BrocStr::from("hxyz"),
+        BrocStr
     );
 }
 
@@ -4087,8 +4087,8 @@ fn transient_captures_from_outer_scope() {
             innerScope
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     );
 }
 
@@ -4113,8 +4113,8 @@ fn mutually_recursive_captures() {
             bar {}
             "#
         ),
-        RocStr::from("foo"),
-        RocStr
+        BrocStr::from("foo"),
+        BrocStr
     );
 }
 
@@ -4134,8 +4134,8 @@ fn int_let_generalization() {
                 _ -> "done"
             "#
         ),
-        RocStr::from("done"),
-        RocStr
+        BrocStr::from("done"),
+        BrocStr
     );
 }
 
@@ -4152,8 +4152,8 @@ fn pattern_match_char() {
                 _ -> "FAIL"
             "#
         ),
-        RocStr::from("okay"),
-        RocStr
+        BrocStr::from("okay"),
+        BrocStr
     );
 }
 
@@ -4170,8 +4170,8 @@ fn issue_4348() {
                     _ -> "") "FAIL"
             "#
         ),
-        RocStr::from("okay"),
-        RocStr
+        BrocStr::from("okay"),
+        BrocStr
     );
 }
 
@@ -4192,8 +4192,8 @@ fn issue_4349() {
                 _ -> "FAIL"
             "#
         ),
-        RocStr::from("okay"),
-        RocStr
+        BrocStr::from("okay"),
+        BrocStr
     );
 }
 
@@ -4230,8 +4230,8 @@ fn issue_4712() {
             main = gen {}
             "#
         ),
-        RocStr::from("ab,cd"),
-        RocStr
+        BrocStr::from("ab,cd"),
+        BrocStr
     );
 }
 
@@ -4456,8 +4456,8 @@ fn reset_recursive_type_wraps_in_named_type() {
                   "Cons \(strX) (\(strXs))"
             "###
         ),
-        RocStr::from("Cons 2 (Cons 3 (Cons 4 (Nil)))"),
-        RocStr
+        BrocStr::from("Cons 2 (Cons 3 (Cons 4 (Nil)))"),
+        BrocStr
     );
 }
 

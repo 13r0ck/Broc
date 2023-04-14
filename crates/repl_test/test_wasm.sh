@@ -9,7 +9,7 @@ set -euxo pipefail
 # Tests target wasm32-wasi instead of wasm32-unknown-unknown, so that we can debug with println! and dbg!
 # This has to be built with lto for now. If we do not use lto, it will pull in system calls we don't yet support.
 # TODO: Add system calls to our wasi interp so that this can just be built in release without lto.
-RUSTFLAGS="" cargo build --locked --profile release-with-lto --target wasm32-wasi -p roc_repl_wasm --no-default-features --features wasi_test
+RUSTFLAGS="" cargo build --locked --profile release-with-lto --target wasm32-wasi -p broc_repl_wasm --no-default-features --features wasi_test
 
 # Build & run the test code on *native* target, not WebAssembly
 cargo test --locked --release -p repl_test --features wasm

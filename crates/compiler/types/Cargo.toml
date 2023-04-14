@@ -1,6 +1,6 @@
 [package]
-name = "roc_types"
-description = "Various representations and utilities for dealing with types in the Roc compiler."
+name = "broc_types"
+description = "Various representations and utilities for dealing with types in the Broc compiler."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,12 +8,12 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_debug_flags = { path = "../debug_flags" }
-roc_error_macros = { path = "../../error_macros" }
-roc_module = { path = "../module" }
-roc_region = { path = "../region" }
-roc_serialize = { path = "../serialize" }
+broc_collections = { path = "../collections" }
+broc_debug_flags = { path = "../debug_flags" }
+broc_error_macros = { path = "../../error_macros" }
+broc_module = { path = "../module" }
+broc_region = { path = "../region" }
+broc_serialize = { path = "../serialize" }
 
 ven_pretty = { path = "../../vendor/pretty" }
 

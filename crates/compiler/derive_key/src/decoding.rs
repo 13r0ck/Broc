@@ -1,5 +1,5 @@
-use roc_module::{ident::Lowercase, symbol::Symbol};
-use roc_types::subs::{Content, FlatType, Subs, Variable};
+use broc_module::{ident::Lowercase, symbol::Symbol};
+use broc_types::subs::{Content, FlatType, Subs, Variable};
 
 use crate::{
     util::{check_derivable_ext_var, debug_name_record, debug_name_tuple},

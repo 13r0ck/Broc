@@ -1,5 +1,5 @@
-use roc_ast::lang::core::def::def2::Def2;
-use roc_code_markup::markup::common_nodes::NEW_LINES_AFTER_DEF;
+use broc_ast::lang::core::def::def2::Def2;
+use broc_code_markup::markup::common_nodes::NEW_LINES_AFTER_DEF;
 
 use crate::editor::ed_error::EdResult;
 use crate::editor::mvc::app_update::InputOutcome;

@@ -11,22 +11,22 @@ extern crate quickcheck;
 #[macro_use(quickcheck)]
 extern crate quickcheck_macros;
 
-extern crate roc_module;
-extern crate roc_parse;
+extern crate broc_module;
+extern crate broc_parse;
 
 #[cfg(test)]
 mod test_parse {
     use bumpalo::collections::vec::Vec;
     use bumpalo::{self, Bump};
-    use roc_parse::ast::Expr::{self, *};
-    use roc_parse::ast::StrSegment::*;
-    use roc_parse::ast::{self, EscapedChar};
-    use roc_parse::ast::{CommentOrNewline, StrLiteral::*};
-    use roc_parse::module::module_defs;
-    use roc_parse::parser::{Parser, SyntaxError};
-    use roc_parse::state::State;
-    use roc_parse::test_helpers::parse_expr_with;
-    use roc_region::all::{Loc, Region};
+    use broc_parse::ast::Expr::{self, *};
+    use broc_parse::ast::StrSegment::*;
+    use broc_parse::ast::{self, EscapedChar};
+    use broc_parse::ast::{CommentOrNewline, StrLiteral::*};
+    use broc_parse::module::module_defs;
+    use broc_parse::parser::{Parser, SyntaxError};
+    use broc_parse::state::State;
+    use broc_parse::test_helpers::parse_expr_with;
+    use broc_region::all::{Loc, Region};
     use std::{f64, i64};
 
     fn assert_parses_to<'a>(input: &'a str, expected_expr: Expr<'a>) {
@@ -60,7 +60,7 @@ mod test_parse {
     ) {
         let arena = Bump::new();
 
-        // Try parsing with each of the escaped chars Roc supports
+        // Try parsing with each of the escaped chars Broc supports
         for (string, escaped) in &[
             ("\\\\", EscapedChar::Backslash),
             ("\\n", EscapedChar::Newline),
@@ -239,13 +239,13 @@ mod test_parse {
 
     #[quickcheck]
     fn all_f64_values_parse(mut num: f64) {
-        // NaN, Infinity, -Infinity (these would all parse as tags in Roc)
+        // NaN, Infinity, -Infinity (these would all parse as tags in Broc)
         if !num.is_finite() {
             num = 0.0;
         }
 
         // These can potentially be whole numbers. `Display` omits the decimal point for those,
-        // causing them to no longer be parsed as fractional numbers by Roc.
+        // causing them to no longer be parsed as fractional numbers by Broc.
         // Using `Debug` instead of `Display` ensures they always have a decimal point.
         let float_string = format!("{:?}", num);
 
@@ -319,7 +319,7 @@ mod test_parse {
 
     #[test]
     fn parse_expr_size() {
-        assert_eq!(std::mem::size_of::<roc_parse::ast::Expr>(), 40);
+        assert_eq!(std::mem::size_of::<broc_parse::ast::Expr>(), 40);
     }
 
     #[test]

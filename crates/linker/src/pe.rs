@@ -15,8 +15,8 @@ use object::{
 };
 use serde::{Deserialize, Serialize};
 
-use roc_collections::{MutMap, VecMap};
-use roc_error_macros::internal_error;
+use broc_collections::{MutMap, VecMap};
+use broc_error_macros::internal_error;
 
 use crate::{
     generate_dylib::APP_DLL, load_struct_inplace, load_struct_inplace_mut,
@@ -66,10 +66,10 @@ struct PeMetadata {
     file_alignment: u32,
     section_alignment: u32,
 
-    /// Symbols that the host imports, like roc__mainForHost_1_exposed_generic
+    /// Symbols that the host imports, like broc__mainForHost_1_exposed_generic
     imports: Vec<String>,
 
-    /// Symbols that the host exports, like roc_alloc
+    /// Symbols that the host exports, like broc_alloc
     exports: MutMap<String, i64>,
 }
 
@@ -285,12 +285,12 @@ fn relocate_to(
     }
 }
 
-pub(crate) fn surgery_pe(executable_path: &Path, metadata_path: &Path, roc_app_bytes: &[u8]) {
+pub(crate) fn surgery_pe(executable_path: &Path, metadata_path: &Path, broc_app_bytes: &[u8]) {
     let md = PeMetadata::read_from_file(metadata_path);
 
-    let app_obj_sections = AppSections::from_data(roc_app_bytes);
+    let app_obj_sections = AppSections::from_data(broc_app_bytes);
 
-    let mut symbols = app_obj_sections.roc_symbols;
+    let mut symbols = app_obj_sections.broc_symbols;
 
     let image_base: u64 = md.image_base;
     let file_alignment = md.file_alignment as usize;
@@ -323,7 +323,7 @@ pub(crate) fn surgery_pe(executable_path: &Path, metadata_path: &Path, roc_app_b
     let mut data_bytes_added = 0;
     let mut file_bytes_added = 0;
 
-    // relocations between the sections of the roc application
+    // relocations between the sections of the broc application
     // (as opposed to relocations for symbols the app imports from the host)
     let inter_app_relocations = process_internal_relocations(
         &app_obj_sections.sections,
@@ -437,7 +437,7 @@ pub(crate) fn surgery_pe(executable_path: &Path, metadata_path: &Path, roc_app_b
                         relocation,
                     );
                 } else {
-                    if *address == 0 && !name.starts_with("roc") {
+                    if *address == 0 && !name.starts_with("broc") {
                         eprintln!(
                             "I don't know the address of the {} function! this may cause segfaults",
                             name
@@ -523,7 +523,7 @@ impl DynamicRelocationsPe {
         Self::new_help(data).unwrap()
     }
 
-    fn find_roc_dummy_dll(
+    fn find_broc_dummy_dll(
         import_table: &ImportTable,
     ) -> object::read::Result<Option<(ImageImportDescriptor, u32)>> {
         let mut index = 0;
@@ -543,17 +543,17 @@ impl DynamicRelocationsPe {
     }
 
     /// Append metadata for the functions (e.g. mainForHost) that the host needs from the app
-    fn append_roc_imports(
+    fn append_broc_imports(
         &mut self,
         import_table: &ImportTable,
-        roc_dll_descriptor: &ImageImportDescriptor,
+        broc_dll_descriptor: &ImageImportDescriptor,
     ) -> object::read::Result<()> {
         // offset of first thunk from the start of the section
         let thunk_start_offset =
-            roc_dll_descriptor.original_first_thunk.get(LE) - self.section_virtual_address;
+            broc_dll_descriptor.original_first_thunk.get(LE) - self.section_virtual_address;
         let mut thunk_offset = 0;
 
-        let mut thunks = import_table.thunks(roc_dll_descriptor.original_first_thunk.get(LE))?;
+        let mut thunks = import_table.thunks(broc_dll_descriptor.original_first_thunk.get(LE))?;
         while let Some(thunk_data) = thunks.next::<ImageNtHeaders64>()? {
             use object::read::pe::ImageThunkData;
 
@@ -562,7 +562,7 @@ impl DynamicRelocationsPe {
             let name = String::from_utf8_lossy(name).to_string();
 
             let offset_in_file = self.section_offset_in_file + thunk_start_offset + thunk_offset;
-            let virtual_address = roc_dll_descriptor.original_first_thunk.get(LE) + thunk_offset;
+            let virtual_address = broc_dll_descriptor.original_first_thunk.get(LE) + thunk_offset;
 
             self.name_by_virtual_address
                 .insert(virtual_address, name.clone());
@@ -615,7 +615,7 @@ impl DynamicRelocationsPe {
             .file_range(&sections)
             .expect("import directory exists");
 
-        let (descriptor, dummy_import_index) = Self::find_roc_dummy_dll(&import_table)?.unwrap();
+        let (descriptor, dummy_import_index) = Self::find_broc_dummy_dll(&import_table)?.unwrap();
 
         let mut this = Self {
             name_by_virtual_address: Default::default(),
@@ -629,7 +629,7 @@ impl DynamicRelocationsPe {
             import_directory_size,
         };
 
-        this.append_roc_imports(&import_table, &descriptor)?;
+        this.append_broc_imports(&import_table, &descriptor)?;
 
         Ok(this)
     }
@@ -847,7 +847,7 @@ impl Preprocessor {
             .set(LE, self.new_headers_size as u32);
 
         // adding new sections increased the size of the image. We update this value so the
-        // preprocessedhost is, in theory, runnable. In practice for roc programs it will crash
+        // preprocessedhost is, in theory, runnable. In practice for broc programs it will crash
         // because there are missing symbols (those that the app should provide), but for testing
         // being able to run the preprocessedhost is nice.
         nt_headers.optional_header.size_of_image.set(
@@ -978,7 +978,7 @@ fn find_thunks_start_offset<'a>(
     }
 }
 
-/// Make the thunks point to our actual roc application functions
+/// Make the thunks point to our actual broc application functions
 fn redirect_dummy_dll_functions(
     executable: &mut [u8],
     function_definition_vas: &[(String, u64)],
@@ -989,8 +989,8 @@ fn redirect_dummy_dll_functions(
     // this is an O(n^2) loop, hopefully that does not become a problem. If it does we can sort
     // both vectors to get linear complexity in the loop.
     'outer: for (i, host_name) in imports.iter().enumerate() {
-        for (roc_app_target_name, roc_app_target_va) in function_definition_vas {
-            if host_name == roc_app_target_name {
+        for (broc_app_target_name, broc_app_target_va) in function_definition_vas {
+            if host_name == broc_app_target_name {
                 // addresses are 64-bit values
                 let address_bytes = &mut executable[thunks_start_offset + i * 8..][..8];
 
@@ -1001,7 +1001,7 @@ fn redirect_dummy_dll_functions(
                 }
 
                 // update the address to a function VA
-                address_bytes.copy_from_slice(&roc_app_target_va.to_le_bytes());
+                address_bytes.copy_from_slice(&broc_app_target_va.to_le_bytes());
 
                 continue 'outer;
             }
@@ -1042,11 +1042,11 @@ struct AppSymbol {
 #[derive(Debug, Default)]
 struct AppSections<'a> {
     sections: Vec<Section<'a>>,
-    roc_symbols: Vec<AppSymbol>,
+    broc_symbols: Vec<AppSymbol>,
     other_symbols: Vec<(SectionIndex, AppSymbol)>,
 }
 
-/// Process relocations between two places within the app. This a bit different from doing a
+/// Pbrocess relocations between two places within the app. This a bit different from doing a
 /// relocation of a symbol that will be "imported" from the host
 fn process_internal_relocations(
     sections: &[Section],
@@ -1164,13 +1164,13 @@ impl<'a> AppSections<'a> {
 
         sections.push(stack_check_section);
 
-        let mut roc_symbols = Vec::new();
+        let mut broc_symbols = Vec::new();
         let mut other_symbols = Vec::new();
 
         for symbol in file.symbols() {
             use object::ObjectSymbol;
 
-            if symbol.name_bytes().unwrap_or_default().starts_with(b"roc") {
+            if symbol.name_bytes().unwrap_or_default().starts_with(b"broc") {
                 if let object::SymbolSection::Section(index) = symbol.section() {
                     let (kind, offset_in_host_section) = section_starts[&index];
 
@@ -1180,7 +1180,7 @@ impl<'a> AppSections<'a> {
                         offset_in_section: (offset_in_host_section + symbol.address()) as usize,
                     };
 
-                    roc_symbols.push(symbol);
+                    broc_symbols.push(symbol);
                 }
             } else if let object::SymbolSection::Section(index) = symbol.section() {
                 if let Some((kind, offset_in_host_section)) = section_starts.get(&index) {
@@ -1197,7 +1197,7 @@ impl<'a> AppSections<'a> {
 
         AppSections {
             sections,
-            roc_symbols,
+            broc_symbols,
             other_symbols,
         }
     }
@@ -1306,12 +1306,12 @@ fn relocate_dummy_dll_entries(executable: &mut [u8], md: &PeMetadata) {
     dir.size.set(LE, new_reloc_directory_size as u32);
 }
 
-/// Redirect `memcpy` and similar libc functions to their roc equivalents
+/// Redirect `memcpy` and similar libc functions to their broc equivalents
 pub(crate) fn redirect_libc_functions(name: &str) -> Option<&str> {
     match name {
-        "memcpy" => Some("roc_memcpy"),
-        "memset" => Some("roc_memset"),
-        "memmove" => Some("roc_memmove"),
+        "memcpy" => Some("broc_memcpy"),
+        "memset" => Some("broc_memset"),
+        "memmove" => Some("broc_memmove"),
         _ => None,
     }
 }
@@ -1384,25 +1384,25 @@ mod test {
         //
         // DynamicRelocationsPe {
         //     name_by_virtual_address: {
-        //         0xaf4e0: "roc__mainForHost_size",
-        //         0xaf4c8: "roc__mainForHost_1__Fx_caller",
-        //         0xaf4d0: "roc__mainForHost_1__Fx_result_size",
-        //         0xaf4d8: "roc__mainForHost_1_exposed_generic",
+        //         0xaf4e0: "broc__mainForHost_size",
+        //         0xaf4c8: "broc__mainForHost_1__Fx_caller",
+        //         0xaf4d0: "broc__mainForHost_1__Fx_result_size",
+        //         0xaf4d8: "broc__mainForHost_1_exposed_generic",
         //     },
         //     address_and_offset: {
-        //         "roc__mainForHost_1__Fx_result_size": (
+        //         "broc__mainForHost_1__Fx_result_size": (
         //             0xaf4d0,
         //             0xae4d0,
         //         ),
-        //         "roc__mainForHost_1__Fx_caller": (
+        //         "broc__mainForHost_1__Fx_caller": (
         //             0xaf4c8,
         //             0xae4c8,
         //         ),
-        //         "roc__mainForHost_1_exposed_generic": (
+        //         "broc__mainForHost_1_exposed_generic": (
         //             0xaf4d8,
         //             0xae4d8,
         //         ),
-        //         "roc__mainForHost_size": (
+        //         "broc__mainForHost_size": (
         //             0xaf4e0,
         //             0xae4e0,
         //         ),
@@ -1432,7 +1432,7 @@ mod test {
 
         // get the relocations through the API
         let addresses_api = {
-            let (descriptor, _) = DynamicRelocationsPe::find_roc_dummy_dll(&import_table)
+            let (descriptor, _) = DynamicRelocationsPe::find_broc_dummy_dll(&import_table)
                 .unwrap()
                 .unwrap();
 
@@ -1486,10 +1486,10 @@ mod test {
 
         assert_eq!(
             [
-                "roc__mainForHost_1__Fx_caller",
-                "roc__mainForHost_1__Fx_result_size",
-                "roc__mainForHost_1_exposed_generic",
-                "roc__mainForHost_size"
+                "broc__mainForHost_1__Fx_caller",
+                "broc__mainForHost_1__Fx_result_size",
+                "broc__mainForHost_1_exposed_generic",
+                "broc__mainForHost_size"
             ],
             imports.as_slice(),
         )
@@ -1674,10 +1674,10 @@ mod test {
 
         // open our app object; we'll copy sections from it later
         let file = std::fs::File::open(dir.join("app.obj")).unwrap();
-        let roc_app = unsafe { memmap2::Mmap::map(&file) }.unwrap();
+        let broc_app = unsafe { memmap2::Mmap::map(&file) }.unwrap();
 
-        let roc_app_sections = AppSections::from_data(&roc_app);
-        let symbols = roc_app_sections.roc_symbols;
+        let broc_app_sections = AppSections::from_data(&broc_app);
+        let symbols = broc_app_sections.broc_symbols;
 
         // make the dummy dylib based on the app object
         let names: Vec<_> = symbols.iter().map(|s| s.name.clone()).collect();
@@ -1726,7 +1726,7 @@ mod test {
 
         std::fs::copy(&preprocessed_host_filename, &dir.join("app.exe")).unwrap();
 
-        surgery_pe(&dir.join("app.exe"), &dir.join("metadata"), &roc_app);
+        surgery_pe(&dir.join("app.exe"), &dir.join("metadata"), &broc_app);
     }
 
     #[allow(dead_code)]
@@ -1794,39 +1794,39 @@ mod test {
                 r#"
                 const std = @import("std");
 
-                extern const roc_one: u64;
-                extern const roc_three: u64;
+                extern const broc_one: u64;
+                extern const broc_three: u64;
 
-                extern fn roc_magic1() callconv(.C) u64;
-                extern fn roc_magic2() callconv(.C) u8;
+                extern fn broc_magic1() callconv(.C) u64;
+                extern fn broc_magic2() callconv(.C) u8;
 
-                pub export fn roc_alloc() u64 {
+                pub export fn broc_alloc() u64 {
                     return 123456;
                 }
 
-                pub export fn roc_realloc() u64 {
+                pub export fn broc_realloc() u64 {
                     return 111111;
                 }
 
                 pub fn main() !void {
                     const stdout = std.io.getStdOut().writer();
-                    try stdout.print("Hello, {} {} {} {}!\n", .{roc_magic1(), roc_magic2(), roc_one, roc_three});
+                    try stdout.print("Hello, {} {} {} {}!\n", .{broc_magic1(), broc_magic2(), broc_one, broc_three});
                 }
                 "#
             ),
             indoc!(
                 r#"
-                export const roc_one: u64 = 1;
-                export const roc_three: u64 = 3;
+                export const broc_one: u64 = 1;
+                export const broc_three: u64 = 3;
 
-                extern fn roc_alloc() u64;
-                extern fn roc_realloc() u64;
+                extern fn broc_alloc() u64;
+                extern fn broc_realloc() u64;
 
-                export fn roc_magic1() u64 {
-                    return roc_alloc() + roc_realloc();
+                export fn broc_magic1() u64 {
+                    return broc_alloc() + broc_realloc();
                 }
 
-                export fn roc_magic2() u8 {
+                export fn broc_magic2() u8 {
                     return 32;
                 }
                 "#
@@ -1858,11 +1858,11 @@ mod test {
                 r#"
                 const std = @import("std");
 
-                extern fn roc_magic1(usize) callconv(.C) [*]const u8;
+                extern fn broc_magic1(usize) callconv(.C) [*]const u8;
 
                 pub fn main() !void {
                     const stdout = std.io.getStdOut().writer();
-                    try stdout.print("Hello {s}\n", .{roc_magic1(0)[0..3]});
+                    try stdout.print("Hello {s}\n", .{broc_magic1(0)[0..3]});
                 }
                 "#
             ),
@@ -1870,7 +1870,7 @@ mod test {
                 r#"
                 const X = [_][]const u8 { "foo" };
 
-                export fn roc_magic1(index: usize) [*]const u8 {
+                export fn broc_magic1(index: usize) [*]const u8 {
                     return X[index].ptr;
                 }
                 "#

@@ -1,7 +1,7 @@
 use std::hint::unreachable_unchecked;
 
 use crate::subs::{Content, Descriptor, Mark, OptVariable, Rank, Variable, VariableSubsSlice};
-use roc_serialize::bytes;
+use broc_serialize::bytes;
 
 #[derive(Clone, Default)]
 pub struct UnificationTable {

@@ -1,0 +1,6 @@
+app "brocLovesC"
+    packages { pf: "c-platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main = "Broc <3 C!\n"

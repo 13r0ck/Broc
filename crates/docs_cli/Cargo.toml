@@ -1,5 +1,5 @@
 [package]
-name = "roc_docs_cli"
+name = "broc_docs_cli"
 description = "Provides a binary that is only used for static build servers."
 
 authors.workspace = true
@@ -11,15 +11,15 @@ version.workspace = true
 # Having its own (extremely minimal) CLI means docs can be generated
 # on a build server after building this crate from source, without
 # having to install non-Rust dependencies (LLVM, Zig, wasm things, etc.)
-# It gets called in www/build.sh via `cargo run --bin roc-docs`
+# It gets called in www/build.sh via `cargo run --bin broc-docs`
 [[bin]]
-name = "roc-docs"
+name = "broc-docs"
 path = "src/main.rs"
 test = false
 bench = false
 
 [dependencies]
-roc_docs = { path = "../docs" }
+broc_docs = { path = "../docs" }
 
 clap.workspace = true
 

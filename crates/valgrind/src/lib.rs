@@ -7,18 +7,18 @@ static BUILD_ONCE: std::sync::Once = std::sync::Once::new();
 
 #[cfg(all(target_os = "linux"))]
 fn build_host() {
-    use roc_build::program::build_and_preprocess_host;
-    use roc_linker::preprocessed_host_filename;
+    use broc_build::program::build_and_preprocess_host;
+    use broc_linker::preprocessed_host_filename;
 
-    let platform_main_roc =
-        roc_command_utils::root_dir().join("crates/valgrind/zig-platform/main.roc");
+    let platform_main_broc =
+        broc_command_utils::root_dir().join("crates/valgrind/zig-platform/main.broc");
 
     // tests always run on the host
     let target = target_lexicon::Triple::host();
 
-    // the preprocessed host is stored beside the platform's main.roc
+    // the preprocessed host is stored beside the platform's main.broc
     let preprocessed_host_path =
-        platform_main_roc.with_file_name(preprocessed_host_filename(&target).unwrap());
+        platform_main_broc.with_file_name(preprocessed_host_filename(&target).unwrap());
 
     // valgrind does not support avx512 yet: https://bugs.kde.org/show_bug.cgi?id=383010
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -27,11 +27,11 @@ fn build_host() {
     }
 
     build_and_preprocess_host(
-        roc_mono::ir::OptLevel::Normal,
+        broc_mono::ir::OptLevel::Normal,
         &target,
-        &platform_main_roc,
+        &platform_main_broc,
         &preprocessed_host_path,
-        roc_linker::ExposedSymbols {
+        broc_linker::ExposedSymbols {
             top_level_values: vec![String::from("mainForHost")],
             exported_closure_types: vec![],
         },
@@ -52,12 +52,12 @@ fn valgrind_test(source: &str) {
 
 #[cfg(target_os = "linux")]
 fn valgrind_test_linux(source: &str) {
-    use roc_build::program::BuiltFile;
+    use broc_build::program::BuiltFile;
 
     // the host is identical for all tests so we only want to build it once
     BUILD_ONCE.call_once(build_host);
 
-    let pf = roc_command_utils::root_dir().join("crates/valgrind/zig-platform/main.roc");
+    let pf = broc_command_utils::root_dir().join("crates/valgrind/zig-platform/main.broc");
 
     assert!(pf.exists(), "cannot find platform {:?}", &pf);
 
@@ -95,11 +95,11 @@ fn valgrind_test_linux(source: &str) {
     }
 
     let temp_dir = tempfile::tempdir().unwrap();
-    let app_module_path = temp_dir.path().join("app.roc");
+    let app_module_path = temp_dir.path().join("app.broc");
 
     let arena = bumpalo::Bump::new();
     let assume_prebuilt = true;
-    let res_binary_path = roc_build::program::build_str_test(
+    let res_binary_path = broc_build::program::build_str_test(
         &arena,
         &app_module_path,
         &app_module_source,
@@ -119,8 +119,8 @@ fn valgrind_test_linux(source: &str) {
 
             run_with_valgrind(&binary_path);
         }
-        Err(roc_build::program::BuildFileError::LoadingProblem(
-            roc_load::LoadingProblem::FormattedReport(report),
+        Err(broc_build::program::BuildFileError::LoadingProblem(
+            broc_load::LoadingProblem::FormattedReport(report),
         )) => {
             eprintln!("{}", report);
             panic!("");

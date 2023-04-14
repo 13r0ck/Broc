@@ -1,21 +1,21 @@
 use crate::expr::{self, IntValue, WhenBranch};
 use crate::pattern::DestructType;
-use roc_collections::all::HumanIndex;
-use roc_collections::VecMap;
-use roc_error_macros::internal_error;
-use roc_exhaustive::{
+use broc_collections::all::HumanIndex;
+use broc_collections::VecMap;
+use broc_error_macros::internal_error;
+use broc_exhaustive::{
     is_useful, Ctor, CtorName, Error, Guard, ListArity, Literal, Pattern, RenderAs, TagId, Union,
 };
-use roc_module::ident::{Lowercase, TagIdIntType, TagName};
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{
+use broc_module::ident::{Lowercase, TagIdIntType, TagName};
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{
     Content, FlatType, GetSubsSlice, RedundantMark, SortedTagsIterator, Subs, SubsFmtContent,
     Variable,
 };
-use roc_types::types::{gather_tags_unsorted_iter, AliasKind};
+use broc_types::types::{gather_tags_unsorted_iter, AliasKind};
 
-pub use roc_exhaustive::Context as ExhaustiveContext;
+pub use broc_exhaustive::Context as ExhaustiveContext;
 
 pub const GUARD_CTOR: &str = "#Guard";
 pub const NONEXHAUSIVE_CTOR: &str = "#Open";
@@ -49,7 +49,7 @@ pub fn check(
     } = sketched_rows.reify_to_non_redundant(subs, real_var)?;
     all_errors.extend(errors);
 
-    let exhaustive = match roc_exhaustive::check(overall_region, context, non_redundant_rows) {
+    let exhaustive = match broc_exhaustive::check(overall_region, context, non_redundant_rows) {
         Ok(()) => true,
         Err(errors) => {
             all_errors.extend(errors);

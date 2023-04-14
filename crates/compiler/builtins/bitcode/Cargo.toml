@@ -1,5 +1,5 @@
 [package]
-name = "roc_bitcode"
+name = "broc_bitcode"
 description = "Compiles the zig bitcode to `.o` for builtins"
 
 authors.workspace = true
@@ -11,7 +11,7 @@ version.workspace = true
 tempfile.workspace = true
 
 [build-dependencies]
-roc_command_utils = { path = "../../../utils/command" }
+broc_command_utils = { path = "../../../utils/command" }
 # dunce can be removed once ziglang/zig#5109 is fixed
 dunce = "1.0.3"
 

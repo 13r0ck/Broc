@@ -6,16 +6,16 @@ use crate::num::{
     ParsedNumResult,
 };
 use crate::scope::{PendingAbilitiesInScope, Scope};
-use roc_exhaustive::ListArity;
-use roc_module::ident::{Ident, Lowercase, TagName};
-use roc_module::symbol::Symbol;
-use roc_parse::ast::{self, StrLiteral, StrSegment};
-use roc_parse::pattern::PatternType;
-use roc_problem::can::{MalformedPatternProblem, Problem, RuntimeError, ShadowKind};
-use roc_region::all::{Loc, Region};
-use roc_types::num::SingleQuoteBound;
-use roc_types::subs::{VarStore, Variable};
-use roc_types::types::{LambdaSet, OptAbleVar, PatternCategory, Type};
+use broc_exhaustive::ListArity;
+use broc_module::ident::{Ident, Lowercase, TagName};
+use broc_module::symbol::Symbol;
+use broc_parse::ast::{self, StrLiteral, StrSegment};
+use broc_parse::pattern::PatternType;
+use broc_problem::can::{MalformedPatternProblem, Problem, RuntimeError, ShadowKind};
+use broc_region::all::{Loc, Region};
+use broc_types::num::SingleQuoteBound;
+use broc_types::subs::{VarStore, Variable};
+use broc_types::types::{LambdaSet, OptAbleVar, PatternCategory, Type};
 
 /// A pattern, including possible problems (e.g. shadowing) so that
 /// codegen can generate a runtime error if this pattern is reached.
@@ -261,7 +261,7 @@ pub fn canonicalize_def_header_pattern<'a>(
     pattern: &ast::Pattern<'a>,
     region: Region,
 ) -> Loc<Pattern> {
-    use roc_parse::ast::Pattern::*;
+    use broc_parse::ast::Pattern::*;
 
     match pattern {
         // Identifiers that shadow ability members may appear (and may only appear) at the header of a def.
@@ -369,7 +369,7 @@ pub fn canonicalize_pattern<'a>(
     region: Region,
     permit_shadows: PermitShadows,
 ) -> Loc<Pattern> {
-    use roc_parse::ast::Pattern::*;
+    use broc_parse::ast::Pattern::*;
     use PatternType::*;
 
     let can_pattern = match pattern {
@@ -889,7 +889,7 @@ pub fn canonicalize_pattern<'a>(
 /// When we detect an unsupported pattern type (e.g. 5 = 1 + 2 is unsupported because you can't
 /// assign to Int patterns), report it to Env and return an UnsupportedPattern runtime error pattern.
 fn unsupported_pattern(env: &mut Env, pattern_type: PatternType, region: Region) -> Pattern {
-    use roc_problem::can::BadPattern;
+    use broc_problem::can::BadPattern;
     env.problem(Problem::UnsupportedPattern(
         BadPattern::Unsupported(pattern_type),
         region,

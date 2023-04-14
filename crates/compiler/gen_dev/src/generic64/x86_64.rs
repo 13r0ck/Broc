@@ -4,10 +4,10 @@ use crate::{
     single_register_layouts, Relocation,
 };
 use bumpalo::collections::Vec;
-use roc_builtins::bitcode::FloatWidth;
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{InLayout, Layout, LayoutInterner, STLayoutInterner, UnionLayout};
+use broc_builtins::bitcode::FloatWidth;
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{InLayout, Layout, LayoutInterner, STLayoutInterner, UnionLayout};
 
 use super::{CompareOperation, RegisterWidth};
 

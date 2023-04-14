@@ -1,5 +1,5 @@
 use indoc::indoc;
-use roc_std::RocList;
+use broc_std::BrocList;
 
 #[cfg(feature = "gen-llvm")]
 use crate::helpers::llvm::assert_evals_to;
@@ -79,7 +79,7 @@ fn crash_in_passed_closure() {
             main = List.map [1, 2, 3] \n -> if n == 2 then crash "no new even primes" else ""
             "#
         ),
-        RocList::from_slice(&[1u8]),
-        RocList<u8>
+        BrocList::from_slice(&[1u8]),
+        BrocList<u8>
     );
 }

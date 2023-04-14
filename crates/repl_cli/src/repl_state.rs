@@ -2,17 +2,17 @@ use crate::cli_gen::gen_and_eval_llvm;
 use crate::colors::{BLUE, END_COL, GREEN, PINK};
 use bumpalo::Bump;
 use const_format::concatcp;
-use roc_collections::MutSet;
-use roc_mono::ir::OptLevel;
-use roc_parse::ast::{Expr, Pattern, TypeDef, TypeHeader, ValueDef};
-use roc_parse::expr::{parse_single_def, ExprParseOptions, SingleDef};
-use roc_parse::parser::Parser;
-use roc_parse::parser::{EClosure, EExpr, EPattern};
-use roc_parse::parser::{EWhen, Either};
-use roc_parse::state::State;
-use roc_parse::{join_alias_to_body, join_ann_to_body};
-use roc_region::all::Loc;
-use roc_repl_eval::gen::{Problems, ReplOutput};
+use broc_collections::MutSet;
+use broc_mono::ir::OptLevel;
+use broc_parse::ast::{Expr, Pattern, TypeDef, TypeHeader, ValueDef};
+use broc_parse::expr::{parse_single_def, ExprParseOptions, SingleDef};
+use broc_parse::parser::Parser;
+use broc_parse::parser::{EClosure, EExpr, EPattern};
+use broc_parse::parser::{EWhen, Either};
+use broc_parse::state::State;
+use broc_parse::{join_alias_to_body, join_ann_to_body};
+use broc_region::all::Loc;
+use broc_repl_eval::gen::{Problems, ReplOutput};
 use rustyline::highlight::{Highlighter, PromptInfo};
 use rustyline::validate::{self, ValidationContext, ValidationResult, Validator};
 use rustyline_derive::{Completer, Helper, Hinter};
@@ -137,7 +137,7 @@ impl ReplState {
                 pending_past_def = None;
                 // If it's a SyntaxErr (or Incomplete at this point, meaning it will
                 // become a SyntaxErr as soon as we evaluate it),
-                // proceed as normal and let the error reporting happen during eval.
+                // pbroceed as normal and let the error reporting happen during eval.
                 opt_var_name = None;
 
                 src
@@ -321,7 +321,7 @@ fn parse_src<'a>(arena: &'a Bump, line: &'a str) -> ParseOutcome<'a> {
         _ => {
             let src_bytes = line.as_bytes();
 
-            match roc_parse::expr::loc_expr(true).parse(arena, State::new(src_bytes), 0) {
+            match broc_parse::expr::loc_expr(true).parse(arena, State::new(src_bytes), 0) {
                 Ok((_, loc_expr, _)) => ParseOutcome::Expr(loc_expr.value),
                 // Special case some syntax errors to allow for multi-line inputs
                 Err((_, EExpr::Closure(EClosure::Body(_, _), _)))

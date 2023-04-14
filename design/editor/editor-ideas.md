@@ -52,10 +52,10 @@ Nice collection of research on innovative editors, [link](https://futureofcoding
 - [specialized editors that can be embedded in main editor](https://elliot.website/editor/)
 - Say you have a failing test that used to work, it would be very valuable to see all code that was changed that was used only by that test.
 e.g. you have a test `calculate_sum_test` that only uses the function `add`, when the test fails you should be able to see a diff showing only what changed for the function `add`. It would also be great to have a diff of [expression values](https://homepages.cwi.nl/~storm/livelit/images/bret.png) Bret Victor style. An ambitious project would be to suggest or automatically try fixes based on these diffs.
-- I think it could be possible to create a minimal reproduction of a program / block of code / code used by a single test. So for a failing unit test I would expect it to extract imports, the platform, types and functions that are necessary to run only that unit test and put them in a standalone roc project. This would be useful for sharing bugs with library+application authors and colleagues, for profiling or debugging with all "clutter" removed.
+- I think it could be possible to create a minimal reproduction of a program / block of code / code used by a single test. So for a failing unit test I would expect it to extract imports, the platform, types and functions that are necessary to run only that unit test and put them in a standalone broc project. This would be useful for sharing bugs with library+application authors and colleagues, for profiling or debugging with all "clutter" removed.
 - Ability to share program state at a breakpoint with someone else.
 - For debugging we should aim for maximal useful observability. For example Rust's enum values can not be easily viewed in the CodeLLDB debugger, you actually need to call a print method that does pattern matching to be able to view useful information.
-- We previuously discussed recording full traces of programs so they do not have to be re-run multiple times in the debugging process. We should encourage roc developers to experiment with creating debugging representations of this AST+"execution trace", it could lead to some cool stuff.
+- We previuously discussed recording full traces of programs so they do not have to be re-run multiple times in the debugging process. We should encourage broc developers to experiment with creating debugging representations of this AST+"execution trace", it could lead to some cool stuff.
 - We previuously mentioned showing expression values next to the code. I think when debugging it would be valuable to focus more on these valuas/data. A possible way to do this would be to create scrollable view(without need to jump between files) of inputs and outputs of user defined functions. Clicking on a function could then show the code with the expression values side by side. Having a good overview of how the values change could make it easy to find where exactly things go wrong.
 
 - (Machine learning) algorithms to extract and show useful information from debug values.
@@ -69,7 +69,7 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
 - Ability to generate project(folder) with code used by test and all else removed. Speedy build times and no distractions.
 - After encountering an error with a stacktrace: highlight all lines in code editor that occurred in the stacktrace.
 - [Nice visualization of intermediate values](https://twitter.com/ryrobes/status/1582968511713792000?s=20&t=WVj2tP5YwW6_MR5ndU_F4g)
-- [Property probes](https://roc.zulipchat.com/#narrow/stream/257722-editor/topic/Property.20probes/near/305671704)
+- [Property probes](https://broc.zulipchat.com/#narrow/stream/257722-editor/topic/Property.20probes/near/305671704)
 
 ### Testing
 
@@ -93,7 +93,7 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
   - live preview
   - possible inspiration for live interactivity as well
 - [Unreal Engine 4](https://www.unrealengine.com/en-US/)
-  - [Blueprints](https://docs.unrealengine.com/en-US/Engine/Blueprints/index.html) visual scripting (not suggesting visual scripting for Roc)
+  - [Blueprints](https://docs.unrealengine.com/en-US/Engine/Blueprints/index.html) visual scripting (not suggesting visual scripting for Broc)
 
 - [Live Programing](https://www.microsoft.com/en-us/research/project/live-programming/?from=http%3A%2F%2Fresearch.microsoft.com%2Fen-us%2Fprojects%2Fliveprogramming%2Ftypography.aspx#!publications) by [Microsoft Research] it contains many interesting research papers.
 - [Math Inspector](https://mathinspector.com/), [github](https://github.com/MathInspector/MathInspector)
@@ -164,9 +164,9 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
 
 ### Beginner-focused Features
 
-- Show Roc cheat sheet on start-up.
-- Plugin that translates short pieces of code from another programming language to Roc. [Relevant research](https://www.youtube.com/watch?v=xTzFJIknh7E). Someone who only knows the R language could get started with Roc with less friction if they could quickly define a list R style (`lst <- c(1,2,3)`) and get it translated to Roc.
-- Being able to asses or ask the user for the amount of experience they have with Roc would be a valuable feature for recommending plugins, editor tips, recommending tutorials, automated error search (e.g searching common beginner errors first), ... .
+- Show Broc cheat sheet on start-up.
+- Plugin that translates short pieces of code from another programming language to Broc. [Relevant research](https://www.youtube.com/watch?v=xTzFJIknh7E). Someone who only knows the R language could get started with Broc with less friction if they could quickly define a list R style (`lst <- c(1,2,3)`) and get it translated to Broc.
+- Being able to asses or ask the user for the amount of experience they have with Broc would be a valuable feature for recommending plugins, editor tips, recommending tutorials, automated error search (e.g searching common beginner errors first), ... .
 - Adjust UI based on beginner/novice/expert?
 - Click to explain type annotation
 
@@ -184,9 +184,9 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
 - Integrated search:
   - Searchbar for examples/docs. With permission search strings could be shared with the platform/package authors so they know exactly what their users are struggling with.
 - Show productivity/feature tips on startup. Show link to page with all tips. Allow not seeing tips next time.
-- Search friendly editor docs inside the editor. Offer to send search string to Roc maintainers when no results, or if no results were clicked.
+- Search friendly editor docs inside the editor. Offer to send search string to Broc maintainers when no results, or if no results were clicked.
 - File history timeline view. Show timeline with commits that changed this file, the number of lines added and deleted as well as which user made the changes. Arrow navigation should allow you to quickly view different versions of the file.
-- Suggested quick fixes should be directly visible and clickable. Not like in vs code where you put the caret on an error until a lightbulb appears in the margin which you have to click for the fixes to appear, after which you click to apply the fix you want :( . You should be able to apply suggestions in rapid succession. e.g. if you copy some roc code from the internet you should be able to apply 5 import suggestions quickly.
+- Suggested quick fixes should be directly visible and clickable. Not like in vs code where you put the caret on an error until a lightbulb appears in the margin which you have to click for the fixes to appear, after which you click to apply the fix you want :( . You should be able to apply suggestions in rapid succession. e.g. if you copy some broc code from the internet you should be able to apply 5 import suggestions quickly.
 - Regex-like find and substitution based on plain english description and example (replacement). i.e. replace all `[` between double quotes with `{`. [Inspiration](https://alexmoltzau.medium.com/english-to-regex-thanks-to-gpt-3-13f03b68236e).
 - Show productivity tips based on behavior. i.e. if the user is scrolling through the error bar and clicking on the next error several times, show a tip with "go to next error" shortcut.
 - Command to "benchmark this function" or "benchmark this test" with flamegraph and execution time per line.
@@ -231,7 +231,7 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
 - Automatically keep private local database of terminal output(errors that happened) and actions that were required to solve them. So we can show this to the user if this error pops up again.
 - Similarly; errors file in special dir where people can add errors and some text. The editor will check this dir if errors pop up so that this text can be shown. That way developers know what to do when they see an error that someone else has seen before. The text could be something like: "you need to change this setting to prevent this error".
 - When user is implementing something that is available in the stdlib; show a notification with the relevant stdlib function.
-- Custom commands/aliases for a specific project. For example for navigation; e.g. go to "cli tests"(alias) which is defined to go to `crates/cli/tests/somefile.roc`
+- Custom commands/aliases for a specific project. For example for navigation; e.g. go to "cli tests"(alias) which is defined to go to `crates/cli/tests/somefile.broc`
 - Tool that changes code with duplications to use single source of truth. The reverse operation would also be nice, when changes need to be made for a single case.
 - Ability to search all values of expressions of a run. Search would take you to the line of code that produced the value.
 - Ability to link to other comments to prevent from having to repeat identical comments or having to update all of them when a change is necessary.
@@ -342,7 +342,7 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
 
 ## Tutorials
 
-- Inclusion of step-by-step tutrials in Roc libraries, platforms or business specific code.
+- Inclusion of step-by-step tutrials in Broc libraries, platforms or business specific code.
 - Having to set up your own website for a tutorial can be a lot of work, making it easy to make quality tutorials would make for a more delightful experience.
 
 ## High performance
@@ -358,7 +358,7 @@ e.g. you have a test `calculate_sum_test` that only uses the function `add`, whe
 - Suggestions of occasions for positive feedback:
   - Being able to compile successfully after starting out with more than X errors.
   - Making a test succeed after repeated failures.
-- Positive feedback could be delivered with messages and/or animations. Animations could be with fireworks, flying roc logo birds, sounds...
+- Positive feedback could be delivered with messages and/or animations. Animations could be with fireworks, flying broc logo birds, sounds...
 - The intensity of the message/animation could be increased based on the duration/difficulty of the task.
 - Suggest to search for help or take a break after being stuck on a test/compile errors... for some time. A search could be done for group chats for relevant libraries.
 
@@ -410,7 +410,7 @@ What do you feel the need to say to them? Which knowledge gaps are you filling w
   - Down arrow to go deeper into topic. It may start with a simple overview and examples; it then expands with further detailed information such as links to reference material, explanations, examples, and quizzes.
   - Right arrow to go to next topic.
 - Sort topics in order of importance to know.
-- Docutorial should educate users about roc and about using the editor.
+- Docutorial should educate users about broc and about using the editor.
 - At least some of this content should be bundled in the nightly so that it easily works offline.
 
 ## General Thoughts/Ideas

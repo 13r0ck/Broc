@@ -1,23 +1,23 @@
-use crate::roc_type;
+use crate::broc_type;
 use crate::types::Types;
 use bumpalo::Bump;
 use libloading::Library;
-use roc_build::{
+use broc_build::{
     link::{LinkType, LinkingStrategy},
     program::{
         build_file, handle_error_module, handle_loading_problem, standard_load_config,
         BuildFileError, BuildOrdering, BuiltFile, CodeGenBackend, CodeGenOptions,
     },
 };
-use roc_collections::MutMap;
-use roc_gen_llvm::llvm::build::LlvmBackendMode;
-use roc_load::{ExecutionMode, LoadConfig, LoadedModule, LoadingProblem, Threading};
-use roc_mono::ir::{generate_glue_procs, GlueProc, OptLevel};
-use roc_mono::layout::{GlobalLayoutInterner, LayoutCache, LayoutInterner};
-use roc_packaging::cache::{self, RocCacheDir};
-use roc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
-use roc_target::{Architecture, TargetInfo};
-use roc_types::subs::{Subs, Variable};
+use broc_collections::MutMap;
+use broc_gen_llvm::llvm::build::LlvmBackendMode;
+use broc_load::{ExecutionMode, LoadConfig, LoadedModule, LoadingProblem, Threading};
+use broc_mono::ir::{generate_glue_pbrocs, GluePbroc, OptLevel};
+use broc_mono::layout::{GlobalLayoutInterner, LayoutCache, LayoutInterner};
+use broc_packaging::cache::{self, BrocCacheDir};
+use broc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
+use broc_target::{Architecture, TargetInfo};
+use broc_types::subs::{Subs, Variable};
 use std::fs::File;
 use std::io::{self, ErrorKind, Write};
 use std::mem::ManuallyDrop;
@@ -61,7 +61,7 @@ pub fn generate(input_path: &Path, output_path: &Path, spec_path: &Path) -> io::
 
             let arena = ManuallyDrop::new(Bump::new());
             let link_type = LinkType::Dylib;
-            let linking_strategy = if roc_linker::supported(link_type, &triple) {
+            let linking_strategy = if broc_linker::supported(link_type, &triple) {
                 LinkingStrategy::Surgical
             } else {
                 LinkingStrategy::Legacy
@@ -77,7 +77,7 @@ pub fn generate(input_path: &Path, output_path: &Path, spec_path: &Path) -> io::
                 linking_strategy,
                 true,
                 None,
-                RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                 load_config,
             );
 
@@ -116,30 +116,30 @@ pub fn generate(input_path: &Path, output_path: &Path, spec_path: &Path) -> io::
 
                     let lib = unsafe { Library::new(lib_path) }.unwrap();
                     type MakeGlue = unsafe extern "C" fn(
-                        *mut roc_std::RocResult<roc_std::RocList<roc_type::File>, roc_std::RocStr>,
-                        &roc_std::RocList<roc_type::Types>,
+                        *mut broc_std::BrocResult<broc_std::BrocList<broc_type::File>, broc_std::BrocStr>,
+                        &broc_std::BrocList<broc_type::Types>,
                     );
 
                     let make_glue: libloading::Symbol<MakeGlue> = unsafe {
-                        lib.get("roc__makeGlueForHost_1_exposed_generic".as_bytes())
+                        lib.get("broc__makeGlueForHost_1_exposed_generic".as_bytes())
                             .unwrap_or_else(|_| panic!("Unable to load glue function"))
                     };
-                    let roc_types: roc_std::RocList<roc_type::Types> =
+                    let broc_types: broc_std::BrocList<broc_type::Types> =
                         types.iter().map(|x| x.into()).collect();
-                    let mut files = roc_std::RocResult::err(roc_std::RocStr::empty());
-                    unsafe { make_glue(&mut files, &roc_types) };
+                    let mut files = broc_std::BrocResult::err(broc_std::BrocStr::empty());
+                    unsafe { make_glue(&mut files, &broc_types) };
 
-                    // Roc will free data passed into it. So forget that data.
-                    std::mem::forget(roc_types);
+                    // Broc will free data passed into it. So forget that data.
+                    std::mem::forget(broc_types);
 
-                    let files: Result<roc_std::RocList<roc_type::File>, roc_std::RocStr> =
+                    let files: Result<broc_std::BrocList<broc_type::File>, broc_std::BrocStr> =
                         files.into();
                     let files = files.unwrap_or_else(|err| {
                         eprintln!("Glue generation failed: {}", err);
 
                         process::exit(1);
                     });
-                    for roc_type::File { name, content } in &files {
+                    for broc_type::File { name, content } in &files {
                         let valid_name = PathBuf::from(name.as_str())
                             .components()
                             .all(|comp| matches!(comp, Component::CurDir | Component::Normal(_)));
@@ -223,11 +223,11 @@ fn number_lambda_sets(subs: &Subs, initial: Variable) -> Vec<Variable> {
     }
 
     while let Some(var) = stack.pop() {
-        use roc_types::subs::Content::*;
-        use roc_types::subs::FlatType::*;
+        use broc_types::subs::Content::*;
+        use broc_types::subs::FlatType::*;
 
-        use roc_types::subs::GetSubsSlice;
-        use roc_types::types::Uls;
+        use broc_types::subs::GetSubsSlice;
+        use broc_types::types::Uls;
 
         match subs.get_content_without_compacting(var) {
             RigidVar(_) | RigidAbleVar(_, _) | FlexVar(_) | FlexAbleVar(_, _) | Error => (),
@@ -299,7 +299,7 @@ fn number_lambda_sets(subs: &Subs, initial: Variable) -> Vec<Variable> {
 
                 stack.push(var);
             }
-            LambdaSet(roc_types::subs::LambdaSet {
+            LambdaSet(broc_types::subs::LambdaSet {
                 solved,
                 recursion_var,
                 unspecialized,
@@ -341,10 +341,10 @@ pub fn load_types(
         interns,
         exposed_to_host,
         ..
-    } = roc_load::load_and_typecheck(
+    } = broc_load::load_and_typecheck(
         arena,
         full_file_path,
-        RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+        BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
         LoadConfig {
             target_info,
             render: RenderTarget::Generic,
@@ -397,7 +397,7 @@ pub fn load_types(
             operating_system,
         };
         let mut layout_cache = LayoutCache::new(layout_interner.fork(), target_info);
-        let mut glue_procs_by_layout = MutMap::default();
+        let mut glue_pbrocs_by_layout = MutMap::default();
 
         let mut extern_names = MutMap::default();
 
@@ -417,7 +417,7 @@ pub fn load_types(
 
             if layout.has_varying_stack_size(&layout_cache.interner, arena) {
                 let ident_ids = interns.all_ident_ids.get_mut(&home).unwrap();
-                let answer = generate_glue_procs(
+                let answer = generate_glue_pbrocs(
                     home,
                     ident_ids,
                     arena,
@@ -425,15 +425,15 @@ pub fn load_types(
                     arena.alloc(layout),
                 );
 
-                // Even though generate_glue_procs does more work than we need it to,
+                // Even though generate_glue_pbrocs does more work than we need it to,
                 // it's important that we use it in order to make sure we get exactly
                 // the same names that mono::ir did for code gen!
-                for (layout, glue_procs) in answer.getters {
+                for (layout, glue_pbrocs) in answer.getters {
                     let mut names =
-                        bumpalo::collections::Vec::with_capacity_in(glue_procs.len(), arena);
+                        bumpalo::collections::Vec::with_capacity_in(glue_pbrocs.len(), arena);
 
                     // Record all the getter/setter names associated with this layout
-                    for GlueProc { name, .. } in glue_procs {
+                    for GluePbroc { name, .. } in glue_pbrocs {
                         // Given a struct layout (including lambda sets!) the offsets - and therefore
                         // getters/setters - are deterministic, so we can use layout as the hash key
                         // for these getters/setters. We also only need to store the name because
@@ -445,7 +445,7 @@ pub fn load_types(
                         names.push(name.as_str(&interns).to_string());
                     }
 
-                    glue_procs_by_layout.insert(layout, names.into_bump_slice());
+                    glue_pbrocs_by_layout.insert(layout, names.into_bump_slice());
                 }
             }
         }
@@ -454,7 +454,7 @@ pub fn load_types(
             arena,
             subs,
             arena.alloc(interns),
-            glue_procs_by_layout,
+            glue_pbrocs_by_layout,
             layout_cache,
             target_info,
             exposed_to_host.clone(),

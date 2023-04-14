@@ -3,14 +3,14 @@ const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
 
 // This whole module is a translation of grapheme breaks from
-// the https://github.com/JuliaStrings/utf8proc library.
+// the https://github.com/JuliaStrings/utf8pbroc library.
 // Thanks so much to those developers!
 //
 // The only function this file exposes is `isGraphemeBreak`
 //
-// LICENSE -> https://github.com/JuliaStrings/utf8proc/blob/master/LICENSE.md
+// LICENSE -> https://github.com/JuliaStrings/utf8pbroc/blob/master/LICENSE.md
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc.h#L361
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc.h#L361
 pub const BoundClass = enum(u8) {
     START = 0, // Start
     OTHER = 1, // Other
@@ -45,7 +45,7 @@ test "Bound Class" {
     try expectEqual(0, @enumToInt(BoundClass.START));
 }
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc.c#L261
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc.c#L261
 fn graphemeBreakSimple(lbc: BoundClass, tbc: BoundClass) bool {
     const lbc_u8 = @enumToInt(lbc);
     const tbc_u8 = @enumToInt(tbc);
@@ -73,7 +73,7 @@ fn graphemeBreakSimple(lbc: BoundClass, tbc: BoundClass) bool {
         true);
 }
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc.c#L291
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc.c#L291
 fn graphemeBreakExtended(lbc: BoundClass, tbc: BoundClass, opt_state_ptr: *?BoundClass) bool {
     var libc_override = lbc;
     if (opt_state_ptr.*) |state| {
@@ -105,7 +105,7 @@ fn graphemeBreakExtended(lbc: BoundClass, tbc: BoundClass, opt_state_ptr: *?Boun
 
 const codepoint_max: u21 = 1114112;
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc.c#L233
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc.c#L233
 fn unsafeCodepointToBoundClass(codepoint: u21) *const BoundClass {
     assert(codepoint >= 0 and codepoint < codepoint_max);
     return &boundclasses[stage2_table[stage1_table[codepoint >> 8] + (codepoint & 255)]];
@@ -115,7 +115,7 @@ test "unsafeCodepointToBoundClass: valid" {
     try expectEqual(BoundClass.CONTROL, unsafeCodepointToBoundClass(8).*);
 }
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc.c#L242
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc.c#L242
 fn codepointToBoundClass(codepoint: u21) *const BoundClass {
     if (codepoint < 0 or codepoint >= codepoint_max) {
         return &boundclasses[0];
@@ -132,7 +132,7 @@ test "codepointToBoundClass: invalid" {
     try expectEqual(BoundClass.OTHER, codepointToBoundClass(codepoint_max + 5).*);
 }
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc.c#L319
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc.c#L319
 // Docs:
 //
 // Given a pair of consecutive codepoints, return whether a grapheme break is permitted
@@ -152,7 +152,7 @@ pub fn isGraphemeBreak(codePoint1: u21, codePoint2: u21, opt_state_ptr: *?BoundC
     return graphemeBreakExtended(codepointToBoundClass(codePoint1).*, codepointToBoundClass(codePoint2).*, opt_state_ptr);
 }
 
-// https://github.com/JuliaStrings/utf8proc/blob/master/utf8proc_data.c
+// https://github.com/JuliaStrings/utf8pbroc/blob/master/utf8pbroc_data.c
 
 const stage1_table: [4352]u16 = [_]u16{
     0,     256,   512,   768,   1024,  1280,  1536,  1792,  2048,  2304,  2560,

@@ -1,5 +1,5 @@
-use roc_module::ident::{Lowercase, TagName};
-use roc_types::subs::{Content, Subs, Variable};
+use broc_module::ident::{Lowercase, TagName};
+use broc_types::subs::{Content, Subs, Variable};
 
 use crate::DeriveError;
 

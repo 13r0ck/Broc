@@ -1,9 +1,9 @@
-async function roc_web_platform_run(wasm_filename, callback) {
+async function broc_web_platform_run(wasm_filename, callback) {
   const decoder = new TextDecoder();
   let memory_bytes;
   let exit_code;
 
-  function js_display_roc_string(str_bytes, str_len) {
+  function js_display_broc_string(str_bytes, str_len) {
     const utf8_bytes = memory_bytes.subarray(str_bytes, str_bytes + str_len);
     const js_string = decoder.decode(utf8_bytes);
     callback(js_string);
@@ -11,7 +11,7 @@ async function roc_web_platform_run(wasm_filename, callback) {
 
   const importObj = {
     wasi_snapshot_preview1: {
-      proc_exit: (code) => {
+      pbroc_exit: (code) => {
         if (code !== 0) {
           console.error(`Exited with code ${code}`);
         }
@@ -22,9 +22,9 @@ async function roc_web_platform_run(wasm_filename, callback) {
       },
     },
     env: {
-      js_display_roc_string,
-      roc_panic: (_pointer, _tag_id) => {
-        throw "Roc panicked!";
+      js_display_broc_string,
+      broc_panic: (_pointer, _tag_id) => {
+        throw "Broc panicked!";
       },
     },
   };
@@ -56,6 +56,6 @@ async function roc_web_platform_run(wasm_filename, callback) {
 
 if (typeof module !== "undefined") {
   module.exports = {
-    roc_web_platform_run,
+    broc_web_platform_run,
   };
 }

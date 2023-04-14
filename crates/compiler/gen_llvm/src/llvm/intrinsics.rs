@@ -5,7 +5,7 @@ use inkwell::{
     values::FunctionValue,
     AddressSpace,
 };
-use roc_builtins::{
+use broc_builtins::{
     bitcode::{FloatWidth, IntWidth, IntrinsicName},
     float_intrinsic, llvm_int_intrinsic,
 };

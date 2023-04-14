@@ -5,7 +5,7 @@ use crate::helpers::{wasm::assert_refcounts, RefCount::*};
 use indoc::indoc;
 
 #[allow(unused_imports)]
-use roc_std::{RocList, RocStr};
+use broc_std::{BrocList, BrocStr};
 
 // A "good enough" representation of a pointer for these tests, because
 // we ignore the return value. As long as it's the right stack size, it's fine.
@@ -23,7 +23,7 @@ fn str_inc() {
                 [s, s, s]
             "#
         ),
-        RocList<RocStr>,
+        BrocList<BrocStr>,
         &[
             Live(3), // s
             Live(1)  // result
@@ -57,7 +57,7 @@ fn list_int_inc() {
                 [list, list, list]
             "#
         ),
-        RocList<RocList<i64>>,
+        BrocList<BrocList<i64>>,
         &[
             Live(3), // list
             Live(1)  // result
@@ -94,7 +94,7 @@ fn list_str_inc() {
                 [list, list]
             "#
         ),
-        RocList<RocList<RocStr>>,
+        BrocList<BrocList<BrocStr>>,
         &[
             Live(6), // s
             Live(2), // list
@@ -135,7 +135,7 @@ fn struct_inc() {
                 { y: r1, z: r1 }
             "#
         ),
-        [(i64, RocStr, RocStr); 2],
+        [(i64, BrocStr, BrocStr); 2],
         &[Live(4)] // s
     );
 }
@@ -161,7 +161,7 @@ fn struct_dealloc() {
 #[test]
 #[cfg(any(feature = "gen-wasm"))]
 fn union_nonrecursive_inc() {
-    type TwoStr = (RocStr, RocStr, i64);
+    type TwoStr = (BrocStr, BrocStr, i64);
 
     assert_refcounts!(
         indoc!(
@@ -202,7 +202,7 @@ fn union_nonrecursive_dec() {
                     None -> ""
             "#
         ),
-        RocStr,
+        BrocStr,
         &[Live(1)] // s
     );
 }
@@ -390,7 +390,7 @@ fn union_linked_list_dec() {
                     Nil -> ""
             "#
         ),
-        RocStr,
+        BrocStr,
         &[
             Live(1),     // s
             Deallocated, // Cons
@@ -417,7 +417,7 @@ fn union_linked_list_nil_dec() {
                     Nil -> ""
             "#
         ),
-        RocStr,
+        BrocStr,
         no_refcounts
     );
 }

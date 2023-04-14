@@ -1,6 +1,6 @@
 use cgmath::Vector2;
 
-/// These fields are ordered this way because in Roc, the corresponding stuct is:
+/// These fields are ordered this way because in Broc, the corresponding stuct is:
 ///
 /// { top : F32, left : F32, width : F32, height : F32 }
 ///

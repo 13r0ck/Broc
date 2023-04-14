@@ -2,15 +2,15 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::ir::{
-    Expr, HigherOrderLowLevel, JoinPointId, Param, PassedFunction, Proc, ProcLayout, Stmt,
+    Expr, HigherOrderLowLevel, JoinPointId, Param, PassedFunction, Pbroc, PbrocLayout, Stmt,
 };
 use crate::layout::{InLayout, Layout, LayoutInterner, STLayoutInterner};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_collections::all::{MutMap, MutSet};
-use roc_collections::ReferenceMatrix;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
+use broc_collections::all::{MutMap, MutSet};
+use broc_collections::ReferenceMatrix;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
 
 pub(crate) const OWNED: bool = false;
 pub(crate) const BORROWED: bool = true;
@@ -34,13 +34,13 @@ impl Ownership {
 pub fn infer_borrow<'a>(
     arena: &'a Bump,
     interner: &STLayoutInterner<'a>,
-    procs: &MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
-    host_exposed_procs: &[Symbol],
+    pbrocs: &MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
+    host_exposed_pbrocs: &[Symbol],
 ) -> ParamMap<'a> {
     // intern the layouts
 
     let mut param_map = {
-        let (declaration_to_index, total_number_of_params) = DeclarationToIndex::new(procs);
+        let (declaration_to_index, total_number_of_params) = DeclarationToIndex::new(pbrocs);
 
         ParamMap {
             declaration_to_index,
@@ -49,12 +49,12 @@ pub fn infer_borrow<'a>(
         }
     };
 
-    for (key, proc) in procs {
-        param_map.visit_proc(arena, interner, proc, *key);
+    for (key, pbroc) in pbrocs {
+        param_map.visit_pbroc(arena, interner, pbroc, *key);
     }
 
     let mut env = BorrowInfState {
-        current_proc: Symbol::ATTR_ATTR,
+        current_pbroc: Symbol::ATTR_ATTR,
         param_set: MutSet::default(),
         owned: MutMap::default(),
         modified: false,
@@ -65,17 +65,17 @@ pub fn infer_borrow<'a>(
     // topological sort on these components, finally run the fix-point borrow analysis on each
     // component (in top-sorted order, from primitives (std-lib) to main)
 
-    let mut matrix = ReferenceMatrix::new(procs.len());
+    let mut matrix = ReferenceMatrix::new(pbrocs.len());
 
-    for (row, proc) in procs.values().enumerate() {
+    for (row, pbroc) in pbrocs.values().enumerate() {
         let mut call_info = CallInfo {
             keys: Vec::new_in(arena),
         };
-        call_info_stmt(arena, &proc.body, &mut call_info);
+        call_info_stmt(arena, &pbroc.body, &mut call_info);
 
         for key in call_info.keys.iter() {
             // the same symbol can be in `keys` multiple times (with different layouts)
-            for (col, (k, _)) in procs.keys().enumerate() {
+            for (col, (k, _)) in pbrocs.keys().enumerate() {
                 if k == key {
                     matrix.set_row_col(row, col, true);
                 }
@@ -95,16 +95,16 @@ pub fn infer_borrow<'a>(
         // when the signatures no longer change, the analysis stops and returns the signatures
         loop {
             for index in group.iter_ones() {
-                let (key, proc) = &procs.iter().nth(index).unwrap();
+                let (key, pbroc) = &pbrocs.iter().nth(index).unwrap();
 
                 // host-exposed functions must always own their arguments.
-                let is_host_exposed = host_exposed_procs.contains(&key.0);
+                let is_host_exposed = host_exposed_pbrocs.contains(&key.0);
 
                 let param_offset = param_map.get_param_offset(interner, key.0, key.1);
-                env.collect_proc(
+                env.collect_pbroc(
                     interner,
                     &mut param_map,
-                    proc,
+                    pbroc,
                     param_offset,
                     is_host_exposed,
                 );
@@ -135,7 +135,7 @@ impl From<ParamOffset> for usize {
 #[derive(Debug, Eq, PartialEq)]
 struct Declaration<'a> {
     symbol: Symbol,
-    layout: ProcLayout<'a>,
+    layout: PbrocLayout<'a>,
 }
 
 impl<'a> Hash for Declaration<'a> {
@@ -154,11 +154,11 @@ struct DeclarationToIndex<'a> {
 }
 
 impl<'a> DeclarationToIndex<'a> {
-    fn new(procs: &MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>) -> (Self, usize) {
-        let mut declaration_to_index = HashMap::with_capacity(procs.len());
+    fn new(pbrocs: &MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>) -> (Self, usize) {
+        let mut declaration_to_index = HashMap::with_capacity(pbrocs.len());
 
         let mut i = 0;
-        for (symbol, layout) in procs.keys().copied() {
+        for (symbol, layout) in pbrocs.keys().copied() {
             declaration_to_index.insert(Declaration { symbol, layout }, ParamOffset(i));
             i += layout.arguments.len();
         }
@@ -175,7 +175,7 @@ impl<'a> DeclarationToIndex<'a> {
         &self,
         interner: &STLayoutInterner<'a>,
         needle_symbol: Symbol,
-        needle_layout: ProcLayout<'a>,
+        needle_layout: PbrocLayout<'a>,
     ) -> ParamOffset {
         if let Some(param_offset) = self.elements.get(&Declaration {
             symbol: needle_symbol,
@@ -202,12 +202,12 @@ impl<'a> DeclarationToIndex<'a> {
 
 #[derive(Debug)]
 pub struct ParamMap<'a> {
-    /// Map a (Symbol, ProcLayout) pair to the starting index in the `declarations` array
+    /// Map a (Symbol, PbrocLayout) pair to the starting index in the `declarations` array
     declaration_to_index: DeclarationToIndex<'a>,
     /// the parameters of all functions in a single flat array.
     ///
     /// - the map above gives the index of the first parameter for the function
-    /// - the length of the ProcLayout's argument field gives the total number of parameters
+    /// - the length of the PbrocLayout's argument field gives the total number of parameters
     ///
     /// These can be read by taking a slice into this array, and can also be updated in-place
     declarations: Vec<'a, Param<'a>>,
@@ -219,7 +219,7 @@ impl<'a> ParamMap<'a> {
         &self,
         interner: &STLayoutInterner<'a>,
         symbol: Symbol,
-        layout: ProcLayout<'a>,
+        layout: PbrocLayout<'a>,
     ) -> ParamOffset {
         self.declaration_to_index
             .get_param_offset(interner, symbol, layout)
@@ -229,7 +229,7 @@ impl<'a> ParamMap<'a> {
         &self,
         interner: &STLayoutInterner<'a>,
         symbol: Symbol,
-        layout: ProcLayout<'a>,
+        layout: PbrocLayout<'a>,
     ) -> Option<&[Param<'a>]> {
         // let index: usize = self.declaration_to_index[&(symbol, layout)].into();
         let index: usize = self.get_param_offset(interner, symbol, layout).into();
@@ -300,21 +300,21 @@ impl<'a> ParamMap<'a> {
         .into_bump_slice()
     }
 
-    fn visit_proc(
+    fn visit_pbroc(
         &mut self,
         arena: &'a Bump,
         interner: &STLayoutInterner<'a>,
-        proc: &Proc<'a>,
-        key: (Symbol, ProcLayout<'a>),
+        pbroc: &Pbroc<'a>,
+        key: (Symbol, PbrocLayout<'a>),
     ) {
-        if proc.must_own_arguments {
-            self.visit_proc_always_owned(arena, interner, proc, key);
+        if pbroc.must_own_arguments {
+            self.visit_pbroc_always_owned(arena, interner, pbroc, key);
             return;
         }
 
         let index: usize = self.get_param_offset(interner, key.0, key.1).into();
 
-        for (i, param) in Self::init_borrow_args(arena, interner, proc.args)
+        for (i, param) in Self::init_borrow_args(arena, interner, pbroc.args)
             .iter()
             .copied()
             .enumerate()
@@ -322,19 +322,19 @@ impl<'a> ParamMap<'a> {
             self.declarations[index + i] = param;
         }
 
-        self.visit_stmt(arena, interner, proc.name.name(), &proc.body);
+        self.visit_stmt(arena, interner, pbroc.name.name(), &pbroc.body);
     }
 
-    fn visit_proc_always_owned(
+    fn visit_pbroc_always_owned(
         &mut self,
         arena: &'a Bump,
         interner: &STLayoutInterner<'a>,
-        proc: &Proc<'a>,
-        key: (Symbol, ProcLayout<'a>),
+        pbroc: &Pbroc<'a>,
+        key: (Symbol, PbrocLayout<'a>),
     ) {
         let index: usize = self.get_param_offset(interner, key.0, key.1).into();
 
-        for (i, param) in Self::init_borrow_args_always_owned(arena, proc.args)
+        for (i, param) in Self::init_borrow_args_always_owned(arena, pbroc.args)
             .iter()
             .copied()
             .enumerate()
@@ -342,7 +342,7 @@ impl<'a> ParamMap<'a> {
             self.declarations[index + i] = param;
         }
 
-        self.visit_stmt(arena, interner, proc.name.name(), &proc.body);
+        self.visit_stmt(arena, interner, pbroc.name.name(), &pbroc.body);
     }
 
     fn visit_stmt(
@@ -396,10 +396,10 @@ impl<'a> ParamMap<'a> {
     }
 }
 
-// Apply the inferred borrow annotations stored in ParamMap to a block of mutually recursive procs
+// Apply the inferred borrow annotations stored in ParamMap to a block of mutually recursive pbrocs
 
 struct BorrowInfState<'a> {
-    current_proc: Symbol,
+    current_pbroc: Symbol,
     param_set: MutSet<Symbol>,
     owned: MutMap<Symbol, MutSet<Symbol>>,
     modified: bool,
@@ -408,7 +408,7 @@ struct BorrowInfState<'a> {
 
 impl<'a> BorrowInfState<'a> {
     pub fn own_var(&mut self, x: Symbol) {
-        let current = self.owned.get_mut(&self.current_proc).unwrap();
+        let current = self.owned.get_mut(&self.current_pbroc).unwrap();
 
         if current.insert(x) {
             // entered if key was not yet present. If so, the set is modified,
@@ -419,10 +419,10 @@ impl<'a> BorrowInfState<'a> {
 
     /// if the extracted value is owned, then the surrounding structure must be too
     fn if_is_owned_then_own(&mut self, extracted: Symbol, structure: Symbol) {
-        match self.owned.get_mut(&self.current_proc) {
+        match self.owned.get_mut(&self.current_pbroc) {
             None => unreachable!(
                 "the current procedure symbol {:?} is not in the owned map",
-                self.current_proc
+                self.current_pbroc
             ),
             Some(set) => {
                 if set.contains(&extracted) && set.insert(structure) {
@@ -435,10 +435,10 @@ impl<'a> BorrowInfState<'a> {
     }
 
     fn is_owned(&self, x: Symbol) -> bool {
-        match self.owned.get(&self.current_proc) {
+        match self.owned.get(&self.current_pbroc) {
             None => unreachable!(
                 "the current procedure symbol {:?} is not in the owned map",
-                self.current_proc
+                self.current_pbroc
             ),
             Some(set) => set.contains(&x),
         }
@@ -575,7 +575,7 @@ impl<'a> BorrowInfState<'a> {
                 arg_layouts,
                 ..
             } => {
-                let top_level = ProcLayout::new(self.arena, arg_layouts, name.niche(), *ret_layout);
+                let top_level = PbrocLayout::new(self.arena, arg_layouts, name.niche(), *ret_layout);
 
                 // get the borrow signature of the applied function
                 let ps = param_map
@@ -615,7 +615,7 @@ impl<'a> BorrowInfState<'a> {
             }) => {
                 use crate::low_level::HigherOrder::*;
 
-                let closure_layout = ProcLayout {
+                let closure_layout = PbrocLayout {
                     arguments: passed_function.argument_layouts,
                     result: passed_function.return_layout,
                     niche: passed_function.name.niche(),
@@ -813,9 +813,9 @@ impl<'a> BorrowInfState<'a> {
             Stmt::Ret(z),
         ) = (v, b)
         {
-            let top_level = ProcLayout::new(self.arena, arg_layouts, g.niche(), *ret_layout);
+            let top_level = PbrocLayout::new(self.arena, arg_layouts, g.niche(), *ret_layout);
 
-            if self.current_proc == g.name() && x == *z {
+            if self.current_pbroc == g.name() && x == *z {
                 // anonymous functions (for which the ps may not be known)
                 // can never be tail-recursive, so this is fine
                 if let Some(ps) = param_map.get_symbol(interner, g.name(), top_level) {
@@ -930,39 +930,39 @@ impl<'a> BorrowInfState<'a> {
         }
     }
 
-    fn collect_proc(
+    fn collect_pbroc(
         &mut self,
         interner: &STLayoutInterner<'a>,
         param_map: &mut ParamMap<'a>,
-        proc: &Proc<'a>,
+        pbroc: &Pbroc<'a>,
         param_offset: ParamOffset,
         is_host_exposed: bool,
     ) {
         let old = self.param_set.clone();
 
-        let ys = Vec::from_iter_in(proc.args.iter().map(|t| t.1), self.arena).into_bump_slice();
+        let ys = Vec::from_iter_in(pbroc.args.iter().map(|t| t.1), self.arena).into_bump_slice();
         self.update_param_set_symbols(ys);
-        self.current_proc = proc.name.name();
+        self.current_pbroc = pbroc.name.name();
 
-        // ensure that current_proc is in the owned map
-        let owned_entry = self.owned.entry(proc.name.name()).or_default();
+        // ensure that current_pbroc is in the owned map
+        let owned_entry = self.owned.entry(pbroc.name.name()).or_default();
 
         // host-exposed must own all its params
         if is_host_exposed {
             let ParamOffset(index) = param_offset;
-            let params = &param_map.declarations[index..][..proc.args.len()];
+            let params = &param_map.declarations[index..][..pbroc.args.len()];
             owned_entry.extend(params.iter().map(|p| p.symbol));
         }
 
-        self.collect_stmt(interner, param_map, &proc.body);
-        self.update_param_map_declaration(param_map, param_offset, proc.args.len());
+        self.collect_stmt(interner, param_map, &pbroc.body);
+        self.update_param_map_declaration(param_map, param_offset, pbroc.args.len());
 
         self.param_set = old;
     }
 }
 
 pub fn foreign_borrow_signature(arena: &Bump, arity: usize) -> &[bool] {
-    // NOTE this means that Roc is responsible for cleaning up resources;
+    // NOTE this means that Broc is responsible for cleaning up resources;
     // the host cannot (currently) take ownership
     let all = bumpalo::vec![in arena; BORROWED; arity];
     all.into_bump_slice()

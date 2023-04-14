@@ -1,20 +1,20 @@
 use std::path::PathBuf;
 
 use bumpalo::Bump;
-use roc_module::symbol::{Interns, ModuleId, Symbol};
-use roc_parse::ast::Expr;
-use roc_problem::Severity;
-use roc_region::all::{LineColumnRegion, LineInfo, Region};
-use roc_types::{
+use broc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_parse::ast::Expr;
+use broc_problem::Severity;
+use broc_region::all::{LineColumnRegion, LineInfo, Region};
+use broc_types::{
     subs::{Subs, Variable},
     types::{ErrorType, Polarity},
 };
 
-use crate::report::{RenderTarget, RocDocAllocator, RocDocBuilder};
+use crate::report::{RenderTarget, BrocDocAllocator, BrocDocBuilder};
 
 pub struct Renderer<'a> {
     arena: &'a Bump,
-    alloc: RocDocAllocator<'a>,
+    alloc: BrocDocAllocator<'a>,
     filename: PathBuf,
     line_info: LineInfo,
     render_target: RenderTarget,
@@ -30,9 +30,9 @@ impl<'a> Renderer<'a> {
         source: &'a str,
     ) -> Self {
         let source_lines = bumpalo::collections::Vec::from_iter_in(source.lines(), arena);
-        let line_info = roc_region::all::LineInfo::new(source);
+        let line_info = broc_region::all::LineInfo::new(source);
 
-        let alloc = RocDocAllocator::new(source_lines.into_bump_slice(), module_id, interns);
+        let alloc = BrocDocAllocator::new(source_lines.into_bump_slice(), module_id, interns);
 
         Self {
             arena,
@@ -43,7 +43,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    fn render_expr(&'a self, error_type: ErrorType) -> RocDocBuilder<'a> {
+    fn render_expr(&'a self, error_type: ErrorType) -> BrocDocBuilder<'a> {
         use crate::error::r#type::error_type_to_doc;
 
         error_type_to_doc(&self.alloc, error_type)
@@ -54,10 +54,10 @@ impl<'a> Renderer<'a> {
         symbol: Symbol,
         expr: &Expr<'_>,
         error_type: ErrorType,
-    ) -> RocDocBuilder<'a> {
-        use roc_fmt::annotation::Formattable;
+    ) -> BrocDocBuilder<'a> {
+        use broc_fmt::annotation::Formattable;
 
-        let mut buf = roc_fmt::Buf::new_in(self.arena);
+        let mut buf = broc_fmt::Buf::new_in(self.arena);
         expr.format(&mut buf, 0);
 
         self.alloc.vcat([
@@ -80,7 +80,7 @@ impl<'a> Renderer<'a> {
         symbols: &[Symbol],
         variables: &[Variable],
         expressions: &[Expr<'_>],
-    ) -> RocDocBuilder<'a> {
+    ) -> BrocDocBuilder<'a> {
         use ven_pretty::DocAllocator;
 
         let it =
@@ -192,9 +192,9 @@ impl<'a> Renderer<'a> {
 
         let expr = expressions[0];
 
-        let mut buf = roc_fmt::Buf::new_in(self.arena);
+        let mut buf = broc_fmt::Buf::new_in(self.arena);
         {
-            use roc_fmt::annotation::Formattable;
+            use broc_fmt::annotation::Formattable;
             expr.format(&mut buf, 0);
         }
 

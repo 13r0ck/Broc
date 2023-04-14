@@ -1,0 +1,6 @@
+app "brocLovesWebAssembly"
+    packages { pf: "web-assembly-platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main = "Broc <3 Web Assembly!\n"

@@ -9,11 +9,11 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../compiler/collections" }
-roc_load = { path = "../compiler/load" }
-roc_module = { path = "../compiler/module" }
-roc_reporting = { path = "../reporting" }
-roc_command_utils = { path = "../utils/command" }
+broc_collections = { path = "../compiler/collections" }
+broc_load = { path = "../compiler/load" }
+broc_module = { path = "../compiler/module" }
+broc_reporting = { path = "../reporting" }
+broc_command_utils = { path = "../utils/command" }
 
 bumpalo.workspace = true
 criterion.workspace = true

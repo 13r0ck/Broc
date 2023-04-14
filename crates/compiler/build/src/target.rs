@@ -2,8 +2,8 @@ use inkwell::{
     targets::{CodeModel, InitializationConfig, RelocMode, Target, TargetMachine, TargetTriple},
     OptimizationLevel,
 };
-use roc_error_macros::internal_error;
-use roc_mono::ir::OptLevel;
+use broc_error_macros::internal_error;
+use broc_mono::ir::OptLevel;
 use target_lexicon::{Architecture, Environment, OperatingSystem, Triple};
 
 pub fn target_triple_str(target: &Triple) -> &'static str {

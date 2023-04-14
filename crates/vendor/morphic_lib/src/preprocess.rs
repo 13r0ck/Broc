@@ -1,4 +1,4 @@
-//! Before we perform any interprocedural analysis, we run a preprocessing pass to convert the "API
+//! Before we perform any interpbrocedural analysis, we run a preprocessing pass to convert the "API
 //! IR" (the IR constructed by the input API) to the "analysis IR" (the IR used for all subsequent
 //! analysis).
 //!

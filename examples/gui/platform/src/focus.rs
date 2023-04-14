@@ -1,4 +1,4 @@
-use crate::roc::{ElemId, RocElem, RocElemTag};
+use crate::broc::{ElemId, BrocElem, BrocElemTag};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Focus {
@@ -26,7 +26,7 @@ impl Focus {
     /// For example, if I have three radio buttons in a group, pressing the
     /// arrow keys will cycle through them over and over without exiting the group -
     /// whereas pressing Tab will cycle through them once and then exit the group.
-    pub fn next_global(&mut self, root: &RocElem) {
+    pub fn next_global(&mut self, root: &BrocElem) {
         match self.focused {
             Some(focused) => {
                 // while let Some((ancestor_id, index)) = self.focused_ancestors.pop() {
@@ -82,11 +82,11 @@ impl Focus {
     /// If this element has no siblings, or no *next* sibling after the given index
     /// (e.g. the given index refers to the last element in a Row element), return None.
     fn next_focusable_sibling(
-        elem: &RocElem,
-        ancestor: Option<&RocElem>,
+        elem: &BrocElem,
+        ancestor: Option<&BrocElem>,
         opt_index: Option<usize>,
     ) -> Option<(ElemId, Vec<(ElemId, usize)>)> {
-        use RocElemTag::*;
+        use BrocElemTag::*;
 
         match elem.tag() {
             Button | Text => None,
@@ -111,10 +111,10 @@ impl Focus {
 
 #[test]
 fn next_global_button_root() {
-    use crate::roc::{ButtonStyles, RocElem};
+    use crate::broc::{ButtonStyles, BrocElem};
 
-    let child = RocElem::text("");
-    let root = RocElem::button(ButtonStyles::default(), child);
+    let child = BrocElem::text("");
+    let root = BrocElem::button(ButtonStyles::default(), child);
     let mut focus = Focus::default();
 
     // At first, nothing should be focused.
@@ -132,7 +132,7 @@ fn next_global_button_root() {
 
 #[test]
 fn next_global_text_root() {
-    let root = RocElem::text("");
+    let root = BrocElem::text("");
     let mut focus = Focus::default();
 
     // At first, nothing should be focused.
@@ -150,12 +150,12 @@ fn next_global_text_root() {
 
 #[test]
 fn next_global_row() {
-    use crate::roc::{ButtonStyles, RocElem};
+    use crate::broc::{ButtonStyles, BrocElem};
 
-    let child = RocElem::text("");
-    let button = RocElem::button(ButtonStyles::default(), child);
+    let child = BrocElem::text("");
+    let button = BrocElem::button(ButtonStyles::default(), child);
     let button_id = button.id();
-    let root = RocElem::row(&[button] as &[_]);
+    let root = BrocElem::row(&[button] as &[_]);
     let mut focus = Focus::default();
 
     // At first, nothing should be focused.

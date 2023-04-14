@@ -2,12 +2,12 @@
 
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_module::called_via::BinOp::Pizza;
-use roc_module::called_via::{BinOp, CalledVia};
-use roc_module::ident::ModuleName;
-use roc_parse::ast::Expr::{self, *};
-use roc_parse::ast::{AssignedField, ValueDef, WhenBranch};
-use roc_region::all::{Loc, Region};
+use broc_module::called_via::BinOp::Pizza;
+use broc_module::called_via::{BinOp, CalledVia};
+use broc_module::ident::ModuleName;
+use broc_parse::ast::Expr::{self, *};
+use broc_parse::ast::{AssignedField, ValueDef, WhenBranch};
+use broc_region::all::{Loc, Region};
 
 // BinOp precedence logic adapted from Gluon by Markus Westerlind
 // https://github.com/gluon-lang/gluon - license information can be found in
@@ -115,7 +115,7 @@ fn desugar_value_def<'a>(arena: &'a Bump, def: &'a ValueDef<'a>) -> ValueDef<'a>
     }
 }
 
-pub fn desugar_defs<'a>(arena: &'a Bump, defs: &mut roc_parse::ast::Defs<'a>) {
+pub fn desugar_defs<'a>(arena: &'a Bump, defs: &mut broc_parse::ast::Defs<'a>) {
     for value_def in defs.value_defs.iter_mut() {
         *value_def = desugar_value_def(arena, arena.alloc(*value_def));
     }
@@ -307,7 +307,7 @@ pub fn desugar_expr<'a>(arena: &'a Bump, loc_expr: &'a Loc<Expr<'a>>) -> &'a Loc
             })
         }
         UnaryOp(loc_arg, loc_op) => {
-            use roc_module::called_via::UnaryOp::*;
+            use broc_module::called_via::UnaryOp::*;
 
             let region = loc_op.region;
             let op = loc_op.value;
@@ -384,7 +384,7 @@ fn desugar_field<'a>(
     arena: &'a Bump,
     field: &'a AssignedField<'a, Expr<'a>>,
 ) -> AssignedField<'a, Expr<'a>> {
-    use roc_parse::ast::AssignedField::*;
+    use broc_parse::ast::AssignedField::*;
 
     match field {
         RequiredValue(loc_str, spaces, loc_expr) => RequiredValue(
@@ -513,7 +513,7 @@ fn binop_step<'a>(
     op_stack: &mut Vec<Loc<BinOp>>,
     next_op: Loc<BinOp>,
 ) -> Step<'a> {
-    use roc_module::called_via::Associativity::*;
+    use broc_module::called_via::Associativity::*;
     use std::cmp::Ordering;
 
     match op_stack.pop() {
@@ -570,7 +570,7 @@ fn binop_step<'a>(
                             let broken_expr =
                                 arena.alloc(new_op_call_expr(arena, left, stack_op, right));
                             let region = broken_expr.region;
-                            let data = roc_parse::ast::PrecedenceConflict {
+                            let data = broc_parse::ast::PrecedenceConflict {
                                 whole_region,
                                 binop1_position: stack_op.region.start(),
                                 binop1: stack_op.value,
@@ -590,7 +590,7 @@ fn binop_step<'a>(
                             // precedence but different associativity. Languages which support custom operators with
                             // (e.g. Haskell) can potentially have arbitrarily many of these cases.
                             //
-                            // By design, Roc neither allows custom operators nor has any built-in operators with
+                            // By design, Broc neither allows custom operators nor has any built-in operators with
                             // the same precedence and different associativity, so this should never happen!
                             panic!("BinOps had the same associativity, but different precedence. This should never happen!");
                         }

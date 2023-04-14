@@ -11,21 +11,21 @@ use crate::pattern::{canonicalize_pattern, BindingsFromPattern, Pattern, PermitS
 use crate::procedure::References;
 use crate::scope::Scope;
 use crate::traverse::{walk_expr, Visitor};
-use roc_collections::soa::Index;
-use roc_collections::{SendMap, VecMap, VecSet};
-use roc_error_macros::internal_error;
-use roc_module::called_via::CalledVia;
-use roc_module::ident::{ForeignSymbol, Lowercase, TagName};
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
-use roc_parse::ast::{self, Defs, StrLiteral};
-use roc_parse::ident::Accessor;
-use roc_parse::pattern::PatternType::*;
-use roc_problem::can::{PrecedenceProblem, Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
-use roc_types::num::SingleQuoteBound;
-use roc_types::subs::{ExhaustiveMark, IllegalCycleMark, RedundantMark, VarStore, Variable};
-use roc_types::types::{Alias, Category, IndexOrField, LambdaSet, OptAbleVar, Type};
+use broc_collections::soa::Index;
+use broc_collections::{SendMap, VecMap, VecSet};
+use broc_error_macros::internal_error;
+use broc_module::called_via::CalledVia;
+use broc_module::ident::{ForeignSymbol, Lowercase, TagName};
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
+use broc_parse::ast::{self, Defs, StrLiteral};
+use broc_parse::ident::Accessor;
+use broc_parse::pattern::PatternType::*;
+use broc_problem::can::{PrecedenceProblem, Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
+use broc_types::num::SingleQuoteBound;
+use broc_types::subs::{ExhaustiveMark, IllegalCycleMark, RedundantMark, VarStore, Variable};
+use broc_types::types::{Alias, Category, IndexOrField, LambdaSet, OptAbleVar, Type};
 use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::Read;
@@ -648,7 +648,7 @@ pub fn canonicalize_expr<'a>(
                         field_region,
                         record_region,
                     }) => (
-                        Expr::RuntimeError(roc_problem::can::RuntimeError::InvalidOptionalValue {
+                        Expr::RuntimeError(broc_problem::can::RuntimeError::InvalidOptionalValue {
                             field_name,
                             field_region,
                             record_region,
@@ -684,7 +684,7 @@ pub fn canonicalize_expr<'a>(
                         field_region,
                         record_region,
                     }) => (
-                        Expr::RuntimeError(roc_problem::can::RuntimeError::InvalidOptionalValue {
+                        Expr::RuntimeError(broc_problem::can::RuntimeError::InvalidOptionalValue {
                             field_name,
                             field_region,
                             record_region,
@@ -695,7 +695,7 @@ pub fn canonicalize_expr<'a>(
             } else {
                 // only (optionally qualified) variables can be updated, not arbitrary expressions
 
-                let error = roc_problem::can::RuntimeError::InvalidRecordUpdate {
+                let error = broc_problem::can::RuntimeError::InvalidRecordUpdate {
                     region: can_update.region,
                 };
 
@@ -758,7 +758,7 @@ pub fn canonicalize_expr<'a>(
                         // This will not manifest as a real runtime error and is just returned to have a value here.
                         // The pushed FileProblem will be fatal to compilation.
                         (
-                            Expr::RuntimeError(roc_problem::can::RuntimeError::NoImplementation),
+                            Expr::RuntimeError(broc_problem::can::RuntimeError::NoImplementation),
                             Output::default(),
                         )
                     }
@@ -773,7 +773,7 @@ pub fn canonicalize_expr<'a>(
                 // This will not manifest as a real runtime error and is just returned to have a value here.
                 // The pushed FileProblem will be fatal to compilation.
                 (
-                    Expr::RuntimeError(roc_problem::can::RuntimeError::NoImplementation),
+                    Expr::RuntimeError(broc_problem::can::RuntimeError::NoImplementation),
                     Output::default(),
                 )
             }
@@ -794,14 +794,14 @@ pub fn canonicalize_expr<'a>(
                     )
                 } else {
                     // multiple chars is found
-                    let error = roc_problem::can::RuntimeError::MultipleCharsInSingleQuote(region);
+                    let error = broc_problem::can::RuntimeError::MultipleCharsInSingleQuote(region);
                     let answer = Expr::RuntimeError(error);
 
                     (answer, Output::default())
                 }
             } else {
                 // no characters found
-                let error = roc_problem::can::RuntimeError::EmptySingleQuote(region);
+                let error = broc_problem::can::RuntimeError::EmptySingleQuote(region);
                 let answer = Expr::RuntimeError(error);
 
                 (answer, Output::default())
@@ -869,7 +869,7 @@ pub fn canonicalize_expr<'a>(
 
                 if args.len() > 1 {
                     let problem =
-                        roc_problem::can::RuntimeError::OpaqueAppliedToMultipleArgs(region);
+                        broc_problem::can::RuntimeError::OpaqueAppliedToMultipleArgs(region);
                     env.problem(Problem::RuntimeError(problem.clone()));
                     (RuntimeError(problem), output)
                 } else {
@@ -1019,9 +1019,9 @@ pub fn canonicalize_expr<'a>(
         }
         ast::Expr::Underscore(name) => {
             // we parse underscores, but they are not valid expression syntax
-            let problem = roc_problem::can::RuntimeError::MalformedIdentifier(
+            let problem = broc_problem::can::RuntimeError::MalformedIdentifier(
                 (*name).into(),
-                roc_parse::ident::BadIdent::Underscore(region.start()),
+                broc_parse::ident::BadIdent::Underscore(region.start()),
                 region,
             );
 
@@ -1320,7 +1320,7 @@ pub fn canonicalize_expr<'a>(
             binop2,
             expr: _,
         }) => {
-            use roc_problem::can::RuntimeError::*;
+            use broc_problem::can::RuntimeError::*;
 
             let region1 = Region::new(
                 *binop1_position,
@@ -1345,11 +1345,11 @@ pub fn canonicalize_expr<'a>(
             )
         }
         ast::Expr::MalformedClosure => {
-            use roc_problem::can::RuntimeError::*;
+            use broc_problem::can::RuntimeError::*;
             (RuntimeError(MalformedClosure(region)), Output::default())
         }
         ast::Expr::MalformedIdent(name, bad_ident) => {
-            use roc_problem::can::RuntimeError::*;
+            use broc_problem::can::RuntimeError::*;
 
             let problem = MalformedIdentifier((*name).into(), *bad_ident, region);
             env.problem(Problem::RuntimeError(problem.clone()));
@@ -1790,7 +1790,7 @@ fn canonicalize_field<'a>(
     scope: &mut Scope,
     field: &'a ast::AssignedField<'a, ast::Expr<'a>>,
 ) -> Result<(Lowercase, Loc<Expr>, Output, Variable), CanonicalizeFieldProblem> {
-    use roc_parse::ast::AssignedField::*;
+    use broc_parse::ast::AssignedField::*;
 
     match field {
         // Both a label and a value, e.g. `{ name: "blah" }`
@@ -2861,7 +2861,7 @@ impl Declarations {
     }
 }
 
-roc_error_macros::assert_sizeof_default!(DeclarationTag, 8);
+broc_error_macros::assert_sizeof_default!(DeclarationTag, 8);
 
 #[derive(Clone, Copy, Debug)]
 pub enum DeclarationTag {

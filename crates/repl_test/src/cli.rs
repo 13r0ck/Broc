@@ -3,8 +3,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 
-use roc_repl_cli::{SHORT_INSTRUCTIONS, WELCOME_MESSAGE};
-use roc_test_utils::assert_multiline_str_eq;
+use broc_repl_cli::{SHORT_INSTRUCTIONS, WELCOME_MESSAGE};
+use broc_test_utils::assert_multiline_str_eq;
 
 const ERROR_MESSAGE_START: char = '─';
 
@@ -15,7 +15,7 @@ pub struct Out {
     pub status: ExitStatus,
 }
 
-fn path_to_roc_binary() -> PathBuf {
+fn path_to_broc_binary() -> PathBuf {
     // Adapted from https://github.com/volta-cli/volta/blob/cefdf7436a15af3ce3a38b8fe53bb0cfdb37d3dd/tests/acceptance/support/sandbox.rs#L680
     // by the Volta Contributors - license information can be found in
     // the LEGAL_DETAILS file in the root directory of this distribution.
@@ -34,13 +34,13 @@ fn path_to_roc_binary() -> PathBuf {
             })
             .unwrap_or_else(|| panic!("CARGO_BIN_PATH wasn't set, and couldn't be inferred from context. Can't run CLI tests."));
 
-    path.push("roc");
+    path.push("broc");
 
     path
 }
 
 pub fn repl_eval(input: &str) -> Out {
-    let mut cmd = Command::new(path_to_roc_binary());
+    let mut cmd = Command::new(path_to_broc_binary());
 
     cmd.arg("repl");
 
@@ -48,7 +48,7 @@ pub fn repl_eval(input: &str) -> Out {
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
-        .expect("failed to execute compiled `roc` binary in CLI test");
+        .expect("failed to execute compiled `broc` binary in CLI test");
 
     {
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");

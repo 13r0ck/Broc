@@ -1,26 +1,26 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::error::canonicalize::{to_circular_def_doc, CIRCULAR_DEF};
-use crate::report::{Annotation, Report, RocDocAllocator, RocDocBuilder};
+use crate::report::{Annotation, Report, BrocDocAllocator, BrocDocBuilder};
 use itertools::EitherOrBoth;
 use itertools::Itertools;
-use roc_can::expected::{Expected, PExpected};
-use roc_collections::all::{HumanIndex, MutSet, SendMap};
-use roc_collections::VecMap;
-use roc_error_macros::internal_error;
-use roc_exhaustive::{CtorName, ListArity};
-use roc_module::called_via::{BinOp, CalledVia};
-use roc_module::ident::{IdentStr, Lowercase, TagName};
-use roc_module::symbol::Symbol;
-use roc_problem::Severity;
-use roc_region::all::{LineInfo, Region};
-use roc_solve_problem::{
+use broc_can::expected::{Expected, PExpected};
+use broc_collections::all::{HumanIndex, MutSet, SendMap};
+use broc_collections::VecMap;
+use broc_error_macros::internal_error;
+use broc_exhaustive::{CtorName, ListArity};
+use broc_module::called_via::{BinOp, CalledVia};
+use broc_module::ident::{IdentStr, Lowercase, TagName};
+use broc_module::symbol::Symbol;
+use broc_problem::Severity;
+use broc_region::all::{LineInfo, Region};
+use broc_solve_problem::{
     NotDerivableContext, NotDerivableDecode, NotDerivableEncode, NotDerivableEq, TypeError,
     UnderivableReason, Unfulfilled,
 };
-use roc_std::RocDec;
-use roc_types::pretty_print::{Parens, WILDCARD};
-use roc_types::types::{
+use broc_std::BrocDec;
+use broc_types::pretty_print::{Parens, WILDCARD};
+use broc_types::types::{
     AbilitySet, AliasKind, Category, ErrorType, IndexOrField, PatternCategory, Polarity, Reason,
     RecordField, TypeExt,
 };
@@ -36,7 +36,7 @@ const OPAQUE_NUM_SYMBOLS: &[Symbol] = &[
 ];
 
 pub fn type_problem<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     problem: TypeError,
@@ -46,7 +46,7 @@ pub fn type_problem<'b>(
     let severity = problem.severity();
 
     let report =
-        move |title: String, doc: RocDocBuilder<'b>, filename: PathBuf| -> Option<Report<'b>> {
+        move |title: String, doc: BrocDocBuilder<'b>, filename: PathBuf| -> Option<Report<'b>> {
             Some(Report {
                 title,
                 filename,
@@ -91,7 +91,7 @@ pub fn type_problem<'b>(
             report(title, doc, filename)
         }
         BadExprMissingAbility(region, _category, _found, incomplete) => {
-            if region == roc_can::DERIVED_REGION {
+            if region == broc_can::DERIVED_REGION {
                 return None;
             }
 
@@ -252,10 +252,10 @@ pub fn type_problem<'b>(
 }
 
 fn report_unfulfilled_ability<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     unfulfilled: Unfulfilled,
-) -> RocDocBuilder<'a> {
+) -> BrocDocBuilder<'a> {
     match unfulfilled {
         Unfulfilled::OpaqueDoesNotImplement { typ, ability } => {
             let stack = vec![alloc.concat([
@@ -321,11 +321,11 @@ fn report_unfulfilled_ability<'a>(
 }
 
 fn report_underivable_reason<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     reason: UnderivableReason,
     ability: Symbol,
     typ: &ErrorType,
-) -> Option<RocDocBuilder<'a>> {
+) -> Option<BrocDocBuilder<'a>> {
     match reason {
         UnderivableReason::NotABuiltin => {
             Some(alloc.reflow("Only builtin abilities can have generated implementations!"))
@@ -350,11 +350,11 @@ fn report_underivable_reason<'a>(
 }
 
 fn underivable_hint<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     ability: Symbol,
     context: NotDerivableContext,
     typ: &ErrorType,
-) -> Option<RocDocBuilder<'b>> {
+) -> Option<BrocDocBuilder<'b>> {
     match context {
         NotDerivableContext::NoContext => None,
         NotDerivableContext::Function => Some(alloc.note("").append(alloc.concat([
@@ -453,7 +453,7 @@ fn underivable_hint<'b>(
                 Some(alloc.note("").append(alloc.concat([
                     alloc.reflow("I can't derive "),
                     alloc.symbol_qualified(Symbol::BOOL_IS_EQ),
-                    alloc.reflow(" for floating-point types. That's because Roc's floating-point numbers cannot be compared for total equality - in Roc, `NaN` is never comparable to `NaN`."),
+                    alloc.reflow(" for floating-point types. That's because Broc's floating-point numbers cannot be compared for total equality - in Broc, `NaN` is never comparable to `NaN`."),
                     alloc.reflow(" If a type doesn't support total equality, it cannot support the "),
                     alloc.symbol_unqualified(Symbol::BOOL_EQ),
                     alloc.reflow(" ability!"),
@@ -464,13 +464,13 @@ fn underivable_hint<'b>(
 }
 
 pub fn cyclic_alias<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     symbol: Symbol,
-    region: roc_region::all::Region,
+    region: broc_region::all::Region,
     others: Vec<Symbol>,
     alias_kind: AliasKind,
-) -> (RocDocBuilder<'b>, String) {
+) -> (BrocDocBuilder<'b>, String) {
     let when_is_recursion_legal =
         alloc.reflow("Recursion in ")
         .append(alloc.reflow(alias_kind.as_str()))
@@ -521,19 +521,19 @@ pub fn cyclic_alias<'b>(
 }
 
 fn report_mismatch<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     severity: Severity,
     category: &Category,
     found: ErrorType,
     expected_type: ErrorType,
-    region: roc_region::all::Region,
-    opt_highlight: Option<roc_region::all::Region>,
-    problem: RocDocBuilder<'b>,
-    this_is: RocDocBuilder<'b>,
-    instead_of: RocDocBuilder<'b>,
-    further_details: Option<RocDocBuilder<'b>>,
+    region: broc_region::all::Region,
+    opt_highlight: Option<broc_region::all::Region>,
+    problem: BrocDocBuilder<'b>,
+    this_is: BrocDocBuilder<'b>,
+    instead_of: BrocDocBuilder<'b>,
+    further_details: Option<BrocDocBuilder<'b>>,
 ) -> Report<'b> {
     let snippet = if let Some(highlight) = opt_highlight {
         alloc.region_with_subregion(
@@ -566,18 +566,18 @@ fn report_mismatch<'b>(
 }
 
 fn report_bad_type<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     severity: Severity,
     category: &Category,
     found: ErrorType,
     expected_type: ErrorType,
-    region: roc_region::all::Region,
-    opt_highlight: Option<roc_region::all::Region>,
-    problem: RocDocBuilder<'b>,
-    this_is: RocDocBuilder<'b>,
-    further_details: RocDocBuilder<'b>,
+    region: broc_region::all::Region,
+    opt_highlight: Option<broc_region::all::Region>,
+    problem: BrocDocBuilder<'b>,
+    this_is: BrocDocBuilder<'b>,
+    further_details: BrocDocBuilder<'b>,
 ) -> Report<'b> {
     let snippet = if let Some(highlight) = opt_highlight {
         alloc.region_with_subregion(
@@ -609,10 +609,10 @@ fn report_bad_type<'b>(
 }
 
 fn pattern_to_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    pattern: &roc_can::pattern::Pattern,
-) -> Option<RocDocBuilder<'b>> {
-    use roc_can::pattern::Pattern::*;
+    alloc: &'b BrocDocAllocator<'b>,
+    pattern: &broc_can::pattern::Pattern,
+) -> Option<BrocDocBuilder<'b>> {
+    use broc_can::pattern::Pattern::*;
 
     match pattern {
         Identifier(symbol) => Some(alloc.symbol_unqualified(*symbol)),
@@ -629,11 +629,11 @@ fn lowercase_first(s: &str) -> String {
 }
 
 fn to_expr_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     severity: Severity,
-    expr_region: roc_region::all::Region,
+    expr_region: broc_region::all::Region,
     category: Category,
     found: ErrorType,
     expected: Expected<ErrorType>,
@@ -695,7 +695,7 @@ fn to_expr_report<'b>(
             }
         }
         Expected::FromAnnotation(name, _arity, annotation_source, expected_type) => {
-            use roc_types::types::AnnotationSource::*;
+            use broc_types::types::AnnotationSource::*;
 
             let (the_name_text, on_name_text) = match pattern_to_doc(alloc, &name.value) {
                 Some(doc) => (
@@ -806,7 +806,7 @@ fn to_expr_report<'b>(
                     {
                         // for typed bodies, include the line(s) with the signature
                         let joined =
-                            roc_region::all::Region::span_across(&ann_region, &expr_region);
+                            broc_region::all::Region::span_across(&ann_region, &expr_region);
                         alloc.region_with_subregion(
                             lines.convert_region(joined),
                             lines.convert_region(expr_region),
@@ -853,7 +853,7 @@ fn to_expr_report<'b>(
                     // Note: Elm has a hint here about truthiness. I think that
                     // makes sense for Elm, since most Elm users will come from
                     // JS, where truthiness is a thing. I don't really know
-                    // what the background of Roc programmers will be, and I'd
+                    // what the background of Broc programmers will be, and I'd
                     // rather not create a distraction by introducing a term
                     // they don't know. ("Wait, what's truthiness?")
                 )
@@ -893,7 +893,7 @@ fn to_expr_report<'b>(
                     // Note: Elm has a hint here about truthiness. I think that
                     // makes sense for Elm, since most Elm users will come from
                     // JS, where truthiness is a thing. I don't really know
-                    // what the background of Roc programmers will be, and I'd
+                    // what the background of Broc programmers will be, and I'd
                     // rather not create a distraction by introducing a term
                     // they don't know. ("Wait, what's truthiness?")
                 )
@@ -1235,7 +1235,7 @@ fn to_expr_report<'b>(
                             ]),
                             alloc.region(lines.convert_region(expr_region)),
                             alloc.reflow(
-                                "Roc does not allow functions to be partially applied. \
+                                "Broc does not allow functions to be partially applied. \
                                 Use a closure to make partial application explicit.",
                             ),
                         ];
@@ -1545,10 +1545,10 @@ fn to_expr_report<'b>(
 }
 
 fn does_not_implement<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     err_type: ErrorType,
     ability: Symbol,
-) -> RocDocBuilder<'a> {
+) -> BrocDocBuilder<'a> {
     alloc.concat([
         to_doc(alloc, Parens::Unnecessary, err_type).0,
         alloc.reflow(" does not implement "),
@@ -1594,7 +1594,7 @@ enum ExpectationContext<'a> {
     /// An expected type was discovered from a type annotation. Corresponds to
     /// [`Expected::FromAnnotation`](Expected::FromAnnotation).
     Annotation {
-        on: RocDocBuilder<'a>,
+        on: BrocDocBuilder<'a>,
     },
     WhenCondition,
     /// When we don't know the context, or it's not relevant.
@@ -1612,14 +1612,14 @@ impl<'a> std::fmt::Debug for ExpectationContext<'a> {
 }
 
 fn type_comparison<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     actual: ErrorType,
     expected: ErrorType,
     expectation_context: ExpectationContext<'b>,
-    i_am_seeing: RocDocBuilder<'b>,
-    instead_of: RocDocBuilder<'b>,
-    context_hints: Option<RocDocBuilder<'b>>,
-) -> RocDocBuilder<'b> {
+    i_am_seeing: BrocDocBuilder<'b>,
+    instead_of: BrocDocBuilder<'b>,
+    context_hints: Option<BrocDocBuilder<'b>>,
+) -> BrocDocBuilder<'b> {
     let comparison = to_comparison(alloc, actual, expected);
 
     let mut lines = vec![
@@ -1643,13 +1643,13 @@ fn type_comparison<'b>(
 }
 
 fn lone_type<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     actual: ErrorType,
     expected: ErrorType,
     expectation_context: ExpectationContext<'b>,
-    i_am_seeing: RocDocBuilder<'b>,
-    further_details: RocDocBuilder<'b>,
-) -> RocDocBuilder<'b> {
+    i_am_seeing: BrocDocBuilder<'b>,
+    further_details: BrocDocBuilder<'b>,
+) -> BrocDocBuilder<'b> {
     let comparison = to_comparison(alloc, actual, expected);
 
     let mut lines = vec![i_am_seeing, comparison.actual, further_details];
@@ -1663,14 +1663,14 @@ fn lone_type<'b>(
     alloc.stack(lines)
 }
 
-/// Formats an item in a Roc program to a tuple (summary, has_type_colon), where
+/// Formats an item in a Broc program to a tuple (summary, has_type_colon), where
 /// concatenation of the tuple items introduces the item and leads up to its type.
 fn format_category<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    this_is: RocDocBuilder<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
+    this_is: BrocDocBuilder<'b>,
     category: &Category,
     capitalize_start: bool,
-) -> (RocDocBuilder<'b>, RocDocBuilder<'b>) {
+) -> (BrocDocBuilder<'b>, BrocDocBuilder<'b>) {
     use Category::*;
 
     let t = if capitalize_start { "T" } else { "t" };
@@ -1889,25 +1889,25 @@ fn format_category<'b>(
 }
 
 fn add_category<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    this_is: RocDocBuilder<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
+    this_is: BrocDocBuilder<'b>,
     category: &Category,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     let (summary, suffix) = format_category(alloc, this_is, category, true);
     alloc.concat([summary, suffix])
 }
 
 fn to_pattern_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     severity: Severity,
-    expr_region: roc_region::all::Region,
+    expr_region: broc_region::all::Region,
     category: PatternCategory,
     found: ErrorType,
     expected: PExpected<ErrorType>,
 ) -> Report<'b> {
-    use roc_types::types::PReason;
+    use broc_types::types::PReason;
 
     match expected {
         PExpected::NoExpectation(expected_type) => {
@@ -2089,13 +2089,13 @@ fn to_pattern_report<'b>(
 }
 
 fn pattern_type_comparison<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     actual: ErrorType,
     expected: ErrorType,
-    i_am_seeing: RocDocBuilder<'b>,
-    instead_of: RocDocBuilder<'b>,
-    reason_hints: Vec<RocDocBuilder<'b>>,
-) -> RocDocBuilder<'b> {
+    i_am_seeing: BrocDocBuilder<'b>,
+    instead_of: BrocDocBuilder<'b>,
+    reason_hints: Vec<BrocDocBuilder<'b>>,
+) -> BrocDocBuilder<'b> {
     let comparison = to_comparison(alloc, actual, expected);
 
     let mut lines = vec![
@@ -2116,10 +2116,10 @@ fn pattern_type_comparison<'b>(
 }
 
 fn add_pattern_category<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    i_am_trying_to_match: RocDocBuilder<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
+    i_am_trying_to_match: BrocDocBuilder<'b>,
     category: &PatternCategory,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     use PatternCategory::*;
 
     let rest = match category {
@@ -2151,11 +2151,11 @@ fn add_pattern_category<'b>(
 }
 
 fn to_circular_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     severity: Severity,
-    region: roc_region::all::Region,
+    region: broc_region::all::Region,
     symbol: Symbol,
     overall_type: ErrorType,
 ) -> Report<'b> {
@@ -2198,10 +2198,10 @@ pub enum Problem {
 }
 
 fn problems_to_tip<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     mut problems: Vec<Problem>,
     expectation_context: ExpectationContext<'b>,
-) -> Option<RocDocBuilder<'b>> {
+) -> Option<BrocDocBuilder<'b>> {
     if problems.is_empty() {
         None
     } else {
@@ -2211,7 +2211,7 @@ fn problems_to_tip<'b>(
 }
 
 pub mod suggest {
-    use roc_module::ident::Lowercase;
+    use broc_module::ident::Lowercase;
 
     pub trait ToStr {
         fn to_str(&self) -> &str;
@@ -2266,13 +2266,13 @@ pub mod suggest {
 }
 
 pub struct Comparison<'b> {
-    actual: RocDocBuilder<'b>,
-    expected: RocDocBuilder<'b>,
+    actual: BrocDocBuilder<'b>,
+    expected: BrocDocBuilder<'b>,
     problems: Vec<Problem>,
 }
 
 fn to_comparison<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     actual: ErrorType,
     expected: ErrorType,
 ) -> Comparison<'b> {
@@ -2291,7 +2291,7 @@ fn to_comparison<'b>(
 }
 
 fn diff_is_wildcard_comparison<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     actual: ErrorType,
     expected: ErrorType,
 ) -> bool {
@@ -2341,11 +2341,11 @@ pub struct Diff<T> {
 }
 
 fn tag_ext_to_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     pol: Polarity,
     gen_usages: &VecMap<Lowercase, usize>,
     ext: TypeExt,
-) -> Option<RocDocBuilder<'b>> {
+) -> Option<BrocDocBuilder<'b>> {
     use TypeExt::*;
 
     match ext {
@@ -2370,9 +2370,9 @@ fn tag_ext_to_doc<'b>(
 }
 
 fn record_ext_to_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     ext: TypeExt,
-) -> Option<RocDocBuilder<'b>> {
+) -> Option<BrocDocBuilder<'b>> {
     use TypeExt::*;
 
     match ext {
@@ -2392,10 +2392,10 @@ struct Context {
 }
 
 pub fn to_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     parens: Parens,
     tipe: ErrorType,
-) -> (RocDocBuilder<'b>, AbleVariables) {
+) -> (BrocDocBuilder<'b>, AbleVariables) {
     let mut ctx = Context::default();
 
     let mut generated_name_usages = VecMap::default();
@@ -2416,10 +2416,10 @@ fn display_generated_name(name: &Lowercase) -> &str {
 fn to_doc_help<'b>(
     ctx: &mut Context,
     gen_usages: &VecMap<Lowercase, usize>,
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     parens: Parens,
     tipe: ErrorType,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     use ErrorType::*;
 
     match tipe {
@@ -2709,10 +2709,10 @@ fn count_generated_name_usages_in_exts<'a>(
 }
 
 fn same<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     parens: Parens,
     tipe: ErrorType,
-) -> Diff<RocDocBuilder<'b>> {
+) -> Diff<BrocDocBuilder<'b>> {
     let (doc, able) = to_doc(alloc, parens, tipe);
 
     Diff {
@@ -2725,10 +2725,10 @@ fn same<'b>(
 }
 
 fn type_with_able_vars<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    typ: RocDocBuilder<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
+    typ: BrocDocBuilder<'b>,
     able: AbleVariables,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     if able.is_empty() {
         // fast path: taken the vast majority of the time
         return typ;
@@ -2757,9 +2757,9 @@ fn type_with_able_vars<'b>(
 }
 
 pub fn error_type_to_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     error_type: ErrorType,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     let (typ, able_vars) = to_doc(alloc, Parens::Unnecessary, error_type);
     type_with_able_vars(alloc, typ, able_vars)
 }
@@ -2786,11 +2786,11 @@ fn compact_builtin_aliases(typ: ErrorType) -> ErrorType {
 }
 
 fn to_diff<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     parens: Parens,
     type1: ErrorType,
     type2: ErrorType,
-) -> Diff<RocDocBuilder<'b>> {
+) -> Diff<BrocDocBuilder<'b>> {
     use ErrorType::*;
 
     let (type1, type2) = (
@@ -3046,11 +3046,11 @@ fn to_diff<'b>(
 }
 
 fn diff_args<'b, I>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     parens: Parens,
     args1: I,
     args2: I,
-) -> Diff<Vec<RocDocBuilder<'b>>>
+) -> Diff<Vec<BrocDocBuilder<'b>>>
 where
     I: IntoIterator<Item = ErrorType>,
 {
@@ -3090,12 +3090,12 @@ fn ext_has_fixed_fields(ext: &TypeExt) -> bool {
 }
 
 fn diff_record<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     fields1: SendMap<Lowercase, RecordField<ErrorType>>,
     ext1: TypeExt,
     mut fields2: SendMap<Lowercase, RecordField<ErrorType>>,
     ext2: TypeExt,
-) -> Diff<RocDocBuilder<'b>> {
+) -> Diff<BrocDocBuilder<'b>> {
     let to_overlap_docs =
         |(field, (t1, t2)): (Lowercase, (RecordField<ErrorType>, RecordField<ErrorType>))| {
             let diff = to_diff(
@@ -3228,7 +3228,7 @@ fn diff_record<'b>(
 
     let ext_diff = record_ext_to_diff(alloc, ext1, ext2);
 
-    let mut fields_diff: Diff<Vec<(Lowercase, RocDocBuilder<'b>, RecordField<RocDocBuilder<'b>>)>> =
+    let mut fields_diff: Diff<Vec<(Lowercase, BrocDocBuilder<'b>, RecordField<BrocDocBuilder<'b>>)>> =
         Diff {
             left: vec![],
             right: vec![],
@@ -3546,11 +3546,11 @@ fn should_show_field_diff(
 }
 
 fn same_tag_name_overlap_diff<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     field: TagName,
     payload_vals1: Vec<ErrorType>,
     payload_vals2: Vec<ErrorType>,
-) -> Diff<(TagName, RocDocBuilder<'b>, Vec<RocDocBuilder<'b>>)> {
+) -> Diff<(TagName, BrocDocBuilder<'b>, Vec<BrocDocBuilder<'b>>)> {
     // Render ellipses wherever the payload slots have the same type.
     let mut left_doc = Vec::with_capacity(payload_vals1.len());
     let mut left_able = Vec::new();
@@ -3610,7 +3610,7 @@ fn same_tag_name_overlap_diff<'b>(
 }
 
 fn diff_tag_union<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     pol: Polarity,
     tags1: SendMap<TagName, Vec<ErrorType>>,
     ext1: TypeExt,
@@ -3618,7 +3618,7 @@ fn diff_tag_union<'b>(
     mut tags2: SendMap<TagName, Vec<ErrorType>>,
     ext2: TypeExt,
     rec2: Option<ErrorType>,
-) -> Diff<RocDocBuilder<'b>> {
+) -> Diff<BrocDocBuilder<'b>> {
     let gen_usages1 = {
         let mut usages = VecMap::default();
         count_generated_name_usages(&mut usages, tags1.values().flatten());
@@ -3637,8 +3637,8 @@ fn diff_tag_union<'b>(
     };
     let to_unknown_docs = |(tag_name, args): (&TagName, &Vec<ErrorType>)| -> (
         TagName,
-        RocDocBuilder<'b>,
-        Vec<RocDocBuilder<'b>>,
+        BrocDocBuilder<'b>,
+        Vec<BrocDocBuilder<'b>>,
         AbleVariables,
     ) {
         let (args, able): (_, Vec<AbleVariables>) =
@@ -3723,7 +3723,7 @@ fn diff_tag_union<'b>(
     let ext2_is_open = matches!(&ext2, TypeExt::FlexOpen(_));
     let ext_diff = tag_ext_to_diff(alloc, pol, ext1, ext2, &gen_usages1, &gen_usages2);
 
-    let mut tags_diff: Diff<Vec<(TagName, RocDocBuilder<'b>, Vec<RocDocBuilder<'b>>)>> = Diff {
+    let mut tags_diff: Diff<Vec<(TagName, BrocDocBuilder<'b>, Vec<BrocDocBuilder<'b>>)>> = Diff {
         status: Status::Similar,
         left: Vec::new(),
         right: Vec::new(),
@@ -3866,13 +3866,13 @@ fn should_show_payload_diff(errs1: &[ErrorType], errs2: &[ErrorType]) -> bool {
 }
 
 fn tag_ext_to_diff<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     pol: Polarity,
     ext1: TypeExt,
     ext2: TypeExt,
     gen_usages1: &VecMap<Lowercase, usize>,
     gen_usages2: &VecMap<Lowercase, usize>,
-) -> Diff<Option<RocDocBuilder<'b>>> {
+) -> Diff<Option<BrocDocBuilder<'b>>> {
     let status = ext_to_status(&ext1, &ext2);
     let ext_doc_1 = tag_ext_to_doc(alloc, pol, gen_usages1, ext1);
     let ext_doc_2 = tag_ext_to_doc(alloc, pol, gen_usages2, ext2);
@@ -3896,10 +3896,10 @@ fn tag_ext_to_diff<'b>(
 }
 
 fn record_ext_to_diff<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     ext1: TypeExt,
     ext2: TypeExt,
-) -> Diff<Option<RocDocBuilder<'b>>> {
+) -> Diff<Option<BrocDocBuilder<'b>>> {
     let status = ext_to_status(&ext1, &ext2);
     let ext_doc_1 = record_ext_to_doc(alloc, ext1);
     let ext_doc_2 = record_ext_to_doc(alloc, ext2);
@@ -3952,25 +3952,25 @@ fn ext_to_status(ext1: &TypeExt, ext2: &TypeExt) -> Status {
 }
 
 mod report_text {
-    use crate::report::{Annotation, RocDocAllocator, RocDocBuilder};
-    use roc_module::ident::Lowercase;
-    use roc_types::pretty_print::Parens;
-    use roc_types::types::{ErrorType, RecordField, TypeExt};
+    use crate::report::{Annotation, BrocDocAllocator, BrocDocBuilder};
+    use broc_module::ident::Lowercase;
+    use broc_types::pretty_print::Parens;
+    use broc_types::types::{ErrorType, RecordField, TypeExt};
     use ven_pretty::DocAllocator;
 
     fn with_parens<'b>(
-        alloc: &'b RocDocAllocator<'b>,
-        text: RocDocBuilder<'b>,
-    ) -> RocDocBuilder<'b> {
+        alloc: &'b BrocDocAllocator<'b>,
+        text: BrocDocBuilder<'b>,
+    ) -> BrocDocBuilder<'b> {
         alloc.text("(").append(text).append(alloc.text(")"))
     }
 
     pub fn function<'b>(
-        alloc: &'b RocDocAllocator<'b>,
+        alloc: &'b BrocDocAllocator<'b>,
         parens: Parens,
-        args: Vec<RocDocBuilder<'b>>,
-        ret: RocDocBuilder<'b>,
-    ) -> RocDocBuilder<'b> {
+        args: Vec<BrocDocBuilder<'b>>,
+        ret: BrocDocBuilder<'b>,
+    ) -> BrocDocBuilder<'b> {
         let function_doc = alloc.concat([
             alloc.intersperse(args, alloc.reflow(", ")),
             alloc.reflow(" -> "),
@@ -3984,11 +3984,11 @@ mod report_text {
     }
 
     pub fn apply<'b>(
-        alloc: &'b RocDocAllocator<'b>,
+        alloc: &'b BrocDocAllocator<'b>,
         parens: Parens,
-        name: RocDocBuilder<'b>,
-        args: Vec<RocDocBuilder<'b>>,
-    ) -> RocDocBuilder<'b> {
+        name: BrocDocBuilder<'b>,
+        args: Vec<BrocDocBuilder<'b>>,
+    ) -> BrocDocBuilder<'b> {
         if args.is_empty() {
             name
         } else {
@@ -4003,11 +4003,11 @@ mod report_text {
     }
 
     pub fn record<'b>(
-        alloc: &'b RocDocAllocator<'b>,
-        entries: Vec<(RocDocBuilder<'b>, RecordField<RocDocBuilder<'b>>)>,
-        opt_ext: Option<RocDocBuilder<'b>>,
+        alloc: &'b BrocDocAllocator<'b>,
+        entries: Vec<(BrocDocBuilder<'b>, RecordField<BrocDocBuilder<'b>>)>,
+        opt_ext: Option<BrocDocBuilder<'b>>,
         fields_omitted: usize,
-    ) -> RocDocBuilder<'b> {
+    ) -> BrocDocBuilder<'b> {
         let ext_doc = if let Some(t) = opt_ext {
             t
         } else {
@@ -4015,7 +4015,7 @@ mod report_text {
         };
 
         let entry_to_doc =
-            |(field_name, field_type): (RocDocBuilder<'b>, RecordField<RocDocBuilder<'b>>)| {
+            |(field_name, field_type): (BrocDocBuilder<'b>, RecordField<BrocDocBuilder<'b>>)| {
                 match field_type {
                     RecordField::Demanded(field)
                     | RecordField::Required(field)
@@ -4078,11 +4078,11 @@ mod report_text {
     }
 
     pub fn tuple<'b>(
-        alloc: &'b RocDocAllocator<'b>,
-        entries: Vec<RocDocBuilder<'b>>,
-        opt_ext: Option<RocDocBuilder<'b>>,
+        alloc: &'b BrocDocAllocator<'b>,
+        entries: Vec<BrocDocBuilder<'b>>,
+        opt_ext: Option<BrocDocBuilder<'b>>,
         fields_omitted: usize,
-    ) -> RocDocBuilder<'b> {
+    ) -> BrocDocBuilder<'b> {
         let ext_doc = if let Some(t) = opt_ext {
             t
         } else {
@@ -4138,11 +4138,11 @@ mod report_text {
     }
 
     pub fn to_suggestion_record<'b>(
-        alloc: &'b RocDocAllocator<'b>,
+        alloc: &'b BrocDocAllocator<'b>,
         f: (Lowercase, RecordField<ErrorType>),
         fs: Vec<(Lowercase, RecordField<ErrorType>)>,
         ext: TypeExt,
-    ) -> RocDocBuilder<'b> {
+    ) -> BrocDocBuilder<'b> {
         use crate::error::r#type::{record_ext_to_doc, to_doc};
 
         let entry_to_doc = |(name, tipe): (Lowercase, RecordField<ErrorType>)| {
@@ -4163,10 +4163,10 @@ mod report_text {
     }
 
     fn vertical_record<'b>(
-        alloc: &'b RocDocAllocator<'b>,
-        entries: Vec<(RocDocBuilder<'b>, RocDocBuilder<'b>)>,
-        opt_ext: Option<RocDocBuilder<'b>>,
-    ) -> RocDocBuilder<'b> {
+        alloc: &'b BrocDocAllocator<'b>,
+        entries: Vec<(BrocDocBuilder<'b>, BrocDocBuilder<'b>)>,
+        opt_ext: Option<BrocDocBuilder<'b>>,
+    ) -> BrocDocBuilder<'b> {
         let fields = if entries.is_empty() {
             alloc.text("{}")
         } else {
@@ -4174,7 +4174,7 @@ mod report_text {
 
             let is_truncated = entries.len() > MAX_ENTRIES_TO_DISPLAY;
             let entry_to_doc =
-                |(field_name, field_type): (RocDocBuilder<'b>, RocDocBuilder<'b>)| {
+                |(field_name, field_type): (BrocDocBuilder<'b>, BrocDocBuilder<'b>)| {
                     field_name
                         .indent(4)
                         .append(alloc.text(" : "))
@@ -4208,19 +4208,19 @@ mod report_text {
     }
 
     pub fn tag_union<'b>(
-        alloc: &'b RocDocAllocator<'b>,
-        entries: Vec<(RocDocBuilder<'b>, Vec<RocDocBuilder<'b>>)>,
-        opt_ext: Option<RocDocBuilder<'b>>,
+        alloc: &'b BrocDocAllocator<'b>,
+        entries: Vec<(BrocDocBuilder<'b>, Vec<BrocDocBuilder<'b>>)>,
+        opt_ext: Option<BrocDocBuilder<'b>>,
         tags_omitted: usize,
-        opt_rec: Option<RocDocBuilder<'b>>,
-    ) -> RocDocBuilder<'b> {
+        opt_rec: Option<BrocDocBuilder<'b>>,
+    ) -> BrocDocBuilder<'b> {
         let ext_doc = if let Some(t) = opt_ext {
             t
         } else {
             alloc.nil()
         };
 
-        let entry_to_doc = |(tag_name, arguments): (RocDocBuilder<'b>, Vec<_>)| {
+        let entry_to_doc = |(tag_name, arguments): (BrocDocBuilder<'b>, Vec<_>)| {
             if arguments.is_empty() {
                 tag_name
             } else {
@@ -4285,9 +4285,9 @@ mod report_text {
     }
 
     pub fn range<'b>(
-        alloc: &'b RocDocAllocator<'b>,
-        ranged_types: Vec<RocDocBuilder<'b>>,
-    ) -> RocDocBuilder<'b> {
+        alloc: &'b BrocDocAllocator<'b>,
+        ranged_types: Vec<BrocDocBuilder<'b>>,
+    ) -> BrocDocBuilder<'b> {
         let mut doc = Vec::with_capacity(ranged_types.len() * 2);
 
         let last = ranged_types.len() - 1;
@@ -4307,7 +4307,7 @@ mod report_text {
     }
 }
 
-fn list_abilities<'a>(alloc: &'a RocDocAllocator<'a>, abilities: &AbilitySet) -> RocDocBuilder<'a> {
+fn list_abilities<'a>(alloc: &'a BrocDocAllocator<'a>, abilities: &AbilitySet) -> BrocDocBuilder<'a> {
     let mut abilities = abilities.sorted_iter();
     if abilities.len() == 1 {
         alloc.concat([
@@ -4342,10 +4342,10 @@ fn list_abilities<'a>(alloc: &'a RocDocAllocator<'a>, abilities: &AbilitySet) ->
 }
 
 fn type_problem_to_pretty<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     problem: crate::error::r#type::Problem,
     expectation_context: ExpectationContext<'b>,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     use crate::error::r#type::Problem::*;
 
     match (problem, expectation_context) {
@@ -4760,7 +4760,7 @@ fn type_problem_to_pretty<'b>(
 }
 
 fn report_record_field_typo<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     severity: Severity,
@@ -4850,13 +4850,13 @@ fn report_record_field_typo<'b>(
 }
 
 fn exhaustive_problem<'a>(
-    alloc: &'a RocDocAllocator<'a>,
+    alloc: &'a BrocDocAllocator<'a>,
     lines: &LineInfo,
     filename: PathBuf,
-    problem: roc_exhaustive::Error,
+    problem: broc_exhaustive::Error,
 ) -> Report<'a> {
-    use roc_exhaustive::Context::*;
-    use roc_exhaustive::Error::*;
+    use broc_exhaustive::Context::*;
+    use broc_exhaustive::Error::*;
 
     let severity = problem.severity();
 
@@ -4994,9 +4994,9 @@ fn exhaustive_problem<'a>(
 }
 
 pub fn unhandled_patterns_to_doc_block<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    patterns: Vec<roc_exhaustive::Pattern>,
-) -> RocDocBuilder<'b> {
+    alloc: &'b BrocDocAllocator<'b>,
+    patterns: Vec<broc_exhaustive::Pattern>,
+) -> BrocDocBuilder<'b> {
     alloc
         .vcat(
             patterns
@@ -5008,9 +5008,9 @@ pub fn unhandled_patterns_to_doc_block<'b>(
 }
 
 fn exhaustive_pattern_to_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    pattern: roc_exhaustive::Pattern,
-) -> RocDocBuilder<'b> {
+    alloc: &'b BrocDocAllocator<'b>,
+    pattern: broc_exhaustive::Pattern,
+) -> BrocDocBuilder<'b> {
     pattern_to_doc_help(alloc, pattern, false)
 }
 
@@ -5019,14 +5019,14 @@ const TAG_INDENT: usize = 4;
 const RECORD_FIELD_INDENT: usize = 4;
 
 fn pattern_to_doc_help<'b>(
-    alloc: &'b RocDocAllocator<'b>,
-    pattern: roc_exhaustive::Pattern,
+    alloc: &'b BrocDocAllocator<'b>,
+    pattern: broc_exhaustive::Pattern,
     in_type_param: bool,
-) -> RocDocBuilder<'b> {
-    use roc_can::exhaustive::{GUARD_CTOR, NONEXHAUSIVE_CTOR};
-    use roc_exhaustive::Literal::*;
-    use roc_exhaustive::Pattern::*;
-    use roc_exhaustive::RenderAs;
+) -> BrocDocBuilder<'b> {
+    use broc_can::exhaustive::{GUARD_CTOR, NONEXHAUSIVE_CTOR};
+    use broc_exhaustive::Literal::*;
+    use broc_exhaustive::Pattern::*;
+    use broc_exhaustive::RenderAs;
 
     match pattern {
         Anything => alloc.text("_"),
@@ -5037,7 +5037,7 @@ fn pattern_to_doc_help<'b>(
             Bit(false) => alloc.text("Bool.false"),
             Byte(b) => alloc.text(b.to_string()),
             Float(f) => alloc.text(f.to_string()),
-            Decimal(d) => alloc.text(RocDec::from_ne_bytes(d).to_string()),
+            Decimal(d) => alloc.text(BrocDec::from_ne_bytes(d).to_string()),
             Str(s) => alloc.string(s.into()),
         },
         List(arity, patterns) => {
@@ -5130,7 +5130,7 @@ fn pattern_to_doc_help<'b>(
                         CtorName::Tag(TagName(name)) if name.as_str() == NONEXHAUSIVE_CTOR => {
                             return pattern_to_doc_help(
                                 alloc,
-                                roc_exhaustive::Pattern::Anything,
+                                broc_exhaustive::Pattern::Anything,
                                 in_type_param,
                             )
                         }

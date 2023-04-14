@@ -21,36 +21,36 @@ use crate::pattern::{canonicalize_def_header_pattern, BindingsFromPattern, Patte
 use crate::procedure::References;
 use crate::scope::create_alias;
 use crate::scope::{PendingAbilitiesInScope, Scope};
-use roc_collections::ReferenceMatrix;
-use roc_collections::VecMap;
-use roc_collections::VecSet;
-use roc_collections::{ImSet, MutMap, SendMap};
-use roc_error_macros::internal_error;
-use roc_module::ident::Ident;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::IdentId;
-use roc_module::symbol::ModuleId;
-use roc_module::symbol::Symbol;
-use roc_parse::ast;
-use roc_parse::ast::AssignedField;
-use roc_parse::ast::Defs;
-use roc_parse::ast::ExtractSpaces;
-use roc_parse::ast::TypeHeader;
-use roc_parse::ident::Accessor;
-use roc_parse::pattern::PatternType;
-use roc_problem::can::ShadowKind;
-use roc_problem::can::{CycleEntry, Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
-use roc_types::subs::IllegalCycleMark;
-use roc_types::subs::{VarStore, Variable};
-use roc_types::types::AliasCommon;
-use roc_types::types::AliasKind;
-use roc_types::types::AliasVar;
-use roc_types::types::IndexOrField;
-use roc_types::types::LambdaSet;
-use roc_types::types::MemberImpl;
-use roc_types::types::OptAbleType;
-use roc_types::types::{Alias, Type};
+use broc_collections::ReferenceMatrix;
+use broc_collections::VecMap;
+use broc_collections::VecSet;
+use broc_collections::{ImSet, MutMap, SendMap};
+use broc_error_macros::internal_error;
+use broc_module::ident::Ident;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::IdentId;
+use broc_module::symbol::ModuleId;
+use broc_module::symbol::Symbol;
+use broc_parse::ast;
+use broc_parse::ast::AssignedField;
+use broc_parse::ast::Defs;
+use broc_parse::ast::ExtractSpaces;
+use broc_parse::ast::TypeHeader;
+use broc_parse::ident::Accessor;
+use broc_parse::pattern::PatternType;
+use broc_problem::can::ShadowKind;
+use broc_problem::can::{CycleEntry, Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
+use broc_types::subs::IllegalCycleMark;
+use broc_types::subs::{VarStore, Variable};
+use broc_types::types::AliasCommon;
+use broc_types::types::AliasKind;
+use broc_types::types::AliasVar;
+use broc_types::types::IndexOrField;
+use broc_types::types::LambdaSet;
+use broc_types::types::MemberImpl;
+use broc_types::types::OptAbleType;
+use broc_types::types::{Alias, Type};
 use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
@@ -236,7 +236,7 @@ impl PendingTypeDef<'_> {
     }
 }
 
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Declaration {
@@ -908,7 +908,7 @@ pub(crate) fn canonicalize_defs<'a>(
     mut output: Output,
     var_store: &mut VarStore,
     scope: &mut Scope,
-    loc_defs: &'a mut roc_parse::ast::Defs<'a>,
+    loc_defs: &'a mut broc_parse::ast::Defs<'a>,
     pattern_type: PatternType,
 ) -> (CanDefs, Output, MutMap<Symbol, Region>) {
     // Canonicalizing defs while detecting shadowing involves a multi-step process:
@@ -1815,7 +1815,7 @@ pub(crate) fn sort_can_defs(
                     // NOTE: a `_ = someDef` can mean we don't have a symbol here
                     let symbol = def_ordering.get_symbol($index);
 
-                    roc_error_macros::internal_error!("def not available {:?}", symbol)
+                    broc_error_macros::internal_error!("def not available {:?}", symbol)
                 }
             }
         };
@@ -2652,7 +2652,7 @@ fn to_pending_type_def<'a>(
                 let member_sym = match scope.introduce(member_name.into(), name_region) {
                     Ok(sym) => sym,
                     Err((shadowed_symbol, shadow, _new_symbol)) => {
-                        env.problem(roc_problem::can::Problem::Shadowing {
+                        env.problem(broc_problem::can::Problem::Shadowing {
                             original_region: shadowed_symbol.region,
                             shadow,
                             kind: ShadowKind::Variable,
@@ -3081,20 +3081,20 @@ enum MakeTagUnionRecursive {
 
 /// Attempt to make a tag union recursive at the position of `recursive_alias`; for example,
 ///
-/// ```roc
+/// ```broc
 /// [Cons a (ConsList a), Nil] as ConsList a
 /// ```
 ///
 /// can be made recursive at the position "ConsList a" with a fresh recursive variable, say r1:
 ///
-/// ```roc
+/// ```broc
 /// [Cons a r1, Nil] as r1
 /// ```
 ///
 /// Returns `Err` if the tag union is recursive, but there is no structure-preserving recursion
 /// variable for it. This can happen when the type is a nested datatype, for example in either of
 ///
-/// ```roc
+/// ```broc
 /// Nested a : [Chain a (Nested (List a)), Term]
 /// DuoList a b : [Cons a (DuoList b a), Nil]
 /// ```

@@ -6,8 +6,8 @@ use object::{
     ObjectSection, ObjectSymbol, RelocationKind, RelocationTarget, Section, SectionIndex,
     SectionKind, Symbol, SymbolIndex, SymbolSection,
 };
-use roc_collections::all::MutMap;
-use roc_error_macros::{internal_error, user_error};
+use broc_collections::all::MutMap;
+use broc_error_macros::{internal_error, user_error};
 use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::mem;
@@ -39,26 +39,26 @@ fn report_timing(label: &str, duration: Duration) {
     println!("\t{:9.3} ms   {}", duration.as_secs_f64() * 1000.0, label,);
 }
 
-fn is_roc_symbol(sym: &object::Symbol) -> bool {
+fn is_broc_symbol(sym: &object::Symbol) -> bool {
     if let Ok(name) = sym.name() {
-        name.trim_start_matches('_').starts_with("roc_")
+        name.trim_start_matches('_').starts_with("broc_")
     } else {
         false
     }
 }
 
-fn is_roc_definition(sym: &object::Symbol) -> bool {
-    sym.is_definition() && is_roc_symbol(sym)
+fn is_broc_definition(sym: &object::Symbol) -> bool {
+    sym.is_definition() && is_broc_symbol(sym)
 }
 
-fn is_roc_undefined(sym: &object::Symbol) -> bool {
-    sym.is_undefined() && is_roc_symbol(sym)
+fn is_broc_undefined(sym: &object::Symbol) -> bool {
+    sym.is_undefined() && is_broc_symbol(sym)
 }
 
-fn collect_roc_definitions<'a>(object: &object::File<'a, &'a [u8]>) -> MutMap<String, u64> {
+fn collect_broc_definitions<'a>(object: &object::File<'a, &'a [u8]>) -> MutMap<String, u64> {
     let mut vaddresses = MutMap::default();
 
-    for sym in object.symbols().filter(is_roc_definition) {
+    for sym in object.symbols().filter(is_broc_definition) {
         // remove potentially trailing "@version".
         let name = sym
             .name()
@@ -70,16 +70,16 @@ fn collect_roc_definitions<'a>(object: &object::File<'a, &'a [u8]>) -> MutMap<St
 
         let address = sym.address() as u64;
 
-        // special exceptions for roc_ functions that map to libc symbols
+        // special exceptions for broc_ functions that map to libc symbols
         let direct_mapping = match name {
-            "roc_memcpy" => Some("memcpy"),
-            "roc_memset" => Some("memset"),
-            "roc_memmove" => Some("memmove"),
+            "broc_memcpy" => Some("memcpy"),
+            "broc_memset" => Some("memset"),
+            "broc_memmove" => Some("memmove"),
 
             // for expects
-            "roc_mmap" => Some("mmap"),
-            "roc_getppid" => Some("getppid"),
-            "roc_shm_open" => Some("shm_open"),
+            "broc_mmap" => Some("mmap"),
+            "broc_getppid" => Some("getppid"),
+            "broc_shm_open" => Some("shm_open"),
 
             _ => None,
         };
@@ -286,20 +286,20 @@ pub(crate) fn preprocess_elf(
     };
 
     let mut md = metadata::Metadata {
-        roc_symbol_vaddresses: collect_roc_definitions(&exec_obj),
+        broc_symbol_vaddresses: collect_broc_definitions(&exec_obj),
         ..Default::default()
     };
 
     if verbose {
         println!(
-            "Found {} roc symbol definitions:",
-            md.roc_symbol_vaddresses.len()
+            "Found {} broc symbol definitions:",
+            md.broc_symbol_vaddresses.len()
         );
 
         let (mut builtins, mut other): (Vec<_>, Vec<_>) = md
-            .roc_symbol_vaddresses
+            .broc_symbol_vaddresses
             .iter()
-            .partition(|(n, _)| n.starts_with("roc_builtins"));
+            .partition(|(n, _)| n.starts_with("broc_builtins"));
 
         // sort by address
         builtins.sort_by_key(|t| t.1);
@@ -318,7 +318,7 @@ pub(crate) fn preprocess_elf(
 
     let exec_parsing_duration = exec_parsing_start.elapsed();
 
-    // PLT stands for Procedure Linkage Table which is, put simply, used to call external
+    // PLT stands for Pbrocedure Linkage Table which is, put simply, used to call external
     // procedures/functions whose address isn't known in the time of linking, and is left
     // to be resolved by the dynamic linker at run time.
     let symbol_and_plt_processing_start = Instant::now();
@@ -349,7 +349,7 @@ pub(crate) fn preprocess_elf(
 
     let app_syms: Vec<_> = exec_obj
         .dynamic_symbols()
-        .filter(is_roc_undefined)
+        .filter(is_broc_undefined)
         .collect();
 
     let mut app_func_addresses: MutMap<u64, &str> = MutMap::default();
@@ -387,7 +387,7 @@ pub(crate) fn preprocess_elf(
         md.app_functions.push(name.clone());
         md.dynamic_symbol_indices.insert(name, sym.index().0 as u64);
     }
-    for sym in exec_obj.symbols().filter(is_roc_undefined) {
+    for sym in exec_obj.symbols().filter(is_broc_undefined) {
         let name = sym.name().unwrap().to_string();
         md.static_symbol_indices.insert(name, sym.index().0 as u64);
     }
@@ -451,7 +451,7 @@ pub(crate) fn preprocess_elf(
             // TODO probably need to make gen_elf a macro to get this
             // to work, which is annoying. A parameterized function
             // does *not* work.
-            todo!("Roc does not yet support big-endian ELF hosts!");
+            todo!("Broc does not yet support big-endian ELF hosts!");
         }
     };
 
@@ -481,7 +481,7 @@ pub(crate) fn preprocess_elf(
         println!("Timings");
         report_timing("Executable Parsing", exec_parsing_duration);
         report_timing(
-            "Symbol and PLT Processing",
+            "Symbol and PLT Pbrocessing",
             symbol_and_plt_processing_duration,
         );
         report_timing("Text Disassembly", text_disassembly_duration);
@@ -683,7 +683,7 @@ fn gen_elf_le(
                     rel.r_addend.set(LE, r_addend + md.added_byte_count as i64);
                 }
             }
-            // If the relocation goes to a roc function, we need to surgically link it and change it to relative.
+            // If the relocation goes to a broc function, we need to surgically link it and change it to relative.
             let r_type = rel.r_type(NativeEndian, false);
             if r_type == elf::R_X86_64_GLOB_DAT {
                 let r_sym = rel.r_sym(NativeEndian, false);
@@ -706,7 +706,7 @@ fn gen_elf_le(
                 }
             }
         }
-        // To correctly remove the JUMP_SLOT relocations for Roc functions we:
+        // To correctly remove the JUMP_SLOT relocations for Broc functions we:
         //     1. collect the indicies of all of them.
         //     2. move them all to the end of the relocation sections.
         //     3. shrink the relocation section to ignore them.
@@ -1084,13 +1084,13 @@ fn scan_elf_dynamic_deps(
 }
 
 pub(crate) fn surgery_elf(
-    roc_app_bytes: &[u8],
+    broc_app_bytes: &[u8],
     metadata_path: &Path,
     executable_path: &Path,
     verbose: bool,
     time: bool,
 ) {
-    let app_obj = match object::File::parse(roc_app_bytes) {
+    let app_obj = match object::File::parse(broc_app_bytes) {
         Ok(obj) => obj,
         Err(err) => {
             internal_error!("Failed to parse application file: {}", err);
@@ -1118,7 +1118,7 @@ pub(crate) fn surgery_elf(
     let loading_metadata_duration = loading_metadata_start.elapsed();
 
     let load_and_mmap_start = Instant::now();
-    let max_out_len = md.exec_len + roc_app_bytes.len() as u64 + md.load_align_constraint;
+    let max_out_len = md.exec_len + broc_app_bytes.len() as u64 + md.load_align_constraint;
     let mut exec_mmap = open_mmap_mut(executable_path, max_out_len as usize);
     let load_and_mmap_duration = load_and_mmap_start.elapsed();
 
@@ -1230,7 +1230,7 @@ fn surgery_elf_help(
 
     // First decide on sections locations and then recode every exact symbol locations.
 
-    // TODO: In the future Roc may use a data section to store memoized toplevel thunks
+    // TODO: In the future Broc may use a data section to store memoized toplevel thunks
     // in development builds for caching the results of top-level constants
     let rodata_sections: Vec<Section> = app_obj
         .sections()
@@ -1280,7 +1280,7 @@ fn surgery_elf_help(
         for sym in symbols.iter() {
             if sym.section() == SymbolSection::Section(sec.index()) {
                 let name = sym.name().unwrap_or_default().to_string();
-                if !md.roc_symbol_vaddresses.contains_key(&name) {
+                if !md.broc_symbol_vaddresses.contains_key(&name) {
                     symbol_vaddr_map.insert(sym.index(), virt_offset + sym.address() as usize);
                 }
                 if md.app_functions.contains(&name) {
@@ -1336,7 +1336,7 @@ fn surgery_elf_help(
         if verbose {
             println!();
             println!(
-                "Processing Relocations for Section: 0x{:+x?} @ {:+x} (virt: {:+x})",
+                "Pbrocessing Relocations for Section: 0x{:+x?} @ {:+x} (virt: {:+x})",
                 sec, section_offset, section_virtual_offset
             );
         }
@@ -1360,7 +1360,7 @@ fn surgery_elf_help(
                             .and_then(|sym| sym.name())
                             .ok()
                             .and_then(|name| {
-                                md.roc_symbol_vaddresses.get(name).map(|address| {
+                                md.broc_symbol_vaddresses.get(name).map(|address| {
                                     let vaddr = (*address + md.added_byte_count) as i64;
                                     if verbose {
                                         println!(
@@ -1535,11 +1535,11 @@ fn surgery_elf_help(
                 eprintln!("Error:");
                 eprintln!("\n\tFunction, {}, was not defined by the app.", &func_name);
                 eprintln!("\nPotential causes:");
-                eprintln!("\n\t- because the platform was built with a non-compatible version of roc compared to the one you are running.");
+                eprintln!("\n\t- because the platform was built with a non-compatible version of broc compared to the one you are running.");
                 eprintln!("\n\t\tsolutions:");
-                eprintln!("\t\t\t+ Downgrade your roc version to the one that was used to build the platform.");
-                eprintln!("\t\t\t+ Or ask the platform author to release a new version of the platform using a current roc release.");
-                eprintln!("\n\t- This can also occur due to a bug in the compiler. In that case, file an issue here: https://github.com/roc-lang/roc/issues/new/choose");
+                eprintln!("\t\t\t+ Downgrade your broc version to the one that was used to build the platform.");
+                eprintln!("\t\t\t+ Or ask the platform author to release a new version of the platform using a current broc release.");
+                eprintln!("\n\t- This can also occur due to a bug in the compiler. In that case, file an issue here: https://github.com/roc-lang/broc/issues/new/choose");
 
                 std::process::exit(1);
             }
@@ -1656,7 +1656,7 @@ mod tests {
     fn collect_definitions() {
         let object = object::File::parse(ELF64_DYNHOST).unwrap();
 
-        let symbols = collect_roc_definitions(&object);
+        let symbols = collect_broc_definitions(&object);
 
         let mut keys = symbols.keys().collect::<Vec<_>>();
         keys.sort_unstable();
@@ -1665,16 +1665,16 @@ mod tests {
             [
                 "memcpy",
                 "memset",
-                "roc_alloc",
-                "roc_dealloc",
-                "roc_fx_getInt",
-                "roc_fx_getInt_help",
-                "roc_fx_putInt",
-                "roc_fx_putLine",
-                "roc_memcpy",
-                "roc_memset",
-                "roc_panic",
-                "roc_realloc"
+                "broc_alloc",
+                "broc_dealloc",
+                "broc_fx_getInt",
+                "broc_fx_getInt_help",
+                "broc_fx_putInt",
+                "broc_fx_putLine",
+                "broc_memcpy",
+                "broc_memset",
+                "broc_panic",
+                "broc_realloc"
             ],
             keys.as_slice(),
         )
@@ -1689,17 +1689,17 @@ mod tests {
 
         let mut keys: Vec<_> = object
             .dynamic_symbols()
-            .filter(is_roc_undefined)
+            .filter(is_broc_undefined)
             .filter_map(|s| s.name().ok())
             .collect();
         keys.sort_unstable();
 
         assert_eq!(
             [
-                "roc__mainForHost_1__Fx_caller",
-                "roc__mainForHost_1__Fx_result_size",
-                "roc__mainForHost_1_exposed_generic",
-                "roc__mainForHost_size"
+                "broc__mainForHost_1__Fx_caller",
+                "broc__mainForHost_1__Fx_result_size",
+                "broc__mainForHost_1_exposed_generic",
+                "broc__mainForHost_size"
             ],
             keys.as_slice()
         )
@@ -1711,11 +1711,11 @@ mod tests {
             r#"
             const std = @import("std");
 
-            extern fn roc_magic1(usize) callconv(.C) [*]const u8;
+            extern fn broc_magic1(usize) callconv(.C) [*]const u8;
 
             pub fn main() !void {
                 const stdout = std.io.getStdOut().writer();
-                try stdout.print("Hello {s}\n", .{roc_magic1(0)[0..3]});
+                try stdout.print("Hello {s}\n", .{broc_magic1(0)[0..3]});
             }
             "#
         );
@@ -1724,7 +1724,7 @@ mod tests {
             r#"
             const X = [_][]const u8 { "foo" };
 
-            export fn roc_magic1(index: usize) [*]const u8 {
+            export fn broc_magic1(index: usize) [*]const u8 {
                 return X[index].ptr;
             }
             "#
@@ -1760,10 +1760,10 @@ mod tests {
 
         // open our app object; we'll copy sections from it later
         let file = std::fs::File::open(dir.join("app.o")).unwrap();
-        let roc_app = unsafe { memmap2::Mmap::map(&file) }.unwrap();
+        let broc_app = unsafe { memmap2::Mmap::map(&file) }.unwrap();
 
         let names: Vec<String> = {
-            let object = object::File::parse(&*roc_app).unwrap();
+            let object = object::File::parse(&*broc_app).unwrap();
 
             object
                 .symbols()
@@ -1815,7 +1815,7 @@ mod tests {
         std::fs::copy(&preprocessed_host_filename, &dir.join("final")).unwrap();
 
         surgery_elf(
-            &roc_app,
+            &broc_app,
             &dir.join("metadata"),
             &dir.join("final"),
             false,

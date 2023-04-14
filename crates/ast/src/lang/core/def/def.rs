@@ -12,16 +12,16 @@
 // };
 // use crate::pattern::{bindings_from_patterns, canonicalize_pattern, Pattern};
 // use crate::procedure::References;
-use roc_collections::all::{default_hasher, ImMap, MutMap, MutSet, SendMap};
-use roc_error_macros::{internal_error, todo_abilities};
-use roc_module::ident::Lowercase;
-use roc_module::symbol::Symbol;
-use roc_parse::ast::{self, CommentOrNewline, Defs, TypeDef, TypeHeader, ValueDef as AstValueDef};
-use roc_parse::pattern::PatternType;
-use roc_problem::can::{Problem, RuntimeError, ShadowKind};
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarStore, Variable};
-use roc_types::types::AliasKind;
+use broc_collections::all::{default_hasher, ImMap, MutMap, MutSet, SendMap};
+use broc_error_macros::{internal_error, todo_abilities};
+use broc_module::ident::Lowercase;
+use broc_module::symbol::Symbol;
+use broc_parse::ast::{self, CommentOrNewline, Defs, TypeDef, TypeHeader, ValueDef as AstValueDef};
+use broc_parse::pattern::PatternType;
+use broc_problem::can::{Problem, RuntimeError, ShadowKind};
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarStore, Variable};
+use broc_types::types::AliasKind;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use ven_graph::{strongly_connected_components, topological_sort_into_groups};
@@ -944,7 +944,7 @@ pub fn canonicalize_defs<'a>(
     )
 }
 
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Declaration {

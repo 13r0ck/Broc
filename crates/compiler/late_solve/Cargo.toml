@@ -1,5 +1,5 @@
 [package]
-name = "roc_late_solve"
+name = "broc_late_solve"
 description = "Provides type unification and solving primitives from the perspective of the compiler backend."
 
 authors.workspace = true
@@ -8,13 +8,13 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_can = { path = "../can" }
-roc_collections = { path = "../collections" }
-roc_derive = { path = "../derive" }
-roc_error_macros = { path = "../../error_macros" }
-roc_module = { path = "../module" }
-roc_solve = { path = "../solve" }
-roc_types = { path = "../types" }
-roc_unify = { path = "../unify" }
+broc_can = { path = "../can" }
+broc_collections = { path = "../collections" }
+broc_derive = { path = "../derive" }
+broc_error_macros = { path = "../../error_macros" }
+broc_module = { path = "../module" }
+broc_solve = { path = "../solve" }
+broc_types = { path = "../types" }
+broc_unify = { path = "../unify" }
 
 bumpalo.workspace = true

@@ -1,4 +1,4 @@
-use roc_std::{RocBox, RocDec, RocList, RocOrder, RocResult, RocStr, I128, U128};
+use broc_std::{BrocBox, BrocDec, BrocList, BrocOrder, BrocResult, BrocStr, I128, U128};
 
 pub trait Wasm32Sized: Sized {
     const SIZE_OF_WASM: usize;
@@ -23,7 +23,7 @@ macro_rules! wasm32_sized_primitive {
 }
 
 wasm32_sized_primitive!(u8, i8, u16, i16, u32, i32, char, u64, i64, u128, i128, f32, f64, bool,);
-wasm32_sized_primitive!(RocDec, RocOrder, I128, U128,);
+wasm32_sized_primitive!(BrocDec, BrocOrder, I128, U128,);
 
 impl Wasm32Sized for () {
     const SIZE_OF_WASM: usize = 0;
@@ -35,22 +35,22 @@ impl Wasm32Sized for std::convert::Infallible {
     const ALIGN_OF_WASM: usize = 0;
 }
 
-impl Wasm32Sized for RocStr {
+impl Wasm32Sized for BrocStr {
     const SIZE_OF_WASM: usize = 12;
     const ALIGN_OF_WASM: usize = 4;
 }
 
-impl<T: Wasm32Sized> Wasm32Sized for RocList<T> {
+impl<T: Wasm32Sized> Wasm32Sized for BrocList<T> {
     const SIZE_OF_WASM: usize = 12;
     const ALIGN_OF_WASM: usize = 4;
 }
 
-impl<T: Wasm32Sized> Wasm32Sized for RocBox<T> {
+impl<T: Wasm32Sized> Wasm32Sized for BrocBox<T> {
     const SIZE_OF_WASM: usize = 4;
     const ALIGN_OF_WASM: usize = 4;
 }
 
-impl<T: Wasm32Sized, E: Wasm32Sized> Wasm32Sized for RocResult<T, E> {
+impl<T: Wasm32Sized, E: Wasm32Sized> Wasm32Sized for BrocResult<T, E> {
     const ALIGN_OF_WASM: usize = max(&[T::ALIGN_OF_WASM, E::ALIGN_OF_WASM]);
     const SIZE_OF_WASM: usize = max(&[T::ACTUAL_WIDTH, E::ACTUAL_WIDTH]) + 1;
 }

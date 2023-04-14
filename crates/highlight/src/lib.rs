@@ -1,20 +1,20 @@
-use roc_parse::highlight::Token;
-use roc_region::all::Loc;
+use broc_parse::highlight::Token;
+use broc_region::all::Loc;
 
-pub fn highlight_roc_code(code: &str) -> String {
+pub fn highlight_broc_code(code: &str) -> String {
     let buf = highlight(code);
 
     format!("<pre><samp>{}</samp></pre>", buf.join(""))
 }
 
-pub fn highlight_roc_code_inline(code: &str) -> String {
+pub fn highlight_broc_code_inline(code: &str) -> String {
     let buf = highlight(code);
 
     format!("<code>{}</code>", buf.join(""))
 }
 
 pub fn highlight(code: &str) -> Vec<String> {
-    let locations: Vec<Loc<Token>> = roc_parse::highlight::highlight(code);
+    let locations: Vec<Loc<Token>> = broc_parse::highlight::highlight(code);
     let mut buf: Vec<String> = Vec::new();
     let mut offset = 0;
 

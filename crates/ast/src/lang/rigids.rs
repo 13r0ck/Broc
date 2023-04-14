@@ -6,9 +6,9 @@ use std::{
 use crate::mem_pool::{
     pool::Pool, pool_str::PoolStr, pool_vec::PoolVec, shallow_clone::ShallowClone,
 };
-use roc_collections::all::WyHash;
-use roc_module::ident::Lowercase;
-use roc_types::subs::Variable;
+use broc_collections::all::WyHash;
+use broc_module::ident::Lowercase;
+use broc_types::subs::Variable;
 
 #[derive(Debug)]
 pub struct Rigids {

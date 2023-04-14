@@ -1,6 +1,6 @@
 #![cfg(all(
     any(feature = "gen-llvm"),
-    not(debug_assertions) // https://github.com/roc-lang/roc/issues/3898
+    not(debug_assertions) // https://github.com/roc-lang/broc/issues/3898
 ))]
 
 #[cfg(feature = "gen-llvm")]
@@ -13,7 +13,7 @@ use crate::helpers::llvm::assert_evals_to;
 // use crate::helpers::wasm::assert_evals_to;
 
 use indoc::indoc;
-use roc_std::RocList;
+use broc_std::BrocList;
 
 #[test]
 #[cfg(any(feature = "gen-llvm"))]
@@ -52,8 +52,8 @@ fn single_to_list() {
             Set.toList (Set.single 42)
             "#
         ),
-        RocList::from_slice(&[42]),
-        RocList<i64>
+        BrocList::from_slice(&[42]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
@@ -62,8 +62,8 @@ fn single_to_list() {
             Set.toList (Set.single 1)
             "#
         ),
-        RocList::from_slice(&[1]),
-        RocList<i64>
+        BrocList::from_slice(&[1]),
+        BrocList<i64>
     );
 }
 
@@ -80,8 +80,8 @@ fn insert() {
                 |> Set.toList
             "#
         ),
-        RocList::from_slice(&[0, 1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -99,8 +99,8 @@ fn remove() {
                 |> Set.toList
             "#
         ),
-        RocList::from_slice(&[0]),
-        RocList<i64>
+        BrocList::from_slice(&[0]),
+        BrocList<i64>
     );
 }
 
@@ -120,8 +120,8 @@ fn union() {
                 |> Set.toList
             "#
         ),
-        RocList::from_slice(&[1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4]),
+        BrocList<i64>
     );
 }
 
@@ -141,8 +141,8 @@ fn difference() {
                 |> Set.toList
             "#
         ),
-        RocList::from_slice(&[2]),
-        RocList<i64>
+        BrocList::from_slice(&[2]),
+        BrocList<i64>
     );
 }
 
@@ -162,8 +162,8 @@ fn intersection() {
                 |> Set.toList
             "#
         ),
-        RocList::from_slice(&[1]),
-        RocList<i64>
+        BrocList::from_slice(&[1]),
+        BrocList<i64>
     );
 }
 
@@ -216,8 +216,8 @@ fn from_list() {
                 |> Set.toList
             "#
         ),
-        RocList::from_slice(&[1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
@@ -231,8 +231,8 @@ fn from_list() {
                 |> Set.toList
             "#
         ),
-        RocList::<i64>::default(),
-        RocList<i64>
+        BrocList::<i64>::default(),
+        BrocList<i64>
     );
 }
 
@@ -248,8 +248,8 @@ fn from_list_void() {
                 |> Set.toList
             "#
         ),
-        RocList::<i64>::default(),
-        RocList<i64>
+        BrocList::<i64>::default(),
+        BrocList<i64>
     );
 }
 
@@ -262,8 +262,8 @@ fn to_list_empty() {
             Set.toList (Set.empty {})
             "#
         ),
-        RocList::<std::convert::Infallible>::default(),
-        RocList<std::convert::Infallible>
+        BrocList::<std::convert::Infallible>::default(),
+        BrocList<std::convert::Infallible>
     );
 }
 

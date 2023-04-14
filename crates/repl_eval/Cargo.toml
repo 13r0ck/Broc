@@ -1,6 +1,6 @@
 [package]
-name = "roc_repl_eval"
-description = "Provides the functionality for the REPL to evaluate Roc expressions."
+name = "broc_repl_eval"
+description = "Provides the functionality for the REPL to evaluate Broc expressions."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,20 +8,20 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_builtins = { path = "../compiler/builtins" }
-roc_can = { path = "../compiler/can" }
-roc_collections = { path = "../compiler/collections" }
-roc_fmt = { path = "../compiler/fmt" }
-roc_load = { path = "../compiler/load" }
-roc_module = { path = "../compiler/module" }
-roc_mono = { path = "../compiler/mono" }
-roc_packaging = { path = "../packaging" }
-roc_parse = { path = "../compiler/parse" }
-roc_problem = { path = "../compiler/problem" }
-roc_region = { path = "../compiler/region" }
-roc_reporting = { path = "../reporting" }
-roc_std = { path = "../roc_std" }
-roc_target = { path = "../compiler/roc_target" }
-roc_types = { path = "../compiler/types" }
+broc_builtins = { path = "../compiler/builtins" }
+broc_can = { path = "../compiler/can" }
+broc_collections = { path = "../compiler/collections" }
+broc_fmt = { path = "../compiler/fmt" }
+broc_load = { path = "../compiler/load" }
+broc_module = { path = "../compiler/module" }
+broc_mono = { path = "../compiler/mono" }
+broc_packaging = { path = "../packaging" }
+broc_parse = { path = "../compiler/parse" }
+broc_problem = { path = "../compiler/problem" }
+broc_region = { path = "../compiler/region" }
+broc_reporting = { path = "../reporting" }
+broc_std = { path = "../broc_std" }
+broc_target = { path = "../compiler/broc_target" }
+broc_types = { path = "../compiler/types" }
 
 bumpalo.workspace = true

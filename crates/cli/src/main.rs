@@ -1,16 +1,16 @@
-//! The `roc` binary that brings together all functionality in the Roc toolset.
-use roc_build::link::LinkType;
-use roc_build::program::check_file;
-use roc_cli::{
+//! The `broc` binary that brings together all functionality in the Broc toolset.
+use broc_build::link::LinkType;
+use broc_build::program::check_file;
+use broc_cli::{
     build_app, format, test, BuildConfig, FormatMode, Target, CMD_BUILD, CMD_CHECK, CMD_DEV,
     CMD_DOCS, CMD_EDIT, CMD_FORMAT, CMD_GEN_STUB_LIB, CMD_GLUE, CMD_REPL, CMD_RUN, CMD_TEST,
     CMD_VERSION, DIRECTORY_OR_FILES, FLAG_CHECK, FLAG_LIB, FLAG_NO_LINK, FLAG_TARGET, FLAG_TIME,
     GLUE_DIR, GLUE_SPEC, ROC_FILE,
 };
-use roc_docs::generate_docs_html;
-use roc_error_macros::user_error;
-use roc_load::{LoadingProblem, Threading};
-use roc_packaging::cache::{self, RocCacheDir};
+use broc_docs::generate_docs_html;
+use broc_error_macros::user_error;
+use broc_load::{LoadingProblem, Threading};
+use broc_packaging::cache::{self, BrocCacheDir};
 use std::fs::{self, FileType};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -24,10 +24,10 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 use std::ffi::{OsStr, OsString};
 
-use roc_cli::build;
+use broc_cli::build;
 
 fn main() -> io::Result<()> {
-    let _tracing_guards = roc_tracing::setup_tracing!();
+    let _tracing_guards = broc_tracing::setup_tracing!();
 
     let matches = build_app().get_matches();
 
@@ -38,7 +38,7 @@ fn main() -> io::Result<()> {
                     &matches,
                     BuildConfig::BuildAndRunIfNoErrors,
                     Triple::host(),
-                    RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                    BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                     LinkType::Executable,
                 )
             } else {
@@ -53,11 +53,11 @@ fn main() -> io::Result<()> {
                     matches,
                     BuildConfig::BuildAndRun,
                     Triple::host(),
-                    RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                    BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                     LinkType::Executable,
                 )
             } else {
-                eprintln!("What .roc file do you want to run? Specify it at the end of the `roc run` command.");
+                eprintln!("What .broc file do you want to run? Specify it at the end of the `broc run` command.");
 
                 Ok(1)
             }
@@ -66,7 +66,7 @@ fn main() -> io::Result<()> {
             if matches.is_present(ROC_FILE) {
                 test(matches, Triple::host())
             } else {
-                eprintln!("What .roc file do you want to test? Specify it at the end of the `roc test` command.");
+                eprintln!("What .broc file do you want to test? Specify it at the end of the `broc test` command.");
 
                 Ok(1)
             }
@@ -77,11 +77,11 @@ fn main() -> io::Result<()> {
                     matches,
                     BuildConfig::BuildAndRunIfNoErrors,
                     Triple::host(),
-                    RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                    BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                     LinkType::Executable,
                 )
             } else {
-                eprintln!("What .roc file do you want to build? Specify it at the end of the `roc run` command.");
+                eprintln!("What .broc file do you want to build? Specify it at the end of the `broc run` command.");
 
                 Ok(1)
             }
@@ -92,9 +92,9 @@ fn main() -> io::Result<()> {
             let spec_path = Path::new(matches.value_of_os(GLUE_SPEC).unwrap());
 
             if !output_path.exists() || output_path.is_dir() {
-                roc_glue::generate(input_path, output_path, spec_path)
+                broc_glue::generate(input_path, output_path, spec_path)
             } else {
-                eprintln!("`roc glue` must be given a directory to output into, because the glue might generate multiple files.");
+                eprintln!("`broc glue` must be given a directory to output into, because the glue might generate multiple files.");
 
                 Ok(1)
             }
@@ -102,9 +102,9 @@ fn main() -> io::Result<()> {
         Some((CMD_GEN_STUB_LIB, matches)) => {
             let input_path = Path::new(matches.value_of_os(ROC_FILE).unwrap());
             let target: Target = matches.value_of_t(FLAG_TARGET).unwrap_or_default();
-            roc_linker::generate_stub_lib(
+            broc_linker::generate_stub_lib(
                 input_path,
-                RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                 &target.to_triple(),
             )
         }
@@ -124,7 +124,7 @@ fn main() -> io::Result<()> {
                 matches,
                 BuildConfig::BuildOnly,
                 target.to_triple(),
-                RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                 link_type,
             )?)
         }
@@ -133,9 +133,9 @@ fn main() -> io::Result<()> {
 
             let emit_timings = matches.is_present(FLAG_TIME);
             let filename = matches.value_of_os(ROC_FILE).unwrap();
-            let roc_file_path = PathBuf::from(filename);
+            let broc_file_path = PathBuf::from(filename);
             let threading = match matches
-                .value_of(roc_cli::FLAG_MAX_THREADS)
+                .value_of(broc_cli::FLAG_MAX_THREADS)
                 .and_then(|s| s.parse::<usize>().ok())
             {
                 None => Threading::AllAvailable,
@@ -146,9 +146,9 @@ fn main() -> io::Result<()> {
 
             match check_file(
                 &arena,
-                roc_file_path,
+                broc_file_path,
                 emit_timings,
-                RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+                BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
                 threading,
             ) {
                 Ok((problems, total_time)) => {
@@ -192,7 +192,7 @@ fn main() -> io::Result<()> {
                 }
             }
         }
-        Some((CMD_REPL, _)) => Ok(roc_repl_cli::main()),
+        Some((CMD_REPL, _)) => Ok(broc_repl_cli::main()),
         Some((CMD_EDIT, matches)) => {
             match matches
                 .values_of_os(DIRECTORY_OR_FILES)
@@ -224,7 +224,7 @@ fn main() -> io::Result<()> {
             match maybe_values {
                 None => {
                     let mut os_string_values: Vec<OsString> = Vec::new();
-                    read_all_roc_files(
+                    read_all_broc_files(
                         &std::env::current_dir()?.as_os_str().to_os_string(),
                         &mut os_string_values,
                     )?;
@@ -239,12 +239,12 @@ fn main() -> io::Result<()> {
                 }
             }
 
-            let mut roc_files = Vec::new();
+            let mut broc_files = Vec::new();
 
-            // Populate roc_files
+            // Populate broc_files
             for os_str in values {
                 let metadata = fs::metadata(os_str.clone())?;
-                roc_files_recursive(os_str.as_os_str(), metadata.file_type(), &mut roc_files)?;
+                broc_files_recursive(os_str.as_os_str(), metadata.file_type(), &mut broc_files)?;
             }
 
             let format_mode = match matches.is_present(FLAG_CHECK) {
@@ -252,7 +252,7 @@ fn main() -> io::Result<()> {
                 false => FormatMode::Format,
             };
 
-            let format_exit_code = match format(roc_files, format_mode) {
+            let format_exit_code = match format(broc_files, format_mode) {
                 Ok(_) => 0,
                 Err(message) => {
                     eprintln!("{}", message);
@@ -265,7 +265,7 @@ fn main() -> io::Result<()> {
         Some((CMD_VERSION, _)) => {
             print!(
                 "{}",
-                concatcp!("roc ", include_str!("../../../version.txt"))
+                concatcp!("broc ", include_str!("../../../version.txt"))
             );
 
             Ok(0)
@@ -276,9 +276,9 @@ fn main() -> io::Result<()> {
     std::process::exit(exit_code);
 }
 
-fn read_all_roc_files(
+fn read_all_broc_files(
     dir: &OsString,
-    roc_file_paths: &mut Vec<OsString>,
+    broc_file_paths: &mut Vec<OsString>,
 ) -> Result<(), std::io::Error> {
     let entries = fs::read_dir(dir)?;
 
@@ -286,29 +286,29 @@ fn read_all_roc_files(
         let path = entry?.path();
 
         if path.is_dir() {
-            read_all_roc_files(&path.into_os_string(), roc_file_paths)?;
-        } else if path.extension().and_then(OsStr::to_str) == Some("roc") {
+            read_all_broc_files(&path.into_os_string(), broc_file_paths)?;
+        } else if path.extension().and_then(OsStr::to_str) == Some("broc") {
             let file_path = path.into_os_string();
-            roc_file_paths.push(file_path);
+            broc_file_paths.push(file_path);
         }
     }
 
     Ok(())
 }
 
-fn roc_files_recursive<P: AsRef<Path>>(
+fn broc_files_recursive<P: AsRef<Path>>(
     path: P,
     file_type: FileType,
-    roc_files: &mut Vec<PathBuf>,
+    broc_files: &mut Vec<PathBuf>,
 ) -> io::Result<()> {
     if file_type.is_dir() {
         for entry_res in fs::read_dir(path)? {
             let entry = entry_res?;
 
-            roc_files_recursive(entry.path(), entry.file_type()?, roc_files)?;
+            broc_files_recursive(entry.path(), entry.file_type()?, broc_files)?;
         }
     } else {
-        roc_files.push(path.as_ref().to_path_buf());
+        broc_files.push(path.as_ref().to_path_buf());
     }
 
     Ok(())
@@ -316,10 +316,10 @@ fn roc_files_recursive<P: AsRef<Path>>(
 
 #[cfg(feature = "editor")]
 fn launch_editor(project_dir_path: Option<&Path>) -> io::Result<()> {
-    roc_editor::launch(project_dir_path)
+    broc_editor::launch(project_dir_path)
 }
 
 #[cfg(not(feature = "editor"))]
 fn launch_editor(_project_dir_path: Option<&Path>) -> io::Result<()> {
-    panic!("Cannot launch the editor because this build of roc did not include `feature = \"editor\"`!");
+    panic!("Cannot launch the editor because this build of broc did not include `feature = \"editor\"`!");
 }

@@ -1,10 +1,10 @@
 extern crate bumpalo;
-extern crate roc_collections;
-extern crate roc_load;
-extern crate roc_module;
+extern crate broc_collections;
+extern crate broc_load;
+extern crate broc_module;
 extern crate tempfile;
 
-use roc_command_utils::{cargo, pretty_command_string, root_dir};
+use broc_command_utils::{cargo, pretty_command_string, root_dir};
 use serde::Deserialize;
 use serde_xml_rs::from_str;
 use std::env;
@@ -25,32 +25,32 @@ pub struct Out {
     pub status: ExitStatus,
 }
 
-pub fn run_roc<I, S>(args: I, stdin_vals: &[&str], extra_env: &[(&str, &str)]) -> Out
+pub fn run_broc<I, S>(args: I, stdin_vals: &[&str], extra_env: &[(&str, &str)]) -> Out
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let roc_binary_path = build_roc_bin_cached();
+    let broc_binary_path = build_broc_bin_cached();
 
-    run_roc_with_stdin_and_env(&roc_binary_path, args, stdin_vals, extra_env)
+    run_broc_with_stdin_and_env(&broc_binary_path, args, stdin_vals, extra_env)
 }
 
-// If we don't already have a /target/release/roc, build it!
-pub fn build_roc_bin_cached() -> PathBuf {
-    let roc_binary_path = path_to_roc_binary();
+// If we don't already have a /target/release/broc, build it!
+pub fn build_broc_bin_cached() -> PathBuf {
+    let broc_binary_path = path_to_broc_binary();
 
-    if !roc_binary_path.exists() {
-        build_roc_bin(&[]);
+    if !broc_binary_path.exists() {
+        build_broc_bin(&[]);
     }
 
-    roc_binary_path
+    broc_binary_path
 }
 
-pub fn build_roc_bin(extra_args: &[&str]) -> PathBuf {
-    let roc_binary_path = path_to_roc_binary();
+pub fn build_broc_bin(extra_args: &[&str]) -> PathBuf {
+    let broc_binary_path = path_to_broc_binary();
 
-    // Remove the /target/release/roc part
-    let root_project_dir = roc_binary_path
+    // Remove the /target/release/broc part
+    let root_project_dir = broc_binary_path
         .parent()
         .unwrap()
         .parent()
@@ -58,12 +58,12 @@ pub fn build_roc_bin(extra_args: &[&str]) -> PathBuf {
         .parent()
         .unwrap();
 
-    // cargo build --bin roc
+    // cargo build --bin broc
     // (with --release iff the test is being built with --release)
     let mut args = if cfg!(debug_assertions) {
-        vec!["build", "--bin", "roc"]
+        vec!["build", "--bin", "broc"]
     } else {
-        vec!["build", "--release", "--bin", "roc"]
+        vec!["build", "--release", "--bin", "broc"]
     };
 
     args.extend(extra_args);
@@ -85,7 +85,7 @@ pub fn build_roc_bin(extra_args: &[&str]) -> PathBuf {
         );
     }
 
-    roc_binary_path
+    broc_binary_path
 }
 
 // Since glue is always compiling the same plugin, it can not be run in parallel.
@@ -101,11 +101,11 @@ where
 {
     let _guard = GLUE_LOCK.lock().unwrap();
 
-    run_roc_with_stdin(&path_to_roc_binary(), args, &[])
+    run_broc_with_stdin(&path_to_broc_binary(), args, &[])
 }
 
-pub fn path_to_roc_binary() -> PathBuf {
-    path_to_binary(if cfg!(windows) { "roc.exe" } else { "roc" })
+pub fn path_to_broc_binary() -> PathBuf {
+    path_to_binary(if cfg!(windows) { "broc.exe" } else { "broc" })
 }
 
 pub fn path_to_binary(binary_name: &str) -> PathBuf {
@@ -133,7 +133,7 @@ pub fn path_to_binary(binary_name: &str) -> PathBuf {
 }
 
 pub fn strip_colors(str: &str) -> String {
-    use roc_reporting::report::ANSI_STYLE_CODES;
+    use broc_reporting::report::ANSI_STYLE_CODES;
 
     str.replace(ANSI_STYLE_CODES.red, "")
         .replace(ANSI_STYLE_CODES.green, "")
@@ -148,16 +148,16 @@ pub fn strip_colors(str: &str) -> String {
         .replace(ANSI_STYLE_CODES.color_reset, "")
 }
 
-pub fn run_roc_with_stdin<I, S>(path: &Path, args: I, stdin_vals: &[&str]) -> Out
+pub fn run_broc_with_stdin<I, S>(path: &Path, args: I, stdin_vals: &[&str]) -> Out
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    run_roc_with_stdin_and_env(path, args, stdin_vals, &[])
+    run_broc_with_stdin_and_env(path, args, stdin_vals, &[])
 }
 
-pub fn run_roc_with_stdin_and_env<I, S>(
-    roc_path: &Path,
+pub fn run_broc_with_stdin_and_env<I, S>(
+    broc_path: &Path,
     args: I,
     stdin_vals: &[&str],
     extra_env: &[(&str, &str)],
@@ -166,50 +166,50 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let mut roc_cmd = Command::new(roc_path);
+    let mut broc_cmd = Command::new(broc_path);
 
     for arg in args {
-        roc_cmd.arg(arg);
+        broc_cmd.arg(arg);
     }
 
     for (k, v) in extra_env {
-        roc_cmd.env(k, v);
+        broc_cmd.env(k, v);
     }
 
-    let roc_cmd_str = pretty_command_string(&roc_cmd);
+    let broc_cmd_str = pretty_command_string(&broc_cmd);
 
-    let mut roc_cmd_child = roc_cmd
+    let mut broc_cmd_child = broc_cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .unwrap_or_else(|err| {
-            panic!("Failed to execute command\n\n  {roc_cmd_str:?}\n\nwith error:\n\n  {err}",)
+            panic!("Failed to execute command\n\n  {broc_cmd_str:?}\n\nwith error:\n\n  {err}",)
         });
 
     {
-        let stdin = roc_cmd_child.stdin.as_mut().expect("Failed to open stdin");
+        let stdin = broc_cmd_child.stdin.as_mut().expect("Failed to open stdin");
 
         for stdin_str in stdin_vals.iter() {
             stdin
                 .write_all(stdin_str.as_bytes())
                 .unwrap_or_else(|err| {
                     panic!(
-                        "Failed to write to stdin for command\n\n  {roc_cmd_str:?}\n\nwith error:\n\n  {err}",
+                        "Failed to write to stdin for command\n\n  {broc_cmd_str:?}\n\nwith error:\n\n  {err}",
                     )
                 });
         }
     }
 
-    let roc_cmd_output = roc_cmd_child.wait_with_output().unwrap_or_else(|err| {
-        panic!("Failed to get output for command\n\n  {roc_cmd_str:?}\n\nwith error:\n\n  {err}",)
+    let broc_cmd_output = broc_cmd_child.wait_with_output().unwrap_or_else(|err| {
+        panic!("Failed to get output for command\n\n  {broc_cmd_str:?}\n\nwith error:\n\n  {err}",)
     });
 
     Out {
-        cmd_str: roc_cmd_str,
-        stdout: String::from_utf8(roc_cmd_output.stdout).unwrap(),
-        stderr: String::from_utf8(roc_cmd_output.stderr).unwrap(),
-        status: roc_cmd_output.status,
+        cmd_str: broc_cmd_str,
+        stdout: String::from_utf8(broc_cmd_output.stdout).unwrap(),
+        stderr: String::from_utf8(broc_cmd_output.stderr).unwrap(),
+        status: broc_cmd_output.status,
     }
 }
 
@@ -274,7 +274,7 @@ pub fn run_with_valgrind<'a, I: IntoIterator<Item = &'a str>>(
     cmd.arg(format!("--xml-file={}", named_tempfile.path().display()));
 
     // If you are having valgrind issues on MacOS, you may need to suppress some
-    // of the errors. Read more here: https://github.com/roc-lang/roc/issues/746
+    // of the errors. Read more here: https://github.com/roc-lang/broc/issues/746
     if let Some(suppressions_file_os_str) = env::var_os("VALGRIND_SUPPRESSIONS") {
         match suppressions_file_os_str.to_str() {
             None => {

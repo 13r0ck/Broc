@@ -1,10 +1,10 @@
 use bumpalo::Bump;
-use roc_wasm_interp::{
+use broc_wasm_interp::{
     wasi, DefaultImportDispatcher, ImportDispatcher, Instance, Value, WasiDispatcher,
 };
 
 const COMPILER_BYTES: &[u8] =
-    include_bytes!("../../../target/wasm32-wasi/release-with-lto/roc_repl_wasm.wasm");
+    include_bytes!("../../../target/wasm32-wasi/release-with-lto/broc_repl_wasm.wasm");
 
 struct CompilerDispatcher<'a> {
     arena: &'a Bump,
@@ -91,7 +91,7 @@ impl<'a> ImportDispatcher for CompilerDispatcher<'a> {
                     }
                 }
                 "test_copy_input_string" => {
-                    // Copy the Roc source code from the test into the compiler Wasm instance
+                    // Copy the Broc source code from the test into the compiler Wasm instance
                     // fn test_copy_input_string(src_buffer_addr: *mut u8);
                     assert_eq!(arguments.len(), 1);
                     let src_buffer_addr = arguments[0].expect_i32().unwrap() as usize;

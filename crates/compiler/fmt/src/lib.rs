@@ -1,6 +1,6 @@
-//! The roc code formatter.
+//! The broc code formatter.
 #![warn(clippy::dbg_macro)]
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #![allow(clippy::large_enum_variant)]
 pub mod annotation;
 pub mod collection;
@@ -11,12 +11,12 @@ pub mod pattern;
 pub mod spaces;
 
 use bumpalo::{collections::String, Bump};
-use roc_parse::ast::Module;
+use broc_parse::ast::Module;
 
 #[derive(Debug)]
 pub struct Ast<'a> {
     pub module: Module<'a>,
-    pub defs: roc_parse::ast::Defs<'a>,
+    pub defs: broc_parse::ast::Defs<'a>,
 }
 
 #[derive(Debug)]

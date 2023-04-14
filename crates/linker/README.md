@@ -1,7 +1,7 @@
-# The Roc Surgical Linker
+# The Broc Surgical Linker
 
 This linker has the goal of being extremely slim lined and fast.
-It is focused on the scope of only linking platforms to Roc applications.
+It is focused on the scope of only linking platforms to Broc applications.
 This restriction enables ignoring most of linking.
 
 ## General Overview
@@ -10,11 +10,11 @@ This linker is run in 2 phases: preprocessing and surigical linking.
 
 ### Platform Preprocessor
 
-1. Dynamically link the platform to a dummy Roc application dynamic library
-1. Create metadata related to Roc dynamically linked functions
+1. Dynamically link the platform to a dummy Broc application dynamic library
+1. Create metadata related to Broc dynamically linked functions
    - Symbols that need to be redefined
    - Call locations that need to be modified for each symbol
-   - Locations of special roc functions (roc_alloc, roc_dealloc, builtins, etc)
+   - Locations of special broc functions (broc_alloc, broc_dealloc, builtins, etc)
 1. Modify the main executable to no longer be dynamically link
    - Delete dependency on dynamic library
    - Remove symbols from the dynamic table (maybe add them to the regular table?)
@@ -36,10 +36,10 @@ This linker is run in 2 phases: preprocessing and surigical linking.
     This means we likely need to do a lot of refactoring to minimize the duplicate code.
     The fun of almost but not quite the same.
 - Add PE support
-  - As a prereq, we need roc building on Windows (I'm not sure it does currently).
+  - As a prereq, we need broc building on Windows (I'm not sure it does currently).
   - Definitely a solid bit different than elf, but hopefully after refactoring for Macho, won't be that crazy to add.
-- Look at enabling completely in memory linking that could be used with `roc run` and/or `roc repl`
+- Look at enabling completely in memory linking that could be used with `broc run` and/or `broc repl`
 - Look more into rust hosts and keeping certain functions. Currently I just disabled linker garbage collection.
   This works but adds 1.2MB (40%) to even a tiny app. It may be a size issue for large rust hosts.
-  Roc, for reference, adds 13MB (20%) when linked without garbage collection.
+  Broc, for reference, adds 13MB (20%) when linked without garbage collection.
 - Add a feature to the compiler to make this linker optional.

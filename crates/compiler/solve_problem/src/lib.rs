@@ -1,12 +1,12 @@
 //! Provides types to describe problems that can occur during solving.
 use std::{path::PathBuf, str::Utf8Error};
 
-use roc_can::expected::{Expected, PExpected};
-use roc_module::{ident::Lowercase, symbol::Symbol};
-use roc_problem::{can::CycleEntry, Severity};
-use roc_region::all::Region;
+use broc_can::expected::{Expected, PExpected};
+use broc_module::{ident::Lowercase, symbol::Symbol};
+use broc_problem::{can::CycleEntry, Severity};
+use broc_region::all::Region;
 
-use roc_types::types::{Category, ErrorType, PatternCategory};
+use broc_types::types::{Category, ErrorType, PatternCategory};
 
 #[derive(Debug, Clone)]
 pub enum TypeError {
@@ -18,7 +18,7 @@ pub enum TypeError {
     UnfulfilledAbility(Unfulfilled),
     BadExprMissingAbility(Region, Category, ErrorType, Vec<Unfulfilled>),
     BadPatternMissingAbility(Region, PatternCategory, ErrorType, Vec<Unfulfilled>),
-    Exhaustive(roc_exhaustive::Error),
+    Exhaustive(broc_exhaustive::Error),
     StructuralSpecialization {
         region: Region,
         typ: ErrorType,

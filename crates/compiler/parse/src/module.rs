@@ -16,7 +16,7 @@ use crate::parser::{
 use crate::state::State;
 use crate::string_literal::{self, parse_str_literal};
 use crate::type_annotation;
-use roc_region::all::{Loc, Position};
+use broc_region::all::{Loc, Position};
 
 fn end_of_file<'a>() -> impl Parser<'a, (), SyntaxError<'a>> {
     |_arena, state: State<'a>, _min_indent: u32| {

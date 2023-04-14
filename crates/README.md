@@ -1,157 +1,157 @@
-# Roc Internals
+# Broc Internals
 
-Roc has different rust crates for various binaries and libraries. Their roles are briefly described below. If you'd like to learn more, have any questions, or suspect something is out of date, please start a discussion on the [Roc Zulip](https://roc.zulipchat.com/)!
+Broc has different rust crates for various binaries and libraries. Their roles are briefly described below. If you'd like to learn more, have any questions, or suspect something is out of date, please start a discussion on the [Broc Zulip](https://broc.zulipchat.com/)!
 
 You can use `cargo doc` to generate docs for a specific package; e.g.
 
 ```
-cargo doc --package roc_ast --open
+cargo doc --package broc_ast --open
 ```
 
-## `ast/` - `roc_ast`
+## `ast/` - `broc_ast`
 
 Code to represent the [Abstract Syntax Tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree) as used by the editor. In contrast to the compiler, the types in this AST do not keep track of the location of the matching code in the source file.
 
-## `cli/` - `roc_cli`
+## `cli/` - `broc_cli`
 
-The `roc` binary that brings together all functionality in the Roc toolset.
+The `broc` binary that brings together all functionality in the Broc toolset.
 
 ## `cli_utils/` - `cli_utils`
 
 Provides shared code for cli tests and benchmarks.
 
-## `code_markup/` - `roc_code_markup`
+## `code_markup/` - `broc_code_markup`
 
-A [markup language](https://en.wikipedia.org/wiki/Markup_language) to display Roc code in the editor.
+A [markup language](https://en.wikipedia.org/wiki/Markup_language) to display Broc code in the editor.
 
 ## `compiler/`
 
-Compiles `.roc` files and combines them with their platform into an executable binary. See [compiler/README.md](./compiler/README.md) for more information.
+Compiles `.broc` files and combines them with their platform into an executable binary. See [compiler/README.md](./compiler/README.md) for more information.
 
 TODO explain what "compiler frontend" is
 TODO explain what "compiler backend" is
 
 The compiler includes the following sub-crates;
-- `roc_alias_analysis` Performs analysis and optimizations to remove unneeded [reference counts](https://en.wikipedia.org/wiki/Reference_counting) at runtime, and supports in-place mutation.
+- `broc_alias_analysis` Performs analysis and optimizations to remove unneeded [reference counts](https://en.wikipedia.org/wiki/Reference_counting) at runtime, and supports in-place mutation.
 - `arena_pool` An implementation of an [arena allocator](https://mgravell.github.io/Pipelines.Sockets.Unofficial/docs/arenas.html) designed for the compiler's workloads.
-- `roc_build` Responsible for coordinating building and linking of a Roc app with its host.
-- `roc_builtins` provides the Roc functions and modules that are implicitly imported into every module. See [README.md](./compiler/builtins/README.md) for more information.
-- `roc_can` [Canonicalize](https://en.wikipedia.org/wiki/Canonicalization) a roc [abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree), [resolving symbols](https://stackoverflow.com/a/1175493/4200103), [re-ordering definitions](https://www.oreilly.com/library/view/c-high-performance/9781787120952/546b5677-9157-4333-bc90-16db696436ac.xhtml), and preparing a module for [type inference](https://en.wikipedia.org/wiki/Type_inference).
-- `roc_collections` Domain-specific collections created for the needs of the compiler.
-- `roc_constrain` Responsible for building the set of constraints that are used during [type inference](https://en.wikipedia.org/wiki/Type_inference) of a program, and for gathering context needed for pleasant error messages when a type error occurs.
-- `roc_debug_flags` Environment variables that can be toggled to aid debugging of the compiler itself.
-- `roc_derive` provides auto-derivers for builtin abilities like `Hash` and `Decode`.
-- `roc_exhaustive` provides [exhaustiveness](https://dev.to/babak/exhaustive-type-checking-with-typescript-4l3f) checking for Roc.
-- `roc_fmt` The roc code formatter.
-- `roc_gen_dev` provides the compiler backend to generate Roc binaries fast, for a nice developer experience. See [README.md](./compiler/gen_dev/README.md) for more information.
-- `roc_gen_llvm` provides the LLVM backend to generate Roc binaries. Used to generate a binary with the fastest possible execution speed.
-- `roc_gen_wasm` provides the WASM backend to generate Roc binaries. See [README.md](./compiler/gen_wasm/README.md) for more information.
-- `roc_ident` Implements data structures used for efficiently representing small strings, like identifiers.
-- `roc_intern` provides generic interners for concurrent and single-thread use cases.
-- `roc_late_solve` provides type unification and solving primitives from the perspective of the compiler backend.
-- `roc_load` Used to load a .roc file and coordinate the compiler pipeline, including parsing, type checking, and [code generation](https://en.wikipedia.org/wiki/Code_generation_(compiler)).
-- `roc_load_internal` The internal implementation of roc_load, separate from roc_load to support caching.
-- `roc_module` Implements data structures used for efficiently representing unique modules and identifiers in Roc programs.
-- `roc_mono` Roc's main intermediate representation (IR), which is responsible for [monomorphization](https://en.wikipedia.org/wiki/Monomorphization), defunctionalization, inserting [ref-count](https://en.wikipedia.org/wiki/Reference_counting) instructions, and transforming a Roc program into a form that is easy to consume by a backend.
-- `roc_parse` Implements the Roc parser, which transforms a textual representation of a Roc program to an [abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree).
-- `roc_problem` provides types to describe problems that can occur when compiling `.roc` code.
-- `roc_region` Data structures for storing source-code-location information, used heavily for contextual error messages.
-- `roc_target` provides types and helpers for compiler targets such as `default_x86_64`.
-- `roc_serialize` provides helpers for serializing and deserializing to/from bytes.
-- `roc_solve` The entry point of Roc's [type inference](https://en.wikipedia.org/wiki/Type_inference) system. Implements type inference and specialization of abilities.
-- `roc_solve_problem` provides types to describe problems that can occur during solving.
-- `test_derive` Tests Roc's auto-derivers.
-- `test_gen` contains all of Roc's [code generation](https://en.wikipedia.org/wiki/Code_generation_(compiler)) tests. See [README.md](./compiler/test_gen/README.md) for more information.
-- `test_mono` Tests Roc's generation of the mono intermediate representation.
+- `broc_build` Responsible for coordinating building and linking of a Broc app with its host.
+- `broc_builtins` provides the Broc functions and modules that are implicitly imported into every module. See [README.md](./compiler/builtins/README.md) for more information.
+- `broc_can` [Canonicalize](https://en.wikipedia.org/wiki/Canonicalization) a broc [abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree), [resolving symbols](https://stackoverflow.com/a/1175493/4200103), [re-ordering definitions](https://www.oreilly.com/library/view/c-high-performance/9781787120952/546b5677-9157-4333-bc90-16db696436ac.xhtml), and preparing a module for [type inference](https://en.wikipedia.org/wiki/Type_inference).
+- `broc_collections` Domain-specific collections created for the needs of the compiler.
+- `broc_constrain` Responsible for building the set of constraints that are used during [type inference](https://en.wikipedia.org/wiki/Type_inference) of a program, and for gathering context needed for pleasant error messages when a type error occurs.
+- `broc_debug_flags` Environment variables that can be toggled to aid debugging of the compiler itself.
+- `broc_derive` provides auto-derivers for builtin abilities like `Hash` and `Decode`.
+- `broc_exhaustive` provides [exhaustiveness](https://dev.to/babak/exhaustive-type-checking-with-typescript-4l3f) checking for Broc.
+- `broc_fmt` The broc code formatter.
+- `broc_gen_dev` provides the compiler backend to generate Broc binaries fast, for a nice developer experience. See [README.md](./compiler/gen_dev/README.md) for more information.
+- `broc_gen_llvm` provides the LLVM backend to generate Broc binaries. Used to generate a binary with the fastest possible execution speed.
+- `broc_gen_wasm` provides the WASM backend to generate Broc binaries. See [README.md](./compiler/gen_wasm/README.md) for more information.
+- `broc_ident` Implements data structures used for efficiently representing small strings, like identifiers.
+- `broc_intern` provides generic interners for concurrent and single-thread use cases.
+- `broc_late_solve` provides type unification and solving primitives from the perspective of the compiler backend.
+- `broc_load` Used to load a .broc file and coordinate the compiler pipeline, including parsing, type checking, and [code generation](https://en.wikipedia.org/wiki/Code_generation_(compiler)).
+- `broc_load_internal` The internal implementation of broc_load, separate from broc_load to support caching.
+- `broc_module` Implements data structures used for efficiently representing unique modules and identifiers in Broc programs.
+- `broc_mono` Broc's main intermediate representation (IR), which is responsible for [monomorphization](https://en.wikipedia.org/wiki/Monomorphization), defunctionalization, inserting [ref-count](https://en.wikipedia.org/wiki/Reference_counting) instructions, and transforming a Broc program into a form that is easy to consume by a backend.
+- `broc_parse` Implements the Broc parser, which transforms a textual representation of a Broc program to an [abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree).
+- `broc_problem` provides types to describe problems that can occur when compiling `.broc` code.
+- `broc_region` Data structures for storing source-code-location information, used heavily for contextual error messages.
+- `broc_target` provides types and helpers for compiler targets such as `default_x86_64`.
+- `broc_serialize` provides helpers for serializing and deserializing to/from bytes.
+- `broc_solve` The entry point of Broc's [type inference](https://en.wikipedia.org/wiki/Type_inference) system. Implements type inference and specialization of abilities.
+- `broc_solve_problem` provides types to describe problems that can occur during solving.
+- `test_derive` Tests Broc's auto-derivers.
+- `test_gen` contains all of Broc's [code generation](https://en.wikipedia.org/wiki/Code_generation_(compiler)) tests. See [README.md](./compiler/test_gen/README.md) for more information.
+- `test_mono` Tests Broc's generation of the mono intermediate representation.
 - `test_mono_macros` Macros for use in `test_mono`.
-- `roc_types` Various representations and utilities for dealing with types in the Roc compiler.
-- `roc_unify` Implements Roc's unification algorithm, the heartstone of Roc's [type inference](https://en.wikipedia.org/wiki/Type_inference).
+- `broc_types` Various representations and utilities for dealing with types in the Broc compiler.
+- `broc_unify` Implements Broc's unification algorithm, the heartstone of Broc's [type inference](https://en.wikipedia.org/wiki/Type_inference).
 
-## `docs/` - `roc_docs`
+## `docs/` - `broc_docs`
 
-Generates html documentation from Roc files.
+Generates html documentation from Broc files.
 Used for [roc-lang.org/builtins/Num](https://www.roc-lang.org/builtins/Num).
 
-## `docs_cli/` - `roc_docs_cli` library and `roc-docs` binary
+## `docs_cli/` - `broc_docs_cli` library and `broc-docs` binary
 
 Provides a binary that is only used for static build servers.
 
-## `editor/` - `roc_editor`
+## `editor/` - `broc_editor`
 
-Roc's editor. See [README.md](./editor/README.md) for more information.
+Broc's editor. See [README.md](./editor/README.md) for more information.
 
-## `error_macros/` - `roc_error_macros`
+## `error_macros/` - `broc_error_macros`
 
-Provides macros for consistent reporting of errors in Roc's rust code.
+Provides macros for consistent reporting of errors in Broc's rust code.
 
-## `glue/` - `roc_glue`
+## `glue/` - `broc_glue`
 
-The `roc_glue` crate generates code needed for platform hosts to communicate with Roc apps. This tool is not necessary for writing a platform in another language, however, it's a great convenience! Currently supports Rust platforms, and the plan is to support any language via a plugin model.
+The `broc_glue` crate generates code needed for platform hosts to communicate with Broc apps. This tool is not necessary for writing a platform in another language, however, it's a great convenience! Currently supports Rust platforms, and the plan is to support any language via a plugin model.
 
-## `highlight/` - `roc_highlight`
+## `highlight/` - `broc_highlight`
 
 Provides syntax highlighting for the editor by transforming a string to markup nodes.
 
-## `linker/` - `roc_linker`
+## `linker/` - `broc_linker`
 
-Surgical linker that links platforms to Roc applications. We created our own linker for performance, since regular linkers add complexity that is not needed for linking Roc apps. Because we want `roc` to manage the build system and final linking of the executable, it is significantly less practical to use a regular linker. See [README.md](./linker/README.md) for more information.
+Surgical linker that links platforms to Broc applications. We created our own linker for performance, since regular linkers add complexity that is not needed for linking Broc apps. Because we want `broc` to manage the build system and final linking of the executable, it is significantly less practical to use a regular linker. See [README.md](./linker/README.md) for more information.
 
-## `repl_cli/` - `roc_repl_cli`
+## `repl_cli/` - `broc_repl_cli`
 
 Command Line Interface(CLI) functionality for the Read-Evaluate-Print-Loop (REPL).
 
-## `repl_eval/` - `roc_repl_eval`
+## `repl_eval/` - `broc_repl_eval`
 
-Provides the functionality for the REPL to evaluate Roc expressions.
+Provides the functionality for the REPL to evaluate Broc expressions.
 
-## `repl_expect/` - `roc_repl_expect`
+## `repl_expect/` - `broc_repl_expect`
 
 Supports evaluating `expect` and printing contextual information when they fail.
 
 ## `repl_test/` - `repl_test`
 
-Tests the roc REPL.
+Tests the broc REPL.
 
-## `repl_wasm/` - `roc_repl_wasm`
+## `repl_wasm/` - `broc_repl_wasm`
 
-Provides a build of the REPL for the Roc website using WebAssembly. See [README.md](./repl_wasm/README.md) for more information.
+Provides a build of the REPL for the Broc website using WebAssembly. See [README.md](./repl_wasm/README.md) for more information.
 
-## `reporting/` - `roc_reporting`
+## `reporting/` - `broc_reporting`
 
 Responsible for generating warning and error messages.
 
-## `roc_std/` - `roc_std`
+## `broc_std/` - `broc_std`
 
-Provides Rust representations of Roc data structures.
+Provides Rust representations of Broc data structures.
 
-## `test_utils/` - `roc_test_utils`
+## `test_utils/` - `broc_test_utils`
 
 Provides testing utility functions for use throughout the Rust code base.
 
-## `tracing/` - `roc_tracing`
+## `tracing/` - `broc_tracing`
 
 Provides tracing utility functions for various executable entry points.
 
-## `utils/` - `roc_utils`
+## `utils/` - `broc_utils`
 
 Provides utility functions used all over the code base.
 
 ## `vendor/`
 
-These are files that were originally obtained somewhere else (e.g. crates.io) but which we needed to fork for some Roc-specific reason. See [README.md](./vendor/README.md) for more information.
+These are files that were originally obtained somewhere else (e.g. crates.io) but which we needed to fork for some Broc-specific reason. See [README.md](./vendor/README.md) for more information.
 
 ## `wasi-libc-sys/` - `wasi_libc_sys`
 
 Provides a Rust wrapper for the WebAssembly test platform built on libc and is primarily used for testing purposes.
 
-# Building a Roc Application
+# Building a Broc Application
 
-Below is a simplified diagram to illustrate how a Roc application and host are combined to build an executable file. 
+Below is a simplified diagram to illustrate how a Broc application and host are combined to build an executable file. 
 
-![Building a Roc Application using Rust](./building_a_roc_application.svg)
+![Building a Broc Application using Rust](./building_a_broc_application.svg)
 
-# Roc Compiler Stages
+# Broc Compiler Stages
 
-Below is a simplified diagram to illustrate the different stages of the Roc Compiler.
+Below is a simplified diagram to illustrate the different stages of the Broc Compiler.
 
-![Roc Compiler Stages](./roc_compiler_stages.svg)
+![Broc Compiler Stages](./broc_compiler_stages.svg)

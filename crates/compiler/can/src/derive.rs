@@ -6,10 +6,10 @@
 //!   - Derived impls for opaques are typically very small, effectively deferring the
 //!     implementation to the value they wrap.
 
-use roc_error_macros::internal_error;
-use roc_module::{called_via::CalledVia, symbol::Symbol};
-use roc_parse::ast;
-use roc_region::all::{Loc, Region};
+use broc_error_macros::internal_error;
+use broc_module::{called_via::CalledVia, symbol::Symbol};
+use broc_parse::ast;
+use broc_region::all::{Loc, Region};
 
 use crate::{env::Env, pattern::Pattern, scope::Scope};
 
@@ -38,7 +38,7 @@ fn to_encoder<'a>(env: &mut Env<'a>, at_opaque: &'a str) -> ast::Expr<'a> {
             module_name: "",
             ident: payload,
         })]),
-        roc_module::called_via::CalledVia::Space,
+        broc_module::called_via::CalledVia::Space,
     ));
 
     // \@Opaq payload -> Encode.toEncoder payload
@@ -148,7 +148,7 @@ fn hash<'a>(env: &mut Env<'a>, at_opaque: &'a str) -> ast::Expr<'a> {
                 ident: payload,
             }),
         ]),
-        roc_module::called_via::CalledVia::Space,
+        broc_module::called_via::CalledVia::Space,
     ));
 
     // \hasher, @Opaq payload -> Hash.hash hasher payload
@@ -200,7 +200,7 @@ fn is_eq<'a>(env: &mut Env<'a>, at_opaque: &'a str) -> ast::Expr<'a> {
                 ident: payload2,
             }),
         ]),
-        roc_module::called_via::CalledVia::Space,
+        broc_module::called_via::CalledVia::Space,
     ));
 
     // \@Opaq payload1, @Opaq payload2 -> Bool.isEq payload1 payload2

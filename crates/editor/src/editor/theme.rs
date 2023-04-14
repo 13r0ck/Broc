@@ -1,5 +1,5 @@
 use gr_colors::{from_hsb, RgbaTup};
-use roc_code_markup::{
+use broc_code_markup::{
     syntax_highlight::{default_highlight_map, HighlightStyle},
     underline_style::{default_underline_color_map, UnderlineStyle},
 };

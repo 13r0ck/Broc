@@ -22,8 +22,8 @@ use decoding::{FlatDecodable, FlatDecodableKey};
 use encoding::{FlatEncodable, FlatEncodableKey};
 use hash::{FlatHash, FlatHashKey};
 
-use roc_module::symbol::Symbol;
-use roc_types::subs::{Subs, Variable};
+use broc_module::symbol::Symbol;
+use broc_types::subs::{Subs, Variable};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum DeriveError {

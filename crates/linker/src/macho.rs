@@ -7,8 +7,8 @@ use object::{
     ObjectSymbol, RelocationKind, RelocationTarget, Section, SectionIndex, SectionKind, Symbol,
     SymbolIndex, SymbolSection,
 };
-use roc_collections::all::MutMap;
-use roc_error_macros::internal_error;
+use broc_collections::all::MutMap;
+use broc_error_macros::internal_error;
 use std::ffi::CStr;
 use std::mem;
 use std::path::Path;
@@ -38,26 +38,26 @@ fn report_timing(label: &str, duration: Duration) {
     println!("\t{:9.3} ms   {}", duration.as_secs_f64() * 1000.0, label,);
 }
 
-fn is_roc_symbol(sym: &object::Symbol) -> bool {
+fn is_broc_symbol(sym: &object::Symbol) -> bool {
     if let Ok(name) = sym.name() {
-        name.trim_start_matches('_').starts_with("roc_")
+        name.trim_start_matches('_').starts_with("broc_")
     } else {
         false
     }
 }
 
-fn is_roc_definition(sym: &object::Symbol) -> bool {
-    sym.is_definition() && is_roc_symbol(sym)
+fn is_broc_definition(sym: &object::Symbol) -> bool {
+    sym.is_definition() && is_broc_symbol(sym)
 }
 
-fn is_roc_undefined(sym: &object::Symbol) -> bool {
-    sym.is_undefined() && is_roc_symbol(sym)
+fn is_broc_undefined(sym: &object::Symbol) -> bool {
+    sym.is_undefined() && is_broc_symbol(sym)
 }
 
-fn collect_roc_definitions<'a>(object: &object::File<'a, &'a [u8]>) -> MutMap<String, u64> {
+fn collect_broc_definitions<'a>(object: &object::File<'a, &'a [u8]>) -> MutMap<String, u64> {
     let mut vaddresses = MutMap::default();
 
-    for sym in object.symbols().filter(is_roc_definition) {
+    for sym in object.symbols().filter(is_broc_definition) {
         // remove potentially trailing "@version".
         let name = sym
             .name()
@@ -70,9 +70,9 @@ fn collect_roc_definitions<'a>(object: &object::File<'a, &'a [u8]>) -> MutMap<St
         let address = sym.address() as u64;
 
         // special exceptions for memcpy and memset.
-        if name == "roc_memcpy" {
+        if name == "broc_memcpy" {
             vaddresses.insert("memcpy".to_string(), address);
-        } else if name == "roc_memset" {
+        } else if name == "broc_memset" {
             vaddresses.insert("memset".to_string(), address);
         }
 
@@ -274,20 +274,20 @@ pub(crate) fn preprocess_macho(
     };
 
     let mut md = metadata::Metadata {
-        roc_symbol_vaddresses: collect_roc_definitions(&exec_obj),
+        broc_symbol_vaddresses: collect_broc_definitions(&exec_obj),
         ..Default::default()
     };
 
     if verbose {
         println!(
-            "Found roc symbol definitions: {:+x?}",
-            md.roc_symbol_vaddresses
+            "Found broc symbol definitions: {:+x?}",
+            md.broc_symbol_vaddresses
         );
     }
 
     let exec_parsing_duration = exec_parsing_start.elapsed();
 
-    // PLT stands for Procedure Linkage Table which is, put simply, used to call external
+    // PLT stands for Pbrocedure Linkage Table which is, put simply, used to call external
     // procedures/functions whose address isn't known in the time of linking, and is left
     // to be resolved by the dynamic linker at run time.
     let symbol_and_plt_processing_start = Instant::now();
@@ -317,7 +317,7 @@ pub(crate) fn preprocess_macho(
         println!("PLT File Offset: {:+x}", plt_offset);
     }
 
-    let app_syms: Vec<_> = exec_obj.symbols().filter(is_roc_undefined).collect();
+    let app_syms: Vec<_> = exec_obj.symbols().filter(is_broc_undefined).collect();
 
     let mut app_func_addresses: MutMap<u64, &str> = MutMap::default();
     let mut macho_load_so_offset = None;
@@ -392,8 +392,8 @@ pub(crate) fn preprocess_macho(
                     mem::size_of::<usize>(),
                 );
 
-                // Find all the lazily-bound roc symbols
-                // (e.g. "_roc__mainForHost_1_exposed")
+                // Find all the lazily-bound broc symbols
+                // (e.g. "_broc__mainForHost_1_exposed")
                 // For Macho, we may need to deal with some GOT stuff here as well.
                 for (i, symbol) in lazy_bind_symbols
                     .skip(stubs_symbol_index as usize)
@@ -525,7 +525,7 @@ pub(crate) fn preprocess_macho(
             target_lexicon::Endianness::Big => {
                 // TODO Is big-endian macOS even a thing that exists anymore?
                 // Just ancient PowerPC machines maybe?
-                todo!("Roc does not yet support big-endian macOS hosts!");
+                todo!("Broc does not yet support big-endian macOS hosts!");
             }
         }
     };
@@ -556,7 +556,7 @@ pub(crate) fn preprocess_macho(
         println!("Timings");
         report_timing("Executable Parsing", exec_parsing_duration);
         report_timing(
-            "Symbol and PLT Processing",
+            "Symbol and PLT Pbrocessing",
             symbol_and_plt_processing_duration,
         );
         report_timing("Text Disassembly", text_disassembly_duration);
@@ -1019,10 +1019,10 @@ fn gen_macho_le(
                 }
 
                 // TODO: Parse and update the related tables here.
-                // It is possible we may just need to delete things that point to stuff that will be in the roc app.
+                // It is possible we may just need to delete things that point to stuff that will be in the broc app.
                 // We also may just be able to ignore it (lazy bindings should never run).
                 // This definitely has a list of virtual address that need to be updated.
-                // Some of them definitely will point to the roc app and should probably be removed.
+                // Some of them definitely will point to the broc app and should probably be removed.
                 // Also `xcrun dyldinfo` is useful for debugging this.
             }
             macho::LC_SYMSEG => {
@@ -1135,13 +1135,13 @@ fn gen_macho_le(
 // }
 
 pub(crate) fn surgery_macho(
-    roc_app_bytes: &[u8],
+    broc_app_bytes: &[u8],
     metadata_path: &Path,
     executable_path: &Path,
     verbose: bool,
     time: bool,
 ) {
-    let app_obj = match object::File::parse(roc_app_bytes) {
+    let app_obj = match object::File::parse(broc_app_bytes) {
         Ok(obj) => obj,
         Err(err) => {
             internal_error!("Failed to parse application file: {}", err);
@@ -1155,7 +1155,7 @@ pub(crate) fn surgery_macho(
     let loading_metadata_duration = loading_metadata_start.elapsed();
 
     let load_and_mmap_start = Instant::now();
-    let max_out_len = md.exec_len + roc_app_bytes.len() as u64 + md.load_align_constraint;
+    let max_out_len = md.exec_len + broc_app_bytes.len() as u64 + md.load_align_constraint;
     let mut exec_mmap = open_mmap_mut(executable_path, max_out_len as usize);
     let load_and_mmap_duration = load_and_mmap_start.elapsed();
 
@@ -1255,7 +1255,7 @@ fn surgery_macho_help(
     let mut app_func_vaddr_map: MutMap<String, usize> = MutMap::default();
     let mut app_func_size_map: MutMap<String, u64> = MutMap::default();
 
-    // TODO: In the future Roc may use a data section to store memoized toplevel thunks
+    // TODO: In the future Broc may use a data section to store memoized toplevel thunks
     // in development builds for caching the results of top-level constants
 
     let rodata_sections: Vec<Section> = app_obj
@@ -1299,7 +1299,7 @@ fn surgery_macho_help(
         for sym in symbols.iter() {
             if sym.section() == SymbolSection::Section(sec.index()) {
                 let name = sym.name().unwrap_or_default().to_string();
-                if !md.roc_symbol_vaddresses.contains_key(&name) {
+                if !md.broc_symbol_vaddresses.contains_key(&name) {
                     symbol_vaddr_map.insert(sym.index(), virt_offset + sym.address() as usize);
                 }
                 if md.app_functions.contains(&name) {
@@ -1359,7 +1359,7 @@ fn surgery_macho_help(
         if verbose {
             println!();
             println!(
-                "Processing Relocations for Section: 0x{:+x?} @ {:+x} (virt: {:+x})",
+                "Pbrocessing Relocations for Section: 0x{:+x?} @ {:+x} (virt: {:+x})",
                 sec, section_offset, section_virtual_offset
             );
         }
@@ -1383,7 +1383,7 @@ fn surgery_macho_help(
                             .and_then(|sym| sym.name())
                             .ok()
                             .and_then(|name| {
-                                md.roc_symbol_vaddresses.get(name).map(|address| {
+                                md.broc_symbol_vaddresses.get(name).map(|address| {
                                     let vaddr = (*address + md.added_byte_count) as i64;
                                     if verbose {
                                         println!(

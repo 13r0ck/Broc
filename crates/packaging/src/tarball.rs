@@ -1,10 +1,10 @@
 use brotli::enc::BrotliEncoderParams;
 use bumpalo::Bump;
 use flate2::write::GzEncoder;
-use roc_parse::ast::{Header, Module};
-use roc_parse::header::PlatformHeader;
-use roc_parse::module::parse_header;
-use roc_parse::state::State;
+use broc_parse::ast::{Header, Module};
+use broc_parse::header::PlatformHeader;
+use broc_parse::module::parse_header;
+use broc_parse::state::State;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{self, Read, Write};
@@ -54,7 +54,7 @@ impl<'a> TryFrom<&'a str> for Compression {
     }
 }
 
-/// Given a path to a .roc file, write a .tar file to disk.
+/// Given a path to a .broc file, write a .tar file to disk.
 ///
 /// The .tar file will be in the same directory, and its filename
 /// will be the hash of its contents. This function returns
@@ -116,7 +116,7 @@ fn write_archive<W: Write>(path: &Path, writer: W) -> io::Result<()> {
         parent
     } else {
         eprintln!(
-            "{} is a directory, not a .roc file. Please specify a .roc file!",
+            "{} is a directory, not a .broc file. Please specify a .broc file!",
             path.to_string_lossy()
         );
         std::process::exit(1);
@@ -125,7 +125,7 @@ fn write_archive<W: Write>(path: &Path, writer: W) -> io::Result<()> {
     let arena = Bump::new();
     let mut buf = Vec::new();
 
-    // TODO use this when finding .roc files by discovering them from the root module.
+    // TODO use this when finding .broc files by discovering them from the root module.
     // let other_modules: &[Module<'_>] =
     match read_header(&arena, &mut buf, path)?.header {
         Header::Interface(_) => {
@@ -141,7 +141,7 @@ fn write_archive<W: Write>(path: &Path, writer: W) -> io::Result<()> {
             // TODO report error
         }
         Header::Package(_) => {
-            add_dot_roc_files(root_dir, &mut builder)?;
+            add_dot_broc_files(root_dir, &mut builder)?;
         }
         Header::Platform(PlatformHeader { imports: _, .. }) => {
             // Add all the prebuilt host files to the archive.
@@ -167,20 +167,20 @@ fn write_archive<W: Write>(path: &Path, writer: W) -> io::Result<()> {
                     builder.append_path_with_name(
                         &path,
                         // Store it without the root path, so that (for example) we don't store
-                        // `examples/cli/main.roc` and therefore end up with the root of the tarball
-                        // being an `examples/cli/` dir instead of having `main.roc` in the root.
+                        // `examples/cli/main.broc` and therefore end up with the root of the tarball
+                        // being an `examples/cli/` dir instead of having `main.broc` in the root.
                         path.strip_prefix(root_dir).unwrap(),
                     )?;
                 }
             }
 
-            add_dot_roc_files(root_dir, &mut builder)?;
+            add_dot_broc_files(root_dir, &mut builder)?;
         }
     };
 
     // TODO: This will be necessary when bundling packages (not platforms, since platforms just
     // slurp up the whole directory at the moment) and also platforms in a future where they
-    // have precompiled hosts, and we only need to grab the .roc files and the precompiled hostfiles!
+    // have precompiled hosts, and we only need to grab the .broc files and the precompiled hostfiles!
     // {
     //     // Repeat this process on each of the root module's imports.
     //     let mut stack = Vec::from_iter_in(other_modules, &arena);
@@ -219,15 +219,15 @@ fn write_archive<W: Write>(path: &Path, writer: W) -> io::Result<()> {
     builder.finish()
 }
 
-fn add_dot_roc_files<W: Write>(
+fn add_dot_broc_files<W: Write>(
     root_dir: &Path,
     builder: &mut tar::Builder<W>,
 ) -> Result<(), io::Error> {
     for entry in WalkDir::new(root_dir).into_iter().filter_entry(|entry| {
         let path = entry.path();
 
-        // Ignore everything except directories and .roc files
-        path.is_dir() || path.extension().and_then(OsStr::to_str) == Some("roc")
+        // Ignore everything except directories and .broc files
+        path.is_dir() || path.extension().and_then(OsStr::to_str) == Some("broc")
     }) {
         let entry = entry?;
         let path = entry.path();
@@ -240,8 +240,8 @@ fn add_dot_roc_files<W: Write>(
             builder.append_path_with_name(
                 path,
                 // Store it without the root path, so that (for example) we don't store
-                // `examples/cli/main.roc` and therefore end up with the root of the tarball
-                // being an `examples/cli/` dir instead of having `main.roc` in the root.
+                // `examples/cli/main.broc` and therefore end up with the root of the tarball
+                // being an `examples/cli/` dir instead of having `main.broc` in the root.
                 path.strip_prefix(root_dir).unwrap(),
             )?;
         }

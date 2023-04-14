@@ -1,32 +1,32 @@
-//! Provides the compiler backend to generate Roc binaries fast, for a nice
+//! Provides the compiler backend to generate Broc binaries fast, for a nice
 //! developer experience. See [README.md](./compiler/gen_dev/README.md) for
 //! more information.
 #![warn(clippy::dbg_macro)]
-// See github.com/roc-lang/roc/issues/800 for discussion of the large_enum_variant check.
+// See github.com/roc-lang/broc/issues/800 for discussion of the large_enum_variant check.
 #![allow(clippy::large_enum_variant, clippy::upper_case_acronyms)]
 
 use bumpalo::{collections::Vec, Bump};
-use roc_builtins::bitcode::{self, FloatWidth, IntWidth};
-use roc_collections::all::{MutMap, MutSet};
-use roc_error_macros::internal_error;
-use roc_module::ident::ModuleName;
-use roc_module::low_level::{LowLevel, LowLevelWrapperType};
-use roc_module::symbol::{Interns, ModuleId, Symbol};
-use roc_mono::code_gen_help::CodeGenHelp;
-use roc_mono::ir::{
-    BranchInfo, CallType, Expr, JoinPointId, ListLiteralElement, Literal, Param, Proc, ProcLayout,
+use broc_builtins::bitcode::{self, FloatWidth, IntWidth};
+use broc_collections::all::{MutMap, MutSet};
+use broc_error_macros::internal_error;
+use broc_module::ident::ModuleName;
+use broc_module::low_level::{LowLevel, LowLevelWrapperType};
+use broc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_mono::code_gen_help::CodeGenHelp;
+use broc_mono::ir::{
+    BranchInfo, CallType, Expr, JoinPointId, ListLiteralElement, Literal, Param, Pbroc, PbrocLayout,
     SelfRecursive, Stmt,
 };
-use roc_mono::layout::{
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutIds, LayoutInterner, STLayoutInterner, TagIdIntType,
     UnionLayout,
 };
-use roc_mono::list_element_layout;
+use broc_mono::list_element_layout;
 
 mod generic64;
 mod object_builder;
 pub use object_builder::build_module;
-mod run_roc;
+mod run_broc;
 
 pub struct Env<'a> {
     pub arena: &'a Bump,
@@ -92,7 +92,7 @@ trait Backend<'a> {
         use std::hash::{BuildHasher, Hash, Hasher};
 
         // NOTE: due to randomness, this will not be consistent between runs
-        let mut state = roc_collections::all::BuildHasher::default().build_hasher();
+        let mut state = broc_collections::all::BuildHasher::default().build_hasher();
         for a in arguments {
             a.hash(&mut state);
         }
@@ -121,11 +121,11 @@ trait Backend<'a> {
             .starts_with(ModuleName::APP)
     }
 
-    fn helper_proc_gen_mut(&mut self) -> &mut CodeGenHelp<'a>;
+    fn helper_pbroc_gen_mut(&mut self) -> &mut CodeGenHelp<'a>;
 
-    fn helper_proc_symbols_mut(&mut self) -> &mut Vec<'a, (Symbol, ProcLayout<'a>)>;
+    fn helper_pbroc_symbols_mut(&mut self) -> &mut Vec<'a, (Symbol, PbrocLayout<'a>)>;
 
-    fn helper_proc_symbols(&self) -> &Vec<'a, (Symbol, ProcLayout<'a>)>;
+    fn helper_pbroc_symbols(&self) -> &Vec<'a, (Symbol, PbrocLayout<'a>)>;
 
     /// reset resets any registers or other values that may be occupied at the end of a procedure.
     /// It also passes basic procedure information to the builder for setup of the next function.
@@ -134,7 +134,7 @@ trait Backend<'a> {
     /// finalize does any setup and cleanup that should happen around the procedure.
     /// finalize does setup because things like stack size and jump locations are not know until the function is written.
     /// For example, this can store the frame pointer and setup stack space.
-    /// finalize is run at the end of build_proc when all internal code is finalized.
+    /// finalize is run at the end of build_pbroc when all internal code is finalized.
     fn finalize(&mut self) -> (Vec<u8>, Vec<Relocation>);
 
     // load_args is used to let the backend know what the args are.
@@ -144,39 +144,39 @@ trait Backend<'a> {
     /// Used for generating wrappers for malloc/realloc/free
     fn build_wrapped_jmp(&mut self) -> (&'a [u8], u64);
 
-    /// build_proc creates a procedure and outputs it to the wrapped object writer.
+    /// build_pbroc creates a procedure and outputs it to the wrapped object writer.
     /// Returns the procedure bytes, its relocations, and the names of the refcounting functions it references.
-    fn build_proc(
+    fn build_pbroc(
         &mut self,
-        proc: Proc<'a>,
+        pbroc: Pbroc<'a>,
         layout_ids: &mut LayoutIds<'a>,
     ) -> (Vec<u8>, Vec<Relocation>, Vec<'a, (Symbol, String)>) {
-        let proc_name = self.function_symbol_to_string(
-            proc.name.name(),
-            proc.args.iter().map(|t| t.0),
-            proc.closure_data_layout,
-            proc.ret_layout,
+        let pbroc_name = self.function_symbol_to_string(
+            pbroc.name.name(),
+            pbroc.args.iter().map(|t| t.0),
+            pbroc.closure_data_layout,
+            pbroc.ret_layout,
         );
 
-        self.reset(proc_name, proc.is_self_recursive);
-        self.load_args(proc.args, &proc.ret_layout);
-        for (layout, sym) in proc.args {
+        self.reset(pbroc_name, pbroc.is_self_recursive);
+        self.load_args(pbroc.args, &pbroc.ret_layout);
+        for (layout, sym) in pbroc.args {
             self.set_layout_map(*sym, layout);
         }
-        self.scan_ast(&proc.body);
+        self.scan_ast(&pbroc.body);
         self.create_free_map();
-        self.build_stmt(&proc.body, &proc.ret_layout);
-        let mut helper_proc_names = bumpalo::vec![in self.env().arena];
-        helper_proc_names.reserve(self.helper_proc_symbols().len());
-        for (rc_proc_sym, rc_proc_layout) in self.helper_proc_symbols() {
+        self.build_stmt(&pbroc.body, &pbroc.ret_layout);
+        let mut helper_pbroc_names = bumpalo::vec![in self.env().arena];
+        helper_pbroc_names.reserve(self.helper_pbroc_symbols().len());
+        for (rc_pbroc_sym, rc_pbroc_layout) in self.helper_pbroc_symbols() {
             let name = layout_ids
-                .get_toplevel(*rc_proc_sym, rc_proc_layout)
-                .to_symbol_string(*rc_proc_sym, self.interns());
+                .get_toplevel(*rc_pbroc_sym, rc_pbroc_layout)
+                .to_symbol_string(*rc_pbroc_sym, self.interns());
 
-            helper_proc_names.push((*rc_proc_sym, name));
+            helper_pbroc_names.push((*rc_pbroc_sym, name));
         }
         let (bytes, relocs) = self.finalize();
-        (bytes, relocs, helper_proc_names)
+        (bytes, relocs, helper_pbroc_names)
     }
 
     /// build_stmt builds a statement and outputs at the end of the buffer.
@@ -198,14 +198,14 @@ trait Backend<'a> {
                 let layout = *self.layout_map().get(&sym).unwrap();
 
                 // Expand the Refcounting statement into more detailed IR with a function call
-                // If this layout requires a new RC proc, we get enough info to create a linker symbol
+                // If this layout requires a new RC pbroc, we get enough info to create a linker symbol
                 // for it. Here we don't create linker symbols at this time, but in Wasm backend, we do.
                 let (rc_stmt, new_specializations) = {
-                    let (module_id, layout_interner, interns, rc_proc_gen) =
+                    let (module_id, layout_interner, interns, rc_pbroc_gen) =
                         self.module_interns_helpers_mut();
                     let ident_ids = interns.all_ident_ids.get_mut(&module_id).unwrap();
 
-                    rc_proc_gen.expand_refcount_stmt(
+                    rc_pbroc_gen.expand_refcount_stmt(
                         ident_ids,
                         layout_interner,
                         layout,
@@ -215,7 +215,7 @@ trait Backend<'a> {
                 };
 
                 for spec in new_specializations.into_iter() {
-                    self.helper_proc_symbols_mut().push(spec);
+                    self.helper_pbroc_symbols_mut().push(spec);
                 }
 
                 self.build_stmt(rc_stmt, ret_layout)
@@ -308,7 +308,7 @@ trait Backend<'a> {
                     self.load_literal(sym, layout, lit);
                 }
             }
-            Expr::Call(roc_mono::ir::Call {
+            Expr::Call(broc_mono::ir::Call {
                 call_type,
                 arguments,
             }) => {
@@ -1667,8 +1667,8 @@ trait Backend<'a> {
         }
     }
 
-    fn scan_ast_call(&mut self, call: &roc_mono::ir::Call, stmt: &roc_mono::ir::Stmt<'a>) {
-        let roc_mono::ir::Call {
+    fn scan_ast_call(&mut self, call: &broc_mono::ir::Call, stmt: &broc_mono::ir::Stmt<'a>) {
+        let broc_mono::ir::Call {
             call_type,
             arguments,
         } = call;

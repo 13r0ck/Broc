@@ -1,5 +1,5 @@
 [package]
-name = "roc_reporting"
+name = "broc_reporting"
 description = "Responsible for generating warning and error messages."
 
 authors.workspace = true
@@ -8,18 +8,18 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_can = { path = "../compiler/can" }
-roc_collections = { path = "../compiler/collections" }
-roc_error_macros = { path = "../error_macros" }
-roc_exhaustive = { path = "../compiler/exhaustive" }
-roc_fmt = { path = "../compiler/fmt" }
-roc_module = { path = "../compiler/module" }
-roc_parse = { path = "../compiler/parse" }
-roc_problem = { path = "../compiler/problem" }
-roc_region = { path = "../compiler/region" }
-roc_solve_problem = { path = "../compiler/solve_problem" }
-roc_std = { path = "../roc_std" }
-roc_types = { path = "../compiler/types" }
+broc_can = { path = "../compiler/can" }
+broc_collections = { path = "../compiler/collections" }
+broc_error_macros = { path = "../error_macros" }
+broc_exhaustive = { path = "../compiler/exhaustive" }
+broc_fmt = { path = "../compiler/fmt" }
+broc_module = { path = "../compiler/module" }
+broc_parse = { path = "../compiler/parse" }
+broc_problem = { path = "../compiler/problem" }
+broc_region = { path = "../compiler/region" }
+broc_solve_problem = { path = "../compiler/solve_problem" }
+broc_std = { path = "../broc_std" }
+broc_types = { path = "../compiler/types" }
 ven_pretty = { path = "../vendor/pretty" }
 itertools = "0.10.5"
 
@@ -27,16 +27,16 @@ bumpalo.workspace = true
 distance.workspace = true
 
 [dev-dependencies]
-roc_builtins = { path = "../compiler/builtins" }
-roc_constrain = { path = "../compiler/constrain" }
-roc_derive = { path = "../compiler/derive" }
-roc_load = { path = "../compiler/load" }
-roc_packaging = { path = "../packaging" }
-roc_parse = { path = "../compiler/parse" }
-roc_problem = { path = "../compiler/problem" }
-roc_solve = { path = "../compiler/solve" }
-roc_target = { path = "../compiler/roc_target" }
-roc_test_utils = { path = "../test_utils" }
+broc_builtins = { path = "../compiler/builtins" }
+broc_constrain = { path = "../compiler/constrain" }
+broc_derive = { path = "../compiler/derive" }
+broc_load = { path = "../compiler/load" }
+broc_packaging = { path = "../packaging" }
+broc_parse = { path = "../compiler/parse" }
+broc_problem = { path = "../compiler/problem" }
+broc_solve = { path = "../compiler/solve" }
+broc_target = { path = "../compiler/broc_target" }
+broc_test_utils = { path = "../test_utils" }
 
 indoc.workspace = true
 insta.workspace = true

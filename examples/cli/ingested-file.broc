@@ -1,0 +1,10 @@
+app "ingested-file"
+    packages { pf: "cli-platform/main.broc" }
+    imports [
+        pf.Stdout,
+        "ingested-file.broc" as ownCode : Str,
+    ]
+    provides [main] to pf
+
+main =
+    Stdout.line "\nThis broc file can print it's own source code. The source is:\n\n\(ownCode)"

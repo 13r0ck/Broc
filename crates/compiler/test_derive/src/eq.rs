@@ -5,10 +5,10 @@
 #![allow(non_snake_case)]
 
 use crate::{util::check_single_lset_immediate, v};
-use roc_module::symbol::Symbol;
-use roc_types::subs::Variable;
+use broc_module::symbol::Symbol;
+use broc_types::subs::Variable;
 
-use roc_derive_key::DeriveBuiltin::IsEq;
+use broc_derive_key::DeriveBuiltin::IsEq;
 
 #[test]
 fn immediates() {

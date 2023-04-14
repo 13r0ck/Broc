@@ -13,18 +13,18 @@ path = "src/uitest.rs"
 harness = false
 
 [dev-dependencies]
-roc_builtins = { path = "../builtins" }
-roc_collections = { path = "../collections" }
-roc_derive = { path = "../derive", features = ["debug-derived-symbols"] }
-roc_load = { path = "../load" }
-roc_packaging = { path = "../../packaging" }
-roc_module = { path = "../module", features = ["debug-symbols"] }
-roc_mono = { path = "../mono" }
-roc_parse = { path = "../parse" }
-roc_problem = { path = "../problem" }
-roc_reporting = { path = "../../reporting" }
-roc_solve = { path = "../solve" }
-roc_target = { path = "../roc_target" }
+broc_builtins = { path = "../builtins" }
+broc_collections = { path = "../collections" }
+broc_derive = { path = "../derive", features = ["debug-derived-symbols"] }
+broc_load = { path = "../load" }
+broc_packaging = { path = "../../packaging" }
+broc_module = { path = "../module", features = ["debug-symbols"] }
+broc_mono = { path = "../mono" }
+broc_parse = { path = "../parse" }
+broc_problem = { path = "../problem" }
+broc_reporting = { path = "../../reporting" }
+broc_solve = { path = "../solve" }
+broc_target = { path = "../broc_target" }
 test_solve_helpers = { path = "../test_solve_helpers" }
 
 bumpalo.workspace = true

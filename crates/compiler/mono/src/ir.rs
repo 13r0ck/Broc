@@ -9,29 +9,29 @@ use crate::layout::{
 };
 use bumpalo::collections::{CollectIn, Vec};
 use bumpalo::Bump;
-use roc_can::abilities::SpecializationId;
-use roc_can::expr::{AnnotatedMark, ClosureData, ExpectLookup};
-use roc_can::module::ExposedByModule;
-use roc_collections::all::{default_hasher, BumpMap, BumpMapDefault, MutMap};
-use roc_collections::VecMap;
-use roc_debug_flags::dbg_do;
+use broc_can::abilities::SpecializationId;
+use broc_can::expr::{AnnotatedMark, ClosureData, ExpectLookup};
+use broc_can::module::ExposedByModule;
+use broc_collections::all::{default_hasher, BumpMap, BumpMapDefault, MutMap};
+use broc_collections::VecMap;
+use broc_debug_flags::dbg_do;
 #[cfg(debug_assertions)]
-use roc_debug_flags::{
+use broc_debug_flags::{
     ROC_PRINT_IR_AFTER_REFCOUNT, ROC_PRINT_IR_AFTER_RESET_REUSE, ROC_PRINT_IR_AFTER_SPECIALIZATION,
     ROC_PRINT_RUNTIME_ERROR_GEN,
 };
-use roc_derive::SharedDerivedModule;
-use roc_error_macros::{internal_error, todo_abilities};
-use roc_late_solve::storage::{ExternalModuleStorage, ExternalModuleStorageSnapshot};
-use roc_late_solve::{resolve_ability_specialization, AbilitiesView, Resolved, UnificationFailed};
-use roc_module::ident::{ForeignSymbol, Lowercase, TagName};
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::{IdentIds, ModuleId, Symbol};
-use roc_problem::can::{RuntimeError, ShadowKind};
-use roc_region::all::{Loc, Region};
-use roc_std::RocDec;
-use roc_target::TargetInfo;
-use roc_types::subs::{
+use broc_derive::SharedDerivedModule;
+use broc_error_macros::{internal_error, todo_abilities};
+use broc_late_solve::storage::{ExternalModuleStorage, ExternalModuleStorageSnapshot};
+use broc_late_solve::{resolve_ability_specialization, AbilitiesView, Resolved, UnificationFailed};
+use broc_module::ident::{ForeignSymbol, Lowercase, TagName};
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::{IdentIds, ModuleId, Symbol};
+use broc_problem::can::{RuntimeError, ShadowKind};
+use broc_region::all::{Loc, Region};
+use broc_std::BrocDec;
+use broc_target::TargetInfo;
+use broc_types::subs::{
     instantiate_rigids, storage_copy_var_to, Content, ExhaustiveMark, FlatType, RedundantMark,
     StorageSubs, Subs, Variable, VariableSubsSlice,
 };
@@ -64,19 +64,19 @@ pub fn pretty_print_ir_symbols() -> bool {
 // please change it to the lower number.
 // if it went up, maybe check that the change is really required
 
-roc_error_macros::assert_sizeof_wasm!(Literal, 24);
-roc_error_macros::assert_sizeof_wasm!(Expr, 48);
-roc_error_macros::assert_sizeof_wasm!(Stmt, 64);
-roc_error_macros::assert_sizeof_wasm!(ProcLayout, 20);
-roc_error_macros::assert_sizeof_wasm!(Call, 44);
-roc_error_macros::assert_sizeof_wasm!(CallType, 36);
+broc_error_macros::assert_sizeof_wasm!(Literal, 24);
+broc_error_macros::assert_sizeof_wasm!(Expr, 48);
+broc_error_macros::assert_sizeof_wasm!(Stmt, 64);
+broc_error_macros::assert_sizeof_wasm!(PbrocLayout, 20);
+broc_error_macros::assert_sizeof_wasm!(Call, 44);
+broc_error_macros::assert_sizeof_wasm!(CallType, 36);
 
-roc_error_macros::assert_sizeof_non_wasm!(Literal, 3 * 8);
-roc_error_macros::assert_sizeof_non_wasm!(Expr, 9 * 8);
-roc_error_macros::assert_sizeof_non_wasm!(Stmt, 12 * 8);
-roc_error_macros::assert_sizeof_non_wasm!(ProcLayout, 5 * 8);
-roc_error_macros::assert_sizeof_non_wasm!(Call, 9 * 8);
-roc_error_macros::assert_sizeof_non_wasm!(CallType, 7 * 8);
+broc_error_macros::assert_sizeof_non_wasm!(Literal, 3 * 8);
+broc_error_macros::assert_sizeof_non_wasm!(Expr, 9 * 8);
+broc_error_macros::assert_sizeof_non_wasm!(Stmt, 12 * 8);
+broc_error_macros::assert_sizeof_non_wasm!(PbrocLayout, 5 * 8);
+broc_error_macros::assert_sizeof_non_wasm!(Call, 9 * 8);
+broc_error_macros::assert_sizeof_non_wasm!(CallType, 7 * 8);
 
 fn runtime_error<'a>(env: &mut Env<'a, '_>, msg: &'a str) -> Stmt<'a> {
     let sym = env.unique_symbol();
@@ -84,7 +84,7 @@ fn runtime_error<'a>(env: &mut Env<'a, '_>, msg: &'a str) -> Stmt<'a> {
         sym,
         Expr::Literal(Literal::Str(msg)),
         Layout::STR,
-        env.arena.alloc(Stmt::Crash(sym, CrashTag::Roc)),
+        env.arena.alloc(Stmt::Crash(sym, CrashTag::Broc)),
     )
 }
 
@@ -128,7 +128,7 @@ pub enum OptLevel {
 #[derive(Debug, Clone, Copy)]
 pub struct SingleEntryPoint<'a> {
     pub symbol: Symbol,
-    pub layout: ProcLayout<'a>,
+    pub layout: PbrocLayout<'a>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -138,87 +138,87 @@ pub enum EntryPoint<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct PartialProcId(usize);
+pub struct PartialPbrocId(usize);
 
 #[derive(Clone, Debug)]
-pub struct PartialProcs<'a> {
+pub struct PartialPbrocs<'a> {
     /// maps a function name (symbol) to an index
     symbols: Vec<'a, Symbol>,
 
-    partial_procs: Vec<'a, PartialProc<'a>>,
+    partial_pbrocs: Vec<'a, PartialPbroc<'a>>,
 }
 
-impl<'a> PartialProcs<'a> {
+impl<'a> PartialPbrocs<'a> {
     fn new_in(arena: &'a Bump) -> Self {
         Self {
             symbols: Vec::new_in(arena),
-            partial_procs: Vec::new_in(arena),
+            partial_pbrocs: Vec::new_in(arena),
         }
     }
     fn contains_key(&self, symbol: Symbol) -> bool {
         self.symbol_to_id(symbol).is_some()
     }
 
-    fn symbol_to_id(&self, symbol: Symbol) -> Option<PartialProcId> {
+    fn symbol_to_id(&self, symbol: Symbol) -> Option<PartialPbrocId> {
         self.symbols
             .iter()
             .position(|s| *s == symbol)
-            .map(PartialProcId)
+            .map(PartialPbrocId)
     }
 
-    fn get_symbol(&self, symbol: Symbol) -> Option<&PartialProc<'a>> {
+    fn get_symbol(&self, symbol: Symbol) -> Option<&PartialPbroc<'a>> {
         let id = self.symbol_to_id(symbol)?;
 
         Some(self.get_id(id))
     }
 
-    fn get_id(&self, id: PartialProcId) -> &PartialProc<'a> {
-        &self.partial_procs[id.0]
+    fn get_id(&self, id: PartialPbrocId) -> &PartialPbroc<'a> {
+        &self.partial_pbrocs[id.0]
     }
 
-    pub fn insert(&mut self, symbol: Symbol, partial_proc: PartialProc<'a>) -> PartialProcId {
+    pub fn insert(&mut self, symbol: Symbol, partial_pbroc: PartialPbroc<'a>) -> PartialPbrocId {
         debug_assert!(
             !self.contains_key(symbol),
-            "The {:?} is inserted as a partial proc twice: that's a bug!",
+            "The {:?} is inserted as a partial pbroc twice: that's a bug!",
             symbol,
         );
 
-        let id = PartialProcId(self.symbols.len());
+        let id = PartialPbrocId(self.symbols.len());
 
         self.symbols.push(symbol);
-        self.partial_procs.push(partial_proc);
+        self.partial_pbrocs.push(partial_pbroc);
 
         id
     }
 
-    pub fn drain(self) -> impl Iterator<Item = (Symbol, PartialProc<'a>)> {
-        debug_assert_eq!(self.symbols.len(), self.partial_procs.len());
+    pub fn drain(self) -> impl Iterator<Item = (Symbol, PartialPbroc<'a>)> {
+        debug_assert_eq!(self.symbols.len(), self.partial_pbrocs.len());
 
-        self.symbols.into_iter().zip(self.partial_procs.into_iter())
+        self.symbols.into_iter().zip(self.partial_pbrocs.into_iter())
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct PartialProc<'a> {
+pub struct PartialPbroc<'a> {
     pub annotation: Variable,
     pub pattern_symbols: &'a [Symbol],
     pub captured_symbols: CapturedSymbols<'a>,
-    pub body: roc_can::expr::Expr,
+    pub body: broc_can::expr::Expr,
     pub body_var: Variable,
     pub is_self_recursive: bool,
 }
 
-impl<'a> PartialProc<'a> {
+impl<'a> PartialPbroc<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn from_named_function(
         env: &mut Env<'a, '_>,
         annotation: Variable,
-        loc_args: std::vec::Vec<(Variable, AnnotatedMark, Loc<roc_can::pattern::Pattern>)>,
-        loc_body: Loc<roc_can::expr::Expr>,
+        loc_args: std::vec::Vec<(Variable, AnnotatedMark, Loc<broc_can::pattern::Pattern>)>,
+        loc_body: Loc<broc_can::expr::Expr>,
         captured_symbols: CapturedSymbols<'a>,
         is_self_recursive: bool,
         ret_var: Variable,
-    ) -> PartialProc<'a> {
+    ) -> PartialPbroc<'a> {
         let number_of_arguments = loc_args.len();
 
         match patterns_to_when(env, loc_args, ret_var, loc_body) {
@@ -228,7 +228,7 @@ impl<'a> PartialProc<'a> {
                 // (If we did, all named polymorphic functions would immediately error
                 // on trying to convert a flex var to a Layout.)
                 let pattern_symbols = pattern_symbols.into_bump_slice();
-                PartialProc {
+                PartialPbroc {
                     annotation,
                     pattern_symbols,
                     captured_symbols,
@@ -245,11 +245,11 @@ impl<'a> PartialProc<'a> {
                     pattern_symbols.push(env.unique_symbol());
                 }
 
-                PartialProc {
+                PartialPbroc {
                     annotation,
                     pattern_symbols: pattern_symbols.into_bump_slice(),
                     captured_symbols: CapturedSymbols::None,
-                    body: roc_can::expr::Expr::RuntimeError(error.value),
+                    body: broc_can::expr::Expr::RuntimeError(error.value),
                     body_var: ret_var,
                     is_self_recursive: false,
                 }
@@ -301,7 +301,7 @@ impl<'a> Default for CapturedSymbols<'a> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Proc<'a> {
+pub struct Pbroc<'a> {
     pub name: LambdaName<'a>,
     pub args: &'a [(InLayout<'a>, Symbol)],
     pub body: Stmt<'a>,
@@ -317,7 +317,7 @@ pub struct HostExposedLambdaSet<'a> {
     pub id: LambdaSetId,
     /// Symbol of the exposed function
     pub symbol: Symbol,
-    pub proc_layout: ProcLayout<'a>,
+    pub pbroc_layout: PbrocLayout<'a>,
     pub raw_function_layout: RawFunctionLayout<'a>,
 }
 
@@ -343,7 +343,7 @@ pub enum Parens {
     InFunction,
 }
 
-impl<'a> Proc<'a> {
+impl<'a> Pbroc<'a> {
     pub fn to_doc<'b, D, A, I>(
         &'b self,
         alloc: &'b D,
@@ -414,20 +414,20 @@ impl<'a> Proc<'a> {
         home: ModuleId,
         ident_ids: &'i mut IdentIds,
         update_mode_ids: &'i mut UpdateModeIds,
-        procs: &mut MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
-        host_exposed_procs: &[Symbol],
+        pbrocs: &mut MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
+        host_exposed_pbrocs: &[Symbol],
     ) {
         let borrow_params =
-            crate::borrow::infer_borrow(arena, layout_interner, procs, host_exposed_procs);
+            crate::borrow::infer_borrow(arena, layout_interner, pbrocs, host_exposed_pbrocs);
 
-        crate::inc_dec::visit_procs(
+        crate::inc_dec::visit_pbrocs(
             arena,
             layout_interner,
             home,
             ident_ids,
             update_mode_ids,
             arena.alloc(borrow_params),
-            procs,
+            pbrocs,
         );
     }
 
@@ -437,29 +437,29 @@ impl<'a> Proc<'a> {
         home: ModuleId,
         ident_ids: &'i mut IdentIds,
         update_mode_ids: &'i mut UpdateModeIds,
-        procs: &mut MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+        pbrocs: &mut MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
     ) {
-        for proc in procs.values_mut() {
-            let new_proc = crate::reset_reuse::insert_reset_reuse(
+        for pbroc in pbrocs.values_mut() {
+            let new_pbroc = crate::reset_reuse::insert_reset_reuse(
                 arena,
                 layout_interner,
                 home,
                 ident_ids,
                 update_mode_ids,
-                proc.clone(),
+                pbroc.clone(),
             );
-            *proc = new_proc;
+            *pbroc = new_pbroc;
         }
     }
 
     fn make_tail_recursive(&mut self, env: &mut Env<'a, '_>) {
         let mut args = Vec::with_capacity_in(self.args.len(), env.arena);
-        let mut proc_args = Vec::with_capacity_in(self.args.len(), env.arena);
+        let mut pbroc_args = Vec::with_capacity_in(self.args.len(), env.arena);
 
         for (layout, symbol) in self.args {
             let new = env.unique_symbol();
             args.push((*layout, *symbol, new));
-            proc_args.push((*layout, new));
+            pbroc_args.push((*layout, new));
         }
 
         use self::SelfRecursive::*;
@@ -475,7 +475,7 @@ impl<'a> Proc<'a> {
 
             if let Some(with_tco) = transformed {
                 self.body = with_tco;
-                self.args = proc_args.into_bump_slice();
+                self.args = pbroc_args.into_bump_slice();
             }
         }
     }
@@ -515,7 +515,7 @@ impl<'a> HostSpecializations<'a> {
         &mut self,
         env_subs: &mut Subs,
         symbol_or_lambda: LambdaName<'a>,
-        opt_annotation: Option<roc_can::def::Annotation>,
+        opt_annotation: Option<broc_can::def::Annotation>,
         variable: Variable,
     ) {
         let variable = self.storage_subs.extend_with_variable(env_subs, variable);
@@ -600,7 +600,7 @@ impl<'a> ExternalSpecializations<'a> {
         variable: Variable,
     ) {
         let stored_variable = self.storage.extend_with_variable(env_subs, variable);
-        roc_tracing::debug!(original = ?variable, stored = ?stored_variable, "stored needed external");
+        broc_tracing::debug!(original = ?variable, stored = ?stored_variable, "stored needed external");
 
         match self
             .symbol_or_lambda
@@ -654,7 +654,7 @@ pub struct Suspended<'a> {
     pub store: StorageSubs,
     /// LambdaName::no_niche if it's a value
     pub symbol_or_lambdas: Vec<'a, LambdaName<'a>>,
-    pub layouts: Vec<'a, ProcLayout<'a>>,
+    pub layouts: Vec<'a, PbrocLayout<'a>>,
     pub variables: Vec<'a, Variable>,
 }
 
@@ -676,14 +676,14 @@ impl<'a> Suspended<'a> {
         &mut self,
         subs: &mut Subs,
         symbol_or_lambda: LambdaName<'a>,
-        proc_layout: ProcLayout<'a>,
+        pbroc_layout: PbrocLayout<'a>,
         variable: Variable,
     ) {
         // de-duplicate
         for (i, s) in self.symbol_or_lambdas.iter().enumerate() {
             if *s == symbol_or_lambda {
                 let existing = &self.layouts[i];
-                if &proc_layout == existing {
+                if &pbroc_layout == existing {
                     // symbol + layout combo exists
                     return;
                 }
@@ -691,7 +691,7 @@ impl<'a> Suspended<'a> {
         }
 
         self.symbol_or_lambdas.push(symbol_or_lambda);
-        self.layouts.push(proc_layout);
+        self.layouts.push(pbroc_layout);
 
         let variable = self.store.import_variable_from(subs, variable).variable;
 
@@ -726,8 +726,8 @@ impl<'a> PendingSpecializations<'a> {
 #[derive(Clone, Debug, Default)]
 struct Specialized<'a> {
     symbols: std::vec::Vec<Symbol>,
-    proc_layouts: std::vec::Vec<ProcLayout<'a>>,
-    procedures: std::vec::Vec<InProgressProc<'a>>,
+    pbroc_layouts: std::vec::Vec<PbrocLayout<'a>>,
+    procedures: std::vec::Vec<InProgressPbroc<'a>>,
 }
 
 impl<'a> Specialized<'a> {
@@ -740,28 +740,28 @@ impl<'a> Specialized<'a> {
         self.symbols.is_empty()
     }
 
-    fn into_iter_assert_done(self) -> impl Iterator<Item = (Symbol, ProcLayout<'a>, Proc<'a>)> {
+    fn into_iter_assert_done(self) -> impl Iterator<Item = (Symbol, PbrocLayout<'a>, Pbroc<'a>)> {
         self.symbols
             .into_iter()
-            .zip(self.proc_layouts.into_iter())
+            .zip(self.pbroc_layouts.into_iter())
             .zip(self.procedures.into_iter())
             .filter_map(|((s, l), in_progress)| {
                 if let Symbol::REMOVED_SPECIALIZATION = s {
                     None
                 } else {
                     match in_progress {
-                        InProgressProc::InProgress => {
+                        InProgressPbroc::InProgress => {
                             panic!("Function {:?} ({:?}) is not done specializing", s, l)
                         }
-                        InProgressProc::Done(proc) => Some((s, l, proc)),
+                        InProgressPbroc::Done(pbroc) => Some((s, l, pbroc)),
                     }
                 }
             })
     }
 
-    fn is_specialized(&self, symbol: Symbol, layout: &ProcLayout<'a>) -> bool {
+    fn is_specialized(&self, symbol: Symbol, layout: &PbrocLayout<'a>) -> bool {
         for (i, s) in self.symbols.iter().enumerate() {
-            if *s == symbol && &self.proc_layouts[i] == layout {
+            if *s == symbol && &self.pbroc_layouts[i] == layout {
                 return true;
             }
         }
@@ -769,15 +769,15 @@ impl<'a> Specialized<'a> {
         false
     }
 
-    fn mark_in_progress(&mut self, symbol: Symbol, layout: ProcLayout<'a>) {
+    fn mark_in_progress(&mut self, symbol: Symbol, layout: PbrocLayout<'a>) {
         for (i, s) in self.symbols.iter().enumerate() {
-            if *s == symbol && self.proc_layouts[i] == layout {
+            if *s == symbol && self.pbroc_layouts[i] == layout {
                 match &self.procedures[i] {
-                    InProgressProc::InProgress => {
+                    InProgressPbroc::InProgress => {
                         return;
                     }
-                    InProgressProc::Done(_) => {
-                        panic!("marking in progress, but this proc is already done!")
+                    InProgressPbroc::Done(_) => {
+                        panic!("marking in progress, but this pbroc is already done!")
                     }
                 }
             }
@@ -785,15 +785,15 @@ impl<'a> Specialized<'a> {
 
         // the key/layout combo was not found; insert it
         self.symbols.push(symbol);
-        self.proc_layouts.push(layout);
-        self.procedures.push(InProgressProc::InProgress);
+        self.pbroc_layouts.push(layout);
+        self.procedures.push(InProgressPbroc::InProgress);
     }
 
-    fn remove_specialized(&mut self, symbol: Symbol, layout: &ProcLayout<'a>) -> bool {
+    fn remove_specialized(&mut self, symbol: Symbol, layout: &PbrocLayout<'a>) -> bool {
         let mut index = None;
 
         for (i, s) in self.symbols.iter().enumerate() {
-            if *s == symbol && &self.proc_layouts[i] == layout {
+            if *s == symbol && &self.pbroc_layouts[i] == layout {
                 index = Some(i);
             }
         }
@@ -807,19 +807,19 @@ impl<'a> Specialized<'a> {
         }
     }
 
-    fn insert_specialized(&mut self, symbol: Symbol, layout: ProcLayout<'a>, proc: Proc<'a>) {
+    fn insert_specialized(&mut self, symbol: Symbol, layout: PbrocLayout<'a>, pbroc: Pbroc<'a>) {
         for (i, s) in self.symbols.iter().enumerate() {
-            if *s == symbol && self.proc_layouts[i] == layout {
+            if *s == symbol && self.pbroc_layouts[i] == layout {
                 match &self.procedures[i] {
-                    InProgressProc::InProgress => {
-                        self.procedures[i] = InProgressProc::Done(proc);
+                    InProgressPbroc::InProgress => {
+                        self.procedures[i] = InProgressPbroc::Done(pbroc);
                         return;
                     }
-                    InProgressProc::Done(_) => {
+                    InProgressPbroc::Done(_) => {
                         // overwrite existing! this is important in practice
-                        // TODO investigate why we generate the wrong proc in some cases and then
+                        // TODO investigate why we generate the wrong pbroc in some cases and then
                         // correct later
-                        self.procedures[i] = InProgressProc::Done(proc);
+                        self.procedures[i] = InProgressPbroc::Done(pbroc);
                         return;
                     }
                 }
@@ -828,12 +828,12 @@ impl<'a> Specialized<'a> {
 
         // the key/layout combo was not found; insert it
         self.symbols.push(symbol);
-        self.proc_layouts.push(layout);
-        self.procedures.push(InProgressProc::Done(proc));
+        self.pbroc_layouts.push(layout);
+        self.procedures.push(InProgressPbroc::Done(pbroc));
     }
 }
 
-/// Uniquely determines the specialization of a polymorphic (non-proc) value symbol.
+/// Uniquely determines the specialization of a polymorphic (non-pbroc) value symbol.
 /// Two specializations are equivalent if their [`SpecializationMark`]s are equal.
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 struct SpecializationMark<'a> {
@@ -942,8 +942,8 @@ impl<'a> SymbolSpecializations<'a> {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct ProcsBase<'a> {
-    pub partial_procs: BumpMap<Symbol, PartialProc<'a>>,
+pub struct PbrocsBase<'a> {
+    pub partial_pbrocs: BumpMap<Symbol, PartialPbroc<'a>>,
     pub module_thunks: &'a [Symbol],
     /// A host-exposed function must be specialized; it's a seed for subsequent specializations
     pub host_specializations: HostSpecializations<'a>,
@@ -951,7 +951,7 @@ pub struct ProcsBase<'a> {
     pub imported_module_thunks: &'a [Symbol],
 }
 
-impl<'a> ProcsBase<'a> {
+impl<'a> PbrocsBase<'a> {
     pub fn get_host_exposed_symbols(&self) -> impl Iterator<Item = Symbol> + '_ {
         self.host_specializations
             .symbol_or_lambdas
@@ -976,8 +976,8 @@ impl<'a> SpecializationStack<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Procs<'a> {
-    pub partial_procs: PartialProcs<'a>,
+pub struct Pbrocs<'a> {
+    pub partial_pbrocs: PartialPbrocs<'a>,
     ability_member_aliases: AbilityAliases,
     pending_specializations: PendingSpecializations<'a>,
     specialized: Specialized<'a>,
@@ -991,10 +991,10 @@ pub struct Procs<'a> {
     pub host_exposed_symbols: &'a [Symbol],
 }
 
-impl<'a> Procs<'a> {
+impl<'a> Pbrocs<'a> {
     pub fn new_in(arena: &'a Bump) -> Self {
         Self {
-            partial_procs: PartialProcs::new_in(arena),
+            partial_pbrocs: PartialPbrocs::new_in(arena),
             ability_member_aliases: AbilityAliases::new_in(arena),
             pending_specializations: PendingSpecializations::Finding(Suspended::new_in(arena)),
             specialized: Specialized::default(),
@@ -1046,12 +1046,12 @@ impl<'a> Procs<'a> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum InProgressProc<'a> {
+pub enum InProgressPbroc<'a> {
     InProgress,
-    Done(Proc<'a>),
+    Done(Pbroc<'a>),
 }
 
-impl<'a> Procs<'a> {
+impl<'a> Pbrocs<'a> {
     fn is_imported_module_thunk(&self, symbol: Symbol) -> bool {
         self.imported_module_thunks.iter().any(|x| *x == symbol)
     }
@@ -1060,26 +1060,26 @@ impl<'a> Procs<'a> {
         self.module_thunks.iter().any(|x| *x == symbol)
     }
 
-    fn get_partial_proc<'b>(&'b self, symbol: Symbol) -> Option<&'b PartialProc<'a>> {
-        self.partial_procs.get_symbol(symbol)
+    fn get_partial_pbroc<'b>(&'b self, symbol: Symbol) -> Option<&'b PartialPbroc<'a>> {
+        self.partial_pbrocs.get_symbol(symbol)
     }
 
-    pub fn get_specialized_procs_without_rc(
+    pub fn get_specialized_pbrocs_without_rc(
         self,
         env: &mut Env<'a, '_>,
-    ) -> (MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>, ProcsBase<'a>) {
-        let mut specialized_procs =
+    ) -> (MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>, PbrocsBase<'a>) {
+        let mut specialized_pbrocs =
             MutMap::with_capacity_and_hasher(self.specialized.len(), default_hasher());
 
-        for (symbol, layout, mut proc) in self.specialized.into_iter_assert_done() {
-            proc.make_tail_recursive(env);
+        for (symbol, layout, mut pbroc) in self.specialized.into_iter_assert_done() {
+            pbroc.make_tail_recursive(env);
 
             let key = (symbol, layout);
-            specialized_procs.insert(key, proc);
+            specialized_pbrocs.insert(key, pbroc);
         }
 
-        let restored_procs_base = ProcsBase {
-            partial_procs: self.partial_procs.drain().collect(),
+        let restored_pbrocs_base = PbrocsBase {
+            partial_pbrocs: self.partial_pbrocs.drain().collect(),
             module_thunks: self.module_thunks,
             // This must now be empty
             host_specializations: HostSpecializations::default(),
@@ -1087,7 +1087,7 @@ impl<'a> Procs<'a> {
             imported_module_thunks: self.imported_module_thunks,
         };
 
-        (specialized_procs, restored_procs_base)
+        (specialized_pbrocs, restored_pbrocs_base)
     }
 
     // TODO trim these down
@@ -1097,17 +1097,17 @@ impl<'a> Procs<'a> {
         env: &mut Env<'a, '_>,
         name: LambdaName<'a>,
         annotation: Variable,
-        loc_args: std::vec::Vec<(Variable, AnnotatedMark, Loc<roc_can::pattern::Pattern>)>,
-        loc_body: Loc<roc_can::expr::Expr>,
+        loc_args: std::vec::Vec<(Variable, AnnotatedMark, Loc<broc_can::pattern::Pattern>)>,
+        loc_body: Loc<broc_can::expr::Expr>,
         captured_symbols: CapturedSymbols<'a>,
         ret_var: Variable,
         layout_cache: &mut LayoutCache<'a>,
-    ) -> Result<ProcLayout<'a>, RuntimeError> {
+    ) -> Result<PbrocLayout<'a>, RuntimeError> {
         let raw_layout = layout_cache
             .raw_from_var(env.arena, annotation, env.subs)
             .unwrap_or_else(|err| panic!("TODO turn fn_var into a RuntimeError {:?}", err));
 
-        let top_level = ProcLayout::from_raw_named(env.arena, name, raw_layout);
+        let top_level = PbrocLayout::from_raw_named(env.arena, name, raw_layout);
 
         // anonymous functions cannot reference themselves, therefore cannot be tail-recursive
         // EXCEPT when the closure conversion makes it tail-recursive.
@@ -1144,10 +1144,10 @@ impl<'a> Procs<'a> {
                             // register the pending specialization, so this gets code genned later
                             suspended.specialization(env.subs, name, layout, annotation);
 
-                            match self.partial_procs.symbol_to_id(name.name()) {
+                            match self.partial_pbrocs.symbol_to_id(name.name()) {
                                 Some(occupied) => {
-                                    let existing = self.partial_procs.get_id(occupied);
-                                    // if we're adding the same partial proc twice, they must be the actual same!
+                                    let existing = self.partial_pbrocs.get_id(occupied);
+                                    // if we're adding the same partial pbroc twice, they must be the actual same!
                                     //
                                     // NOTE we can't skip extra work! we still need to make the specialization for this
                                     // invocation. The content of the `annotation` can be different, even if the variable
@@ -1156,12 +1156,12 @@ impl<'a> Procs<'a> {
                                     debug_assert_eq!(captured_symbols, existing.captured_symbols);
                                     debug_assert_eq!(is_self_recursive, existing.is_self_recursive);
 
-                                    // the partial proc is already in there, do nothing
+                                    // the partial pbroc is already in there, do nothing
                                 }
                                 None => {
                                     let pattern_symbols = pattern_symbols.into_bump_slice();
 
-                                    let partial_proc = PartialProc {
+                                    let partial_pbroc = PartialPbroc {
                                         annotation,
                                         pattern_symbols,
                                         captured_symbols,
@@ -1170,26 +1170,26 @@ impl<'a> Procs<'a> {
                                         is_self_recursive,
                                     };
 
-                                    self.partial_procs.insert(name.name(), partial_proc);
+                                    self.partial_pbrocs.insert(name.name(), partial_pbroc);
                                 }
                             }
                         }
                         (PendingSpecializations::Making(_), false) => {
-                            // Mark this proc as in-progress, so if we're dealing with
+                            // Mark this pbroc as in-progress, so if we're dealing with
                             // mutually recursive functions, we don't loop forever.
                             // (We had a bug around this before this system existed!)
                             self.specialized.mark_in_progress(name.name(), layout);
 
-                            let partial_proc_id = if let Some(partial_proc_id) =
-                                self.partial_procs.symbol_to_id(name.name())
+                            let partial_pbroc_id = if let Some(partial_pbroc_id) =
+                                self.partial_pbrocs.symbol_to_id(name.name())
                             {
                                 // NOTE we can't skip extra work! We still need to make the specialization for this
                                 // invocation.
-                                partial_proc_id
+                                partial_pbroc_id
                             } else {
                                 let pattern_symbols = pattern_symbols.into_bump_slice();
 
-                                let partial_proc = PartialProc {
+                                let partial_pbroc = PartialPbroc {
                                     annotation,
                                     pattern_symbols,
                                     captured_symbols,
@@ -1198,7 +1198,7 @@ impl<'a> Procs<'a> {
                                     is_self_recursive,
                                 };
 
-                                self.partial_procs.insert(name.name(), partial_proc)
+                                self.partial_pbrocs.insert(name.name(), partial_pbroc)
                             };
 
                             match specialize_variable(
@@ -1207,16 +1207,16 @@ impl<'a> Procs<'a> {
                                 name,
                                 layout_cache,
                                 annotation,
-                                partial_proc_id,
+                                partial_pbroc_id,
                             ) {
-                                Ok((proc, layout)) => {
-                                    let proc_name = proc.name;
+                                Ok((pbroc, layout)) => {
+                                    let pbroc_name = pbroc.name;
                                     let function_layout =
-                                        ProcLayout::from_raw_named(env.arena, proc_name, layout);
+                                        PbrocLayout::from_raw_named(env.arena, pbroc_name, layout);
                                     self.specialized.insert_specialized(
-                                        proc_name.name(),
+                                        pbroc_name.name(),
                                         function_layout,
-                                        proc,
+                                        pbroc,
                                     );
                                 }
                                 Err(error) => {
@@ -1238,7 +1238,7 @@ impl<'a> Procs<'a> {
         env: &mut Env<'a, '_>,
         fn_var: Variable,
         name: LambdaName<'a>,
-        layout: ProcLayout<'a>,
+        layout: PbrocLayout<'a>,
         layout_cache: &mut LayoutCache<'a>,
     ) {
         // If we've already specialized this one, no further work is needed.
@@ -1271,22 +1271,22 @@ impl<'a> Procs<'a> {
                 suspended.specialization(env.subs, name, layout, fn_var);
             }
             (PendingSpecializations::Making(_), false) => {
-                let proc_name = name;
+                let pbroc_name = name;
 
-                let partial_proc_id = match self.partial_procs.symbol_to_id(proc_name.name()) {
+                let partial_pbroc_id = match self.partial_pbrocs.symbol_to_id(pbroc_name.name()) {
                     Some(p) => p,
                     None => panic!(
-                        "no partial_proc for {:?} in module {:?}",
-                        proc_name, env.home
+                        "no partial_pbroc for {:?} in module {:?}",
+                        pbroc_name, env.home
                     ),
                 };
 
-                // Mark this proc as in-progress, so if we're dealing with
+                // Mark this pbroc as in-progress, so if we're dealing with
                 // mutually recursive functions, we don't loop forever.
                 // (We had a bug around this before this system existed!)
-                self.specialized.mark_in_progress(proc_name.name(), layout);
+                self.specialized.mark_in_progress(pbroc_name.name(), layout);
 
-                // See https://github.com/roc-lang/roc/issues/1600
+                // See https://github.com/roc-lang/broc/issues/1600
                 //
                 // The annotation variable is the generic/lifted/top-level annotation.
                 // It is connected to the variables of the function's body
@@ -1296,17 +1296,17 @@ impl<'a> Procs<'a> {
                 match specialize_variable(
                     env,
                     self,
-                    proc_name,
+                    pbroc_name,
                     layout_cache,
                     fn_var,
-                    partial_proc_id,
+                    partial_pbroc_id,
                 ) {
-                    Ok((proc, raw_layout)) => {
-                        let proc_layout =
-                            ProcLayout::from_raw_named(env.arena, proc_name, raw_layout);
+                    Ok((pbroc, raw_layout)) => {
+                        let pbroc_layout =
+                            PbrocLayout::from_raw_named(env.arena, pbroc_name, raw_layout);
 
                         self.specialized
-                            .insert_specialized(proc_name.name(), proc_layout, proc);
+                            .insert_specialized(pbroc_name.name(), pbroc_layout, pbroc);
                     }
                     Err(error) => {
                         panic!("TODO generate a RuntimeError message for {:?}", error);
@@ -1387,12 +1387,12 @@ impl<'a> Procs<'a> {
 
 #[derive(Default)]
 pub struct Specializations<'a> {
-    by_symbol: MutMap<Symbol, MutMap<InLayout<'a>, Proc<'a>>>,
+    by_symbol: MutMap<Symbol, MutMap<InLayout<'a>, Pbroc<'a>>>,
 }
 
 impl<'a> Specializations<'a> {
-    pub fn insert(&mut self, symbol: Symbol, layout: InLayout<'a>, proc: Proc<'a>) {
-        let procs_by_layout = self
+    pub fn insert(&mut self, symbol: Symbol, layout: InLayout<'a>, pbroc: Pbroc<'a>) {
+        let pbrocs_by_layout = self
             .by_symbol
             .entry(symbol)
             .or_insert_with(|| HashMap::with_capacity_and_hasher(1, default_hasher()));
@@ -1400,10 +1400,10 @@ impl<'a> Specializations<'a> {
         // If we already have an entry for this, it should be no different
         // from what we're about to insert.
         debug_assert!(
-            !procs_by_layout.contains_key(&layout) || procs_by_layout.get(&layout) == Some(&proc)
+            !pbrocs_by_layout.contains_key(&layout) || pbrocs_by_layout.get(&layout) == Some(&pbroc)
         );
 
-        procs_by_layout.insert(layout, proc);
+        pbrocs_by_layout.insert(layout, pbroc);
     }
 
     pub fn len(&self) -> usize {
@@ -1469,10 +1469,10 @@ impl<'a, 'i> Env<'a, 'i> {
     /// When this procedure returns `true`, the symbol should be marked as an external specialization,
     /// so that a subsequent specializations pass loads the derived implementation into Derived_gen
     /// and then code-generates appropriately.
-    pub fn is_unloaded_derived_symbol(&self, symbol: Symbol, procs: &Procs<'a>) -> bool {
+    pub fn is_unloaded_derived_symbol(&self, symbol: Symbol, pbrocs: &Pbrocs<'a>) -> bool {
         self.home == ModuleId::DERIVED_GEN
             && symbol.module_id() == ModuleId::DERIVED_SYNTH
-            && !procs.partial_procs.contains_key(symbol)
+            && !pbrocs.partial_pbrocs.contains_key(symbol)
             // TODO: locking to find the answer in the `Derived_gen` module is not great, since
             // Derived_gen also blocks other modules specializing. Improve this later.
             && self
@@ -1483,7 +1483,7 @@ impl<'a, 'i> Env<'a, 'i> {
     }
 
     /// Unifies two variables and performs lambda set compaction.
-    /// Use this rather than [roc_unify::unify] directly!
+    /// Use this rather than [broc_unify::unify] directly!
     fn unify<'b, 'c: 'b>(
         &mut self,
         external_specializations: impl IntoIterator<Item = &'b mut ExternalSpecializations<'c>>,
@@ -1497,7 +1497,7 @@ impl<'a, 'i> Env<'a, 'i> {
             "should never be monomorphizing the derived synth module!"
         );
 
-        let changed_variables = roc_late_solve::unify(
+        let changed_variables = broc_late_solve::unify(
             self.home,
             self.arena,
             self.subs,
@@ -1615,12 +1615,12 @@ pub enum Stmt<'a> {
     Crash(Symbol, CrashTag),
 }
 
-/// Source of crash, and its runtime representation to roc_panic.
+/// Source of crash, and its runtime representation to broc_panic.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum CrashTag {
-    /// The crash is due to Roc, either via a builtin or type error.
-    Roc = 0,
+    /// The crash is due to Broc, either via a builtin or type error.
+    Broc = 0,
     /// The crash is user-defined.
     User = 1,
 }
@@ -1630,7 +1630,7 @@ impl TryFrom<u32> for CrashTag {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::Roc),
+            0 => Ok(Self::Broc),
             1 => Ok(Self::User),
             _ => Err(()),
         }
@@ -1778,7 +1778,7 @@ impl CallSpecId {
         self.id.to_ne_bytes()
     }
 
-    /// Dummy value for generating refcount helper procs in the backends
+    /// Dummy value for generating refcount helper pbrocs in the backends
     /// This happens *after* specialization so it's safe
     pub const BACKEND_DUMMY: Self = Self { id: 0 };
 }
@@ -1793,7 +1793,7 @@ impl UpdateModeId {
         self.id.to_ne_bytes()
     }
 
-    /// Dummy value for generating refcount helper procs in the backends
+    /// Dummy value for generating refcount helper pbrocs in the backends
     /// This happens *after* alias analysis so it's safe
     pub const BACKEND_DUMMY: Self = Self { id: 0 };
 }
@@ -1942,7 +1942,7 @@ impl<'a> Literal<'a> {
             Int(bytes) => alloc.text(format!("{}i64", i128::from_ne_bytes(*bytes))),
             U128(bytes) => alloc.text(format!("{}u128", u128::from_ne_bytes(*bytes))),
             Float(lit) => alloc.text(format!("{}f64", lit)),
-            Decimal(bytes) => alloc.text(format!("{}dec", RocDec::from_ne_bytes(*bytes))),
+            Decimal(bytes) => alloc.text(format!("{}dec", BrocDec::from_ne_bytes(*bytes))),
             Bool(lit) => alloc.text(format!("{}", lit)),
             Byte(lit) => alloc.text(format!("{}u8", lit)),
             Str(lit) => alloc.text(format!("{:?}", lit)),
@@ -1951,7 +1951,7 @@ impl<'a> Literal<'a> {
 }
 
 pub(crate) fn symbol_to_doc_string(symbol: Symbol, force_pretty: bool) -> String {
-    use roc_module::ident::ModuleName;
+    use broc_module::ident::ModuleName;
 
     if pretty_print_ir_symbols() || force_pretty {
         format!("{:?}", symbol)
@@ -2117,12 +2117,12 @@ impl<'a> Expr<'a> {
 impl<'a> Stmt<'a> {
     pub fn new(
         env: &mut Env<'a, '_>,
-        can_expr: roc_can::expr::Expr,
+        can_expr: broc_can::expr::Expr,
         var: Variable,
-        procs: &mut Procs<'a>,
+        pbrocs: &mut Pbrocs<'a>,
         layout_cache: &mut LayoutCache<'a>,
     ) -> Self {
-        from_can(env, var, can_expr, procs, layout_cache)
+        from_can(env, var, can_expr, pbrocs, layout_cache)
     }
 
     pub fn to_doc<'b, D, A, I>(
@@ -2336,27 +2336,27 @@ impl<'a> Stmt<'a> {
 
 fn from_can_let<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    def: Box<roc_can::def::Def>,
-    cont: Box<Loc<roc_can::expr::Expr>>,
+    def: Box<broc_can::def::Def>,
+    cont: Box<Loc<broc_can::expr::Expr>>,
     variable: Variable,
     opt_assigned_and_hole: Option<(Symbol, &'a Stmt<'a>)>,
 ) -> Stmt<'a> {
-    use roc_can::expr::Expr::*;
+    use broc_can::expr::Expr::*;
 
     macro_rules! lower_rest {
         ($variable:expr, $expr:expr) => {
-            lower_rest!(env, procs, layout_cache, $variable, $expr)
+            lower_rest!(env, pbrocs, layout_cache, $variable, $expr)
         };
-        ($env:expr, $procs:expr, $layout_cache:expr, $variable:expr, $expr:expr) => {
+        ($env:expr, $pbrocs:expr, $layout_cache:expr, $variable:expr, $expr:expr) => {
             match opt_assigned_and_hole {
-                None => from_can($env, $variable, $expr, $procs, $layout_cache),
+                None => from_can($env, $variable, $expr, $pbrocs, $layout_cache),
                 Some((assigned, hole)) => with_hole(
                     $env,
                     $expr,
                     $variable,
-                    $procs,
+                    $pbrocs,
                     $layout_cache,
                     assigned,
                     hole,
@@ -2365,10 +2365,10 @@ fn from_can_let<'a>(
         };
     }
 
-    if let roc_can::pattern::Pattern::Identifier(symbol) = &def.loc_pattern.value {
+    if let broc_can::pattern::Pattern::Identifier(symbol) = &def.loc_pattern.value {
         return match def.loc_expr.value {
             Closure(closure_data) => {
-                register_capturing_closure(env, procs, layout_cache, *symbol, closure_data);
+                register_capturing_closure(env, pbrocs, layout_cache, *symbol, closure_data);
 
                 lower_rest!(variable, cont.value)
             }
@@ -2376,12 +2376,12 @@ fn from_can_let<'a>(
                 let fresh_record_symbol = env.unique_symbol();
                 let closure_data = accessor_data.to_closure_data(fresh_record_symbol);
                 debug_assert_eq!(*symbol, closure_data.name);
-                register_noncapturing_closure(env, procs, *symbol, closure_data);
+                register_noncapturing_closure(env, pbrocs, *symbol, closure_data);
 
                 lower_rest!(variable, cont.value)
             }
             Var(original, _) | AbilityMember(original, _, _)
-                if procs.get_partial_proc(original).is_none() =>
+                if pbrocs.get_partial_pbroc(original).is_none() =>
             {
                 // a variable is aliased, e.g.
                 //
@@ -2394,10 +2394,10 @@ fn from_can_let<'a>(
                 //
                 // However, do not attempt to eliminate aliasing to procedures
                 // (either a function pointer or a thunk) here. Doing so is not necessary - if we
-                // have `var = f` where `f` is either a proc or thunk, in either case, `f` will be
+                // have `var = f` where `f` is either a pbroc or thunk, in either case, `f` will be
                 // resolved to an rvalue, not an lvalue:
                 //
-                // - If `f` is a proc, we assign to `var` its closure data (even if the lambda set
+                // - If `f` is a pbroc, we assign to `var` its closure data (even if the lambda set
                 //   of `f` is unary with no captures, we leave behind the empty closure data)
                 //
                 // - If `f` is a thunk, we force the thunk and assign to `var` its value.
@@ -2425,13 +2425,13 @@ fn from_can_let<'a>(
                 //         dispatch (if Bool.true then myFun1 else myFun2)
                 //
                 // Suppose we leave nothing behind for the assignments `myFun* = getNum*`, and
-                // instead simply associate that they reference procs. In the if-then-else
+                // instead simply associate that they reference pbrocs. In the if-then-else
                 // expression, we then need to construct the closure data for both getNum1 and
                 // getNum2 - but we do not know what lambdas they represent, as we only have access
                 // to the symbols `myFun1` and `myFun2`.
                 //
                 // While associations of `myFun1 -> getNum1` could be propogated, the story gets
-                // more complicated when the referenced proc itself resolves a lambda set with
+                // more complicated when the referenced pbroc itself resolves a lambda set with
                 // indirection; for example consider the amendment
                 //
                 //     getNum1 = @Dispatcher \{} -> 1u64
@@ -2450,14 +2450,14 @@ fn from_can_let<'a>(
                 // can remove the annotations in the future.
                 let build_rest =
                     |env: &mut Env<'a, '_>,
-                     procs: &mut Procs<'a>,
+                     pbrocs: &mut Pbrocs<'a>,
                      layout_cache: &mut LayoutCache<'a>| {
-                        lower_rest!(env, procs, layout_cache, variable, cont.value)
+                        lower_rest!(env, pbrocs, layout_cache, variable, cont.value)
                     };
 
                 return handle_variable_aliasing(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     def.expr_var,
                     *symbol,
@@ -2466,7 +2466,7 @@ fn from_can_let<'a>(
                 );
             }
             LetNonRec(nested_def, nested_cont) => {
-                use roc_can::expr::Expr::*;
+                use broc_can::expr::Expr::*;
                 // We must transform
                 //
                 //      let answer = 1337
@@ -2488,7 +2488,7 @@ fn from_can_let<'a>(
                 //              in
                 //                  answer
 
-                use roc_can::{def::Def, expr::Expr, pattern::Pattern};
+                use broc_can::{def::Def, expr::Expr, pattern::Pattern};
 
                 let new_outer = match &nested_cont.value {
                     &Expr::Closure(ClosureData {
@@ -2554,7 +2554,7 @@ fn from_can_let<'a>(
                 lower_rest!(variable, new_outer)
             }
             LetRec(nested_defs, nested_cont, cycle_mark) => {
-                use roc_can::expr::Expr::*;
+                use broc_can::expr::Expr::*;
                 // We must transform
                 //
                 //      let answer = 1337
@@ -2576,7 +2576,7 @@ fn from_can_let<'a>(
                 //              in
                 //                  answer
 
-                let new_def = roc_can::def::Def {
+                let new_def = broc_can::def::Def {
                     loc_pattern: def.loc_pattern,
                     loc_expr: *nested_cont,
                     pattern_vars: def.pattern_vars,
@@ -2597,11 +2597,11 @@ fn from_can_let<'a>(
                     Num(_, str, val, _) => (str, IntOrFloatValue::Int(val)),
                     _ => unreachable!(),
                 };
-                procs.symbol_specializations.mark_eligible(*symbol);
+                pbrocs.symbol_specializations.mark_eligible(*symbol);
 
                 let mut stmt = lower_rest!(variable, cont.value);
 
-                let needed_specializations = procs.symbol_specializations.remove(*symbol).unwrap();
+                let needed_specializations = pbrocs.symbol_specializations.remove(*symbol).unwrap();
                 let zero_specialization = if needed_specializations.is_empty() {
                     let layout = layout_cache
                         .from_var(env.arena, def.expr_var, env.subs)
@@ -2635,7 +2635,7 @@ fn from_can_let<'a>(
                     env,
                     def.loc_expr.value,
                     def.expr_var,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     *symbol,
                     env.arena.alloc(rest),
@@ -2646,7 +2646,7 @@ fn from_can_let<'a>(
 
     // this may be a destructure pattern
     let (mono_pattern, assignments) =
-        match from_can_pattern(env, procs, layout_cache, &def.loc_pattern.value) {
+        match from_can_pattern(env, pbrocs, layout_cache, &def.loc_pattern.value) {
             Ok(v) => v,
             Err(_) => todo!(),
         };
@@ -2657,23 +2657,23 @@ fn from_can_let<'a>(
     // layer on any default record fields
     for (symbol, variable, expr) in assignments {
         let hole = env.arena.alloc(stmt);
-        stmt = with_hole(env, expr, variable, procs, layout_cache, symbol, hole);
+        stmt = with_hole(env, expr, variable, pbrocs, layout_cache, symbol, hole);
     }
 
     match def.loc_expr.value {
-        roc_can::expr::Expr::Var(outer_symbol, _) if !procs.is_module_thunk(outer_symbol) => {
-            store_pattern(env, procs, layout_cache, &mono_pattern, outer_symbol, stmt)
+        broc_can::expr::Expr::Var(outer_symbol, _) if !pbrocs.is_module_thunk(outer_symbol) => {
+            store_pattern(env, pbrocs, layout_cache, &mono_pattern, outer_symbol, stmt)
         }
         _ => {
             let outer_symbol = env.unique_symbol();
-            stmt = store_pattern(env, procs, layout_cache, &mono_pattern, outer_symbol, stmt);
+            stmt = store_pattern(env, pbrocs, layout_cache, &mono_pattern, outer_symbol, stmt);
 
             // convert the def body, store in outer_symbol
             with_hole(
                 env,
                 def.loc_expr.value,
                 def.expr_var,
-                procs,
+                pbrocs,
                 layout_cache,
                 outer_symbol,
                 env.arena.alloc(stmt),
@@ -2694,10 +2694,10 @@ fn from_can_let<'a>(
 #[allow(clippy::type_complexity)]
 fn patterns_to_when<'a>(
     env: &mut Env<'a, '_>,
-    patterns: std::vec::Vec<(Variable, AnnotatedMark, Loc<roc_can::pattern::Pattern>)>,
+    patterns: std::vec::Vec<(Variable, AnnotatedMark, Loc<broc_can::pattern::Pattern>)>,
     body_var: Variable,
-    body: Loc<roc_can::expr::Expr>,
-) -> Result<(Vec<'a, Variable>, Vec<'a, Symbol>, Loc<roc_can::expr::Expr>), Loc<RuntimeError>> {
+    body: Loc<broc_can::expr::Expr>,
+) -> Result<(Vec<'a, Variable>, Vec<'a, Symbol>, Loc<broc_can::expr::Expr>), Loc<RuntimeError>> {
     let mut arg_vars = Vec::with_capacity_in(patterns.len(), env.arena);
     let mut symbols = Vec::with_capacity_in(patterns.len(), env.arena);
     let mut body = Ok(body);
@@ -2707,7 +2707,7 @@ fn patterns_to_when<'a>(
     // are only stores anyway, no branches.
     //
     // NOTE this fails if the pattern contains rigid variables,
-    // see https://github.com/roc-lang/roc/issues/786
+    // see https://github.com/roc-lang/broc/issues/786
     // this must be fixed when moving exhaustiveness checking to the new canonical AST
     for (pattern_var, annotated_mark, pattern) in patterns.into_iter() {
         if annotated_mark.exhaustive.is_non_exhaustive(env.subs) {
@@ -2753,13 +2753,13 @@ fn patterns_to_when<'a>(
 fn pattern_to_when<'a>(
     env: &mut Env<'a, '_>,
     pattern_var: Variable,
-    pattern: Loc<roc_can::pattern::Pattern>,
+    pattern: Loc<broc_can::pattern::Pattern>,
     body_var: Variable,
-    body: Loc<roc_can::expr::Expr>,
-) -> (Symbol, Loc<roc_can::expr::Expr>) {
-    use roc_can::expr::Expr::*;
-    use roc_can::expr::{WhenBranch, WhenBranchPattern};
-    use roc_can::pattern::Pattern::{self, *};
+    body: Loc<broc_can::expr::Expr>,
+) -> (Symbol, Loc<broc_can::expr::Expr>) {
+    use broc_can::expr::Expr::*;
+    use broc_can::expr::{WhenBranch, WhenBranchPattern};
+    use broc_can::pattern::Pattern::{self, *};
 
     match &pattern.value {
         Identifier(symbol) => (*symbol, body),
@@ -2768,7 +2768,7 @@ fn pattern_to_when<'a>(
             (env.unique_symbol(), body)
         }
         Shadowed(region, loc_ident, new_symbol) => {
-            let error = roc_problem::can::RuntimeError::Shadowing {
+            let error = broc_problem::can::RuntimeError::Shadowing {
                 original_region: *region,
                 shadow: loc_ident.clone(),
                 kind: ShadowKind::Variable,
@@ -2781,20 +2781,20 @@ fn pattern_to_when<'a>(
         UnsupportedPattern(region) => {
             // create the runtime error here, instead of delegating to When.
             // UnsupportedPattern should then never occur in When
-            let error = roc_problem::can::RuntimeError::UnsupportedPattern(*region);
+            let error = broc_problem::can::RuntimeError::UnsupportedPattern(*region);
             (env.unique_symbol(), Loc::at_zero(RuntimeError(error)))
         }
 
         MalformedPattern(problem, region) => {
             // create the runtime error here, instead of delegating to When.
-            let error = roc_problem::can::RuntimeError::MalformedPattern(*problem, *region);
+            let error = broc_problem::can::RuntimeError::MalformedPattern(*problem, *region);
             (env.unique_symbol(), Loc::at_zero(RuntimeError(error)))
         }
 
         OpaqueNotInScope(loc_ident) => {
             // create the runtime error here, instead of delegating to When.
             // TODO(opaques) should be `RuntimeError::OpaqueNotDefined`
-            let error = roc_problem::can::RuntimeError::UnsupportedPattern(loc_ident.region);
+            let error = broc_problem::can::RuntimeError::UnsupportedPattern(loc_ident.region);
             (env.unique_symbol(), Loc::at_zero(RuntimeError(error)))
         }
 
@@ -2833,7 +2833,7 @@ fn pattern_to_when<'a>(
         | NumLiteral(..)
         | FloatLiteral(..)
         | StrLiteral(..)
-        | roc_can::pattern::Pattern::SingleQuote(..) => {
+        | broc_can::pattern::Pattern::SingleQuote(..) => {
             // These patters are refutable, and thus should never occur outside a `when` expression
             // They should have been replaced with `UnsupportedPattern` during canonicalization
             unreachable!("refutable pattern {:?} where irrefutable pattern is expected. This should never happen!", pattern.value)
@@ -2850,7 +2850,7 @@ fn pattern_to_when<'a>(
 
 fn specialize_suspended<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     suspended: Suspended<'a>,
 ) {
@@ -2868,19 +2868,19 @@ fn specialize_suspended<'a>(
         let var = offset_variable(*var);
 
         // TODO define our own Entry for Specialized?
-        let partial_proc = if procs
+        let partial_pbroc = if pbrocs
             .specialized
             .is_specialized(name.name(), &outside_layout)
         {
             // already specialized, just continue
             continue;
         } else {
-            match procs.partial_procs.symbol_to_id(name.name()) {
+            match pbrocs.partial_pbrocs.symbol_to_id(name.name()) {
                 Some(v) => {
-                    // Mark this proc as in-progress, so if we're dealing with
+                    // Mark this pbroc as in-progress, so if we're dealing with
                     // mutually recursive functions, we don't loop forever.
                     // (We had a bug around this before this system existed!)
-                    procs
+                    pbrocs
                         .specialized
                         .mark_in_progress(name.name(), outside_layout);
 
@@ -2895,23 +2895,23 @@ fn specialize_suspended<'a>(
             }
         };
 
-        match specialize_variable(env, procs, name, layout_cache, var, partial_proc) {
-            Ok((proc, raw_layout)) => {
-                let proc_layout = ProcLayout::from_raw_named(env.arena, name, raw_layout);
-                procs
+        match specialize_variable(env, pbrocs, name, layout_cache, var, partial_pbroc) {
+            Ok((pbroc, raw_layout)) => {
+                let pbroc_layout = PbrocLayout::from_raw_named(env.arena, name, raw_layout);
+                pbrocs
                     .specialized
-                    .insert_specialized(name.name(), proc_layout, proc);
+                    .insert_specialized(name.name(), pbroc_layout, pbroc);
             }
             Err(SpecializeFailure {
                 attempted_layout, ..
             }) => {
-                let proc = generate_runtime_error_function(env, name, attempted_layout);
+                let pbroc = generate_runtime_error_function(env, name, attempted_layout);
 
-                let top_level = ProcLayout::from_raw_named(env.arena, name, attempted_layout);
+                let top_level = PbrocLayout::from_raw_named(env.arena, name, attempted_layout);
 
-                procs
+                pbrocs
                     .specialized
-                    .insert_specialized(name.name(), top_level, proc);
+                    .insert_specialized(name.name(), top_level, pbroc);
             }
         }
     }
@@ -2919,22 +2919,22 @@ fn specialize_suspended<'a>(
 
 pub fn specialize_all<'a>(
     env: &mut Env<'a, '_>,
-    mut procs: Procs<'a>,
+    mut pbrocs: Pbrocs<'a>,
     externals_others_need: std::vec::Vec<ExternalSpecializations<'a>>,
     specializations_for_host: HostSpecializations<'a>,
     layout_cache: &mut LayoutCache<'a>,
-) -> Procs<'a> {
+) -> Pbrocs<'a> {
     // When calling from_can, pending_specializations should be unavailable.
     // This must be a single pass, and we must not add any more entries to it!
     let pending_specializations = std::mem::replace(
-        &mut procs.pending_specializations,
+        &mut pbrocs.pending_specializations,
         PendingSpecializations::Making(Suspended::new_in(env.arena)),
     );
 
     // Add all of our existing pending specializations.
     match pending_specializations {
         PendingSpecializations::Finding(suspended) => {
-            specialize_suspended(env, &mut procs, layout_cache, suspended)
+            specialize_suspended(env, &mut pbrocs, layout_cache, suspended)
         }
         PendingSpecializations::Making(suspended) => {
             debug_assert!(
@@ -2946,22 +2946,22 @@ pub fn specialize_all<'a>(
 
     // Specialize all the symbols everyone else needs.
     for externals in externals_others_need {
-        specialize_external_specializations(env, &mut procs, layout_cache, externals);
+        specialize_external_specializations(env, &mut pbrocs, layout_cache, externals);
     }
 
     // Specialize any symbols the host needs.
-    specialize_host_specializations(env, &mut procs, layout_cache, specializations_for_host);
+    specialize_host_specializations(env, &mut pbrocs, layout_cache, specializations_for_host);
 
     // Now, we must go through and continuously complete any new suspended specializations that were
     // discovered in specializing the other demanded symbols.
-    while !procs.pending_specializations.is_empty() {
+    while !pbrocs.pending_specializations.is_empty() {
         let pending_specializations = std::mem::replace(
-            &mut procs.pending_specializations,
+            &mut pbrocs.pending_specializations,
             PendingSpecializations::Making(Suspended::new_in(env.arena)),
         );
         match pending_specializations {
             PendingSpecializations::Making(suspended) => {
-                specialize_suspended(env, &mut procs, layout_cache, suspended);
+                specialize_suspended(env, &mut pbrocs, layout_cache, suspended);
             }
             PendingSpecializations::Finding(_) => {
                 internal_error!("should not have this variant after making specializations")
@@ -2970,17 +2970,17 @@ pub fn specialize_all<'a>(
     }
 
     debug_assert!(
-        procs.symbol_specializations.is_empty(),
+        pbrocs.symbol_specializations.is_empty(),
         "{:?}",
-        &procs.symbol_specializations
+        &pbrocs.symbol_specializations
     );
 
-    procs
+    pbrocs
 }
 
 fn specialize_host_specializations<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     host_specializations: HostSpecializations<'a>,
 ) {
@@ -2989,13 +2989,13 @@ fn specialize_host_specializations<'a>(
     let offset_variable = StorageSubs::merge_into(store, env.subs);
 
     for (symbol, variable, _host_exposed_aliases) in it {
-        specialize_external_help(env, procs, layout_cache, symbol, offset_variable(variable))
+        specialize_external_help(env, pbrocs, layout_cache, symbol, offset_variable(variable))
     }
 }
 
 fn specialize_external_specializations<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     externals_others_need: ExternalSpecializations<'a>,
 ) {
@@ -3007,44 +3007,44 @@ fn specialize_external_specializations<'a>(
         for store_variable in solved_types {
             let imported_variable = offset_variable(store_variable);
 
-            roc_tracing::debug!(proc_name = ?symbol, ?store_variable, ?imported_variable, "specializing needed external");
+            broc_tracing::debug!(pbroc_name = ?symbol, ?store_variable, ?imported_variable, "specializing needed external");
 
             // historical note: we used to deduplicate with a hash here,
             // but the cost of that hash is very high. So for now we make
             // duplicate specializations, and the insertion into a hash map
             // below will deduplicate them.
 
-            specialize_external_help(env, procs, layout_cache, symbol, imported_variable)
+            specialize_external_help(env, pbrocs, layout_cache, symbol, imported_variable)
         }
     }
 }
 
 fn specialize_external_help<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     name: LambdaName<'a>,
     variable: Variable,
 ) {
-    let partial_proc_id = match procs.partial_procs.symbol_to_id(name.name()) {
+    let partial_pbroc_id = match pbrocs.partial_pbrocs.symbol_to_id(name.name()) {
         Some(v) => v,
         None => {
-            panic!("Cannot find a partial proc for {:?}", name);
+            panic!("Cannot find a partial pbroc for {:?}", name);
         }
     };
 
     let specialization_result =
-        specialize_variable(env, procs, name, layout_cache, variable, partial_proc_id);
+        specialize_variable(env, pbrocs, name, layout_cache, variable, partial_pbroc_id);
 
     match specialization_result {
-        Ok((mut proc, layout)) => {
-            let top_level = ProcLayout::from_raw_named(env.arena, name, layout);
+        Ok((mut pbroc, layout)) => {
+            let top_level = PbrocLayout::from_raw_named(env.arena, name, layout);
 
-            if procs.is_module_thunk(name.name()) {
+            if pbrocs.is_module_thunk(name.name()) {
                 debug_assert!(top_level.arguments.is_empty());
             }
 
-            if procs.host_exposed_symbols.contains(&proc.name.name()) {
+            if pbrocs.host_exposed_symbols.contains(&pbroc.name.name()) {
                 // layouts that are (transitively) used in the type of `mainForHost`.
                 let mut host_exposed_layouts: Vec<_> = top_level
                     .arguments
@@ -3060,7 +3060,7 @@ fn specialize_external_help<'a>(
                 for in_layout in host_exposed_layouts {
                     let layout = layout_cache.interner.get(in_layout);
 
-                    let all_glue_procs = generate_glue_procs(
+                    let all_glue_pbrocs = generate_glue_pbrocs(
                         env.home,
                         env.ident_ids,
                         env.arena,
@@ -3069,17 +3069,17 @@ fn specialize_external_help<'a>(
                     );
 
                     // for now, getters are not processed here
-                    let GlueProcs {
+                    let GluePbrocs {
                         getters,
                         extern_names,
-                    } = all_glue_procs;
+                    } = all_glue_pbrocs;
 
-                    for (_layout, glue_procs) in getters {
-                        for glue_proc in glue_procs {
-                            procs.specialized.insert_specialized(
-                                glue_proc.proc.name.name(),
-                                glue_proc.proc_layout,
-                                glue_proc.proc,
+                    for (_layout, glue_pbrocs) in getters {
+                        for glue_pbroc in glue_pbrocs {
+                            pbrocs.specialized.insert_specialized(
+                                glue_pbroc.pbroc.name.name(),
+                                glue_pbroc.pbroc_layout,
+                                glue_pbroc.pbroc,
                             );
                         }
                     }
@@ -3090,7 +3090,7 @@ fn specialize_external_help<'a>(
                         let symbol = env.unique_symbol();
                         let lambda_name = LambdaName::no_niche(symbol);
 
-                        // fix the recursion in the rocLovesRust example
+                        // fix the recursion in the brocLovesRust example
                         if false {
                             raw_function_layout = match raw_function_layout {
                                 RawFunctionLayout::Function(a, mut lambda_set, _) => {
@@ -3103,29 +3103,29 @@ fn specialize_external_help<'a>(
                             };
                         }
 
-                        let (key, (top_level, proc)) = generate_host_exposed_function(
+                        let (key, (top_level, pbroc)) = generate_host_exposed_function(
                             env,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             lambda_name,
                             raw_function_layout,
                         );
 
-                        procs
+                        pbrocs
                             .specialized
-                            .insert_specialized(symbol, top_level, proc);
+                            .insert_specialized(symbol, top_level, pbroc);
 
                         let hels = HostExposedLambdaSet {
                             id,
                             symbol,
-                            proc_layout: top_level,
+                            pbroc_layout: top_level,
                             raw_function_layout,
                         };
 
                         aliases.insert(key, hels);
                     }
 
-                    match &mut proc.host_exposed_layouts {
+                    match &mut pbroc.host_exposed_layouts {
                         HostExposedLayouts::HostExposed { aliases: old, .. } => old.extend(aliases),
                         hep @ HostExposedLayouts::NotHostExposed => {
                             *hep = HostExposedLayouts::HostExposed {
@@ -3137,18 +3137,18 @@ fn specialize_external_help<'a>(
                 }
             }
 
-            procs
+            pbrocs
                 .specialized
-                .insert_specialized(name.name(), top_level, proc);
+                .insert_specialized(name.name(), top_level, pbroc);
         }
         Err(SpecializeFailure { attempted_layout }) => {
-            let proc = generate_runtime_error_function(env, name, attempted_layout);
+            let pbroc = generate_runtime_error_function(env, name, attempted_layout);
 
-            let top_level = ProcLayout::from_raw_named(env.arena, name, attempted_layout);
+            let top_level = PbrocLayout::from_raw_named(env.arena, name, attempted_layout);
 
-            procs
+            pbrocs
                 .specialized
-                .insert_specialized(name.name(), top_level, proc);
+                .insert_specialized(name.name(), top_level, pbroc);
         }
     }
 }
@@ -3157,7 +3157,7 @@ fn generate_runtime_error_function<'a>(
     env: &mut Env<'a, '_>,
     lambda_name: LambdaName<'a>,
     layout: RawFunctionLayout<'a>,
-) -> Proc<'a> {
+) -> Pbroc<'a> {
     let mut msg = bumpalo::collections::string::String::with_capacity_in(80, env.arena);
     use std::fmt::Write;
     write!(
@@ -3195,7 +3195,7 @@ fn generate_runtime_error_function<'a>(
         RawFunctionLayout::ZeroArgumentThunk(ret_layout) => (&[] as &[_], ret_layout),
     };
 
-    Proc {
+    Pbroc {
         name: lambda_name,
         args,
         body: runtime_error,
@@ -3210,7 +3210,7 @@ fn generate_runtime_error_function<'a>(
 /// A snapshot of the state of types at a moment in time.
 /// Includes the exact types, but also auxiliary information like layouts.
 struct TypeStateSnapshot {
-    subs_snapshot: roc_types::subs::SubsSnapshot,
+    subs_snapshot: broc_types::subs::SubsSnapshot,
     layout_snapshot: crate::layout::CacheSnapshot,
     external_storage_snapshot: VecMap<ModuleId, ExternalModuleStorageSnapshot>,
 }
@@ -3220,13 +3220,13 @@ struct TypeStateSnapshot {
 /// interfere with other specializations.
 fn snapshot_typestate(
     subs: &mut Subs,
-    procs: &mut Procs,
+    pbrocs: &mut Pbrocs,
     layout_cache: &mut LayoutCache<'_>,
 ) -> TypeStateSnapshot {
     TypeStateSnapshot {
         subs_snapshot: subs.snapshot(),
         layout_snapshot: layout_cache.snapshot(),
-        external_storage_snapshot: procs
+        external_storage_snapshot: pbrocs
             .externals_we_need
             .iter_mut()
             .map(|(module, es)| (*module, es.snapshot_cache()))
@@ -3239,7 +3239,7 @@ fn snapshot_typestate(
 /// specializations.
 fn rollback_typestate(
     subs: &mut Subs,
-    procs: &mut Procs,
+    pbrocs: &mut Pbrocs,
     layout_cache: &mut LayoutCache<'_>,
     snapshot: TypeStateSnapshot,
 ) {
@@ -3252,7 +3252,7 @@ fn rollback_typestate(
     subs.rollback_to(subs_snapshot);
     layout_cache.rollback_to(layout_snapshot);
 
-    for (module, es) in procs.externals_we_need.iter_mut() {
+    for (module, es) in pbrocs.externals_we_need.iter_mut() {
         if let Some((_, snapshot)) = external_storage_snapshot.remove(module) {
             es.rollback_cache(snapshot);
         } else {
@@ -3263,24 +3263,24 @@ fn rollback_typestate(
 
 fn generate_host_exposed_function<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     lambda_name: LambdaName<'a>,
     layout: RawFunctionLayout<'a>,
-) -> (Symbol, (ProcLayout<'a>, Proc<'a>)) {
+) -> (Symbol, (PbrocLayout<'a>, Pbroc<'a>)) {
     let function_name = lambda_name.name();
 
     match layout {
         RawFunctionLayout::Function(_, lambda_set, _) => {
-            let (proc, top_level) = generate_host_exposed_lambda_set(
+            let (pbroc, top_level) = generate_host_exposed_lambda_set(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 function_name,
                 lambda_set,
             );
 
-            (function_name, (top_level, proc))
+            (function_name, (top_level, pbroc))
         }
         RawFunctionLayout::ZeroArgumentThunk(result) => {
             let assigned = env.unique_symbol();
@@ -3288,7 +3288,7 @@ fn generate_host_exposed_function<'a>(
             let forced = force_thunk(env, function_name, result, assigned, hole);
 
             let lambda_name = LambdaName::no_niche(function_name);
-            let proc = Proc {
+            let pbroc = Pbroc {
                 name: lambda_name,
                 args: &[],
                 body: forced,
@@ -3299,41 +3299,41 @@ fn generate_host_exposed_function<'a>(
                 host_exposed_layouts: HostExposedLayouts::NotHostExposed,
             };
 
-            let top_level = ProcLayout::from_raw_named(env.arena, lambda_name, layout);
+            let top_level = PbrocLayout::from_raw_named(env.arena, lambda_name, layout);
 
-            (function_name, (top_level, proc))
+            (function_name, (top_level, pbroc))
         }
     }
 }
 
 fn generate_host_exposed_lambda_set<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     name: Symbol,
     lambda_set: LambdaSet<'a>,
-) -> (Proc<'a>, ProcLayout<'a>) {
+) -> (Pbroc<'a>, PbrocLayout<'a>) {
     let assigned = env.unique_symbol();
 
     let argument_layouts = *lambda_set.args;
     let return_layout = lambda_set.ret;
 
     let mut argument_symbols = Vec::with_capacity_in(argument_layouts.len(), env.arena);
-    let mut proc_arguments = Vec::with_capacity_in(argument_layouts.len() + 1, env.arena);
+    let mut pbroc_arguments = Vec::with_capacity_in(argument_layouts.len() + 1, env.arena);
     let mut top_level_arguments = Vec::with_capacity_in(argument_layouts.len() + 1, env.arena);
 
     for layout in *lambda_set.args {
         let symbol = env.unique_symbol();
 
-        proc_arguments.push((*layout, symbol));
+        pbroc_arguments.push((*layout, symbol));
 
         argument_symbols.push(symbol);
         top_level_arguments.push(*layout);
     }
 
-    // the proc needs to take an extra closure argument
+    // the pbroc needs to take an extra closure argument
     let lambda_set_layout = lambda_set.full_layout;
-    proc_arguments.push((lambda_set_layout, Symbol::ARG_CLOSURE));
+    pbroc_arguments.push((lambda_set_layout, Symbol::ARG_CLOSURE));
 
     // this should also be reflected in the TopLevel signature
     top_level_arguments.push(lambda_set_layout);
@@ -3343,7 +3343,7 @@ fn generate_host_exposed_lambda_set<'a>(
     let body = match_on_lambda_set(
         env,
         layout_cache,
-        procs,
+        pbrocs,
         lambda_set,
         Symbol::ARG_CLOSURE,
         argument_symbols.into_bump_slice(),
@@ -3353,9 +3353,9 @@ fn generate_host_exposed_lambda_set<'a>(
         hole,
     );
 
-    let proc = Proc {
+    let pbroc = Pbroc {
         name: LambdaName::no_niche(name),
-        args: proc_arguments.into_bump_slice(),
+        args: pbroc_arguments.into_bump_slice(),
         body,
         closure_data_layout: None,
         ret_layout: return_layout,
@@ -3364,72 +3364,72 @@ fn generate_host_exposed_lambda_set<'a>(
         host_exposed_layouts: HostExposedLayouts::NotHostExposed,
     };
 
-    let top_level = ProcLayout::new(
+    let top_level = PbrocLayout::new(
         env.arena,
         top_level_arguments.into_bump_slice(),
         Niche::NONE,
         return_layout,
     );
 
-    (proc, top_level)
+    (pbroc, top_level)
 }
 
-/// Specialize a single proc.
+/// Specialize a single pbroc.
 ///
 /// The caller should snapshot and rollback the type state before and after calling this function,
 /// respectively. This function will not take snapshots itself, but will modify the type state.
-fn specialize_proc_help<'a>(
+fn specialize_pbroc_help<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     lambda_name: LambdaName<'a>,
     layout_cache: &mut LayoutCache<'a>,
     fn_var: Variable,
-    partial_proc_id: PartialProcId,
-) -> Result<Proc<'a>, LayoutProblem> {
-    let partial_proc = procs.partial_procs.get_id(partial_proc_id);
-    let captured_symbols = partial_proc.captured_symbols;
+    partial_pbroc_id: PartialPbrocId,
+) -> Result<Pbroc<'a>, LayoutProblem> {
+    let partial_pbroc = pbrocs.partial_pbrocs.get_id(partial_pbroc_id);
+    let captured_symbols = partial_pbroc.captured_symbols;
 
     let _unified = env.unify(
-        procs.externals_we_need.values_mut(),
+        pbrocs.externals_we_need.values_mut(),
         layout_cache,
-        partial_proc.annotation,
+        partial_pbroc.annotation,
         fn_var,
     );
 
     // This will not hold for programs with type errors
-    // let is_valid = matches!(unified, roc_unify::unify::Unified::Success(_));
-    // debug_assert!(is_valid, "unificaton failure for {:?}", proc_name);
+    // let is_valid = matches!(unified, broc_unify::unify::Unified::Success(_));
+    // debug_assert!(is_valid, "unificaton failure for {:?}", pbroc_name);
 
     // if this is a closure, add the closure record argument
-    let pattern_symbols = match partial_proc.captured_symbols {
-        CapturedSymbols::None => partial_proc.pattern_symbols,
-        CapturedSymbols::Captured([]) => partial_proc.pattern_symbols,
+    let pattern_symbols = match partial_pbroc.captured_symbols {
+        CapturedSymbols::None => partial_pbroc.pattern_symbols,
+        CapturedSymbols::Captured([]) => partial_pbroc.pattern_symbols,
         CapturedSymbols::Captured(_) => {
             let mut temp =
-                Vec::from_iter_in(partial_proc.pattern_symbols.iter().copied(), env.arena);
+                Vec::from_iter_in(partial_pbroc.pattern_symbols.iter().copied(), env.arena);
             temp.push(Symbol::ARG_CLOSURE);
             temp.into_bump_slice()
         }
     };
 
     let specialized =
-        build_specialized_proc_from_var(env, layout_cache, lambda_name, pattern_symbols, fn_var)?;
+        build_specialized_pbroc_from_var(env, layout_cache, lambda_name, pattern_symbols, fn_var)?;
 
-    let recursivity = if partial_proc.is_self_recursive {
+    let recursivity = if partial_pbroc.is_self_recursive {
         SelfRecursive::SelfRecursive(JoinPointId(env.unique_symbol()))
     } else {
         SelfRecursive::NotSelfRecursive
     };
 
-    let body = partial_proc.body.clone();
-    let body_var = partial_proc.body_var;
+    let body = partial_pbroc.body.clone();
+    let body_var = partial_pbroc.body_var;
 
     // host-exposed functions are tagged on later
     let host_exposed_layouts = HostExposedLayouts::NotHostExposed;
 
-    let mut specialized_body = from_can(env, body_var, body, procs, layout_cache);
+    let mut specialized_body = from_can(env, body_var, body, pbrocs, layout_cache);
 
-    let specialized_proc = match specialized {
+    let specialized_pbroc = match specialized {
         SpecializedLayout::FunctionPointerBody {
             ret_layout,
             closure: opt_closure_layout,
@@ -3450,7 +3450,7 @@ fn specialize_proc_help<'a>(
             // I'm not sure how to handle the closure case, does it ever occur?
             debug_assert!(matches!(captured_symbols, CapturedSymbols::None));
 
-            Proc {
+            Pbroc {
                 name: lambda_name,
                 args: &[],
                 body: specialized_body,
@@ -3462,11 +3462,11 @@ fn specialize_proc_help<'a>(
             }
         }
         SpecializedLayout::FunctionBody {
-            arguments: proc_args,
+            arguments: pbroc_args,
             closure: opt_closure_layout,
             ret_layout,
         } => {
-            let mut proc_args = Vec::from_iter_in(proc_args.iter().copied(), env.arena);
+            let mut pbroc_args = Vec::from_iter_in(pbroc_args.iter().copied(), env.arena);
 
             // unpack the closure symbols, if any
             match (opt_closure_layout, captured_symbols) {
@@ -3478,7 +3478,7 @@ fn specialize_proc_help<'a>(
                     // specialized name rather than the original captured name!
                     let get_specialized_name = |symbol| {
                         let specs_used_in_body =
-                            procs.get_symbol_specializations_used_in_body(symbol);
+                            pbrocs.get_symbol_specializations_used_in_body(symbol);
 
                         match specs_used_in_body {
                             Some(mut specs) => {
@@ -3620,7 +3620,7 @@ fn specialize_proc_help<'a>(
                             // The capture set is unwrapped, so simply replace the closure argument
                             // to the function with the unwrapped capture name.
                             let captured_symbol = get_specialized_name(captured_symbol);
-                            let closure_arg = proc_args.last_mut().unwrap();
+                            let closure_arg = pbroc_args.last_mut().unwrap();
                             debug_assert_eq!(closure_arg.1, Symbol::ARG_CLOSURE);
                             closure_arg.1 = captured_symbol;
                         }
@@ -3635,9 +3635,9 @@ fn specialize_proc_help<'a>(
                 _ => unreachable!("to closure or not to closure?"),
             }
 
-            proc_args.iter_mut().for_each(|(layout, symbol)| {
+            pbroc_args.iter_mut().for_each(|(layout, symbol)| {
                 // Grab the specialization symbol, if it exists.
-                *symbol = procs
+                *symbol = pbrocs
                     .symbol_specializations
                     .maybe_get_specialized(*symbol, *layout)
             });
@@ -3650,9 +3650,9 @@ fn specialize_proc_help<'a>(
                 None => None,
             };
 
-            Proc {
+            Pbroc {
                 name: lambda_name,
-                args: proc_args.into_bump_slice(),
+                args: pbroc_args.into_bump_slice(),
                 body: specialized_body,
                 closure_data_layout,
                 ret_layout,
@@ -3663,7 +3663,7 @@ fn specialize_proc_help<'a>(
         }
     };
 
-    Ok(specialized_proc)
+    Ok(specialized_pbroc)
 }
 
 #[derive(Debug)]
@@ -3682,7 +3682,7 @@ enum SpecializedLayout<'a> {
 }
 
 #[allow(clippy::type_complexity)]
-fn build_specialized_proc_from_var<'a>(
+fn build_specialized_pbroc_from_var<'a>(
     env: &mut Env<'a, '_>,
     layout_cache: &mut LayoutCache<'a>,
     lambda_name: LambdaName<'a>,
@@ -3694,7 +3694,7 @@ fn build_specialized_proc_from_var<'a>(
             let mut pattern_layouts_vec = Vec::with_capacity_in(pattern_layouts.len(), env.arena);
             pattern_layouts_vec.extend_from_slice(pattern_layouts);
 
-            build_specialized_proc(
+            build_specialized_pbroc(
                 env.arena,
                 lambda_name,
                 pattern_symbols,
@@ -3705,7 +3705,7 @@ fn build_specialized_proc_from_var<'a>(
         }
         RawFunctionLayout::ZeroArgumentThunk(ret_layout) => {
             // a top-level constant 0-argument thunk
-            build_specialized_proc(
+            build_specialized_pbroc(
                 env.arena,
                 lambda_name,
                 pattern_symbols,
@@ -3718,7 +3718,7 @@ fn build_specialized_proc_from_var<'a>(
 }
 
 #[allow(clippy::type_complexity)]
-fn build_specialized_proc<'a>(
+fn build_specialized_pbroc<'a>(
     arena: &'a Bump,
     lambda_name: LambdaName<'a>,
     pattern_symbols: &[Symbol],
@@ -3728,12 +3728,12 @@ fn build_specialized_proc<'a>(
 ) -> Result<SpecializedLayout<'a>, LayoutProblem> {
     use SpecializedLayout::*;
 
-    let mut proc_args = Vec::with_capacity_in(pattern_layouts.len(), arena);
+    let mut pbroc_args = Vec::with_capacity_in(pattern_layouts.len(), arena);
 
     let pattern_layouts_len = pattern_layouts.len();
 
     for (arg_layout, arg_name) in pattern_layouts.into_iter().zip(pattern_symbols.iter()) {
-        proc_args.push((arg_layout, *arg_name));
+        pbroc_args.push((arg_layout, *arg_name));
     }
 
     // Given
@@ -3754,25 +3754,25 @@ fn build_specialized_proc<'a>(
     //
     // then
 
-    let proc_name = lambda_name.name();
+    let pbroc_name = lambda_name.name();
     match lambda_set {
         Some(lambda_set) if pattern_symbols.last() == Some(&Symbol::ARG_CLOSURE) => {
             // here we define the lifted (now top-level) f function. Its final argument is `Symbol::ARG_CLOSURE`,
             // it stores the closure structure (just an integer in this case)
             let lambda_set_layout = lambda_set.full_layout;
-            proc_args.push((lambda_set_layout, Symbol::ARG_CLOSURE));
+            pbroc_args.push((lambda_set_layout, Symbol::ARG_CLOSURE));
 
             debug_assert_eq!(
                 pattern_layouts_len + 1,
                 pattern_symbols.len(),
                 "Tried to zip two vecs with different lengths in {:?}!",
-                proc_name,
+                pbroc_name,
             );
 
-            let proc_args = proc_args.into_bump_slice();
+            let pbroc_args = pbroc_args.into_bump_slice();
 
             Ok(FunctionBody {
-                arguments: proc_args,
+                arguments: pbroc_args,
                 closure: Some(lambda_set),
                 ret_layout,
             })
@@ -3787,10 +3787,10 @@ fn build_specialized_proc<'a>(
             use std::cmp::Ordering;
             match pattern_layouts_len.cmp(&pattern_symbols.len()) {
                 Ordering::Equal => {
-                    let proc_args = proc_args.into_bump_slice();
+                    let pbroc_args = pbroc_args.into_bump_slice();
 
                     Ok(FunctionBody {
-                        arguments: proc_args,
+                        arguments: pbroc_args,
                         closure: None,
                         ret_layout,
                     })
@@ -3807,13 +3807,13 @@ fn build_specialized_proc<'a>(
                         // I think this branch should not be reachable in a bugfree compiler
                         panic!(
                             "more arguments (according to the layout) than argument symbols for {:?}",
-                            proc_name
+                            pbroc_name
                         )
                     }
                 }
                 Ordering::Less => panic!(
                     "more argument symbols than arguments (according to the layout) for {:?}",
-                    proc_name
+                    pbroc_name
                 ),
             }
         }
@@ -3827,10 +3827,10 @@ fn build_specialized_proc<'a>(
             use std::cmp::Ordering;
             match pattern_layouts_len.cmp(&pattern_symbols.len()) {
                 Ordering::Equal => {
-                    let proc_args = proc_args.into_bump_slice();
+                    let pbroc_args = pbroc_args.into_bump_slice();
 
                     Ok(FunctionBody {
-                        arguments: proc_args,
+                        arguments: pbroc_args,
                         closure: None,
                         ret_layout,
                     })
@@ -3846,13 +3846,13 @@ fn build_specialized_proc<'a>(
                         // I think this branch should not be reachable in a bugfree compiler
                         panic!(
                             "more arguments (according to the layout) than argument symbols for {:?}",
-                            proc_name
+                            pbroc_name
                         )
                     }
                 }
                 Ordering::Less => panic!(
                     "more argument symbols than arguments (according to the layout) for {:?}",
-                    proc_name
+                    pbroc_name
                 ),
             }
         }
@@ -3865,17 +3865,17 @@ struct SpecializeFailure<'a> {
     attempted_layout: RawFunctionLayout<'a>,
 }
 
-type SpecializeSuccess<'a> = (Proc<'a>, RawFunctionLayout<'a>);
+type SpecializeSuccess<'a> = (Pbroc<'a>, RawFunctionLayout<'a>);
 
 fn specialize_variable<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
-    proc_name: LambdaName<'a>,
+    pbrocs: &mut Pbrocs<'a>,
+    pbroc_name: LambdaName<'a>,
     layout_cache: &mut LayoutCache<'a>,
     fn_var: Variable,
-    partial_proc_id: PartialProcId,
+    partial_pbroc_id: PartialPbrocId,
 ) -> Result<SpecializeSuccess<'a>, SpecializeFailure<'a>> {
-    let snapshot = snapshot_typestate(env.subs, procs, layout_cache);
+    let snapshot = snapshot_typestate(env.subs, pbrocs, layout_cache);
 
     // for debugging only
     // TODO: can we get rid of raw entirely?
@@ -3883,7 +3883,7 @@ fn specialize_variable<'a>(
         .raw_from_var(env.arena, fn_var, env.subs)
         .unwrap_or_else(|err| panic!("TODO handle invalid function {:?}", err));
 
-    let raw = if procs.is_module_thunk(proc_name.name()) {
+    let raw = if pbrocs.is_module_thunk(pbroc_name.name()) {
         match raw {
             RawFunctionLayout::Function(_, lambda_set, _) => {
                 let lambda_set_layout = lambda_set.full_layout;
@@ -3896,24 +3896,24 @@ fn specialize_variable<'a>(
     };
 
     // make sure rigid variables in the annotation are converted to flex variables
-    let annotation_var = procs.partial_procs.get_id(partial_proc_id).annotation;
+    let annotation_var = pbrocs.partial_pbrocs.get_id(partial_pbroc_id).annotation;
     instantiate_rigids(env.subs, annotation_var);
 
-    procs.push_active_specialization(proc_name.name());
-    roc_tracing::debug!(?proc_name, ?fn_var, fn_content = ?roc_types::subs::SubsFmtContent(env.subs.get_content_without_compacting(fn_var), env.subs), "specialization start");
+    pbrocs.push_active_specialization(pbroc_name.name());
+    broc_tracing::debug!(?pbroc_name, ?fn_var, fn_content = ?broc_types::subs::SubsFmtContent(env.subs.get_content_without_compacting(fn_var), env.subs), "specialization start");
 
     let specialized =
-        specialize_proc_help(env, procs, proc_name, layout_cache, fn_var, partial_proc_id);
+        specialize_pbroc_help(env, pbrocs, pbroc_name, layout_cache, fn_var, partial_pbroc_id);
 
-    roc_tracing::debug!(
-        ?proc_name,
+    broc_tracing::debug!(
+        ?pbroc_name,
         succeeded = specialized.is_ok(),
         "specialization end"
     );
-    procs.pop_active_specialization(proc_name.name());
+    pbrocs.pop_active_specialization(pbroc_name.name());
 
     let result = match specialized {
-        Ok(proc) => {
+        Ok(pbroc) => {
             // when successful, the layout after unification should be the layout before unification
             //            debug_assert_eq!(
             //                attempted_layout,
@@ -3922,7 +3922,7 @@ fn specialize_variable<'a>(
             //                    .unwrap_or_else(|err| panic!("TODO handle invalid function {:?}", err))
             //            );
 
-            Ok((proc, raw))
+            Ok((pbroc, raw))
         }
         Err(error) => {
             // earlier we made this information available where we handle the failure
@@ -3935,19 +3935,19 @@ fn specialize_variable<'a>(
         }
     };
 
-    rollback_typestate(env.subs, procs, layout_cache, snapshot);
+    rollback_typestate(env.subs, pbrocs, layout_cache, snapshot);
 
     result
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct ProcLayout<'a> {
+pub struct PbrocLayout<'a> {
     pub arguments: &'a [InLayout<'a>],
     pub result: InLayout<'a>,
     pub niche: Niche<'a>,
 }
 
-impl<'a> ProcLayout<'a> {
+impl<'a> PbrocLayout<'a> {
     pub(crate) fn new(
         arena: &'a Bump,
         old_arguments: &'a [InLayout<'a>],
@@ -3964,7 +3964,7 @@ impl<'a> ProcLayout<'a> {
         let other = result;
         let new_result = other;
 
-        ProcLayout {
+        PbrocLayout {
             arguments: arguments.into_bump_slice(),
             niche: old_niche,
             result: new_result,
@@ -3980,35 +3980,35 @@ impl<'a> ProcLayout<'a> {
             RawFunctionLayout::Function(arguments, lambda_set, result) => {
                 let arguments =
                     lambda_set.extend_argument_list_for_named(arena, lambda_name, arguments);
-                ProcLayout::new(arena, arguments, lambda_name.niche(), result)
+                PbrocLayout::new(arena, arguments, lambda_name.niche(), result)
             }
             RawFunctionLayout::ZeroArgumentThunk(result) => {
-                ProcLayout::new(arena, &[], Niche::NONE, result)
+                PbrocLayout::new(arena, &[], Niche::NONE, result)
             }
         }
     }
 
-    pub fn dbg_deep<'r, I: LayoutInterner<'a>>(&self, interner: &'r I) -> DbgProcLayout<'a, 'r, I> {
-        DbgProcLayout {
+    pub fn dbg_deep<'r, I: LayoutInterner<'a>>(&self, interner: &'r I) -> DbgPbrocLayout<'a, 'r, I> {
+        DbgPbrocLayout {
             layout: *self,
             interner,
         }
     }
 }
 
-pub struct DbgProcLayout<'a, 'r, I: LayoutInterner<'a>> {
-    layout: ProcLayout<'a>,
+pub struct DbgPbrocLayout<'a, 'r, I: LayoutInterner<'a>> {
+    layout: PbrocLayout<'a>,
     interner: &'r I,
 }
 
-impl<'a, 'r, I: LayoutInterner<'a>> std::fmt::Debug for DbgProcLayout<'a, 'r, I> {
+impl<'a, 'r, I: LayoutInterner<'a>> std::fmt::Debug for DbgPbrocLayout<'a, 'r, I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let ProcLayout {
+        let PbrocLayout {
             arguments,
             result,
             niche,
         } = self.layout;
-        f.debug_struct("ProcLayout")
+        f.debug_struct("PbrocLayout")
             .field("arguments", &self.interner.dbg_deep_iter(arguments))
             .field("result", &self.interner.dbg_deep(result))
             .field("niche", &niche.dbg_deep(self.interner))
@@ -4019,19 +4019,19 @@ impl<'a, 'r, I: LayoutInterner<'a>> std::fmt::Debug for DbgProcLayout<'a, 'r, I>
 fn specialize_naked_symbol<'a>(
     env: &mut Env<'a, '_>,
     variable: Variable,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     assigned: Symbol,
     hole: &'a Stmt<'a>,
     symbol: Symbol,
 ) -> Stmt<'a> {
-    if procs.is_module_thunk(symbol) {
+    if pbrocs.is_module_thunk(symbol) {
         let fn_var = variable;
 
         // This is a top-level declaration, which will code gen to a 0-arity thunk.
         let result = call_by_name(
             env,
-            procs,
+            pbrocs,
             fn_var,
             symbol,
             std::vec::Vec::new(),
@@ -4048,7 +4048,7 @@ fn specialize_naked_symbol<'a>(
                 // this is a 0-arity thunk
                 let result = call_by_name(
                     env,
-                    procs,
+                    pbrocs,
                     variable,
                     symbol,
                     std::vec::Vec::new(),
@@ -4070,7 +4070,7 @@ fn specialize_naked_symbol<'a>(
     // if this is a function symbol, ensure that it's properly specialized!
     specialize_symbol(
         env,
-        procs,
+        pbrocs,
         layout_cache,
         opt_fn_var,
         assigned,
@@ -4081,10 +4081,10 @@ fn specialize_naked_symbol<'a>(
 
 fn try_make_literal<'a>(
     interner: &TLLayoutInterner<'a>,
-    can_expr: &roc_can::expr::Expr,
+    can_expr: &broc_can::expr::Expr,
     layout: InLayout<'a>,
 ) -> Option<Literal<'a>> {
-    use roc_can::expr::Expr::*;
+    use broc_can::expr::Expr::*;
 
     match can_expr {
         Int(_, _, int_str, int, _bound) => Some(
@@ -4109,14 +4109,14 @@ fn try_make_literal<'a>(
 
 pub fn with_hole<'a>(
     env: &mut Env<'a, '_>,
-    can_expr: roc_can::expr::Expr,
+    can_expr: broc_can::expr::Expr,
     variable: Variable,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     assigned: Symbol,
     hole: &'a Stmt<'a>,
 ) -> Stmt<'a> {
-    use roc_can::expr::Expr::*;
+    use broc_can::expr::Expr::*;
 
     let arena = env.arena;
 
@@ -4207,7 +4207,7 @@ pub fn with_hole<'a>(
         }
         LetNonRec(def, cont) => from_can_let(
             env,
-            procs,
+            pbrocs,
             layout_cache,
             def,
             cont,
@@ -4215,11 +4215,11 @@ pub fn with_hole<'a>(
             Some((assigned, hole)),
         ),
         LetRec(defs, cont, _cycle_mark) => {
-            // because Roc is strict, only functions can be recursive!
+            // because Broc is strict, only functions can be recursive!
             for def in defs.into_iter() {
-                if let roc_can::pattern::Pattern::Identifier(symbol) = &def.loc_pattern.value {
+                if let broc_can::pattern::Pattern::Identifier(symbol) = &def.loc_pattern.value {
                     if let Closure(closure_data) = def.loc_expr.value {
-                        register_noncapturing_closure(env, procs, *symbol, closure_data);
+                        register_noncapturing_closure(env, pbrocs, *symbol, closure_data);
 
                         continue;
                     }
@@ -4231,7 +4231,7 @@ pub fn with_hole<'a>(
                 env,
                 cont.value,
                 variable,
-                procs,
+                pbrocs,
                 layout_cache,
                 assigned,
                 hole,
@@ -4241,16 +4241,16 @@ pub fn with_hole<'a>(
             // If this symbol is a raw value, find the real name we gave to its specialized usage.
             if let ReuseSymbol::Value(_symbol) = can_reuse_symbol(
                 env,
-                procs,
-                &roc_can::expr::Expr::Var(symbol, variable),
+                pbrocs,
+                &broc_can::expr::Expr::Var(symbol, variable),
                 variable,
             ) {
                 let real_symbol =
-                    procs.get_or_insert_symbol_specialization(env, layout_cache, symbol, variable);
+                    pbrocs.get_or_insert_symbol_specialization(env, layout_cache, symbol, variable);
                 symbol = real_symbol;
             }
 
-            specialize_naked_symbol(env, variable, procs, layout_cache, assigned, hole, symbol)
+            specialize_naked_symbol(env, variable, pbrocs, layout_cache, assigned, hole, symbol)
         }
         AbilityMember(member, specialization_id, specialization_var) => {
             let specialization_symbol = late_resolve_ability_specialization(
@@ -4263,7 +4263,7 @@ pub fn with_hole<'a>(
             specialize_naked_symbol(
                 env,
                 variable,
-                procs,
+                pbrocs,
                 layout_cache,
                 assigned,
                 hole,
@@ -4288,7 +4288,7 @@ pub fn with_hole<'a>(
                 assigned,
                 hole,
                 tag_name,
-                procs,
+                pbrocs,
                 layout_cache,
                 args,
                 arena,
@@ -4316,7 +4316,7 @@ pub fn with_hole<'a>(
                     tag_name,
                     closure_name,
                     ext_var,
-                    procs,
+                    pbrocs,
                     variable,
                     layout_cache,
                     assigned,
@@ -4329,7 +4329,7 @@ pub fn with_hole<'a>(
                     assigned,
                     hole,
                     tag_name,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     std::vec::Vec::new(),
                     arena,
@@ -4340,10 +4340,10 @@ pub fn with_hole<'a>(
         OpaqueRef { argument, .. } => {
             let (arg_var, loc_arg_expr) = *argument;
 
-            match can_reuse_symbol(env, procs, &loc_arg_expr.value, arg_var) {
+            match can_reuse_symbol(env, pbrocs, &loc_arg_expr.value, arg_var) {
                 // Opaques decay to their argument.
                 ReuseSymbol::Value(symbol) => {
-                    let real_name = procs.get_or_insert_symbol_specialization(
+                    let real_name = pbrocs.get_or_insert_symbol_specialization(
                         env,
                         layout_cache,
                         symbol,
@@ -4357,7 +4357,7 @@ pub fn with_hole<'a>(
                     env,
                     loc_arg_expr.value,
                     arg_var,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     assigned,
                     hole,
@@ -4388,7 +4388,7 @@ pub fn with_hole<'a>(
 
             compile_struct_like(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 sorted_elems,
                 take_elem_expr,
@@ -4422,7 +4422,7 @@ pub fn with_hole<'a>(
 
             compile_struct_like(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 sorted_fields,
                 take_field_expr,
@@ -4460,7 +4460,7 @@ pub fn with_hole<'a>(
                             env,
                             final_else.value,
                             branch_var,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             assigned,
                             terminator,
@@ -4473,7 +4473,7 @@ pub fn with_hole<'a>(
                                 env,
                                 loc_then.value,
                                 branch_var,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 assigned,
                                 terminator,
@@ -4486,7 +4486,7 @@ pub fn with_hole<'a>(
                                 env,
                                 loc_cond.value,
                                 cond_var,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 branching_symbol,
                                 env.arena.alloc(stmt),
@@ -4505,7 +4505,7 @@ pub fn with_hole<'a>(
                             env,
                             final_else.value,
                             branch_var,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             assigned_in_jump,
                             terminator,
@@ -4514,7 +4514,7 @@ pub fn with_hole<'a>(
                         for (loc_cond, loc_then) in branches.into_iter().rev() {
                             let branching_symbol = possible_reuse_symbol_or_specialize(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 &loc_cond.value,
                                 cond_var,
@@ -4524,7 +4524,7 @@ pub fn with_hole<'a>(
                                 env,
                                 loc_then.value,
                                 branch_var,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 assigned_in_jump,
                                 terminator,
@@ -4535,7 +4535,7 @@ pub fn with_hole<'a>(
                             // add condition
                             stmt = assign_to_symbol(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 cond_var,
                                 loc_cond,
@@ -4580,7 +4580,7 @@ pub fn with_hole<'a>(
         } => {
             let cond_symbol = possible_reuse_symbol_or_specialize(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 &loc_cond.value,
                 cond_var,
@@ -4596,14 +4596,14 @@ pub fn with_hole<'a>(
                 branches,
                 exhaustive,
                 layout_cache,
-                procs,
+                pbrocs,
                 Some(id),
             );
 
             // define the `when` condition
             stmt = assign_to_symbol(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_var,
                 *loc_cond,
@@ -4675,7 +4675,7 @@ pub fn with_hole<'a>(
                 } else {
                     let symbol = possible_reuse_symbol_or_specialize(
                         env,
-                        procs,
+                        pbrocs,
                         layout_cache,
                         &arg_expr.value,
                         elem_var,
@@ -4703,7 +4703,7 @@ pub fn with_hole<'a>(
                 .map(|e| (elem_var, e))
                 .zip(arg_symbols.iter().rev());
 
-            assign_to_symbols(env, procs, layout_cache, iter, stmt)
+            assign_to_symbols(env, pbrocs, layout_cache, iter, stmt)
         }
 
         RecordAccess {
@@ -4751,7 +4751,7 @@ pub fn with_hole<'a>(
 
             compile_struct_like_access(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 field_layouts,
                 index.expect("field not in its own type") as _,
@@ -4775,7 +4775,7 @@ pub fn with_hole<'a>(
                 ..
             } = accessor_data.to_closure_data(fresh_record_symbol);
 
-            match procs.insert_anonymous(
+            match pbrocs.insert_anonymous(
                 env,
                 LambdaName::no_niche(name),
                 function_type,
@@ -4798,7 +4798,7 @@ pub fn with_hole<'a>(
                                 find_lambda_name(env, layout_cache, lambda_set, name, &[]);
                             construct_closure_data(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 lambda_set,
                                 lambda_name,
@@ -4852,7 +4852,7 @@ pub fn with_hole<'a>(
 
             compile_struct_like_access(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 field_layouts,
                 final_index.expect("elem not in its own type") as u64,
@@ -4876,7 +4876,7 @@ pub fn with_hole<'a>(
                 ..
             } = wrap_fn_data.to_closure_data(arg_symbol);
 
-            match procs.insert_anonymous(
+            match pbrocs.insert_anonymous(
                 env,
                 LambdaName::no_niche(name),
                 function_type,
@@ -4899,7 +4899,7 @@ pub fn with_hole<'a>(
                                 find_lambda_name(env, layout_cache, lambda_set, name, &[]);
                             construct_closure_data(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 lambda_set,
                                 lambda_name,
@@ -4931,7 +4931,7 @@ pub fn with_hole<'a>(
 
             enum FieldType<'a> {
                 CopyExisting(u64),
-                UpdateExisting(&'a roc_can::expr::Field),
+                UpdateExisting(&'a broc_can::expr::Field),
             }
 
             // Strategy: turn a record update into the creation of a new record.
@@ -4972,7 +4972,7 @@ pub fn with_hole<'a>(
                         if let Some(field) = updates.get(&label) {
                             let field_symbol = possible_reuse_symbol_or_specialize(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 &field.loc_expr.value,
                                 field.var,
@@ -5013,7 +5013,7 @@ pub fn with_hole<'a>(
 
                         stmt = assign_to_symbol(
                             env,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             field.var,
                             *field.loc_expr.clone(),
@@ -5040,7 +5040,7 @@ pub fn with_hole<'a>(
                         UpdateExisting(field) => {
                             stmt = assign_to_symbol(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 field.var,
                                 *field.loc_expr.clone(),
@@ -5050,9 +5050,9 @@ pub fn with_hole<'a>(
                         }
                         CopyExisting(index) => {
                             let structure_needs_specialization =
-                                procs.ability_member_aliases.get(structure).is_some()
-                                    || procs.is_module_thunk(structure)
-                                    || procs.is_imported_module_thunk(structure);
+                                pbrocs.ability_member_aliases.get(structure).is_some()
+                                    || pbrocs.is_module_thunk(structure)
+                                    || pbrocs.is_imported_module_thunk(structure);
 
                             let specialized_structure_sym = if structure_needs_specialization {
                                 // We need to specialize the record now; create a new one for it.
@@ -5074,7 +5074,7 @@ pub fn with_hole<'a>(
                             if structure_needs_specialization {
                                 stmt = specialize_symbol(
                                     env,
-                                    procs,
+                                    pbrocs,
                                     layout_cache,
                                     Some(record_var),
                                     specialized_structure_sym,
@@ -5122,7 +5122,7 @@ pub fn with_hole<'a>(
                         symbols.iter().copied(),
                     );
 
-                    let inserted = procs.insert_anonymous(
+                    let inserted = pbrocs.insert_anonymous(
                         env,
                         lambda_name,
                         function_type,
@@ -5146,7 +5146,7 @@ pub fn with_hole<'a>(
 
                     construct_closure_data(
                         env,
-                        procs,
+                        pbrocs,
                         layout_cache,
                         lambda_set,
                         lambda_name,
@@ -5167,34 +5167,34 @@ pub fn with_hole<'a>(
             // the procedures that we have lifted to the top-level and can call by name
             // if it's in there, it's a call by name, otherwise it's a call by pointer
             let is_known = |key| {
-                // a proc in this module, or an imported symbol
-                procs.partial_procs.contains_key(key)
-                    || (env.is_imported_symbol(key) && !procs.is_imported_module_thunk(key))
+                // a pbroc in this module, or an imported symbol
+                pbrocs.partial_pbrocs.contains_key(key)
+                    || (env.is_imported_symbol(key) && !pbrocs.is_imported_module_thunk(key))
             };
 
             match loc_expr.value {
-                roc_can::expr::Expr::Var(proc_name, _) if is_known(proc_name) => {
+                broc_can::expr::Expr::Var(pbroc_name, _) if is_known(pbroc_name) => {
                     // a call by a known name
                     call_by_name(
                         env,
-                        procs,
+                        pbrocs,
                         fn_var,
-                        proc_name,
+                        pbroc_name,
                         loc_args,
                         layout_cache,
                         assigned,
                         hole,
                     )
                 }
-                roc_can::expr::Expr::AbilityMember(member, specialization_id, _) => {
-                    let specialization_proc_name =
+                broc_can::expr::Expr::AbilityMember(member, specialization_id, _) => {
+                    let specialization_pbroc_name =
                         late_resolve_ability_specialization(env, member, specialization_id, fn_var);
 
                     call_by_name(
                         env,
-                        procs,
+                        pbrocs,
                         fn_var,
-                        specialization_proc_name,
+                        specialization_pbroc_name,
                         loc_args,
                         layout_cache,
                         assigned,
@@ -5222,7 +5222,7 @@ pub fn with_hole<'a>(
                         loc_args.iter().map(|(var, arg_expr)| {
                             possible_reuse_symbol_or_specialize(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 &arg_expr.value,
                                 *var,
@@ -5242,15 +5242,15 @@ pub fn with_hole<'a>(
                     // re-use that symbol, and don't define its value again
                     let mut result;
                     use ReuseSymbol::*;
-                    match can_reuse_symbol(env, procs, &loc_expr.value, fn_var) {
+                    match can_reuse_symbol(env, pbrocs, &loc_expr.value, fn_var) {
                         LocalFunction(_) => {
                             unreachable!("if this was known to be a function, we would not be here")
                         }
                         Imported(thunk_name) => {
-                            debug_assert!(procs.is_imported_module_thunk(thunk_name));
+                            debug_assert!(pbrocs.is_imported_module_thunk(thunk_name));
 
                             add_needed_external(
-                                procs,
+                                pbrocs,
                                 env,
                                 fn_var,
                                 LambdaName::no_niche(thunk_name),
@@ -5269,7 +5269,7 @@ pub fn with_hole<'a>(
                                     result = match_on_lambda_set(
                                         env,
                                         layout_cache,
-                                        procs,
+                                        pbrocs,
                                         lambda_set,
                                         closure_data_symbol,
                                         arg_symbols,
@@ -5295,7 +5295,7 @@ pub fn with_hole<'a>(
                             }
                         }
                         Value(function_symbol) => {
-                            let function_symbol = procs.get_or_insert_symbol_specialization(
+                            let function_symbol = pbrocs.get_or_insert_symbol_specialization(
                                 env,
                                 layout_cache,
                                 function_symbol,
@@ -5313,7 +5313,7 @@ pub fn with_hole<'a>(
                                     result = match_on_lambda_set(
                                         env,
                                         layout_cache,
-                                        procs,
+                                        pbrocs,
                                         lambda_set,
                                         closure_data_symbol,
                                         arg_symbols,
@@ -5329,12 +5329,12 @@ pub fn with_hole<'a>(
                             }
                         }
                         UnspecializedExpr(symbol) => {
-                            match procs.ability_member_aliases.get(symbol).unwrap() {
+                            match pbrocs.ability_member_aliases.get(symbol).unwrap() {
                                 &self::AbilityMember(member) => {
-                                    let resolved_proc = resolve_ability_specialization(env.home, env.subs, &env.abilities, member, fn_var)
+                                    let resolved_pbroc = resolve_ability_specialization(env.home, env.subs, &env.abilities, member, fn_var)
                                             .expect("Recorded as an ability member, but it doesn't have a specialization");
 
-                                    let resolved_proc = match resolved_proc {
+                                    let resolved_pbroc = match resolved_pbroc {
                                         Resolved::Specialization(symbol) => symbol,
                                         Resolved::Derive(_) => {
                                             todo_abilities!("Generate impls for structural types")
@@ -5344,9 +5344,9 @@ pub fn with_hole<'a>(
                                     // a call by a known name
                                     return call_by_name(
                                         env,
-                                        procs,
+                                        pbrocs,
                                         fn_var,
-                                        resolved_proc,
+                                        resolved_pbroc,
                                         loc_args,
                                         layout_cache,
                                         assigned,
@@ -5370,7 +5370,7 @@ pub fn with_hole<'a>(
                                     result = match_on_lambda_set(
                                         env,
                                         layout_cache,
-                                        procs,
+                                        pbrocs,
                                         lambda_set,
                                         closure_data_symbol,
                                         arg_symbols,
@@ -5384,7 +5384,7 @@ pub fn with_hole<'a>(
                                         env,
                                         loc_expr.value,
                                         fn_var,
-                                        procs,
+                                        pbrocs,
                                         layout_cache,
                                         closure_data_symbol,
                                         env.arena.alloc(result),
@@ -5400,7 +5400,7 @@ pub fn with_hole<'a>(
                         }
                     }
                     let iter = loc_args.into_iter().rev().zip(arg_symbols.iter().rev());
-                    assign_to_symbols(env, procs, layout_cache, iter, result)
+                    assign_to_symbols(env, pbrocs, layout_cache, iter, result)
                 }
             }
         }
@@ -5415,7 +5415,7 @@ pub fn with_hole<'a>(
             for (var, arg_expr) in args.iter() {
                 arg_symbols.push(possible_reuse_symbol_or_specialize(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     arg_expr,
                     *var,
@@ -5445,7 +5445,7 @@ pub fn with_hole<'a>(
                 .rev()
                 .map(|(a, b)| (a, Loc::at_zero(b)))
                 .zip(arg_symbols.iter().rev());
-            assign_to_symbols(env, procs, layout_cache, iter, result)
+            assign_to_symbols(env, pbrocs, layout_cache, iter, result)
         }
 
         RunLowLevel { op, args, ret_var } => {
@@ -5454,7 +5454,7 @@ pub fn with_hole<'a>(
             for (var, arg_expr) in args.iter() {
                 arg_symbols.push(possible_reuse_symbol_or_specialize(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     arg_expr,
                     *var,
@@ -5493,7 +5493,7 @@ pub fn with_hole<'a>(
                                 closure_data_symbol,
                                 |(lambda_name, closure_data, closure_env_layout,  specialization_id, update_mode)| {
                                     // Build a call for a specific lambda in the set
-                                    let top_level = ProcLayout::from_raw_named(env.arena, lambda_name, closure_data_layout);
+                                    let top_level = PbrocLayout::from_raw_named(env.arena, lambda_name, closure_data_layout);
                                     let arg_layouts = top_level.arguments;
                                     let ret_layout = top_level.result;
 
@@ -5595,7 +5595,7 @@ pub fn with_hole<'a>(
                         .rev()
                         .map(|(a, b)| (a, Loc::at_zero(b)))
                         .zip(arg_symbols.iter().rev());
-                    assign_to_symbols(env, procs, layout_cache, iter, result)
+                    assign_to_symbols(env, pbrocs, layout_cache, iter, result)
                 }
             }
         }
@@ -5604,14 +5604,14 @@ pub fn with_hole<'a>(
         Crash { msg, ret_var: _ } => {
             let msg_sym = possible_reuse_symbol_or_specialize(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 &msg.value,
                 Variable::STR,
             );
             let stmt = Stmt::Crash(msg_sym, CrashTag::User);
 
-            assign_to_symbol(env, procs, layout_cache, Variable::STR, *msg, msg_sym, stmt)
+            assign_to_symbol(env, pbrocs, layout_cache, Variable::STR, *msg, msg_sym, stmt)
         }
     }
 }
@@ -5619,11 +5619,11 @@ pub fn with_hole<'a>(
 /// Compiles an access into a tuple or record.
 fn compile_struct_like_access<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     field_layouts: Vec<'a, InLayout<'a>>,
     index: u64,
-    loc_expr: Loc<roc_can::expr::Expr>,
+    loc_expr: Loc<broc_can::expr::Expr>,
     struct_like_var: Variable,
     hole: &'a Stmt<'a>,
     assigned: Symbol,
@@ -5631,7 +5631,7 @@ fn compile_struct_like_access<'a>(
 ) -> Stmt<'a> {
     let struct_symbol = possible_reuse_symbol_or_specialize(
         env,
-        procs,
+        pbrocs,
         layout_cache,
         &loc_expr.value,
         struct_like_var,
@@ -5661,7 +5661,7 @@ fn compile_struct_like_access<'a>(
 
     stmt = assign_to_symbol(
         env,
-        procs,
+        pbrocs,
         layout_cache,
         struct_like_var,
         loc_expr,
@@ -5677,10 +5677,10 @@ fn compile_struct_like_access<'a>(
 // fact, unneeded for the compilation.
 fn compile_struct_like<'a, L, UnusedLayout>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     sorted_elems: Vec<(L, Variable, UnusedLayout)>,
-    mut take_elem_expr: impl FnMut(L) -> Option<(Variable, Box<Loc<roc_can::expr::Expr>>)>,
+    mut take_elem_expr: impl FnMut(L) -> Option<(Variable, Box<Loc<broc_can::expr::Expr>>)>,
     struct_like_var: Variable,
     hole: &'a Stmt<'a>,
     assigned: Symbol,
@@ -5693,21 +5693,21 @@ fn compile_struct_like<'a, L, UnusedLayout>(
         // TODO: rename this since it can handle unspecialized expressions now too
         FunctionOrUnspecialized(Symbol, Variable),
         ValueSymbol,
-        Field(Variable, Loc<roc_can::expr::Expr>),
+        Field(Variable, Loc<broc_can::expr::Expr>),
     }
 
     for (index, variable, _) in sorted_elems.into_iter() {
         // TODO how should function pointers be handled here?
         use ReuseSymbol::*;
         match take_elem_expr(index) {
-            Some((var, loc_expr)) => match can_reuse_symbol(env, procs, &loc_expr.value, var) {
+            Some((var, loc_expr)) => match can_reuse_symbol(env, pbrocs, &loc_expr.value, var) {
                 Imported(symbol) | LocalFunction(symbol) | UnspecializedExpr(symbol) => {
                     elem_symbols.push(symbol);
                     can_elems.push(Field::FunctionOrUnspecialized(symbol, variable));
                 }
                 Value(symbol) => {
                     let reusable =
-                        procs.get_or_insert_symbol_specialization(env, layout_cache, symbol, var);
+                        pbrocs.get_or_insert_symbol_specialization(env, layout_cache, symbol, var);
                     elem_symbols.push(reusable);
                     can_elems.push(Field::ValueSymbol);
                 }
@@ -5747,7 +5747,7 @@ fn compile_struct_like<'a, L, UnusedLayout>(
             Field::FunctionOrUnspecialized(symbol, variable) => {
                 stmt = specialize_symbol(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     Some(variable),
                     symbol,
@@ -5760,7 +5760,7 @@ fn compile_struct_like<'a, L, UnusedLayout>(
                     env,
                     loc_expr.value,
                     var,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     *symbol,
                     env.arena.alloc(stmt),
@@ -5792,7 +5792,7 @@ fn late_resolve_ability_specialization<'a>(
     {
         // Fast path: the member is a function, so the lambda set will tell us the
         // specialization.
-        use roc_types::subs::LambdaSet;
+        use broc_types::subs::LambdaSet;
         let LambdaSet {
             solved,
             unspecialized,
@@ -5819,18 +5819,18 @@ fn late_resolve_ability_specialization<'a>(
             member,
             specialization_var,
         )
-        .expect("Ability specialization is unknown - code generation cannot proceed!");
+        .expect("Ability specialization is unknown - code generation cannot pbroceed!");
 
         match specialization {
             Resolved::Specialization(symbol) => symbol,
             Resolved::Derive(derive_key) => {
                 match derive_key {
-                    roc_derive_key::Derived::Immediate(imm)
-                    | roc_derive_key::Derived::SingleLambdaSetImmediate(imm) => {
+                    broc_derive_key::Derived::Immediate(imm)
+                    | broc_derive_key::Derived::SingleLambdaSetImmediate(imm) => {
                         // The immediate may be an ability member itself, so it must be resolved!
                         late_resolve_ability_specialization(env, imm, None, specialization_var)
                     }
-                    roc_derive_key::Derived::Key(derive_key) => {
+                    broc_derive_key::Derived::Key(derive_key) => {
                         let mut derived_module = env
                             .derived_module
                             .lock()
@@ -5874,7 +5874,7 @@ where
 #[allow(clippy::too_many_arguments)]
 fn construct_closure_data<'a, I>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     lambda_set: LambdaSet<'a>,
     name: LambdaName<'a>,
@@ -5970,7 +5970,7 @@ where
             let mut symbols = symbols;
             let (captured_symbol, captured_var) = symbols.next().unwrap();
 
-            let captured_symbol = procs.get_or_insert_symbol_specialization(
+            let captured_symbol = pbrocs.get_or_insert_symbol_specialization(
                 env,
                 layout_cache,
                 *captured_symbol,
@@ -6019,9 +6019,9 @@ fn convert_tag_union<'a>(
     assigned: Symbol,
     hole: &'a Stmt<'a>,
     tag_name: TagName,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    args: std::vec::Vec<(Variable, Loc<roc_can::expr::Expr>)>,
+    args: std::vec::Vec<(Variable, Loc<broc_can::expr::Expr>)>,
     arena: &'a Bump,
 ) -> Stmt<'a> {
     use crate::layout::UnionVariant::*;
@@ -6084,7 +6084,7 @@ fn convert_tag_union<'a>(
             arguments: field_layouts,
             ..
         } => {
-            let field_symbols_temp = sorted_field_symbols(env, procs, layout_cache, args);
+            let field_symbols_temp = sorted_field_symbols(env, pbrocs, layout_cache, args);
 
             let mut field_symbols = Vec::with_capacity_in(field_layouts.len(), env.arena);
             field_symbols.extend(field_symbols_temp.iter().map(|r| r.1));
@@ -6105,7 +6105,7 @@ fn convert_tag_union<'a>(
             };
 
             let iter = field_symbols_temp.into_iter().map(|(_, _, data)| data);
-            assign_to_symbols(env, procs, layout_cache, iter, stmt)
+            assign_to_symbols(env, pbrocs, layout_cache, iter, stmt)
         }
         NewtypeByVoid {
             data_tag_arguments: field_layouts,
@@ -6118,7 +6118,7 @@ fn convert_tag_union<'a>(
                 // this tag is not represented, and hence will never be reached, at runtime.
                 runtime_error(env, "voided tag constructor is unreachable")
             } else {
-                let field_symbols_temp = sorted_field_symbols(env, procs, layout_cache, args);
+                let field_symbols_temp = sorted_field_symbols(env, pbrocs, layout_cache, args);
 
                 let mut field_symbols = Vec::with_capacity_in(field_layouts.len(), env.arena);
                 field_symbols.extend(field_symbols_temp.iter().map(|r| r.1));
@@ -6139,13 +6139,13 @@ fn convert_tag_union<'a>(
                 };
 
                 let iter = field_symbols_temp.into_iter().map(|(_, _, data)| data);
-                assign_to_symbols(env, procs, layout_cache, iter, stmt)
+                assign_to_symbols(env, pbrocs, layout_cache, iter, stmt)
             }
         }
         Wrapped(variant) => {
             let (tag_id, _) = variant.tag_name_to_id(&tag_name);
 
-            let field_symbols_temp = sorted_field_symbols(env, procs, layout_cache, args);
+            let field_symbols_temp = sorted_field_symbols(env, pbrocs, layout_cache, args);
 
             let field_symbols;
 
@@ -6163,7 +6163,7 @@ fn convert_tag_union<'a>(
                 other => internal_error!(
                     "unexpected layout {:?} for {:?}",
                     other,
-                    roc_types::subs::SubsFmtContent(
+                    broc_types::subs::SubsFmtContent(
                         env.subs.get_content_without_compacting(variant_var),
                         env.subs
                     )
@@ -6298,7 +6298,7 @@ fn convert_tag_union<'a>(
                 .rev()
                 .zip(field_symbols.iter().rev());
 
-            assign_to_symbols(env, procs, layout_cache, iter, stmt)
+            assign_to_symbols(env, pbrocs, layout_cache, iter, stmt)
         }
     }
 }
@@ -6309,9 +6309,9 @@ fn tag_union_to_function<'a>(
     argument_variables: VariableSubsSlice,
     return_variable: Variable,
     tag_name: TagName,
-    proc_symbol: Symbol,
+    pbroc_symbol: Symbol,
     ext_var: Variable,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     whole_var: Variable,
     layout_cache: &mut LayoutCache<'a>,
     assigned: Symbol,
@@ -6325,15 +6325,15 @@ fn tag_union_to_function<'a>(
 
         let arg_symbol = env.unique_symbol();
 
-        let loc_pattern = Loc::at_zero(roc_can::pattern::Pattern::Identifier(arg_symbol));
+        let loc_pattern = Loc::at_zero(broc_can::pattern::Pattern::Identifier(arg_symbol));
 
-        let loc_expr = Loc::at_zero(roc_can::expr::Expr::Var(arg_symbol, arg_var));
+        let loc_expr = Loc::at_zero(broc_can::expr::Expr::Var(arg_symbol, arg_var));
 
         loc_pattern_args.push((arg_var, AnnotatedMark::known_exhaustive(), loc_pattern));
         loc_expr_args.push((arg_var, loc_expr));
     }
 
-    let loc_body = Loc::at_zero(roc_can::expr::Expr::Tag {
+    let loc_body = Loc::at_zero(broc_can::expr::Expr::Tag {
         tag_union_var: return_variable,
         name: tag_name,
         arguments: loc_expr_args,
@@ -6341,9 +6341,9 @@ fn tag_union_to_function<'a>(
     });
 
     // Lambda does not capture anything, can't have a captures niche
-    let lambda_name = LambdaName::no_niche(proc_symbol);
+    let lambda_name = LambdaName::no_niche(pbroc_symbol);
 
-    let inserted = procs.insert_anonymous(
+    let inserted = pbrocs.insert_anonymous(
         env,
         lambda_name,
         whole_var,
@@ -6366,11 +6366,11 @@ fn tag_union_to_function<'a>(
             match raw_layout {
                 RawFunctionLayout::Function(_, lambda_set, _) => {
                     let lambda_name =
-                        find_lambda_name(env, layout_cache, lambda_set, proc_symbol, &[]);
+                        find_lambda_name(env, layout_cache, lambda_set, pbroc_symbol, &[]);
                     debug_assert!(lambda_name.no_captures());
                     construct_closure_data(
                         env,
-                        procs,
+                        pbrocs,
                         layout_cache,
                         lambda_set,
                         lambda_name,
@@ -6396,15 +6396,15 @@ fn tag_union_to_function<'a>(
 #[allow(clippy::type_complexity)]
 fn sorted_field_symbols<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    mut args: std::vec::Vec<(Variable, Loc<roc_can::expr::Expr>)>,
+    mut args: std::vec::Vec<(Variable, Loc<broc_can::expr::Expr>)>,
 ) -> Vec<
     'a,
     (
         u32,
         Symbol,
-        ((Variable, Loc<roc_can::expr::Expr>), &'a Symbol),
+        ((Variable, Loc<broc_can::expr::Expr>), &'a Symbol),
     ),
 > {
     let mut field_symbols_temp = Vec::with_capacity_in(args.len(), env.arena);
@@ -6417,7 +6417,7 @@ fn sorted_field_symbols<'a>(
                 // this argument has type `forall a. a`, which is isomorphic to
                 // the empty type (Void, Never, the empty tag union `[]`)
                 // Note it does not catch the use of `[]` currently.
-                use roc_can::expr::Expr;
+                use broc_can::expr::Expr;
                 arg.value = Expr::RuntimeError(RuntimeError::VoidValue);
                 Layout::UNIT
             }
@@ -6431,7 +6431,7 @@ fn sorted_field_symbols<'a>(
             .get_in(layout)
             .alignment_bytes(&layout_cache.interner, env.target_info);
 
-        let symbol = possible_reuse_symbol_or_specialize(env, procs, layout_cache, &arg.value, var);
+        let symbol = possible_reuse_symbol_or_specialize(env, pbrocs, layout_cache, &arg.value, var);
         field_symbols_temp.push((alignment, symbol, ((var, arg), &*env.arena.alloc(symbol))));
     }
     field_symbols_temp.sort_by(|a, b| b.0.cmp(&a.0));
@@ -6439,10 +6439,10 @@ fn sorted_field_symbols<'a>(
     field_symbols_temp
 }
 
-/// Insert a closure that does capture symbols (because it is top-level) to the list of partial procs
+/// Insert a closure that does capture symbols (because it is top-level) to the list of partial pbrocs
 fn register_noncapturing_closure<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     closure_name: Symbol,
     closure_data: ClosureData,
 ) {
@@ -6456,19 +6456,19 @@ fn register_noncapturing_closure<'a>(
         ..
     } = closure_data;
 
-    // Extract Procs, but discard the resulting Expr::Load.
+    // Extract Pbrocs, but discard the resulting Expr::Load.
     // That Load looks up the pointer, which we won't use here!
 
     let loc_body = *boxed_body;
 
-    let is_self_recursive = !matches!(recursive, roc_can::expr::Recursive::NotRecursive);
+    let is_self_recursive = !matches!(recursive, broc_can::expr::Recursive::NotRecursive);
 
     // this should be a top-level declaration, and hence have no captured symbols
     // if we ever do hit this (and it's not a bug), we should make sure to put the
-    // captured symbols into a CapturedSymbols and give it to PartialProc::from_named_function
+    // captured symbols into a CapturedSymbols and give it to PartialPbroc::from_named_function
     debug_assert!(captured_symbols.is_empty());
 
-    let partial_proc = PartialProc::from_named_function(
+    let partial_pbroc = PartialPbroc::from_named_function(
         env,
         function_type,
         arguments,
@@ -6478,23 +6478,23 @@ fn register_noncapturing_closure<'a>(
         return_type,
     );
 
-    procs.partial_procs.insert(closure_name, partial_proc);
+    pbrocs.partial_pbrocs.insert(closure_name, partial_pbroc);
 }
 
-/// Insert a closure that may capture symbols to the list of partial procs
+/// Insert a closure that may capture symbols to the list of partial pbrocs
 fn register_capturing_closure<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     closure_name: Symbol,
     closure_data: ClosureData,
 ) {
     // the function surrounding the closure definition may be specialized multiple times,
-    // hence in theory this partial proc may be added multiple times. That would be wasteful
-    // so we check whether this partial proc is already there.
+    // hence in theory this partial pbroc may be added multiple times. That would be wasteful
+    // so we check whether this partial pbroc is already there.
     //
     // (the `gen_primitives::task_always_twice` test has this behavior)
-    if !procs.partial_procs.contains_key(closure_name) {
+    if !pbrocs.partial_pbrocs.contains_key(closure_name) {
         let ClosureData {
             function_type,
             return_type,
@@ -6507,7 +6507,7 @@ fn register_capturing_closure<'a>(
         } = closure_data;
         let loc_body = *boxed_body;
 
-        let is_self_recursive = !matches!(recursive, roc_can::expr::Recursive::NotRecursive);
+        let is_self_recursive = !matches!(recursive, broc_can::expr::Recursive::NotRecursive);
 
         let captured_symbols = match *env.subs.get_content_without_compacting(function_type) {
             Content::Structure(FlatType::Func(args, closure_var, ret)) => {
@@ -6534,7 +6534,7 @@ fn register_capturing_closure<'a>(
                         }
                     }
                     Err(_) => {
-                        // just allow this. see https://github.com/roc-lang/roc/issues/1585
+                        // just allow this. see https://github.com/roc-lang/broc/issues/1585
                         if captured_symbols.is_empty() {
                             CapturedSymbols::None
                         } else {
@@ -6559,7 +6559,7 @@ fn register_capturing_closure<'a>(
             }
         };
 
-        let partial_proc = PartialProc::from_named_function(
+        let partial_pbroc = PartialPbroc::from_named_function(
             env,
             function_type,
             arguments,
@@ -6569,18 +6569,18 @@ fn register_capturing_closure<'a>(
             return_type,
         );
 
-        procs.partial_procs.insert(closure_name, partial_proc);
+        pbrocs.partial_pbrocs.insert(closure_name, partial_pbroc);
     }
 }
 
 pub fn from_can<'a>(
     env: &mut Env<'a, '_>,
     variable: Variable,
-    can_expr: roc_can::expr::Expr,
-    procs: &mut Procs<'a>,
+    can_expr: broc_can::expr::Expr,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
 ) -> Stmt<'a> {
-    use roc_can::expr::Expr::*;
+    use broc_can::expr::Expr::*;
 
     match can_expr {
         When {
@@ -6594,7 +6594,7 @@ pub fn from_can<'a>(
         } => {
             let cond_symbol = possible_reuse_symbol_or_specialize(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 &loc_cond.value,
                 cond_var,
@@ -6608,14 +6608,14 @@ pub fn from_can<'a>(
                 branches,
                 exhaustive,
                 layout_cache,
-                procs,
+                pbrocs,
                 None,
             );
 
             // define the `when` condition
             assign_to_symbol(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_var,
                 *loc_cond,
@@ -6636,23 +6636,23 @@ pub fn from_can<'a>(
                 .from_var(env.arena, cond_var, env.subs)
                 .expect("invalid cond_layout");
 
-            let mut stmt = from_can(env, branch_var, final_else.value, procs, layout_cache);
+            let mut stmt = from_can(env, branch_var, final_else.value, pbrocs, layout_cache);
 
             for (loc_cond, loc_then) in branches.into_iter().rev() {
                 let branching_symbol = possible_reuse_symbol_or_specialize(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     &loc_cond.value,
                     cond_var,
                 );
-                let then = from_can(env, branch_var, loc_then.value, procs, layout_cache);
+                let then = from_can(env, branch_var, loc_then.value, pbrocs, layout_cache);
 
                 stmt = cond(env, branching_symbol, cond_layout, then, stmt, ret_layout);
 
                 stmt = assign_to_symbol(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     cond_var,
                     loc_cond,
@@ -6669,7 +6669,7 @@ pub fn from_can<'a>(
             loc_continuation,
             lookups_in_cond,
         } => {
-            let rest = from_can(env, variable, loc_continuation.value, procs, layout_cache);
+            let rest = from_can(env, variable, loc_continuation.value, pbrocs, layout_cache);
             let cond_symbol = env.unique_symbol();
 
             let mut lookups = Vec::with_capacity_in(lookups_in_cond.len(), env.arena);
@@ -6720,7 +6720,7 @@ pub fn from_can<'a>(
                 env,
                 loc_condition.value,
                 Variable::BOOL,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 env.arena.alloc(stmt),
@@ -6738,7 +6738,7 @@ pub fn from_can<'a>(
             loc_continuation,
             lookups_in_cond,
         } => {
-            let rest = from_can(env, variable, loc_continuation.value, procs, layout_cache);
+            let rest = from_can(env, variable, loc_continuation.value, pbrocs, layout_cache);
             let cond_symbol = env.unique_symbol();
 
             let mut lookups = Vec::with_capacity_in(lookups_in_cond.len(), env.arena);
@@ -6789,7 +6789,7 @@ pub fn from_can<'a>(
                 env,
                 loc_condition.value,
                 Variable::BOOL,
-                procs,
+                pbrocs,
                 layout_cache,
                 cond_symbol,
                 env.arena.alloc(stmt),
@@ -6806,7 +6806,7 @@ pub fn from_can<'a>(
             variable,
             symbol: dbg_symbol,
         } => {
-            let rest = from_can(env, variable, loc_continuation.value, procs, layout_cache);
+            let rest = from_can(env, variable, loc_continuation.value, pbrocs, layout_cache);
 
             let spec_var = env
                 .expectation_subs
@@ -6825,7 +6825,7 @@ pub fn from_can<'a>(
             store_specialized_expectation_lookups(env, [variable], &[spec_var]);
 
             let symbol_is_reused = matches!(
-                can_reuse_symbol(env, procs, &loc_condition.value, variable),
+                can_reuse_symbol(env, pbrocs, &loc_condition.value, variable),
                 ReuseSymbol::Value(_)
             );
 
@@ -6837,7 +6837,7 @@ pub fn from_can<'a>(
                     env,
                     loc_condition.value,
                     variable,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     dbg_symbol,
                     env.arena.alloc(dbg_stmt),
@@ -6846,16 +6846,16 @@ pub fn from_can<'a>(
         }
 
         LetRec(defs, cont, _cycle_mark) => {
-            // because Roc is strict, only functions can be recursive!
+            // because Broc is strict, only functions can be recursive!
             for def in defs.into_iter() {
-                if let roc_can::pattern::Pattern::Identifier(symbol) = &def.loc_pattern.value {
+                if let broc_can::pattern::Pattern::Identifier(symbol) = &def.loc_pattern.value {
                     // Now that we know for sure it's a closure, get an owned
                     // version of these variant args so we can use them properly.
                     match def.loc_expr.value {
                         Closure(closure_data) => {
                             register_capturing_closure(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 *symbol,
                                 closure_data,
@@ -6869,13 +6869,13 @@ pub fn from_can<'a>(
                 unreachable!("recursive value does not have Identifier pattern")
             }
 
-            from_can(env, variable, cont.value, procs, layout_cache)
+            from_can(env, variable, cont.value, pbrocs, layout_cache)
         }
-        LetNonRec(def, cont) => from_can_let(env, procs, layout_cache, def, cont, variable, None),
+        LetNonRec(def, cont) => from_can_let(env, pbrocs, layout_cache, def, cont, variable, None),
         _ => {
             let symbol = env.unique_symbol();
             let hole = env.arena.alloc(Stmt::Ret(symbol));
-            with_hole(env, can_expr, variable, procs, layout_cache, symbol, hole)
+            with_hole(env, can_expr, variable, pbrocs, layout_cache, symbol, hole)
         }
     }
 }
@@ -6897,14 +6897,14 @@ fn store_specialized_expectation_lookups(
 
 fn to_opt_branches<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
-    branches: std::vec::Vec<roc_can::expr::WhenBranch>,
+    pbrocs: &mut Pbrocs<'a>,
+    branches: std::vec::Vec<broc_can::expr::WhenBranch>,
     exhaustive_mark: ExhaustiveMark,
     layout_cache: &mut LayoutCache<'a>,
 ) -> std::vec::Vec<(
     Pattern<'a>,
-    Option<Loc<roc_can::expr::Expr>>,
-    roc_can::expr::Expr,
+    Option<Loc<broc_can::expr::Expr>>,
+    broc_can::expr::Expr,
 )> {
     debug_assert!(!branches.is_empty());
 
@@ -6917,25 +6917,25 @@ fn to_opt_branches<'a>(
         }
 
         for loc_pattern in when_branch.patterns {
-            match from_can_pattern(env, procs, layout_cache, &loc_pattern.pattern.value) {
+            match from_can_pattern(env, pbrocs, layout_cache, &loc_pattern.pattern.value) {
                 Ok((mono_pattern, assignments)) => {
                     let loc_expr = if !loc_pattern.degenerate {
                         let mut loc_expr = when_branch.value.clone();
 
                         let region = loc_pattern.pattern.region;
                         for (symbol, variable, expr) in assignments.into_iter().rev() {
-                            let def = roc_can::def::Def {
+                            let def = broc_can::def::Def {
                                 annotation: None,
                                 expr_var: variable,
                                 loc_expr: Loc::at(region, expr),
                                 loc_pattern: Loc::at(
                                     region,
-                                    roc_can::pattern::Pattern::Identifier(symbol),
+                                    broc_can::pattern::Pattern::Identifier(symbol),
                                 ),
                                 pattern_vars: std::iter::once((symbol, variable)).collect(),
                             };
                             let new_expr =
-                                roc_can::expr::Expr::LetNonRec(Box::new(def), Box::new(loc_expr));
+                                broc_can::expr::Expr::LetNonRec(Box::new(def), Box::new(loc_expr));
                             loc_expr = Loc::at(region, new_expr);
                         }
 
@@ -6943,7 +6943,7 @@ fn to_opt_branches<'a>(
                     } else {
                         // This pattern is degenerate; when it's reached we must emit a runtime
                         // error.
-                        Loc::at_zero(roc_can::expr::Expr::RuntimeError(
+                        Loc::at_zero(broc_can::expr::Expr::RuntimeError(
                             RuntimeError::DegenerateBranch(loc_pattern.pattern.region),
                         ))
                     };
@@ -6956,7 +6956,7 @@ fn to_opt_branches<'a>(
                     opt_branches.push((
                         Pattern::Underscore,
                         when_branch.guard.clone(),
-                        roc_can::expr::Expr::RuntimeError(runtime_error),
+                        broc_can::expr::Expr::RuntimeError(runtime_error),
                     ));
                 }
             }
@@ -6969,7 +6969,7 @@ fn to_opt_branches<'a>(
         opt_branches.push((
             Pattern::Underscore,
             None,
-            roc_can::expr::Expr::RuntimeError(roc_problem::can::RuntimeError::NonExhaustivePattern),
+            broc_can::expr::Expr::RuntimeError(broc_problem::can::RuntimeError::NonExhaustivePattern),
         ));
     }
 
@@ -6982,10 +6982,10 @@ fn from_can_when<'a>(
     cond_var: Variable,
     expr_var: Variable,
     cond_symbol: Symbol,
-    branches: std::vec::Vec<roc_can::expr::WhenBranch>,
+    branches: std::vec::Vec<broc_can::expr::WhenBranch>,
     exhaustive_mark: ExhaustiveMark,
     layout_cache: &mut LayoutCache<'a>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     join_point: Option<JoinPointId>,
 ) -> Stmt<'a> {
     if branches.is_empty() {
@@ -6993,7 +6993,7 @@ fn from_can_when<'a>(
         // We can't know what to return!
         return runtime_error(env, "Hit a 0-branch when expression");
     }
-    let opt_branches = to_opt_branches(env, procs, branches, exhaustive_mark, layout_cache);
+    let opt_branches = to_opt_branches(env, pbrocs, branches, exhaustive_mark, layout_cache);
 
     let cond_layout = return_on_layout_error!(
         env,
@@ -7022,19 +7022,19 @@ fn from_can_when<'a>(
             // specializations before we enter the branch, because any new specializations that
             // will be added in the branch body will never need to be resolved!
             let specialization_symbol_snapshot = if should_eliminate_branch {
-                Some(std::mem::take(&mut procs.symbol_specializations))
+                Some(std::mem::take(&mut pbrocs.symbol_specializations))
             } else {
                 None
             };
 
             let branch_stmt = match join_point {
-                None => from_can(env, expr_var, can_expr, procs, layout_cache),
+                None => from_can(env, expr_var, can_expr, pbrocs, layout_cache),
                 Some(id) => {
                     let symbol = env.unique_symbol();
                     let arguments = bumpalo::vec![in env.arena; symbol].into_bump_slice();
                     let jump = env.arena.alloc(Stmt::Jump(id, arguments));
 
-                    with_hole(env, can_expr, expr_var, procs, layout_cache, symbol, jump)
+                    with_hole(env, can_expr, expr_var, pbrocs, layout_cache, symbol, jump)
                 }
             };
 
@@ -7058,7 +7058,7 @@ fn from_can_when<'a>(
             };
 
             if should_eliminate_branch {
-                procs.symbol_specializations = specialization_symbol_snapshot.unwrap();
+                pbrocs.symbol_specializations = specialization_symbol_snapshot.unwrap();
                 None
             } else {
                 Some(result)
@@ -7068,7 +7068,7 @@ fn from_can_when<'a>(
 
     decision_tree::optimize_when(
         env,
-        procs,
+        pbrocs,
         layout_cache,
         cond_symbol,
         cond_layout,
@@ -7087,7 +7087,7 @@ fn from_can_when<'a>(
 /// have calls or joins, whose specialization IDs and joinpoint IDs, respectively, must be unique.
 #[derive(Debug, Clone)]
 pub(crate) struct GuardStmtSpec {
-    guard_expr: roc_can::expr::Expr,
+    guard_expr: broc_can::expr::Expr,
 
     /// Unique id to indentity identical guard statements, even across clones.
     /// Needed so that we can implement [PartialEq] on this type. Re-uses call specialization IDs,
@@ -7120,7 +7120,7 @@ impl GuardStmtSpec {
     pub(crate) fn generate_guard_and_join<'a>(
         self,
         env: &mut Env<'a, '_>,
-        procs: &mut Procs<'a>,
+        pbrocs: &mut Pbrocs<'a>,
         layout_cache: &mut LayoutCache<'a>,
     ) -> CompiledGuardStmt<'a> {
         let Self {
@@ -7138,7 +7138,7 @@ impl GuardStmtSpec {
             env,
             guard_expr,
             Variable::BOOL,
-            procs,
+            pbrocs,
             layout_cache,
             symbol,
             jump,
@@ -7622,11 +7622,11 @@ enum ReuseSymbol {
 
 fn can_reuse_symbol<'a>(
     env: &mut Env<'a, '_>,
-    procs: &Procs<'a>,
-    expr: &roc_can::expr::Expr,
+    pbrocs: &Pbrocs<'a>,
+    expr: &broc_can::expr::Expr,
     expr_var: Variable,
 ) -> ReuseSymbol {
-    use roc_can::expr::Expr::*;
+    use broc_can::expr::Expr::*;
     use ReuseSymbol::*;
 
     let symbol = match expr {
@@ -7649,11 +7649,11 @@ fn can_reuse_symbol<'a>(
 
     if arguments.contains(&symbol) {
         Value(symbol)
-    } else if env.is_imported_symbol(symbol) || env.is_unloaded_derived_symbol(symbol, procs) {
+    } else if env.is_imported_symbol(symbol) || env.is_unloaded_derived_symbol(symbol, pbrocs) {
         Imported(symbol)
-    } else if procs.partial_procs.contains_key(symbol) {
+    } else if pbrocs.partial_pbrocs.contains_key(symbol) {
         LocalFunction(symbol)
-    } else if procs.ability_member_aliases.get(symbol).is_some() {
+    } else if pbrocs.ability_member_aliases.get(symbol).is_some() {
         UnspecializedExpr(symbol)
     } else {
         Value(symbol)
@@ -7662,14 +7662,14 @@ fn can_reuse_symbol<'a>(
 
 fn possible_reuse_symbol_or_specialize<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    expr: &roc_can::expr::Expr,
+    expr: &broc_can::expr::Expr,
     var: Variable,
 ) -> Symbol {
-    match can_reuse_symbol(env, procs, expr, var) {
+    match can_reuse_symbol(env, pbrocs, expr, var) {
         ReuseSymbol::Value(symbol) => {
-            procs.get_or_insert_symbol_specialization(env, layout_cache, symbol, var)
+            pbrocs.get_or_insert_symbol_specialization(env, layout_cache, symbol, var)
         }
         _ => env.unique_symbol(),
     }
@@ -7677,7 +7677,7 @@ fn possible_reuse_symbol_or_specialize<'a>(
 
 fn handle_variable_aliasing<'a, BuildRest>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     variable: Variable,
     left: Symbol,
@@ -7685,7 +7685,7 @@ fn handle_variable_aliasing<'a, BuildRest>(
     build_rest: BuildRest,
 ) -> Stmt<'a>
 where
-    BuildRest: FnOnce(&mut Env<'a, '_>, &mut Procs<'a>, &mut LayoutCache<'a>) -> Stmt<'a>,
+    BuildRest: FnOnce(&mut Env<'a, '_>, &mut Pbrocs<'a>, &mut LayoutCache<'a>) -> Stmt<'a>,
 {
     // 1. Handle references to ability members - we could be aliasing an ability member, or another
     //    alias to an ability member.
@@ -7695,29 +7695,29 @@ where
             .with_module_abilities_store(env.home, |store| store.is_ability_member_name(right));
 
         if is_ability_member {
-            procs
+            pbrocs
                 .ability_member_aliases
                 .insert(left, AbilityMember(right));
-            return build_rest(env, procs, layout_cache);
+            return build_rest(env, pbrocs, layout_cache);
         }
-        if let Some(&ability_member) = procs.ability_member_aliases.get(right) {
-            procs.ability_member_aliases.insert(left, ability_member);
-            return build_rest(env, procs, layout_cache);
+        if let Some(&ability_member) = pbrocs.ability_member_aliases.get(right) {
+            pbrocs.ability_member_aliases.insert(left, ability_member);
+            return build_rest(env, pbrocs, layout_cache);
         }
     }
 
-    // We should never reference a partial proc - instead, we want to generate closure data and
+    // We should never reference a partial pbroc - instead, we want to generate closure data and
     // leave it there, even if the lambda set is unary. That way, we avoid having to try to resolve
-    // lambda set of the proc based on the symbol name, which can cause many problems!
+    // lambda set of the pbroc based on the symbol name, which can cause many problems!
     // See my git blame for details.
-    debug_assert!(!procs.partial_procs.contains_key(right));
+    debug_assert!(!pbrocs.partial_pbrocs.contains_key(right));
 
-    let result = build_rest(env, procs, layout_cache);
+    let result = build_rest(env, pbrocs, layout_cache);
 
-    if procs.is_imported_module_thunk(right) {
+    if pbrocs.is_imported_module_thunk(right) {
         // if this is an imported symbol, then we must make sure it is
         // specialized, and wrap the original in a function pointer.
-        add_needed_external(procs, env, variable, LambdaName::no_niche(right));
+        add_needed_external(pbrocs, env, variable, LambdaName::no_niche(right));
 
         let res_layout = layout_cache.from_var(env.arena, variable, env.subs);
         let layout = return_on_layout_error!(env, res_layout, "handle_variable_aliasing");
@@ -7726,7 +7726,7 @@ where
     } else if env.is_imported_symbol(right) {
         // if this is an imported symbol, then we must make sure it is
         // specialized, and wrap the original in a function pointer.
-        add_needed_external(procs, env, variable, LambdaName::no_niche(right));
+        add_needed_external(pbrocs, env, variable, LambdaName::no_niche(right));
 
         // then we must construct its closure; since imported symbols have no closure, we use the empty struct
         let_empty_struct(left, env.arena.alloc(result))
@@ -7764,19 +7764,19 @@ fn let_empty_struct<'a>(assigned: Symbol, hole: &'a Stmt<'a>) -> Stmt<'a> {
 /// If the symbol is a function or polymorphic value, make sure it is properly specialized
 fn specialize_symbol<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     arg_var: Option<Variable>,
     assign_to: Symbol,
     result: &'a Stmt<'a>,
     original: Symbol,
 ) -> Stmt<'a> {
-    match procs.get_partial_proc(original) {
+    match pbrocs.get_partial_pbroc(original) {
         None => {
             match arg_var {
                 Some(arg_var)
                     if env.is_imported_symbol(original)
-                        || env.is_unloaded_derived_symbol(original, procs) =>
+                        || env.is_unloaded_derived_symbol(original, pbrocs) =>
                 {
                     let raw = match layout_cache.raw_from_var(env.arena, arg_var, env.subs) {
                         Ok(v) => v,
@@ -7785,7 +7785,7 @@ fn specialize_symbol<'a>(
 
                     match raw {
                         RawFunctionLayout::Function(_, lambda_set, _)
-                            if !procs.is_imported_module_thunk(original) =>
+                            if !pbrocs.is_imported_module_thunk(original) =>
                         {
                             let lambda_name =
                                 find_lambda_name(env, layout_cache, lambda_set, original, &[]);
@@ -7796,8 +7796,8 @@ fn specialize_symbol<'a>(
                             );
 
                             let function_ptr_layout =
-                                ProcLayout::from_raw_named(env.arena, lambda_name, raw);
-                            procs.insert_passed_by_name(
+                                PbrocLayout::from_raw_named(env.arena, lambda_name, raw);
+                            pbrocs.insert_passed_by_name(
                                 env,
                                 arg_var,
                                 lambda_name,
@@ -7807,7 +7807,7 @@ fn specialize_symbol<'a>(
 
                             construct_closure_data(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 lambda_set,
                                 lambda_name,
@@ -7828,9 +7828,9 @@ fn specialize_symbol<'a>(
 
                             let raw = RawFunctionLayout::ZeroArgumentThunk(layout);
                             let lambda_name = LambdaName::no_niche(original);
-                            let top_level = ProcLayout::from_raw_named(env.arena, lambda_name, raw);
+                            let top_level = PbrocLayout::from_raw_named(env.arena, lambda_name, raw);
 
-                            procs.insert_passed_by_name(
+                            pbrocs.insert_passed_by_name(
                                 env,
                                 arg_var,
                                 lambda_name,
@@ -7863,8 +7863,8 @@ fn specialize_symbol<'a>(
             }
         }
 
-        Some(partial_proc) => {
-            let arg_var = arg_var.unwrap_or(partial_proc.annotation);
+        Some(partial_pbroc) => {
+            let arg_var = arg_var.unwrap_or(partial_pbroc.annotation);
             // this symbol is a function, that is used by-name (e.g. as an argument to another
             // function). Register it with the current variable, then create a function pointer
             // to it in the IR.
@@ -7877,8 +7877,8 @@ fn specialize_symbol<'a>(
             // we have three kinds of functions really. Plain functions, closures by capture,
             // and closures by unification. Here we record whether this function captures
             // anything.
-            let captures = partial_proc.captured_symbols.captures();
-            let captured = partial_proc.captured_symbols;
+            let captures = partial_pbroc.captured_symbols.captures();
+            let captured = partial_pbroc.captured_symbols;
 
             match res_layout {
                 RawFunctionLayout::Function(_, lambda_set, _) => {
@@ -7901,10 +7901,10 @@ fn specialize_symbol<'a>(
 
                         // define the function pointer
                         let function_ptr_layout =
-                            ProcLayout::from_raw_named(env.arena, lambda_name, res_layout);
+                            PbrocLayout::from_raw_named(env.arena, lambda_name, res_layout);
 
                         // this is a closure by capture, meaning it itself captures local variables.
-                        procs.insert_passed_by_name(
+                        pbrocs.insert_passed_by_name(
                             env,
                             arg_var,
                             lambda_name,
@@ -7916,7 +7916,7 @@ fn specialize_symbol<'a>(
 
                         construct_closure_data(
                             env,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             lambda_set,
                             lambda_name,
@@ -7924,15 +7924,15 @@ fn specialize_symbol<'a>(
                             closure_data,
                             env.arena.alloc(result),
                         )
-                    } else if procs.is_module_thunk(original) {
+                    } else if pbrocs.is_module_thunk(original) {
                         // this is a 0-argument thunk
 
                         // TODO suspicious
                         // let layout = Layout::Closure(argument_layouts, lambda_set, ret_layout);
                         // panic!("suspicious");
                         let layout = lambda_set.full_layout;
-                        let top_level = ProcLayout::new(env.arena, &[], Niche::NONE, layout);
-                        procs.insert_passed_by_name(
+                        let top_level = PbrocLayout::new(env.arena, &[], Niche::NONE, layout);
+                        pbrocs.insert_passed_by_name(
                             env,
                             arg_var,
                             LambdaName::no_niche(original),
@@ -7951,9 +7951,9 @@ fn specialize_symbol<'a>(
 
                         // define the function pointer
                         let function_ptr_layout =
-                            ProcLayout::from_raw_named(env.arena, lambda_name, res_layout);
+                            PbrocLayout::from_raw_named(env.arena, lambda_name, res_layout);
 
-                        procs.insert_passed_by_name(
+                        pbrocs.insert_passed_by_name(
                             env,
                             arg_var,
                             lambda_name,
@@ -7963,7 +7963,7 @@ fn specialize_symbol<'a>(
 
                         construct_closure_data(
                             env,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             lambda_set,
                             lambda_name,
@@ -7975,8 +7975,8 @@ fn specialize_symbol<'a>(
                 }
                 RawFunctionLayout::ZeroArgumentThunk(ret_layout) => {
                     // this is a 0-argument thunk
-                    let top_level = ProcLayout::new(env.arena, &[], Niche::NONE, ret_layout);
-                    procs.insert_passed_by_name(
+                    let top_level = PbrocLayout::new(env.arena, &[], Niche::NONE, ret_layout);
+                    pbrocs.insert_passed_by_name(
                         env,
                         arg_var,
                         LambdaName::no_niche(original),
@@ -7999,20 +7999,20 @@ fn specialize_symbol<'a>(
 
 fn assign_to_symbol<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     arg_var: Variable,
-    loc_arg: Loc<roc_can::expr::Expr>,
+    loc_arg: Loc<broc_can::expr::Expr>,
     symbol: Symbol,
     result: Stmt<'a>,
 ) -> Stmt<'a> {
     use ReuseSymbol::*;
-    match can_reuse_symbol(env, procs, &loc_arg.value, arg_var) {
+    match can_reuse_symbol(env, pbrocs, &loc_arg.value, arg_var) {
         Imported(original) | LocalFunction(original) | UnspecializedExpr(original) => {
             // for functions we must make sure they are specialized correctly
             specialize_symbol(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 Some(arg_var),
                 symbol,
@@ -8025,7 +8025,7 @@ fn assign_to_symbol<'a>(
             env,
             loc_arg.value,
             arg_var,
-            procs,
+            pbrocs,
             layout_cache,
             symbol,
             env.arena.alloc(result),
@@ -8035,23 +8035,23 @@ fn assign_to_symbol<'a>(
 
 fn assign_to_symbols<'a, I>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     iter: I,
     mut result: Stmt<'a>,
 ) -> Stmt<'a>
 where
-    I: Iterator<Item = ((Variable, Loc<roc_can::expr::Expr>), &'a Symbol)>,
+    I: Iterator<Item = ((Variable, Loc<broc_can::expr::Expr>), &'a Symbol)>,
 {
     for ((arg_var, loc_arg), symbol) in iter {
-        result = assign_to_symbol(env, procs, layout_cache, arg_var, loc_arg, *symbol, result);
+        result = assign_to_symbol(env, pbrocs, layout_cache, arg_var, loc_arg, *symbol, result);
     }
 
     result
 }
 
 fn add_needed_external<'a>(
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     env: &mut Env<'a, '_>,
     fn_var: Variable,
     name: LambdaName<'a>,
@@ -8059,12 +8059,12 @@ fn add_needed_external<'a>(
     // call of a function that is not in this module
     use hashbrown::hash_map::Entry::{Occupied, Vacant};
 
-    let existing = match procs.externals_we_need.entry(name.name().module_id()) {
+    let existing = match pbrocs.externals_we_need.entry(name.name().module_id()) {
         Vacant(entry) => entry.insert(ExternalSpecializations::new()),
         Occupied(entry) => entry.into_mut(),
     };
 
-    roc_tracing::debug!(proc_name = ?name, ?fn_var, fn_content = ?roc_types::subs::SubsFmtContent(env.subs.get_content_without_compacting(fn_var), env.subs), "needed external");
+    broc_tracing::debug!(pbroc_name = ?name, ?fn_var, fn_content = ?broc_types::subs::SubsFmtContent(env.subs.get_content_without_compacting(fn_var), env.subs), "needed external");
 
     existing.insert_external(name, env.subs, fn_var);
 }
@@ -8079,7 +8079,7 @@ fn build_call<'a>(
     Stmt::Let(assigned, Expr::Call(call), return_layout, hole)
 }
 
-/// See https://github.com/roc-lang/roc/issues/1549
+/// See https://github.com/roc-lang/broc/issues/1549
 ///
 /// What happened is that a function has a type error, but the arguments are not processed.
 /// That means specializations were missing. Normally that is not a problem, but because
@@ -8088,10 +8088,10 @@ fn build_call<'a>(
 /// The solution is to evaluate the arguments as normal, and only when calling the function give an error
 fn evaluate_arguments_then_runtime_error<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     msg: String,
-    loc_args: std::vec::Vec<(Variable, Loc<roc_can::expr::Expr>)>,
+    loc_args: std::vec::Vec<(Variable, Loc<broc_can::expr::Expr>)>,
 ) -> Stmt<'a> {
     let arena = env.arena;
 
@@ -8101,23 +8101,23 @@ fn evaluate_arguments_then_runtime_error<'a>(
     // but, we also still evaluate and specialize the arguments to give better error messages
     let arg_symbols = Vec::from_iter_in(
         loc_args.iter().map(|(var, arg_expr)| {
-            possible_reuse_symbol_or_specialize(env, procs, layout_cache, &arg_expr.value, *var)
+            possible_reuse_symbol_or_specialize(env, pbrocs, layout_cache, &arg_expr.value, *var)
         }),
         arena,
     )
     .into_bump_slice();
 
     let iter = loc_args.into_iter().rev().zip(arg_symbols.iter().rev());
-    assign_to_symbols(env, procs, layout_cache, iter, result)
+    assign_to_symbols(env, pbrocs, layout_cache, iter, result)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn call_by_name<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     fn_var: Variable,
-    proc_name: Symbol,
-    loc_args: std::vec::Vec<(Variable, Loc<roc_can::expr::Expr>)>,
+    pbroc_name: Symbol,
+    loc_args: std::vec::Vec<(Variable, Loc<broc_can::expr::Expr>)>,
     layout_cache: &mut LayoutCache<'a>,
     assigned: Symbol,
     hole: &'a Stmt<'a>,
@@ -8127,27 +8127,27 @@ fn call_by_name<'a>(
         Err(LayoutProblem::UnresolvedTypeVar(var)) => {
             let msg = format!(
                 "Hit an unresolved type variable {:?} when creating a layout for {:?} (var {:?})",
-                var, proc_name, fn_var
+                var, pbroc_name, fn_var
             );
 
-            evaluate_arguments_then_runtime_error(env, procs, layout_cache, msg, loc_args)
+            evaluate_arguments_then_runtime_error(env, pbrocs, layout_cache, msg, loc_args)
         }
         Err(LayoutProblem::Erroneous) => {
             let msg = format!(
                 "Hit an erroneous type when creating a layout for {:?}",
-                proc_name
+                pbroc_name
             );
 
-            evaluate_arguments_then_runtime_error(env, procs, layout_cache, msg, loc_args)
+            evaluate_arguments_then_runtime_error(env, pbrocs, layout_cache, msg, loc_args)
         }
         Ok(RawFunctionLayout::Function(arg_layouts, lambda_set, ret_layout)) => {
-            if procs.is_module_thunk(proc_name) {
+            if pbrocs.is_module_thunk(pbroc_name) {
                 if loc_args.is_empty() {
                     call_by_name_module_thunk(
                         env,
-                        procs,
+                        pbrocs,
                         fn_var,
-                        proc_name,
+                        pbroc_name,
                         lambda_set.full_layout,
                         layout_cache,
                         assigned,
@@ -8170,7 +8170,7 @@ fn call_by_name<'a>(
                         loc_args.iter().map(|(arg_var, arg_expr)| {
                             possible_reuse_symbol_or_specialize(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 &arg_expr.value,
                                 *arg_var,
@@ -8185,7 +8185,7 @@ fn call_by_name<'a>(
                     let result = match_on_lambda_set(
                         env,
                         layout_cache,
-                        procs,
+                        pbrocs,
                         lambda_set,
                         closure_data_symbol,
                         arg_symbols,
@@ -8197,9 +8197,9 @@ fn call_by_name<'a>(
 
                     let result = call_by_name_module_thunk(
                         env,
-                        procs,
+                        pbrocs,
                         fn_var,
-                        proc_name,
+                        pbroc_name,
                         lambda_set.full_layout,
                         layout_cache,
                         closure_data_symbol,
@@ -8207,14 +8207,14 @@ fn call_by_name<'a>(
                     );
 
                     let iter = loc_args.into_iter().rev().zip(arg_symbols.iter().rev());
-                    assign_to_symbols(env, procs, layout_cache, iter, result)
+                    assign_to_symbols(env, pbrocs, layout_cache, iter, result)
                 }
             } else {
                 call_by_name_help(
                     env,
-                    procs,
+                    pbrocs,
                     fn_var,
-                    proc_name,
+                    pbroc_name,
                     loc_args,
                     lambda_set,
                     arg_layouts,
@@ -8226,21 +8226,21 @@ fn call_by_name<'a>(
             }
         }
         Ok(RawFunctionLayout::ZeroArgumentThunk(ret_layout)) => {
-            if procs.is_module_thunk(proc_name) {
+            if pbrocs.is_module_thunk(pbroc_name) {
                 // here we turn a call to a module thunk into  forcing of that thunk
                 call_by_name_module_thunk(
                     env,
-                    procs,
+                    pbrocs,
                     fn_var,
-                    proc_name,
+                    pbroc_name,
                     ret_layout,
                     layout_cache,
                     assigned,
                     hole,
                 )
-            } else if env.is_imported_symbol(proc_name) {
-                add_needed_external(procs, env, fn_var, LambdaName::no_niche(proc_name));
-                force_thunk(env, proc_name, ret_layout, assigned, hole)
+            } else if env.is_imported_symbol(pbroc_name) {
+                add_needed_external(pbrocs, env, fn_var, LambdaName::no_niche(pbroc_name));
+                force_thunk(env, pbroc_name, ret_layout, assigned, hole)
             } else {
                 panic!("most likely we're trying to call something that is not a function");
             }
@@ -8251,10 +8251,10 @@ fn call_by_name<'a>(
 #[allow(clippy::too_many_arguments)]
 fn call_by_name_help<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     fn_var: Variable,
-    proc_name: Symbol,
-    loc_args: std::vec::Vec<(Variable, Loc<roc_can::expr::Expr>)>,
+    pbroc_name: Symbol,
+    loc_args: std::vec::Vec<(Variable, Loc<broc_can::expr::Expr>)>,
     lambda_set: LambdaSet<'a>,
     argument_layouts: &'a [InLayout<'a>],
     ret_layout: InLayout<'a>,
@@ -8268,7 +8268,7 @@ fn call_by_name_help<'a>(
     // the arguments given to the function, stored in symbols
     let mut field_symbols = Vec::with_capacity_in(loc_args.len(), arena);
     field_symbols.extend(loc_args.iter().map(|(arg_var, arg_expr)| {
-        possible_reuse_symbol_or_specialize(env, procs, layout_cache, &arg_expr.value, *arg_var)
+        possible_reuse_symbol_or_specialize(env, pbrocs, layout_cache, &arg_expr.value, *arg_var)
     }));
 
     // THEORY: with a call by name, there are three options:
@@ -8283,18 +8283,18 @@ fn call_by_name_help<'a>(
     // So, if this function has any captures niche, it will be the first one.
     let mut iter_lambda_names = lambda_set
         .iter_set()
-        .filter(|lam_name| lam_name.name() == proc_name);
-    let proc_name = match iter_lambda_names.next() {
+        .filter(|lam_name| lam_name.name() == pbroc_name);
+    let pbroc_name = match iter_lambda_names.next() {
         Some(name) => {
             debug_assert!(
                 iter_lambda_names.next().is_none(),
                 "Somehow, call by name for {:?} has multiple capture niches: {:?}",
-                proc_name,
+                pbroc_name,
                 lambda_set
             );
             name
         }
-        None => LambdaName::no_niche(proc_name),
+        None => LambdaName::no_niche(pbroc_name),
     };
 
     // If required, add an extra argument to the layout that is the captured environment
@@ -8302,8 +8302,8 @@ fn call_by_name_help<'a>(
     // number of arguments actually passed.
     let top_level_layout = {
         let argument_layouts =
-            lambda_set.extend_argument_list_for_named(env.arena, proc_name, argument_layouts);
-        ProcLayout::new(env.arena, argument_layouts, proc_name.niche(), ret_layout)
+            lambda_set.extend_argument_list_for_named(env.arena, pbroc_name, argument_layouts);
+        PbrocLayout::new(env.arena, argument_layouts, pbroc_name.niche(), ret_layout)
     };
 
     // the variables of the given arguments
@@ -8322,20 +8322,20 @@ fn call_by_name_help<'a>(
     }
 
     // If we've already specialized this one, no further work is needed.
-    if procs
+    if pbrocs
         .specialized
-        .is_specialized(proc_name.name(), &top_level_layout)
+        .is_specialized(pbroc_name.name(), &top_level_layout)
     {
         debug_assert_eq!(
             argument_layouts.len(),
             field_symbols.len(),
             "see call_by_name for background (scroll down a bit), function is {:?}",
-            proc_name,
+            pbroc_name,
         );
-        call_specialized_proc(
+        call_specialized_pbroc(
             env,
-            procs,
-            proc_name,
+            pbrocs,
+            pbroc_name,
             lambda_set,
             RawFunctionLayout::Function(argument_layouts, lambda_set, ret_layout),
             top_level_layout,
@@ -8345,17 +8345,17 @@ fn call_by_name_help<'a>(
             assigned,
             hole,
         )
-    } else if env.is_imported_symbol(proc_name.name())
-        || env.is_unloaded_derived_symbol(proc_name.name(), procs)
+    } else if env.is_imported_symbol(pbroc_name.name())
+        || env.is_unloaded_derived_symbol(pbroc_name.name(), pbrocs)
     {
-        add_needed_external(procs, env, original_fn_var, proc_name);
+        add_needed_external(pbrocs, env, original_fn_var, pbroc_name);
 
-        debug_assert_ne!(proc_name.name().module_id(), ModuleId::ATTR);
+        debug_assert_ne!(pbroc_name.name().module_id(), ModuleId::ATTR);
 
-        if procs.is_imported_module_thunk(proc_name.name()) {
+        if pbrocs.is_imported_module_thunk(pbroc_name.name()) {
             force_thunk(
                 env,
-                proc_name.name(),
+                pbroc_name.name(),
                 lambda_set.full_layout,
                 assigned,
                 hole,
@@ -8365,14 +8365,14 @@ fn call_by_name_help<'a>(
 
             // imported symbols cannot capture anything
             let captured = &[];
-            debug_assert!(proc_name.no_captures());
+            debug_assert!(pbroc_name.no_captures());
 
             construct_closure_data(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 lambda_set,
-                proc_name,
+                pbroc_name,
                 captured,
                 assigned,
                 hole,
@@ -8382,14 +8382,14 @@ fn call_by_name_help<'a>(
                 argument_layouts.len(),
                 field_symbols.len(),
                 "see call_by_name for background (scroll down a bit), function is {:?}",
-                proc_name,
+                pbroc_name,
             );
 
             let field_symbols = field_symbols.into_bump_slice();
 
             let call = self::Call {
                 call_type: CallType::ByName {
-                    name: proc_name,
+                    name: pbroc_name,
                     ret_layout,
                     arg_layouts: argument_layouts,
                     specialization_id: env.next_call_specialization_id(),
@@ -8400,10 +8400,10 @@ fn call_by_name_help<'a>(
             let result = build_call(env, call, assigned, ret_layout, hole);
 
             let iter = loc_args.into_iter().rev().zip(field_symbols.iter().rev());
-            assign_to_symbols(env, procs, layout_cache, iter, result)
+            assign_to_symbols(env, pbrocs, layout_cache, iter, result)
         }
     } else {
-        // When requested (that is, when procs.pending_specializations is `Some`),
+        // When requested (that is, when pbrocs.pending_specializations is `Some`),
         // store a pending specialization rather than specializing immediately.
         //
         // We do this so that we can do specialization in two passes: first,
@@ -8414,36 +8414,36 @@ fn call_by_name_help<'a>(
         // the same specialization independently), we work through the
         // queue of pending specializations to complete each specialization
         // exactly once.
-        if procs.is_module_thunk(proc_name.name()) {
+        if pbrocs.is_module_thunk(pbroc_name.name()) {
             debug_assert!(top_level_layout.arguments.is_empty());
         }
 
         let needs_suspended_specialization =
-            procs.symbol_needs_suspended_specialization(proc_name.name());
+            pbrocs.symbol_needs_suspended_specialization(pbroc_name.name());
         match (
-            &mut procs.pending_specializations,
+            &mut pbrocs.pending_specializations,
             needs_suspended_specialization,
         ) {
             (PendingSpecializations::Finding(suspended), _)
             | (PendingSpecializations::Making(suspended), true) => {
-                debug_assert!(!env.is_imported_symbol(proc_name.name()));
+                debug_assert!(!env.is_imported_symbol(pbroc_name.name()));
 
                 // register the pending specialization, so this gets code genned later
-                suspended.specialization(env.subs, proc_name, top_level_layout, fn_var);
+                suspended.specialization(env.subs, pbroc_name, top_level_layout, fn_var);
 
                 debug_assert_eq!(
                     argument_layouts.len(),
                     field_symbols.len(),
                     "see call_by_name for background (scroll down a bit), function is {:?}",
-                    proc_name,
+                    pbroc_name,
                 );
 
                 let field_symbols = field_symbols.into_bump_slice();
 
-                call_specialized_proc(
+                call_specialized_pbroc(
                     env,
-                    procs,
-                    proc_name,
+                    pbrocs,
+                    pbroc_name,
                     lambda_set,
                     RawFunctionLayout::Function(argument_layouts, lambda_set, ret_layout),
                     top_level_layout,
@@ -8455,42 +8455,42 @@ fn call_by_name_help<'a>(
                 )
             }
             (PendingSpecializations::Making(_), false) => {
-                let opt_partial_proc = procs.partial_procs.symbol_to_id(proc_name.name());
+                let opt_partial_pbroc = pbrocs.partial_pbrocs.symbol_to_id(pbroc_name.name());
 
                 let field_symbols = field_symbols.into_bump_slice();
 
-                match opt_partial_proc {
-                    Some(partial_proc) => {
-                        // Mark this proc as in-progress, so if we're dealing with
+                match opt_partial_pbroc {
+                    Some(partial_pbroc) => {
+                        // Mark this pbroc as in-progress, so if we're dealing with
                         // mutually recursive functions, we don't loop forever.
                         // (We had a bug around this before this system existed!)
-                        procs
+                        pbrocs
                             .specialized
-                            .mark_in_progress(proc_name.name(), top_level_layout);
+                            .mark_in_progress(pbroc_name.name(), top_level_layout);
 
                         match specialize_variable(
                             env,
-                            procs,
-                            proc_name,
+                            pbrocs,
+                            pbroc_name,
                             layout_cache,
                             fn_var,
-                            partial_proc,
+                            partial_pbroc,
                         ) {
-                            Ok((proc, layout)) => {
-                                let proc_name = proc.name;
+                            Ok((pbroc, layout)) => {
+                                let pbroc_name = pbroc.name;
                                 let function_layout =
-                                    ProcLayout::from_raw_named(env.arena, proc_name, layout);
-                                procs.specialized.insert_specialized(
-                                    proc_name.name(),
+                                    PbrocLayout::from_raw_named(env.arena, pbroc_name, layout);
+                                pbrocs.specialized.insert_specialized(
+                                    pbroc_name.name(),
                                     function_layout,
-                                    proc,
+                                    pbroc,
                                 );
 
                                 // now we just call our freshly-specialized function
-                                call_specialized_proc(
+                                call_specialized_pbroc(
                                     env,
-                                    procs,
-                                    proc_name,
+                                    pbrocs,
+                                    pbroc_name,
                                     lambda_set,
                                     layout,
                                     function_layout,
@@ -8502,28 +8502,28 @@ fn call_by_name_help<'a>(
                                 )
                             }
                             Err(SpecializeFailure { attempted_layout }) => {
-                                let proc = generate_runtime_error_function(
+                                let pbroc = generate_runtime_error_function(
                                     env,
-                                    proc_name,
+                                    pbroc_name,
                                     attempted_layout,
                                 );
 
-                                let proc_name = proc.name;
-                                let function_layout = ProcLayout::from_raw_named(
+                                let pbroc_name = pbroc.name;
+                                let function_layout = PbrocLayout::from_raw_named(
                                     env.arena,
-                                    proc_name,
+                                    pbroc_name,
                                     attempted_layout,
                                 );
-                                procs.specialized.insert_specialized(
-                                    proc_name.name(),
+                                pbrocs.specialized.insert_specialized(
+                                    pbroc_name.name(),
                                     function_layout,
-                                    proc,
+                                    pbroc,
                                 );
 
-                                call_specialized_proc(
+                                call_specialized_pbroc(
                                     env,
-                                    procs,
-                                    proc_name,
+                                    pbrocs,
+                                    pbroc_name,
                                     lambda_set,
                                     attempted_layout,
                                     function_layout,
@@ -8538,7 +8538,7 @@ fn call_by_name_help<'a>(
                     }
 
                     None => {
-                        unreachable!("Proc name {:?} is invalid", proc_name)
+                        unreachable!("Pbroc name {:?} is invalid", pbroc_name)
                     }
                 }
             }
@@ -8549,27 +8549,27 @@ fn call_by_name_help<'a>(
 #[allow(clippy::too_many_arguments)]
 fn call_by_name_module_thunk<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     fn_var: Variable,
-    proc_name: Symbol,
+    pbroc_name: Symbol,
     ret_layout: InLayout<'a>,
     layout_cache: &mut LayoutCache<'a>,
     assigned: Symbol,
     hole: &'a Stmt<'a>,
 ) -> Stmt<'a> {
-    let top_level_layout = ProcLayout::new(env.arena, &[], Niche::NONE, ret_layout);
+    let top_level_layout = PbrocLayout::new(env.arena, &[], Niche::NONE, ret_layout);
 
     let inner_layout = ret_layout;
 
     // If we've already specialized this one, no further work is needed.
-    let already_specialized = procs
+    let already_specialized = pbrocs
         .specialized
-        .is_specialized(proc_name, &top_level_layout);
+        .is_specialized(pbroc_name, &top_level_layout);
 
     if already_specialized {
-        force_thunk(env, proc_name, inner_layout, assigned, hole)
+        force_thunk(env, pbroc_name, inner_layout, assigned, hole)
     } else {
-        // When requested (that is, when procs.pending_specializations is `Some`),
+        // When requested (that is, when pbrocs.pending_specializations is `Some`),
         // store a pending specialization rather than specializing immediately.
         //
         // We do this so that we can do specialization in two passes: first,
@@ -8580,94 +8580,94 @@ fn call_by_name_module_thunk<'a>(
         // the same specialization independently), we work through the
         // queue of pending specializations to complete each specialization
         // exactly once.
-        if procs.is_module_thunk(proc_name) {
+        if pbrocs.is_module_thunk(pbroc_name) {
             debug_assert!(top_level_layout.arguments.is_empty());
         }
 
-        let needs_suspended_specialization = procs.symbol_needs_suspended_specialization(proc_name);
+        let needs_suspended_specialization = pbrocs.symbol_needs_suspended_specialization(pbroc_name);
         match (
-            &mut procs.pending_specializations,
+            &mut pbrocs.pending_specializations,
             needs_suspended_specialization,
         ) {
             (PendingSpecializations::Finding(suspended), _)
             | (PendingSpecializations::Making(suspended), true) => {
-                debug_assert!(!env.is_imported_symbol(proc_name));
+                debug_assert!(!env.is_imported_symbol(pbroc_name));
 
                 // register the pending specialization, so this gets code genned later
                 suspended.specialization(
                     env.subs,
-                    LambdaName::no_niche(proc_name),
+                    LambdaName::no_niche(pbroc_name),
                     top_level_layout,
                     fn_var,
                 );
 
-                force_thunk(env, proc_name, inner_layout, assigned, hole)
+                force_thunk(env, pbroc_name, inner_layout, assigned, hole)
             }
             (PendingSpecializations::Making(_), false) => {
-                let opt_partial_proc = procs.partial_procs.symbol_to_id(proc_name);
+                let opt_partial_pbroc = pbrocs.partial_pbrocs.symbol_to_id(pbroc_name);
 
-                match opt_partial_proc {
-                    Some(partial_proc) => {
-                        // Mark this proc as in-progress, so if we're dealing with
+                match opt_partial_pbroc {
+                    Some(partial_pbroc) => {
+                        // Mark this pbroc as in-progress, so if we're dealing with
                         // mutually recursive functions, we don't loop forever.
                         // (We had a bug around this before this system existed!)
-                        procs
+                        pbrocs
                             .specialized
-                            .mark_in_progress(proc_name, top_level_layout);
+                            .mark_in_progress(pbroc_name, top_level_layout);
 
                         match specialize_variable(
                             env,
-                            procs,
-                            LambdaName::no_niche(proc_name),
+                            pbrocs,
+                            LambdaName::no_niche(pbroc_name),
                             layout_cache,
                             fn_var,
-                            partial_proc,
+                            partial_pbroc,
                         ) {
-                            Ok((proc, raw_layout)) => {
+                            Ok((pbroc, raw_layout)) => {
                                 debug_assert!(
                                     raw_layout.is_zero_argument_thunk(),
                                     "but actually {:?}",
                                     raw_layout
                                 );
 
-                                let was_present = procs
+                                let was_present = pbrocs
                                     .specialized
-                                    .remove_specialized(proc_name, &top_level_layout);
+                                    .remove_specialized(pbroc_name, &top_level_layout);
                                 debug_assert!(was_present);
 
-                                procs.specialized.insert_specialized(
-                                    proc_name,
+                                pbrocs.specialized.insert_specialized(
+                                    pbroc_name,
                                     top_level_layout,
-                                    proc,
+                                    pbroc,
                                 );
 
-                                force_thunk(env, proc_name, inner_layout, assigned, hole)
+                                force_thunk(env, pbroc_name, inner_layout, assigned, hole)
                             }
                             Err(SpecializeFailure { attempted_layout }) => {
-                                let proc = generate_runtime_error_function(
+                                let pbroc = generate_runtime_error_function(
                                     env,
-                                    LambdaName::no_niche(proc_name),
+                                    LambdaName::no_niche(pbroc_name),
                                     attempted_layout,
                                 );
 
-                                let was_present = procs
+                                let was_present = pbrocs
                                     .specialized
-                                    .remove_specialized(proc_name, &top_level_layout);
+                                    .remove_specialized(pbroc_name, &top_level_layout);
                                 debug_assert!(was_present);
 
-                                procs.specialized.insert_specialized(
-                                    proc_name,
+                                pbrocs.specialized.insert_specialized(
+                                    pbroc_name,
                                     top_level_layout,
-                                    proc,
+                                    pbroc,
                                 );
 
-                                force_thunk(env, proc_name, inner_layout, assigned, hole)
+                                force_thunk(env, pbroc_name, inner_layout, assigned, hole)
                             }
                         }
                     }
 
                     None => {
-                        unreachable!("Proc name {:?} is invalid", proc_name)
+                        unreachable!("Pbroc name {:?} is invalid", pbroc_name)
                     }
                 }
             }
@@ -8676,15 +8676,15 @@ fn call_by_name_module_thunk<'a>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn call_specialized_proc<'a>(
+fn call_specialized_pbroc<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
-    proc_name: LambdaName<'a>,
+    pbrocs: &mut Pbrocs<'a>,
+    pbroc_name: LambdaName<'a>,
     lambda_set: LambdaSet<'a>,
     layout: RawFunctionLayout<'a>,
-    function_layout: ProcLayout<'a>,
+    function_layout: PbrocLayout<'a>,
     field_symbols: &'a [Symbol],
-    loc_args: std::vec::Vec<(Variable, Loc<roc_can::expr::Expr>)>,
+    loc_args: std::vec::Vec<(Variable, Loc<broc_can::expr::Expr>)>,
     layout_cache: &mut LayoutCache<'a>,
     assigned: Symbol,
     hole: &'a Stmt<'a>,
@@ -8704,7 +8704,7 @@ fn call_specialized_proc<'a>(
                 // when the body is a closure, the function will return the closure environment
                 let call = self::Call {
                     call_type: CallType::ByName {
-                        name: proc_name,
+                        name: pbroc_name,
                         ret_layout: function_layout.result,
                         arg_layouts: function_layout.arguments,
                         specialization_id: env.next_call_specialization_id(),
@@ -8723,9 +8723,9 @@ fn call_specialized_proc<'a>(
     } else {
         let iter = loc_args.into_iter().rev().zip(field_symbols.iter().rev());
 
-        match procs
-            .partial_procs
-            .get_symbol(proc_name.name())
+        match pbrocs
+            .partial_pbrocs
+            .get_symbol(pbroc_name.name())
             .map(|pp| &pp.captured_symbols)
         {
             Some(&CapturedSymbols::Captured(captured_symbols)) => {
@@ -8745,7 +8745,7 @@ fn call_specialized_proc<'a>(
                 let new_hole = match_on_lambda_set(
                     env,
                     layout_cache,
-                    procs,
+                    pbrocs,
                     lambda_set,
                     closure_data_symbol,
                     field_symbols,
@@ -8757,23 +8757,23 @@ fn call_specialized_proc<'a>(
 
                 let result = construct_closure_data(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     lambda_set,
-                    proc_name,
+                    pbroc_name,
                     symbols.iter().copied(),
                     closure_data_symbol,
                     env.arena.alloc(new_hole),
                 );
 
-                assign_to_symbols(env, procs, layout_cache, iter, result)
+                assign_to_symbols(env, pbrocs, layout_cache, iter, result)
             }
             _ => {
                 debug_assert_eq!(
                     function_layout.arguments.len(),
                     field_symbols.len(),
                     "function {:?} with layout {:#?} expects {:?} arguments, but is applied to {:?}",
-                    proc_name,
+                    pbroc_name,
                     function_layout,
                     function_layout.arguments.len(),
                     field_symbols.len(),
@@ -8781,7 +8781,7 @@ fn call_specialized_proc<'a>(
 
                 let call = self::Call {
                     call_type: CallType::ByName {
-                        name: proc_name,
+                        name: pbroc_name,
                         ret_layout: function_layout.result,
                         arg_layouts: function_layout.arguments,
                         specialization_id: env.next_call_specialization_id(),
@@ -8791,7 +8791,7 @@ fn call_specialized_proc<'a>(
 
                 let result = build_call(env, call, assigned, function_layout.result, hole);
 
-                assign_to_symbols(env, procs, layout_cache, iter, result)
+                assign_to_symbols(env, pbrocs, layout_cache, iter, result)
             }
         }
     }
@@ -9029,7 +9029,7 @@ fn empty_lambda_set_error<'a>(env: &mut Env<'a, '_>) -> Stmt<'a> {
 fn match_on_lambda_set<'a>(
     env: &mut Env<'a, '_>,
     layout_cache: &LayoutCache<'a>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     lambda_set: LambdaSet<'a>,
     closure_data_symbol: Symbol,
     argument_symbols: &'a [Symbol],
@@ -9082,11 +9082,11 @@ fn match_on_lambda_set<'a>(
                     let lambda_name = LambdaName::no_niche(name);
                     let function_layout =
                         RawFunctionLayout::Function(argument_layouts, lambda_set, return_layout);
-                    let proc = generate_runtime_error_function(env, lambda_name, function_layout);
+                    let pbroc = generate_runtime_error_function(env, lambda_name, function_layout);
                     let top_level =
-                        ProcLayout::from_raw_named(env.arena, lambda_name, function_layout);
+                        PbrocLayout::from_raw_named(env.arena, lambda_name, function_layout);
 
-                    procs.specialized.insert_specialized(name, top_level, proc);
+                    pbrocs.specialized.insert_specialized(name, top_level, pbroc);
 
                     lambda_name
                 }
@@ -9184,7 +9184,7 @@ fn union_lambda_set_to_switch<'a>(
     if lambda_set.is_empty() {
         // NOTE this can happen if there is a type error somewhere. Since the lambda set is empty,
         // there is really nothing we can do here. We generate a runtime error here which allows
-        // code gen to proceed. We then assume that we hit another (more descriptive) error before
+        // code gen to pbroceed. We then assume that we hit another (more descriptive) error before
         // hitting this one
         return empty_lambda_set_error(env);
     }
@@ -9529,20 +9529,20 @@ where
 
 #[derive(Debug, Default)]
 pub struct GlueLayouts<'a> {
-    pub getters: std::vec::Vec<(Symbol, ProcLayout<'a>)>,
+    pub getters: std::vec::Vec<(Symbol, PbrocLayout<'a>)>,
 }
 
-type GlueProcId = u16;
+type GluePbrocId = u16;
 
 #[derive(Debug)]
-pub struct GlueProc<'a> {
+pub struct GluePbroc<'a> {
     pub name: Symbol,
-    pub proc_layout: ProcLayout<'a>,
-    pub proc: Proc<'a>,
+    pub pbroc_layout: PbrocLayout<'a>,
+    pub pbroc: Pbroc<'a>,
 }
 
-pub struct GlueProcs<'a> {
-    pub getters: Vec<'a, (Layout<'a>, Vec<'a, GlueProc<'a>>)>,
+pub struct GluePbrocs<'a> {
+    pub getters: Vec<'a, (Layout<'a>, Vec<'a, GluePbroc<'a>>)>,
     pub extern_names: Vec<'a, (LambdaSetId, RawFunctionLayout<'a>)>,
 }
 
@@ -9557,17 +9557,17 @@ impl LambdaSetId {
     }
 }
 
-pub fn generate_glue_procs<'a, 'i, I>(
+pub fn generate_glue_pbrocs<'a, 'i, I>(
     home: ModuleId,
     ident_ids: &mut IdentIds,
     arena: &'a Bump,
     layout_interner: &'i mut I,
     layout: &'a Layout<'a>,
-) -> GlueProcs<'a>
+) -> GluePbrocs<'a>
 where
     I: LayoutInterner<'a>,
 {
-    let mut answer = GlueProcs {
+    let mut answer = GluePbrocs {
         getters: Vec::new_in(arena),
         extern_names: Vec::new_in(arena),
     };
@@ -9584,7 +9584,7 @@ where
                     .get(*l)
                     .has_varying_stack_size(layout_interner, arena)
             }) {
-                let procs = generate_glue_procs_for_tag_fields(
+                let pbrocs = generate_glue_pbrocs_for_tag_fields(
                     layout_interner,
                     home,
                     &mut next_unique_id,
@@ -9596,7 +9596,7 @@ where
                     $field_layouts,
                 );
 
-                answer.getters.push(($layout, procs));
+                answer.getters.push(($layout, pbrocs));
             }
 
             for in_layout in $field_layouts.iter().rev() {
@@ -9621,7 +9621,7 @@ where
                         .get(*l)
                         .has_varying_stack_size(layout_interner, arena)
                 }) {
-                    let procs = generate_glue_procs_for_struct_fields(
+                    let pbrocs = generate_glue_pbrocs_for_struct_fields(
                         layout_interner,
                         home,
                         &mut next_unique_id,
@@ -9631,7 +9631,7 @@ where
                         field_layouts,
                     );
 
-                    answer.getters.push((layout, procs));
+                    answer.getters.push((layout, pbrocs));
                 }
 
                 for in_layout in field_layouts.iter().rev() {
@@ -9695,15 +9695,15 @@ where
     answer
 }
 
-fn generate_glue_procs_for_struct_fields<'a, 'i, I>(
+fn generate_glue_pbrocs_for_struct_fields<'a, 'i, I>(
     layout_interner: &'i mut I,
     home: ModuleId,
-    next_unique_id: &mut GlueProcId,
+    next_unique_id: &mut GluePbrocId,
     ident_ids: &mut IdentIds,
     arena: &'a Bump,
     unboxed_struct_layout: &Layout<'a>,
     field_layouts: &[InLayout<'a>],
-) -> Vec<'a, GlueProc<'a>>
+) -> Vec<'a, GluePbroc<'a>>
 where
     I: LayoutInterner<'a>,
 {
@@ -9724,7 +9724,7 @@ where
     };
 
     for (index, field) in field_layouts.iter().enumerate() {
-        let proc_layout = ProcLayout {
+        let pbroc_layout = PbrocLayout {
             arguments: arena.alloc([boxed_struct_layout]),
             result: *field,
             niche: Niche::NONE,
@@ -9757,7 +9757,7 @@ where
             arena.alloc(field_get_stmt),
         );
 
-        let proc = Proc {
+        let pbroc = Pbroc {
             name: LambdaName::no_niche(symbol),
             args: arena.alloc([(boxed_struct_layout, argument)]),
             body: unbox_stmt,
@@ -9768,10 +9768,10 @@ where
             host_exposed_layouts: HostExposedLayouts::NotHostExposed,
         };
 
-        answer.push(GlueProc {
+        answer.push(GluePbroc {
             name: symbol,
-            proc_layout,
-            proc,
+            pbroc_layout,
+            pbroc,
         });
     }
 
@@ -9780,7 +9780,7 @@ where
 
 fn unique_glue_symbol(
     arena: &Bump,
-    next_unique_id: &mut GlueProcId,
+    next_unique_id: &mut GluePbrocId,
     home: ModuleId,
     ident_ids: &mut IdentIds,
 ) -> Symbol {
@@ -9788,14 +9788,14 @@ fn unique_glue_symbol(
 
     *next_unique_id = unique_id + 1;
 
-    // then name of the platform `main.roc` is the empty string
+    // then name of the platform `main.broc` is the empty string
     let module_name = "";
 
     // Turn unique_id into a Symbol without doing a heap allocation.
     use std::fmt::Write;
     let mut string = bumpalo::collections::String::with_capacity_in(32, arena);
 
-    let _result = write!(&mut string, "roc__getter_{}_{}", module_name, unique_id);
+    let _result = write!(&mut string, "broc__getter_{}_{}", module_name, unique_id);
     debug_assert_eq!(_result, Ok(())); // This should never fail, but doesn't hurt to debug-check!
 
     let bump_string = string.into_bump_str();
@@ -9805,17 +9805,17 @@ fn unique_glue_symbol(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn generate_glue_procs_for_tag_fields<'a, 'i, I>(
+fn generate_glue_pbrocs_for_tag_fields<'a, 'i, I>(
     layout_interner: &'i mut I,
     home: ModuleId,
-    next_unique_id: &mut GlueProcId,
+    next_unique_id: &mut GluePbrocId,
     ident_ids: &mut IdentIds,
     arena: &'a Bump,
     tag_id: TagIdIntType,
     unboxed_struct_layout: &Layout<'a>,
     union_layout: UnionLayout<'a>,
     field_layouts: &'a [InLayout<'a>],
-) -> Vec<'a, GlueProc<'a>>
+) -> Vec<'a, GluePbroc<'a>>
 where
     I: LayoutInterner<'a>,
 {
@@ -9825,7 +9825,7 @@ where
     let mut answer = bumpalo::collections::Vec::with_capacity_in(field_layouts.len(), arena);
 
     for (index, field) in field_layouts.iter().enumerate() {
-        let proc_layout = ProcLayout {
+        let pbroc_layout = PbrocLayout {
             arguments: arena.alloc([boxed_struct_layout]),
             result: *field,
             niche: Niche::NONE,
@@ -9853,7 +9853,7 @@ where
 
         let unbox_stmt = Stmt::Let(unboxed, unbox_expr, interned, arena.alloc(field_get_stmt));
 
-        let proc = Proc {
+        let pbroc = Pbroc {
             name: LambdaName::no_niche(symbol),
             args: arena.alloc([(boxed_struct_layout, argument)]),
             body: unbox_stmt,
@@ -9864,10 +9864,10 @@ where
             host_exposed_layouts: HostExposedLayouts::NotHostExposed,
         };
 
-        answer.push(GlueProc {
+        answer.push(GluePbroc {
             name: symbol,
-            proc_layout,
-            proc,
+            pbroc_layout,
+            pbroc,
         });
     }
 

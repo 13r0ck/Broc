@@ -4,8 +4,8 @@ use crate::graphics::colors;
 use crate::graphics::colors::from_hsb;
 use crate::graphics::primitives::text as gr_text;
 use cgmath::Vector2;
-use roc_ast::lang::core::def::def2::def2_to_string;
-use roc_code_markup::markup::nodes::tree_as_string;
+use broc_ast::lang::core::def::def2::def2_to_string;
+use broc_code_markup::markup::nodes::tree_as_string;
 use winit::dpi::PhysicalSize;
 
 use crate::editor::config::Config;

@@ -3,20 +3,20 @@ use crate::layout::intern::NeedsRecursionPointerFixup;
 use bitvec::vec::BitVec;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::{default_hasher, FnvMap, MutMap};
-use roc_collections::{SmallVec, VecSet};
-use roc_error_macros::{internal_error, todo_abilities};
-use roc_module::ident::{Lowercase, TagName};
-use roc_module::symbol::{Interns, Symbol};
-use roc_problem::can::RuntimeError;
-use roc_target::{PtrWidth, TargetInfo};
-use roc_types::num::NumericRange;
-use roc_types::subs::{
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::{default_hasher, FnvMap, MutMap};
+use broc_collections::{SmallVec, VecSet};
+use broc_error_macros::{internal_error, todo_abilities};
+use broc_module::ident::{Lowercase, TagName};
+use broc_module::symbol::{Interns, Symbol};
+use broc_problem::can::RuntimeError;
+use broc_target::{PtrWidth, TargetInfo};
+use broc_types::num::NumericRange;
+use broc_types::subs::{
     self, Content, FlatType, GetSubsSlice, Label, OptVariable, RecordFields, Subs, TagExt,
     TupleElems, UnsortedUnionLabels, Variable, VariableSubsSlice,
 };
-use roc_types::types::{
+use broc_types::types::{
     gather_fields_unsorted_iter, gather_tuple_elems_unsorted_iter, RecordField, RecordFieldsError,
     TupleElemsError,
 };
@@ -34,20 +34,20 @@ pub use intern::{
 // if your changes cause this number to go down, great!
 // please change it to the lower number.
 // if it went up, maybe check that the change is really required
-roc_error_macros::assert_sizeof_aarch64!(Builtin, 2 * 8);
-roc_error_macros::assert_sizeof_aarch64!(Layout, 6 * 8);
-roc_error_macros::assert_sizeof_aarch64!(UnionLayout, 3 * 8);
-roc_error_macros::assert_sizeof_aarch64!(LambdaSet, 5 * 8);
+broc_error_macros::assert_sizeof_aarch64!(Builtin, 2 * 8);
+broc_error_macros::assert_sizeof_aarch64!(Layout, 6 * 8);
+broc_error_macros::assert_sizeof_aarch64!(UnionLayout, 3 * 8);
+broc_error_macros::assert_sizeof_aarch64!(LambdaSet, 5 * 8);
 
-roc_error_macros::assert_sizeof_wasm!(Builtin, 2 * 4);
-roc_error_macros::assert_sizeof_wasm!(Layout, 6 * 4);
-roc_error_macros::assert_sizeof_wasm!(UnionLayout, 3 * 4);
-roc_error_macros::assert_sizeof_wasm!(LambdaSet, 5 * 4);
+broc_error_macros::assert_sizeof_wasm!(Builtin, 2 * 4);
+broc_error_macros::assert_sizeof_wasm!(Layout, 6 * 4);
+broc_error_macros::assert_sizeof_wasm!(UnionLayout, 3 * 4);
+broc_error_macros::assert_sizeof_wasm!(LambdaSet, 5 * 4);
 
-roc_error_macros::assert_sizeof_default!(Builtin, 2 * 8);
-roc_error_macros::assert_sizeof_default!(Layout, 6 * 8);
-roc_error_macros::assert_sizeof_default!(UnionLayout, 3 * 8);
-roc_error_macros::assert_sizeof_default!(LambdaSet, 5 * 8);
+broc_error_macros::assert_sizeof_default!(Builtin, 2 * 8);
+broc_error_macros::assert_sizeof_default!(Layout, 6 * 8);
+broc_error_macros::assert_sizeof_default!(UnionLayout, 3 * 8);
+broc_error_macros::assert_sizeof_default!(LambdaSet, 5 * 8);
 
 type LayoutResult<'a> = Result<InLayout<'a>, LayoutProblem>;
 type RawFunctionLayoutResult<'a> = Result<RawFunctionLayout<'a>, LayoutProblem>;
@@ -229,7 +229,7 @@ impl<'a> LayoutCache<'a> {
         let opt_old_result = layer.0.insert(root, (result, cache_metadata));
         if let Some(old_result) = opt_old_result {
             // Can happen when we need to re-calculate a recursive layout
-            roc_tracing::debug!(
+            broc_tracing::debug!(
                 ?old_result,
                 new_result=?result,
                 ?var,
@@ -312,13 +312,13 @@ impl<'a> LayoutCache<'a> {
                 layer
                     .0
                     .retain(|k, _| !subs.equivalent_without_compacting(var, *k));
-                roc_tracing::debug!(?var, "invalidating cached layout");
+                broc_tracing::debug!(?var, "invalidating cached layout");
             }
             for layer in self.raw_function_cache.iter_mut().rev() {
                 layer
                     .0
                     .retain(|k, _| !subs.equivalent_without_compacting(var, *k));
-                roc_tracing::debug!(?var, "invalidating cached layout");
+                broc_tracing::debug!(?var, "invalidating cached layout");
             }
         }
     }
@@ -491,7 +491,7 @@ impl<'a> RawFunctionLayout<'a> {
         var: Variable,
         content: Content,
     ) -> Cacheable<RawFunctionLayoutResult<'a>> {
-        use roc_types::subs::Content::*;
+        use broc_types::subs::Content::*;
         match content {
             FlexVar(_) | RigidVar(_) => cacheable(Err(LayoutProblem::UnresolvedTypeVar(var))),
             FlexAbleVar(_, _) | RigidAbleVar(_, _) => todo_abilities!("Not reachable yet"),
@@ -578,7 +578,7 @@ impl<'a> RawFunctionLayout<'a> {
         env: &mut Env<'a, '_>,
         flat_type: FlatType,
     ) -> Cacheable<RawFunctionLayoutResult<'a>> {
-        use roc_types::subs::FlatType::*;
+        use broc_types::subs::FlatType::*;
 
         let arena = env.arena;
 
@@ -691,7 +691,7 @@ pub enum Layout<'a> {
         /// so keep a hash of the record order for disambiguation. This still of course may result
         /// in collisions, but it's unlikely.
         ///
-        /// See also https://github.com/roc-lang/roc/issues/2535.
+        /// See also https://github.com/roc-lang/broc/issues/2535.
         field_order_hash: FieldOrderHash,
         field_layouts: &'a [InLayout<'a>],
     },
@@ -1244,7 +1244,7 @@ impl std::fmt::Debug for LambdaSet<'_> {
 /// See [Niche].
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 enum NichePriv<'a> {
-    /// Distinguishes captures this proc takes, when it is a part of a lambda set that has multiple
+    /// Distinguishes captures this pbroc takes, when it is a part of a lambda set that has multiple
     /// lambdas of the same name, but different captures.
     Captures(&'a [InLayout<'a>]),
 }
@@ -1265,14 +1265,14 @@ enum NichePriv<'a> {
 /// A captures niche can be attached to a [lambda name][LambdaName] to uniquely identify lambdas
 /// in these scenarios.
 ///
-/// Procedure names with captures niches are typically produced by [find_lambda_name][LambdaSet::find_lambda_name].
+/// Pbrocedure names with captures niches are typically produced by [find_lambda_name][LambdaSet::find_lambda_name].
 /// Captures niches are irrelevant for thunks.
 ///
 /// ## Example
 ///
 /// `fun` has lambda set `[[forcer U64, forcer U8]]` in the following program:
 ///
-/// ```roc
+/// ```broc
 /// capture : _ -> ({} -> Str)
 /// capture = \val ->
 ///     forcer = \{} -> Num.toStr val
@@ -1288,7 +1288,7 @@ enum NichePriv<'a> {
 /// between such differences when constructing the closure capture data that is
 /// return value of `fun`.
 ///
-/// See also https://github.com/roc-lang/roc/issues/3336.
+/// See also https://github.com/roc-lang/broc/issues/3336.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Niche<'a>(NichePriv<'a>);
@@ -1736,7 +1736,7 @@ impl<'a> LambdaSet<'a> {
         argument_layouts: &'a [InLayout<'a>],
     ) -> &'a [InLayout<'a>] {
         let Niche(NichePriv::Captures(captures)) = lambda_name.niche;
-        // TODO(https://github.com/roc-lang/roc/issues/4831): we should turn on this debug-assert;
+        // TODO(https://github.com/roc-lang/broc/issues/4831): we should turn on this debug-assert;
         // however, currently it causes false-positives, because host-exposed functions that are
         // function pointers to platform-exposed functions are compiled as if they are proper
         // functions, despite not appearing in the lambda set.
@@ -1801,7 +1801,7 @@ impl<'a> LambdaSet<'a> {
         closure_var: Variable,
         ret_var: Variable,
     ) -> Cacheable<Result<Self, LayoutProblem>> {
-        roc_tracing::debug!(var = ?closure_var, size = ?lambda_set_size(env.subs, closure_var), "building lambda set layout");
+        broc_tracing::debug!(var = ?closure_var, size = ?lambda_set_size(env.subs, closure_var), "building lambda set layout");
 
         let lambda_set = resolve_lambda_set(env.subs, closure_var);
 
@@ -1926,7 +1926,7 @@ impl<'a> LambdaSet<'a> {
             }
             ResolvedLambdaSet::Unbound => {
                 // The lambda set is unbound which means it must be unused. Just give it the empty lambda set.
-                // See also https://github.com/roc-lang/roc/issues/3163.
+                // See also https://github.com/roc-lang/broc/issues/3163.
                 let lambda_set = env.cache.interner.insert_lambda_set(
                     env.arena,
                     fn_args,
@@ -2014,10 +2014,10 @@ fn resolve_lambda_set(subs: &Subs, mut var: Variable) -> ResolvedLambdaSet {
                 debug_assert!(
                     unspecialized.is_empty(),
                     "unspecialized lambda sets left over during resolution: {:?}, {:?}",
-                    roc_types::subs::SubsFmtContent(subs.get_content_without_compacting(var), subs),
+                    broc_types::subs::SubsFmtContent(subs.get_content_without_compacting(var), subs),
                     subs.uls_of_var
                 );
-                roc_types::pretty_print::push_union(subs, solved, &mut set);
+                broc_types::pretty_print::push_union(subs, solved, &mut set);
                 return ResolvedLambdaSet::Set(set, *recursion_var);
             }
             Content::RecursionVar { structure, .. } => {
@@ -2049,7 +2049,7 @@ fn lambda_set_size(subs: &Subs, var: Variable) -> (usize, usize, usize) {
     let mut max_depth_only_lset = 0;
     let mut total = 0;
 
-    let mut seen_rec_vars = roc_collections::VecSet::default();
+    let mut seen_rec_vars = broc_collections::VecSet::default();
 
     // Run a DFS. I think in general deeply nested lambda sets wind up looking like multi-leaf
     // trees, so I think running the depth first saves space.
@@ -2058,7 +2058,7 @@ fn lambda_set_size(subs: &Subs, var: Variable) -> (usize, usize, usize) {
     while let Some((var, depth_any, depth_lset)) = stack.pop() {
         match subs.get_content_without_compacting(var) {
             // The interesting case
-            Content::LambdaSet(roc_types::subs::LambdaSet {
+            Content::LambdaSet(broc_types::subs::LambdaSet {
                 solved,
                 recursion_var,
                 unspecialized: _,
@@ -2249,7 +2249,7 @@ impl<'a, 'b> Env<'a, 'b> {
                 // but this is not correct; the canonical layout of `[A, B (List r)] as r` is
                 //
                 // Recursive [Unit, (List RecursivePointer)]
-                roc_tracing::debug!(?var, "not reusing cached recursive structure");
+                broc_tracing::debug!(?var, "not reusing cached recursive structure");
                 return false;
             }
         }
@@ -2288,7 +2288,7 @@ macro_rules! cached_or_impl {
             // The computed layout is not cacheable. We'll return it with the criteria that made it
             // non-cacheable.
             inc_stat!($self.cache.$stats, non_insertable);
-            roc_tracing::debug!(?result, ?$var, "not caching");
+            broc_tracing::debug!(?result, ?$var, "not caching");
         }
 
         Cacheable(result, criteria)
@@ -2372,10 +2372,10 @@ impl<'a> Layout<'a> {
         _var: Variable,
         content: Content,
     ) -> Cacheable<LayoutResult<'a>> {
-        use roc_types::subs::Content::*;
+        use broc_types::subs::Content::*;
         match content {
             FlexVar(_) | RigidVar(_) => {
-                roc_debug_flags::dbg_do!(roc_debug_flags::ROC_NO_UNBOUND_LAYOUT, {
+                broc_debug_flags::dbg_do!(broc_debug_flags::ROC_NO_UNBOUND_LAYOUT, {
                     return cacheable(Err(LayoutProblem::UnresolvedTypeVar(_var)));
                 });
 
@@ -2385,7 +2385,7 @@ impl<'a> Layout<'a> {
                 cacheable(Ok(Layout::VOID))
             }
             FlexAbleVar(_, _) | RigidAbleVar(_, _) => {
-                roc_debug_flags::dbg_do!(roc_debug_flags::ROC_NO_UNBOUND_LAYOUT, {
+                broc_debug_flags::dbg_do!(broc_debug_flags::ROC_NO_UNBOUND_LAYOUT, {
                     todo_abilities!("Able var is unbound!");
                 });
 
@@ -2841,15 +2841,15 @@ pub type SeenRecPtrs<'a> = VecSet<InLayout<'a>>;
 impl<'a> Layout<'a> {
     pub fn usize(target_info: TargetInfo) -> InLayout<'a> {
         match target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => Layout::U32,
-            roc_target::PtrWidth::Bytes8 => Layout::U64,
+            broc_target::PtrWidth::Bytes4 => Layout::U32,
+            broc_target::PtrWidth::Bytes8 => Layout::U64,
         }
     }
 
     pub fn isize(target_info: TargetInfo) -> InLayout<'a> {
         match target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => Layout::I32,
-            roc_target::PtrWidth::Bytes8 => Layout::I64,
+            broc_target::PtrWidth::Bytes4 => Layout::I32,
+            broc_target::PtrWidth::Bytes8 => Layout::I64,
         }
     }
 
@@ -2862,10 +2862,10 @@ impl<'a> Layout<'a> {
     }
 
     pub fn int_literal_width_to_int(
-        width: roc_types::num::IntLitWidth,
+        width: broc_types::num::IntLitWidth,
         target_info: TargetInfo,
     ) -> InLayout<'a> {
-        use roc_types::num::IntLitWidth::*;
+        use broc_types::num::IntLitWidth::*;
         match width {
             U8 => Layout::U8,
             U16 => Layout::U16,
@@ -3055,7 +3055,7 @@ fn layout_from_flat_type<'a>(
     env: &mut Env<'a, '_>,
     flat_type: FlatType,
 ) -> Cacheable<LayoutResult<'a>> {
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::FlatType::*;
 
     let arena = env.arena;
     let subs = env.subs;
@@ -3581,7 +3581,7 @@ pub fn union_sorted_tags<'a>(
     env: &mut Env<'a, '_>,
     var: Variable,
 ) -> Result<UnionVariant<'a>, LayoutProblem> {
-    use roc_types::pretty_print::ChasedExt;
+    use broc_types::pretty_print::ChasedExt;
     use Content::*;
 
     let var = if let Content::RecursionVar { structure, .. } =
@@ -3593,7 +3593,7 @@ pub fn union_sorted_tags<'a>(
     };
 
     let mut tags_vec = std::vec::Vec::new();
-    let result = match roc_types::pretty_print::chase_ext_tag_union(env.subs, var, &mut tags_vec) {
+    let result = match broc_types::pretty_print::chase_ext_tag_union(env.subs, var, &mut tags_vec) {
         ChasedExt::Empty => {
             let opt_rec_var = get_recursion_var(env.subs, var);
             let Cacheable(result, _) = union_sorted_tags_help(env, tags_vec, opt_rec_var);
@@ -4259,7 +4259,7 @@ where
 #[cfg(debug_assertions)]
 pub fn ext_var_is_empty_record(subs: &Subs, ext_var: Variable) -> bool {
     // the ext_var is empty
-    let fields = match roc_types::types::gather_fields(subs, RecordFields::empty(), ext_var) {
+    let fields = match broc_types::types::gather_fields(subs, RecordFields::empty(), ext_var) {
         Ok(fields) => fields,
         Err(_) => return false,
     };
@@ -4275,12 +4275,12 @@ pub fn ext_var_is_empty_record(_subs: &Subs, _ext_var: Variable) -> bool {
 
 #[cfg(debug_assertions)]
 pub fn ext_var_is_empty_tag_union(subs: &Subs, tag_ext: TagExt) -> bool {
-    use roc_types::pretty_print::ChasedExt;
+    use broc_types::pretty_print::ChasedExt;
     use Content::*;
 
     // the ext_var is empty
     let mut ext_fields = std::vec::Vec::new();
-    match roc_types::pretty_print::chase_ext_tag_union(subs, tag_ext.var(), &mut ext_fields) {
+    match broc_types::pretty_print::chase_ext_tag_union(subs, tag_ext.var(), &mut ext_fields) {
         ChasedExt::Empty => ext_fields.is_empty(),
         ChasedExt::NonEmpty { content, .. } => {
             match content {
@@ -4306,8 +4306,8 @@ fn layout_from_num_content<'a>(
     content: &Content,
     target_info: TargetInfo,
 ) -> Cacheable<LayoutResult<'a>> {
-    use roc_types::subs::Content::*;
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::Content::*;
+    use broc_types::subs::FlatType::*;
 
     let result = match content {
         RecursionVar { .. } => panic!("recursion var in num"),
@@ -4400,17 +4400,17 @@ impl LayoutId {
         format!("{}_{}_{}", module_string, ident_string, self.0)
     }
 
-    // Returns something like "roc__foo_1_exposed" when given a symbol that interns to "foo"
+    // Returns something like "broc__foo_1_exposed" when given a symbol that interns to "foo"
     // and a LayoutId of 1.
     pub fn to_exposed_symbol_string(self, symbol: Symbol, interns: &Interns) -> String {
         let ident_string = symbol.as_str(interns);
-        format!("roc__{}_{}_exposed", ident_string, self.0)
+        format!("broc__{}_{}_exposed", ident_string, self.0)
     }
 }
 
 struct IdsByLayout<'a> {
     by_id: MutMap<InLayout<'a>, u32>,
-    toplevels_by_id: MutMap<crate::ir::ProcLayout<'a>, u32>,
+    toplevels_by_id: MutMap<crate::ir::PbrocLayout<'a>, u32>,
     next_id: u32,
 }
 
@@ -4444,7 +4444,7 @@ impl<'a> IdsByLayout<'a> {
     }
 
     #[inline(always)]
-    fn insert_toplevel(&mut self, layout: crate::ir::ProcLayout<'a>) -> LayoutId {
+    fn insert_toplevel(&mut self, layout: crate::ir::PbrocLayout<'a>) -> LayoutId {
         match self.toplevels_by_id.entry(layout) {
             Entry::Vacant(vacant) => {
                 let answer = self.next_id;
@@ -4458,7 +4458,7 @@ impl<'a> IdsByLayout<'a> {
     }
 
     #[inline(always)]
-    fn singleton_toplevel(layout: crate::ir::ProcLayout<'a>) -> (Self, LayoutId) {
+    fn singleton_toplevel(layout: crate::ir::PbrocLayout<'a>) -> (Self, LayoutId) {
         let mut toplevels_by_id = HashMap::with_capacity_and_hasher(1, default_hasher());
         toplevels_by_id.insert(layout, 1);
 
@@ -4500,7 +4500,7 @@ impl<'a> LayoutIds<'a> {
     pub fn get_toplevel<'b>(
         &mut self,
         symbol: Symbol,
-        layout: &'b crate::ir::ProcLayout<'a>,
+        layout: &'b crate::ir::PbrocLayout<'a>,
     ) -> LayoutId {
         match self.by_symbol.entry(symbol) {
             Entry::Vacant(vacant) => {

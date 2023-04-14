@@ -1,15 +1,15 @@
 //! Supports evaluating `expect` and printing contextual information when they fail.
 #[cfg(not(windows))]
 use {
-    roc_module::symbol::Interns,
-    roc_mono::{
-        ir::ProcLayout,
+    broc_module::symbol::Interns,
+    broc_mono::{
+        ir::PbrocLayout,
         layout::{GlobalLayoutInterner, LayoutCache, Niche},
     },
-    roc_parse::ast::Expr,
-    roc_repl_eval::{eval::jit_to_ast, ReplAppMemory},
-    roc_target::TargetInfo,
-    roc_types::subs::{Subs, Variable},
+    broc_parse::ast::Expr,
+    broc_repl_eval::{eval::jit_to_ast, ReplAppMemory},
+    broc_target::TargetInfo,
+    broc_types::subs::{Subs, Variable},
 };
 
 #[cfg(not(windows))]
@@ -62,7 +62,7 @@ pub fn get_values<'a>(
             let mut layout_cache = LayoutCache::new(layout_interner.fork(), target_info);
             let layout = layout_cache.from_var(arena, variable, subs).unwrap();
 
-            let proc_layout = ProcLayout {
+            let pbroc_layout = PbrocLayout {
                 arguments: &[],
                 result: layout,
                 niche: Niche::NONE,
@@ -72,7 +72,7 @@ pub fn get_values<'a>(
                 arena,
                 app,
                 "expect_repl_main_fn",
-                proc_layout,
+                pbroc_layout,
                 variable,
                 subs,
                 interns,
@@ -93,10 +93,10 @@ pub fn get_values<'a>(
 mod test {
     use indoc::indoc;
     use pretty_assertions::assert_eq;
-    use roc_gen_llvm::{llvm::build::LlvmBackendMode, run_roc::RocCallResult, run_roc_dylib};
-    use roc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
-    use roc_packaging::cache::RocCacheDir;
-    use roc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
+    use broc_gen_llvm::{llvm::build::LlvmBackendMode, run_broc::BrocCallResult, run_broc_dylib};
+    use broc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
+    use broc_packaging::cache::BrocCacheDir;
+    use broc_reporting::report::{RenderTarget, DEFAULT_PALETTE};
     use target_lexicon::Triple;
 
     use crate::run::expect_mono_module_to_dylib;
@@ -110,12 +110,12 @@ mod test {
         let triple = Triple::host();
         let target = &triple;
 
-        let opt_level = roc_mono::ir::OptLevel::Normal;
+        let opt_level = broc_mono::ir::OptLevel::Normal;
         let target_info = TargetInfo::from(target);
 
         // Step 1: compile the app and generate the .o file
         let src_dir = tempfile::tempdir().unwrap();
-        let filename = src_dir.path().join("Test.roc");
+        let filename = src_dir.path().join("Test.broc");
 
         std::fs::write(&filename, source).unwrap();
 
@@ -126,12 +126,12 @@ mod test {
             threading: Threading::Single,
             exec_mode: ExecutionMode::Test,
         };
-        let loaded = match roc_load::load_and_monomorphize_from_str(
+        let loaded = match broc_load::load_and_monomorphize_from_str(
             arena,
             filename,
             source,
             src_dir.path().to_path_buf(),
-            RocCacheDir::Disallowed,
+            BrocCacheDir::Disallowed,
             load_config,
         ) {
             Ok(m) => m,
@@ -164,9 +164,9 @@ mod test {
         let mut shared_buffer = [0u8; BUFFER_SIZE];
         let mut memory = crate::run::ExpectMemory::from_slice(&mut shared_buffer);
 
-        // communicate the mmapped name to zig/roc
-        let set_shared_buffer = run_roc_dylib!(lib, "set_shared_buffer", (*mut u8, usize), ());
-        let mut result = RocCallResult::default();
+        // communicate the mmapped name to zig/broc
+        let set_shared_buffer = run_broc_dylib!(lib, "set_shared_buffer", (*mut u8, usize), ());
+        let mut result = BrocCallResult::default();
         unsafe { set_shared_buffer((shared_buffer.as_mut_ptr(), BUFFER_SIZE), &mut result) };
 
         let mut writer = Vec::with_capacity(1024);

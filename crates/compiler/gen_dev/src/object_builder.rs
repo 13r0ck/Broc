@@ -7,13 +7,13 @@ use object::{
     Architecture, BinaryFormat, Endianness, RelocationEncoding, RelocationKind, SectionKind,
     SymbolFlags, SymbolKind, SymbolScope,
 };
-use roc_collections::all::MutMap;
-use roc_error_macros::internal_error;
-use roc_module::symbol;
-use roc_module::symbol::Interns;
-use roc_mono::ir::{Proc, ProcLayout};
-use roc_mono::layout::{LayoutIds, STLayoutInterner};
-use roc_target::TargetInfo;
+use broc_collections::all::MutMap;
+use broc_error_macros::internal_error;
+use broc_module::symbol;
+use broc_module::symbol::Interns;
+use broc_mono::ir::{Pbroc, PbrocLayout};
+use broc_mono::layout::{LayoutIds, STLayoutInterner};
+use broc_target::TargetInfo;
 use target_lexicon::{Architecture as TargetArch, BinaryFormat as TargetBF, Triple};
 
 // This is used by some code below which is currently commented out.
@@ -27,7 +27,7 @@ pub fn build_module<'a, 'r>(
     interns: &'r mut Interns,
     layout_interner: &'r mut STLayoutInterner<'a>,
     target: &Triple,
-    procedures: MutMap<(symbol::Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: MutMap<(symbol::Symbol, PbrocLayout<'a>), Pbroc<'a>>,
 ) -> Object<'a> {
     match target {
         Triple {
@@ -119,7 +119,7 @@ fn generate_wrapper<'a, B: Backend<'a>>(
     wraps: String,
 ) {
     let text_section = output.section_id(StandardSection::Text);
-    let proc_symbol = Symbol {
+    let pbroc_symbol = Symbol {
         name: wrapper_name.as_bytes().to_vec(),
         value: 0,
         size: 0,
@@ -129,9 +129,9 @@ fn generate_wrapper<'a, B: Backend<'a>>(
         section: SymbolSection::Section(text_section),
         flags: SymbolFlags::None,
     };
-    let proc_id = output.add_symbol(proc_symbol);
-    let (proc_data, offset) = backend.build_wrapped_jmp();
-    let proc_offset = output.add_symbol_data(proc_id, text_section, proc_data, 16);
+    let pbroc_id = output.add_symbol(pbroc_symbol);
+    let (pbroc_data, offset) = backend.build_wrapped_jmp();
+    let pbroc_offset = output.add_symbol_data(pbroc_id, text_section, pbroc_data, 16);
 
     let name = wraps.as_str().as_bytes();
     // If the symbol is an undefined zig builtin, we need to add it here.
@@ -148,7 +148,7 @@ fn generate_wrapper<'a, B: Backend<'a>>(
     output.add_symbol(symbol);
     if let Some(sym_id) = output.symbol_id(name) {
         let reloc = write::Relocation {
-            offset: offset + proc_offset,
+            offset: offset + pbroc_offset,
             size: 32,
             kind: RelocationKind::PltRelative,
             encoding: RelocationEncoding::X86Branch,
@@ -166,7 +166,7 @@ fn generate_wrapper<'a, B: Backend<'a>>(
 }
 
 fn build_object<'a, B: Backend<'a>>(
-    procedures: MutMap<(symbol::Symbol, ProcLayout<'a>), Proc<'a>>,
+    procedures: MutMap<(symbol::Symbol, PbrocLayout<'a>), Pbroc<'a>>,
     mut backend: B,
     mut output: Object<'a>,
 ) -> Object<'a> {
@@ -175,11 +175,11 @@ fn build_object<'a, B: Backend<'a>>(
     let arena = backend.env().arena;
 
     /*
-    // Commented out because we couldn't figure out how to get it to work on mac - see https://github.com/roc-lang/roc/pull/1323
+    // Commented out because we couldn't figure out how to get it to work on mac - see https://github.com/roc-lang/broc/pull/1323
     let comment = output.add_section(vec![], b".comment".to_vec(), SectionKind::OtherString);
     output.append_section_data(
         comment,
-        format!("\0roc dev backend version {} \0", VERSION).as_bytes(),
+        format!("\0broc dev backend version {} \0", VERSION).as_bytes(),
         1,
     );
     */
@@ -188,50 +188,50 @@ fn build_object<'a, B: Backend<'a>>(
         generate_wrapper(
             &mut backend,
             &mut output,
-            "roc_alloc".into(),
+            "broc_alloc".into(),
             "malloc".into(),
         );
         generate_wrapper(
             &mut backend,
             &mut output,
-            "roc_realloc".into(),
+            "broc_realloc".into(),
             "realloc".into(),
         );
         generate_wrapper(
             &mut backend,
             &mut output,
-            "roc_dealloc".into(),
+            "broc_dealloc".into(),
             "free".into(),
         );
         generate_wrapper(
             &mut backend,
             &mut output,
-            "roc_panic".into(),
-            "roc_builtins.utils.test_panic".into(),
+            "broc_panic".into(),
+            "broc_builtins.utils.test_panic".into(),
         );
     }
 
     // Setup layout_ids for procedure calls.
     let mut layout_ids = LayoutIds::default();
-    let mut procs = Vec::with_capacity_in(procedures.len(), arena);
+    let mut pbrocs = Vec::with_capacity_in(procedures.len(), arena);
 
     // Names and linker data for user procedures
-    for ((sym, layout), proc) in procedures {
-        build_proc_symbol(
+    for ((sym, layout), pbroc) in procedures {
+        build_pbroc_symbol(
             &mut output,
             &mut layout_ids,
-            &mut procs,
+            &mut pbrocs,
             &backend,
             sym,
             layout,
-            proc,
+            pbroc,
         )
     }
 
     // Build procedures from user code
     let mut relocations = bumpalo::vec![in arena];
-    for (fn_name, section_id, proc_id, proc) in procs {
-        build_proc(
+    for (fn_name, section_id, pbroc_id, pbroc) in pbrocs {
+        build_pbroc(
             &mut output,
             &mut backend,
             &mut relocations,
@@ -239,28 +239,28 @@ fn build_object<'a, B: Backend<'a>>(
             data_section,
             fn_name,
             section_id,
-            proc_id,
-            proc,
+            pbroc_id,
+            pbroc,
         )
     }
 
-    // Generate IR for specialized helper procs (refcounting & equality)
-    let helper_procs = {
-        let (module_id, _interner, interns, helper_proc_gen) = backend.module_interns_helpers_mut();
+    // Generate IR for specialized helper pbrocs (refcounting & equality)
+    let helper_pbrocs = {
+        let (module_id, _interner, interns, helper_pbroc_gen) = backend.module_interns_helpers_mut();
 
         let ident_ids = interns.all_ident_ids.get_mut(&module_id).unwrap();
-        let helper_procs = helper_proc_gen.take_procs();
+        let helper_pbrocs = helper_pbroc_gen.take_pbrocs();
         module_id.register_debug_idents(ident_ids);
 
-        helper_procs
+        helper_pbrocs
     };
 
     let empty = bumpalo::collections::Vec::new_in(arena);
-    let helper_symbols_and_layouts = std::mem::replace(backend.helper_proc_symbols_mut(), empty);
-    let mut helper_names_symbols_procs = Vec::with_capacity_in(helper_procs.len(), arena);
+    let helper_symbols_and_layouts = std::mem::replace(backend.helper_pbroc_symbols_mut(), empty);
+    let mut helper_names_symbols_pbrocs = Vec::with_capacity_in(helper_pbrocs.len(), arena);
 
     // Names and linker data for helpers
-    for ((sym, layout), proc) in helper_symbols_and_layouts.into_iter().zip(helper_procs) {
+    for ((sym, layout), pbroc) in helper_symbols_and_layouts.into_iter().zip(helper_pbrocs) {
         let fn_name = backend.function_symbol_to_string(
             sym,
             layout.arguments.iter().copied(),
@@ -268,13 +268,13 @@ fn build_object<'a, B: Backend<'a>>(
             layout.result,
         );
 
-        if let Some(proc_id) = output.symbol_id(fn_name.as_bytes()) {
-            if let SymbolSection::Section(section_id) = output.symbol(proc_id).section {
-                helper_names_symbols_procs.push((fn_name, section_id, proc_id, proc));
+        if let Some(pbroc_id) = output.symbol_id(fn_name.as_bytes()) {
+            if let SymbolSection::Section(section_id) = output.symbol(pbroc_id).section {
+                helper_names_symbols_pbrocs.push((fn_name, section_id, pbroc_id, pbroc));
                 continue;
             }
         } else {
-            // The symbol isn't defined yet and will just be used by other rc procs.
+            // The symbol isn't defined yet and will just be used by other rc pbrocs.
             let section_id = output.add_section(
                 output.segment_name(StandardSegment::Text).to_vec(),
                 format!(".text.{:x}", sym.as_u64()).as_bytes().to_vec(),
@@ -291,16 +291,16 @@ fn build_object<'a, B: Backend<'a>>(
                 section: SymbolSection::Section(section_id),
                 flags: SymbolFlags::None,
             };
-            let proc_id = output.add_symbol(rc_symbol);
-            helper_names_symbols_procs.push((fn_name, section_id, proc_id, proc));
+            let pbroc_id = output.add_symbol(rc_symbol);
+            helper_names_symbols_pbrocs.push((fn_name, section_id, pbroc_id, pbroc));
             continue;
         }
         internal_error!("failed to create rc fn for symbol {:?}", sym);
     }
 
     // Build helpers
-    for (fn_name, section_id, proc_id, proc) in helper_names_symbols_procs {
-        build_proc(
+    for (fn_name, section_id, pbroc_id, pbroc) in helper_names_symbols_pbrocs {
+        build_pbroc(
             &mut output,
             &mut backend,
             &mut relocations,
@@ -308,8 +308,8 @@ fn build_object<'a, B: Backend<'a>>(
             data_section,
             fn_name,
             section_id,
-            proc_id,
-            proc,
+            pbroc_id,
+            pbroc,
         )
     }
 
@@ -323,14 +323,14 @@ fn build_object<'a, B: Backend<'a>>(
     output
 }
 
-fn build_proc_symbol<'a, B: Backend<'a>>(
+fn build_pbroc_symbol<'a, B: Backend<'a>>(
     output: &mut Object<'a>,
     layout_ids: &mut LayoutIds<'a>,
-    procs: &mut Vec<'a, (String, SectionId, SymbolId, Proc<'a>)>,
+    pbrocs: &mut Vec<'a, (String, SectionId, SymbolId, Pbroc<'a>)>,
     backend: &B,
-    sym: roc_module::symbol::Symbol,
-    layout: ProcLayout<'a>,
-    proc: Proc<'a>,
+    sym: broc_module::symbol::Symbol,
+    layout: PbrocLayout<'a>,
+    pbroc: Pbroc<'a>,
 ) {
     let base_name = backend.function_symbol_to_string(
         sym,
@@ -353,7 +353,7 @@ fn build_proc_symbol<'a, B: Backend<'a>>(
         SectionKind::Text,
     );
 
-    let proc_symbol = Symbol {
+    let pbroc_symbol = Symbol {
         name: fn_name.as_bytes().to_vec(),
         value: 0,
         size: 0,
@@ -369,12 +369,12 @@ fn build_proc_symbol<'a, B: Backend<'a>>(
         section: SymbolSection::Section(section_id),
         flags: SymbolFlags::None,
     };
-    let proc_id = output.add_symbol(proc_symbol);
-    procs.push((fn_name, section_id, proc_id, proc));
+    let pbroc_id = output.add_symbol(pbroc_symbol);
+    pbrocs.push((fn_name, section_id, pbroc_id, pbroc));
 }
 
 #[allow(clippy::too_many_arguments)]
-fn build_proc<'a, B: Backend<'a>>(
+fn build_pbroc<'a, B: Backend<'a>>(
     output: &mut Object,
     backend: &mut B,
     relocations: &mut Vec<'a, (SectionId, object::write::Relocation)>,
@@ -382,12 +382,12 @@ fn build_proc<'a, B: Backend<'a>>(
     data_section: SectionId,
     fn_name: String,
     section_id: SectionId,
-    proc_id: SymbolId,
-    proc: Proc<'a>,
+    pbroc_id: SymbolId,
+    pbroc: Pbroc<'a>,
 ) {
     let mut local_data_index = 0;
-    let (proc_data, relocs, rc_proc_names) = backend.build_proc(proc, layout_ids);
-    let proc_offset = output.add_symbol_data(proc_id, section_id, &proc_data, 16);
+    let (pbroc_data, relocs, rc_pbroc_names) = backend.build_pbroc(pbroc, layout_ids);
+    let pbroc_offset = output.add_symbol_data(pbroc_id, section_id, &pbroc_data, 16);
     for reloc in relocs.iter() {
         let elfreloc = match reloc {
             Relocation::LocalData { offset, data } => {
@@ -407,7 +407,7 @@ fn build_proc<'a, B: Backend<'a>>(
                 let data_id = output.add_symbol(data_symbol);
                 output.add_symbol_data(data_id, data_section, data, 4);
                 write::Relocation {
-                    offset: offset + proc_offset,
+                    offset: offset + pbroc_offset,
                     size: 32,
                     kind: RelocationKind::Relative,
                     encoding: RelocationEncoding::Generic,
@@ -418,7 +418,7 @@ fn build_proc<'a, B: Backend<'a>>(
             Relocation::LinkedData { offset, name } => {
                 if let Some(sym_id) = output.symbol_id(name.as_bytes()) {
                     write::Relocation {
-                        offset: offset + proc_offset,
+                        offset: offset + pbroc_offset,
                         size: 32,
                         kind: RelocationKind::GotRelative,
                         encoding: RelocationEncoding::Generic,
@@ -430,8 +430,8 @@ fn build_proc<'a, B: Backend<'a>>(
                 }
             }
             Relocation::LinkedFunction { offset, name } => {
-                // If the symbol is an undefined roc function, we need to add it here.
-                if output.symbol_id(name.as_bytes()).is_none() && name.starts_with("roc_") {
+                // If the symbol is an undefined broc function, we need to add it here.
+                if output.symbol_id(name.as_bytes()).is_none() && name.starts_with("broc_") {
                     let builtin_symbol = Symbol {
                         name: name.as_bytes().to_vec(),
                         value: 0,
@@ -446,7 +446,7 @@ fn build_proc<'a, B: Backend<'a>>(
                 }
                 // If the symbol is an undefined reference counting procedure, we need to add it here.
                 if output.symbol_id(name.as_bytes()).is_none() {
-                    for (sym, rc_name) in rc_proc_names.iter() {
+                    for (sym, rc_name) in rc_pbroc_names.iter() {
                         if name == rc_name {
                             let section_id = output.add_section(
                                 output.segment_name(StandardSegment::Text).to_vec(),
@@ -471,7 +471,7 @@ fn build_proc<'a, B: Backend<'a>>(
 
                 if let Some(sym_id) = output.symbol_id(name.as_bytes()) {
                     write::Relocation {
-                        offset: offset + proc_offset,
+                        offset: offset + pbroc_offset,
                         size: 32,
                         kind: RelocationKind::PltRelative,
                         encoding: RelocationEncoding::X86Branch,

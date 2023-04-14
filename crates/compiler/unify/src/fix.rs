@@ -1,7 +1,7 @@
 //! Fix fixpoints of recursive types.
 
-use roc_error_macros::internal_error;
-use roc_types::subs::{Content, FlatType, GetSubsSlice, Subs, Variable};
+use broc_error_macros::internal_error;
+use broc_types::subs::{Content, FlatType, GetSubsSlice, Subs, Variable};
 
 struct Update {
     source_of_truth: Variable,
@@ -303,8 +303,8 @@ fn find_chain(subs: &Subs, left: Variable, right: Variable) -> impl Iterator<Ite
                 | (EmptyTagUnion, EmptyTagUnion) => Err(()),
                 _ => internal_error!(
                     "structures {:?} and {:?} do not unify; they should never have been involved in fixing!",
-                    roc_types::subs::SubsFmtContent(&Structure(*left_s), subs),
-                    roc_types::subs::SubsFmtContent(&Structure(*right_s), subs)
+                    broc_types::subs::SubsFmtContent(&Structure(*left_s), subs),
+                    broc_types::subs::SubsFmtContent(&Structure(*right_s), subs)
                 ),
             },
             _ => internal_error!("types do not unify; they should never have been involved in fixing!"),

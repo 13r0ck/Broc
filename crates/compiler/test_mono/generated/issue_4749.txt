@@ -375,7 +375,7 @@ procedure Test.3 ():
     let Test.8 : {} = CallByName Json.2;
     inc Test.0;
     let Test.1 : [C [C List U8, C ], C Str] = CallByName Decode.27 Test.0 Test.8;
-    let Test.7 : Str = "Roc";
+    let Test.7 : Str = "Broc";
     let Test.6 : [C [C List U8, C ], C Str] = TagId(1) Test.7;
     inc Test.1;
     let Test.5 : Int1 = CallByName Bool.11 Test.1 Test.6;

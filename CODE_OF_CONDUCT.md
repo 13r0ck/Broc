@@ -1,8 +1,8 @@
-# Code of Conduct for the Roc GitHub Repository and Zulip Chat
+# Code of Conduct for the Broc GitHub Repository and Zulip Chat
 
 ## Our Pledge
 
-In the interest of fostering an open and welcoming environment, we as participants in the Roc GitHub repository and Zulip Chat pledge to make participation in our project and our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
+In the interest of fostering an open and welcoming environment, we as participants in the Broc GitHub repository and Zulip Chat pledge to make participation in our project and our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
 
 ## Our Standards
 
@@ -31,7 +31,7 @@ Moderators have the right and responsibility to remove, edit, or reject comments
 
 ## Scope
 
-This Code of Conduct applies within the Roc GitHub repository as well as the Roc Zulip Chat. It also applies when an individual is officially representing the project or its community in public spaces. Examples of representing the project or community include using an official roc-lang.org e-mail address, posting via an official social media account, or acting as the project's appointed representative at an online or offline event. Representation of the project may be further defined and clarified by moderators.
+This Code of Conduct applies within the Broc GitHub repository as well as the Broc Zulip Chat. It also applies when an individual is officially representing the project or its community in public spaces. Examples of representing the project or community include using an official roc-lang.org e-mail address, posting via an official social media account, or acting as the project's appointed representative at an online or offline event. Representation of the project may be further defined and clarified by moderators.
 
 ## Reporting
 

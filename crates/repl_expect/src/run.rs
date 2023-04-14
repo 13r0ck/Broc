@@ -9,25 +9,25 @@ use std::{
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
 use inkwell::context::Context;
-use roc_build::link::llvm_module_to_dylib;
-use roc_can::expr::ExpectLookup;
-use roc_collections::{MutSet, VecMap};
-use roc_error_macros::internal_error;
-use roc_gen_llvm::{
-    llvm::{build::LlvmBackendMode, externs::add_default_roc_externs},
-    run_roc::RocCallResult,
-    run_roc_dylib,
+use broc_build::link::llvm_module_to_dylib;
+use broc_can::expr::ExpectLookup;
+use broc_collections::{MutSet, VecMap};
+use broc_error_macros::internal_error;
+use broc_gen_llvm::{
+    llvm::{build::LlvmBackendMode, externs::add_default_broc_externs},
+    run_broc::BrocCallResult,
+    run_broc_dylib,
 };
-use roc_load::{Expectations, MonomorphizedModule};
-use roc_module::symbol::{Interns, ModuleId, Symbol};
-use roc_mono::{
+use broc_load::{Expectations, MonomorphizedModule};
+use broc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_mono::{
     ir::OptLevel,
     layout::{GlobalLayoutInterner, STLayoutInterner},
 };
-use roc_region::all::Region;
-use roc_reporting::{error::expect::Renderer, report::RenderTarget};
-use roc_target::TargetInfo;
-use roc_types::subs::Subs;
+use broc_region::all::Region;
+use broc_reporting::{error::expect::Renderer, report::RenderTarget};
+use broc_target::TargetInfo;
+use broc_types::subs::Subs;
 use target_lexicon::Triple;
 
 pub struct ExpectMemory<'a> {
@@ -88,7 +88,7 @@ impl<'a> ExpectMemory<'a> {
 
             if ptr as usize == usize::MAX {
                 // ptr = -1
-                roc_error_macros::internal_error!("failed to mmap shared pointer")
+                broc_error_macros::internal_error!("failed to mmap shared pointer")
             }
 
             // fill the buffer with a fill pattern
@@ -109,12 +109,12 @@ impl<'a> ExpectMemory<'a> {
     }
 
     fn set_shared_buffer(&mut self, lib: &libloading::Library) {
-        let set_shared_buffer = run_roc_dylib!(lib, "set_shared_buffer", (*mut u8, usize), ());
-        let mut result = RocCallResult::default();
+        let set_shared_buffer = run_broc_dylib!(lib, "set_shared_buffer", (*mut u8, usize), ());
+        let mut result = BrocCallResult::default();
         unsafe { set_shared_buffer((self.ptr, self.length), &mut result) };
     }
 
-    pub fn wait_for_child(&self, sigchld: Arc<AtomicBool>) -> ChildProcessMsg {
+    pub fn wait_for_child(&self, sigchld: Arc<AtomicBool>) -> ChildPbrocessMsg {
         let sequence = ExpectSequence { ptr: self.ptr };
         sequence.wait_for_child(sigchld)
     }
@@ -136,7 +136,7 @@ pub fn run_inline_expects<'a, W: std::io::Write>(
     expectations: &mut VecMap<ModuleId, Expectations>,
     expects: ExpectFunctions<'_>,
 ) -> std::io::Result<(usize, usize)> {
-    let shm_name = format!("/roc_expect_buffer_{}", std::process::id());
+    let shm_name = format!("/broc_expect_buffer_{}", std::process::id());
     let mut memory = ExpectMemory::create_or_reuse_mmap(&shm_name);
 
     run_expects_with_memory(
@@ -163,7 +163,7 @@ pub fn run_toplevel_expects<'a, W: std::io::Write>(
     expectations: &mut VecMap<ModuleId, Expectations>,
     expects: ExpectFunctions<'_>,
 ) -> std::io::Result<(usize, usize)> {
-    let shm_name = format!("/roc_expect_buffer_{}", std::process::id());
+    let shm_name = format!("/broc_expect_buffer_{}", std::process::id());
     let mut memory = ExpectMemory::create_or_reuse_mmap(&shm_name);
 
     run_expects_with_memory(
@@ -249,7 +249,7 @@ fn run_expect_pure<'a, W: std::io::Write>(
     shared_memory: &mut ExpectMemory,
     expect: ToplevelExpect<'_>,
 ) -> std::io::Result<bool> {
-    use roc_gen_llvm::try_run_jit_function;
+    use broc_gen_llvm::try_run_jit_function;
 
     let sequence = ExpectSequence::new(shared_memory.ptr.cast());
 
@@ -267,8 +267,8 @@ fn run_expect_pure<'a, W: std::io::Write>(
 
         let renderer = Renderer::new(arena, interns, render_target, module_id, filename, &source);
 
-        if let Err((roc_panic_message, _roc_panic_tag)) = result {
-            renderer.render_panic(writer, &roc_panic_message, expect.region)?;
+        if let Err((broc_panic_message, _broc_panic_tag)) = result {
+            renderer.render_panic(writer, &broc_panic_message, expect.region)?;
         } else {
             let mut offset = ExpectSequence::START_OFFSET;
 
@@ -315,7 +315,7 @@ fn run_expect_fx<'a, W: std::io::Write>(
         0 => unsafe {
             // we are the child
 
-            use roc_gen_llvm::try_run_jit_function;
+            use broc_gen_llvm::try_run_jit_function;
 
             let mut child_memory = parent_memory.reuse_mmap().unwrap();
 
@@ -327,7 +327,7 @@ fn run_expect_fx<'a, W: std::io::Write>(
                 try_run_jit_function!(lib, expect.name, (), |v: ()| v);
 
             if let Err((msg, _)) = result {
-                panic!("roc panic {}", msg);
+                panic!("broc panic {}", msg);
             }
 
             if sequence.count_failures() > 0 {
@@ -623,7 +623,7 @@ impl ExpectSequence {
         unsafe { *(self.ptr as *const usize).add(Self::COUNT_INDEX) }
     }
 
-    fn wait_for_child(&self, sigchld: Arc<AtomicBool>) -> ChildProcessMsg {
+    fn wait_for_child(&self, sigchld: Arc<AtomicBool>) -> ChildPbrocessMsg {
         use std::sync::atomic::Ordering;
         let ptr = self.ptr as *const u32;
         let atomic_ptr: *const AtomicU32 = unsafe { ptr.add(5).cast() };
@@ -631,13 +631,13 @@ impl ExpectSequence {
 
         loop {
             if sigchld.load(Ordering::Relaxed) {
-                break ChildProcessMsg::Terminate;
+                break ChildPbrocessMsg::Terminate;
             }
 
             match atomic.load(Ordering::Acquire) {
                 0 => std::hint::spin_loop(),
-                1 => break ChildProcessMsg::Expect,
-                2 => break ChildProcessMsg::Dbg,
+                1 => break ChildPbrocessMsg::Expect,
+                2 => break ChildPbrocessMsg::Dbg,
                 n => panic!("invalid atomic value set by the child: {:#x}", n),
             }
         }
@@ -653,7 +653,7 @@ impl ExpectSequence {
     }
 }
 
-pub enum ChildProcessMsg {
+pub enum ChildPbrocessMsg {
     Expect = 1,
     Dbg = 2,
     Terminate = 3,
@@ -724,18 +724,18 @@ pub fn expect_mono_module_to_dylib<'a>(
 
     let context = Context::create();
     let builder = context.create_builder();
-    let module = arena.alloc(roc_gen_llvm::llvm::build::module_from_builtins(
+    let module = arena.alloc(broc_gen_llvm::llvm::build::module_from_builtins(
         &target, &context, "",
     ));
 
     let module = arena.alloc(module);
     let (module_pass, _function_pass) =
-        roc_gen_llvm::llvm::build::construct_optimization_passes(module, opt_level);
+        broc_gen_llvm::llvm::build::construct_optimization_passes(module, opt_level);
 
-    let (dibuilder, compile_unit) = roc_gen_llvm::llvm::build::Env::new_debug_info(module);
+    let (dibuilder, compile_unit) = broc_gen_llvm::llvm::build::Env::new_debug_info(module);
 
-    // Compile and add all the Procs before adding main
-    let env = roc_gen_llvm::llvm::build::Env {
+    // Compile and add all the Pbrocs before adding main
+    let env = broc_gen_llvm::llvm::build::Env {
         arena,
         builder: &builder,
         dibuilder: &dibuilder,
@@ -749,9 +749,9 @@ pub fn expect_mono_module_to_dylib<'a>(
         exposed_to_host: MutSet::default(),
     };
 
-    // Add roc_alloc, roc_realloc, and roc_dealloc, since the repl has no
+    // Add broc_alloc, broc_realloc, and broc_dealloc, since the repl has no
     // platform to provide them.
-    add_default_roc_externs(&env);
+    add_default_broc_externs(&env);
 
     let capacity = toplevel_expects.pure.len() + toplevel_expects.fx.len();
     let mut expect_symbols = BumpVec::with_capacity_in(capacity, env.arena);
@@ -759,7 +759,7 @@ pub fn expect_mono_module_to_dylib<'a>(
     expect_symbols.extend(toplevel_expects.pure.keys().copied());
     expect_symbols.extend(toplevel_expects.fx.keys().copied());
 
-    let expect_names = roc_gen_llvm::llvm::build::build_procedures_expose_expects(
+    let expect_names = broc_gen_llvm::llvm::build::build_procedures_expose_expects(
         &env,
         &mut layout_interner,
         opt_level,

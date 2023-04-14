@@ -11,7 +11,7 @@ use crate::helpers::wasm::assert_evals_to;
 #[allow(unused_imports)]
 use indoc::indoc;
 #[allow(unused_imports)]
-use roc_std::{RocDec, RocOrder, RocResult};
+use broc_std::{BrocDec, BrocOrder, BrocResult};
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-dev", feature = "gen-wasm"))]
@@ -429,7 +429,7 @@ fn dec_float_alias() {
                     x
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("2.1"),
+        BrocDec::from_str_to_i128_unsafe("2.1"),
         i128
     );
 }
@@ -482,13 +482,13 @@ fn f64_sqrt_checked_0() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn f64_sqrt_checked_positive() {
-    assert_evals_to!("Num.sqrtChecked 100", RocResult::ok(10.0), RocResult<f64, ()>);
+    assert_evals_to!("Num.sqrtChecked 100", BrocResult::ok(10.0), BrocResult<f64, ()>);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn f64_sqrt_checked_negative() {
-    assert_evals_to!("Num.sqrtChecked -1f64", RocResult::err(()), RocResult<f64, ()>);
+    assert_evals_to!("Num.sqrtChecked -1f64", BrocResult::err(()), BrocResult<f64, ()>);
 }
 
 #[test]
@@ -500,13 +500,13 @@ fn f64_log() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn f64_log_checked_one() {
-    assert_evals_to!("Num.logChecked 1", RocResult::ok(0.0), RocResult<f64, ()>);
+    assert_evals_to!("Num.logChecked 1", BrocResult::ok(0.0), BrocResult<f64, ()>);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn f64_log_checked_zero() {
-    assert_evals_to!("Num.logChecked 0", RocResult::err(()), RocResult<f64, ()>);
+    assert_evals_to!("Num.logChecked 0", BrocResult::err(()), BrocResult<f64, ()>);
 }
 
 #[test]
@@ -575,7 +575,7 @@ fn various_sized_abs() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 #[should_panic(
-    expected = r#"Roc failed with message: "integer absolute overflowed because its argument is the minimum value"#
+    expected = r#"Broc failed with message: "integer absolute overflowed because its argument is the minimum value"#
 )]
 fn abs_min_int_overflow() {
     assert_evals_to!(
@@ -645,7 +645,7 @@ fn gen_add_dec() {
                     z
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("5.2"),
+        BrocDec::from_str_to_i128_unsafe("5.2"),
         i128
     );
 }
@@ -751,7 +751,7 @@ fn gen_div_dec() {
                     x / y
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("3.333333333333333333"),
+        BrocDec::from_str_to_i128_unsafe("3.333333333333333333"),
         i128
     );
 }
@@ -773,7 +773,7 @@ fn gen_div_checked_dec() {
                         Err _ -> -1
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("3.333333333333333333"),
+        BrocDec::from_str_to_i128_unsafe("3.333333333333333333"),
         i128
     );
 }
@@ -794,7 +794,7 @@ fn gen_div_checked_by_zero_dec() {
                         Err _ -> -1
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("-1"),
+        BrocDec::from_str_to_i128_unsafe("-1"),
         i128
     );
 }
@@ -1019,7 +1019,7 @@ fn gen_sub_dec() {
                     (x - y) - z
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("-3.9"),
+        BrocDec::from_str_to_i128_unsafe("-3.9"),
         i128
     );
 }
@@ -1042,7 +1042,7 @@ fn gen_mul_dec() {
                     x * y * z
                 "#
         ),
-        RocDec::from_str_to_i128_unsafe("48.0"),
+        BrocDec::from_str_to_i128_unsafe("48.0"),
         i128
     );
 }
@@ -1569,7 +1569,7 @@ fn int_negate() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 #[should_panic(
-    expected = r#"Roc failed with message: "integer negation overflowed because its argument is the minimum value"#
+    expected = r#"Broc failed with message: "integer negation overflowed because its argument is the minimum value"#
 )]
 fn neg_min_int_overflow() {
     assert_evals_to!(
@@ -1716,17 +1716,17 @@ fn float_to_float() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn int_compare() {
-    assert_evals_to!("Num.compare 0 1", RocOrder::Lt, RocOrder);
-    assert_evals_to!("Num.compare 1 1", RocOrder::Eq, RocOrder);
-    assert_evals_to!("Num.compare 1 0", RocOrder::Gt, RocOrder);
+    assert_evals_to!("Num.compare 0 1", BrocOrder::Lt, BrocOrder);
+    assert_evals_to!("Num.compare 1 1", BrocOrder::Eq, BrocOrder);
+    assert_evals_to!("Num.compare 1 0", BrocOrder::Gt, BrocOrder);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn float_compare() {
-    assert_evals_to!("Num.compare 0.01 3.14", RocOrder::Lt, RocOrder);
-    assert_evals_to!("Num.compare 3.14 3.14", RocOrder::Eq, RocOrder);
-    assert_evals_to!("Num.compare 3.14 0.01", RocOrder::Gt, RocOrder);
+    assert_evals_to!("Num.compare 0.01 3.14", BrocOrder::Lt, BrocOrder);
+    assert_evals_to!("Num.compare 3.14 3.14", BrocOrder::Eq, BrocOrder);
+    assert_evals_to!("Num.compare 3.14 0.01", BrocOrder::Gt, BrocOrder);
 }
 
 #[test]
@@ -1761,7 +1761,7 @@ fn atan() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = r#"Roc failed with message: "integer addition overflowed!"#)]
+#[should_panic(expected = r#"Broc failed with message: "integer addition overflowed!"#)]
 fn int_add_overflow() {
     assert_evals_to!(
         indoc!(
@@ -1779,8 +1779,8 @@ fn int_add_overflow() {
 fn int_add_checked_ok() {
     assert_evals_to!(
         "Num.addChecked 1 2",
-        RocResult::ok(3),
-        RocResult<i64, ()>
+        BrocResult::ok(3),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1789,8 +1789,8 @@ fn int_add_checked_ok() {
 fn int_add_checked_err() {
     assert_evals_to!(
         "Num.addChecked 9_223_372_036_854_775_807 1",
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1809,8 +1809,8 @@ fn int_add_wrap() {
 fn float_add_checked_pass() {
     assert_evals_to!(
         "Num.addChecked 1.0 0.0",
-        RocResult::ok(1.0),
-        RocResult<f64, ()>
+        BrocResult::ok(1.0),
+        BrocResult<f64, ()>
     );
 }
 
@@ -1819,8 +1819,8 @@ fn float_add_checked_pass() {
 fn float_add_checked_fail() {
     assert_evals_to!(
         "Num.addChecked 1.7976931348623157e308 1.7976931348623157e308",
-        RocResult::err(()),
-        RocResult<f64, ()>
+        BrocResult::err(()),
+        BrocResult<f64, ()>
     );
 }
 
@@ -1836,7 +1836,7 @@ fn float_add_overflow() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = r#"Roc failed with message: "integer subtraction overflowed!"#)]
+#[should_panic(expected = r#"Broc failed with message: "integer subtraction overflowed!"#)]
 fn int_sub_overflow() {
     assert_evals_to!("-9_223_372_036_854_775_808 - 1", 0, i64);
 }
@@ -1921,7 +1921,7 @@ fn float_sub_checked() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = r#"Roc failed with message: "integer multiplication overflowed!"#)]
+#[should_panic(expected = r#"Broc failed with message: "integer multiplication overflowed!"#)]
 fn int_positive_mul_overflow() {
     assert_evals_to!(
         indoc!(
@@ -1936,7 +1936,7 @@ fn int_positive_mul_overflow() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = r#"Roc failed with message: "integer multiplication overflowed!"#)]
+#[should_panic(expected = r#"Broc failed with message: "integer multiplication overflowed!"#)]
 fn int_negative_mul_overflow() {
     assert_evals_to!(
         indoc!(
@@ -3115,256 +3115,256 @@ fn when_on_i16() {
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr 1234"#, RocStr::from("1234"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1"#, RocStr::from("-1"), RocStr);
+    assert_evals_to!(r#"Num.toStr 1234"#, BrocStr::from("1234"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1"#, BrocStr::from("-1"), BrocStr);
 
     let max = format!("{}", i64::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxI64"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 
     let min = format!("{}", i64::MIN);
     assert_evals_to!(
         r#"Num.toStr Num.minI64"#,
-        RocStr::from(min.as_str()),
-        RocStr
+        BrocStr::from(min.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_u8() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr 0u8"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1u8"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10u8"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr 0u8"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1u8"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10u8"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", u8::MAX);
-    assert_evals_to!(r#"Num.toStr Num.maxU8"#, RocStr::from(max.as_str()), RocStr);
+    assert_evals_to!(r#"Num.toStr Num.maxU8"#, BrocStr::from(max.as_str()), BrocStr);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_u16() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr 0u16"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1u16"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10u16"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr 0u16"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1u16"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10u16"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", u16::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxU16"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_u32() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr 0u32"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1u32"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10u32"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr 0u32"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1u32"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10u32"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", u32::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxU32"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_u64() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr 0u64"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1u64"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10u64"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr 0u64"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1u64"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10u64"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", u64::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxU64"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_i8() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10i8"#, RocStr::from("-10"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1i8"#, RocStr::from("-1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0i8"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1i8"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10i8"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10i8"#, BrocStr::from("-10"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1i8"#, BrocStr::from("-1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0i8"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1i8"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10i8"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", i8::MAX);
-    assert_evals_to!(r#"Num.toStr Num.maxI8"#, RocStr::from(max.as_str()), RocStr);
+    assert_evals_to!(r#"Num.toStr Num.maxI8"#, BrocStr::from(max.as_str()), BrocStr);
 
     let max = format!("{}", i8::MIN);
-    assert_evals_to!(r#"Num.toStr Num.minI8"#, RocStr::from(max.as_str()), RocStr);
+    assert_evals_to!(r#"Num.toStr Num.minI8"#, BrocStr::from(max.as_str()), BrocStr);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_i16() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10i16"#, RocStr::from("-10"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1i16"#, RocStr::from("-1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0i16"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1i16"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10i16"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10i16"#, BrocStr::from("-10"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1i16"#, BrocStr::from("-1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0i16"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1i16"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10i16"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", i16::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxI16"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 
     let max = format!("{}", i16::MIN);
     assert_evals_to!(
         r#"Num.toStr Num.minI16"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_i32() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10i32"#, RocStr::from("-10"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1i32"#, RocStr::from("-1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0i32"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1i32"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10i32"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10i32"#, BrocStr::from("-10"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1i32"#, BrocStr::from("-1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0i32"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1i32"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10i32"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", i32::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxI32"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 
     let max = format!("{}", i32::MIN);
     assert_evals_to!(
         r#"Num.toStr Num.minI32"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_i64() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10i64"#, RocStr::from("-10"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1i64"#, RocStr::from("-1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0i64"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1i64"#, RocStr::from("1"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10i64"#, RocStr::from("10"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10i64"#, BrocStr::from("-10"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1i64"#, BrocStr::from("-1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0i64"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1i64"#, BrocStr::from("1"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10i64"#, BrocStr::from("10"), BrocStr);
 
     let max = format!("{}", i64::MAX);
     assert_evals_to!(
         r#"Num.toStr Num.maxI64"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 
     let max = format!("{}", i64::MIN);
     assert_evals_to!(
         r#"Num.toStr Num.minI64"#,
-        RocStr::from(max.as_str()),
-        RocStr
+        BrocStr::from(max.as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_f32() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10.75f32"#, RocStr::from("-10.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1.75f32"#, RocStr::from("-1.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0f32"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1.75f32"#, RocStr::from("1.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10.75f32"#, RocStr::from("10.75"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10.75f32"#, BrocStr::from("-10.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1.75f32"#, BrocStr::from("-1.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0f32"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1.75f32"#, BrocStr::from("1.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10.75f32"#, BrocStr::from("10.75"), BrocStr);
 
     assert_evals_to!(
         r#"Num.toStr Num.maxF32"#,
-        RocStr::from("340282346638528860000000000000000000000"),
-        RocStr
+        BrocStr::from("340282346638528860000000000000000000000"),
+        BrocStr
     );
 
     assert_evals_to!(
         r#"Num.toStr Num.minF32"#,
-        RocStr::from("-340282346638528860000000000000000000000"),
-        RocStr
+        BrocStr::from("-340282346638528860000000000000000000000"),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_f64() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10.75f64"#, RocStr::from("-10.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1.75f64"#, RocStr::from("-1.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0f64"#, RocStr::from("0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1.75f64"#, RocStr::from("1.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10.75f64"#, RocStr::from("10.75"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10.75f64"#, BrocStr::from("-10.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1.75f64"#, BrocStr::from("-1.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0f64"#, BrocStr::from("0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1.75f64"#, BrocStr::from("1.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10.75f64"#, BrocStr::from("10.75"), BrocStr);
 
     assert_evals_to!(
         r#"Num.toStr Num.maxF64"#,
-        RocStr::from(f64::MAX.to_string().as_str()),
-        RocStr
+        BrocStr::from(f64::MAX.to_string().as_str()),
+        BrocStr
     );
 
     assert_evals_to!(
         r#"Num.toStr Num.minF64"#,
-        RocStr::from(f64::MIN.to_string().as_str()),
-        RocStr
+        BrocStr::from(f64::MIN.to_string().as_str()),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn num_to_str_dec() {
-    use roc_std::RocStr;
+    use broc_std::BrocStr;
 
-    assert_evals_to!(r#"Num.toStr -10.75dec"#, RocStr::from("-10.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr -1.75dec"#, RocStr::from("-1.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr 0dec"#, RocStr::from("0.0"), RocStr);
-    assert_evals_to!(r#"Num.toStr 1.75dec"#, RocStr::from("1.75"), RocStr);
-    assert_evals_to!(r#"Num.toStr 10.75dec"#, RocStr::from("10.75"), RocStr);
+    assert_evals_to!(r#"Num.toStr -10.75dec"#, BrocStr::from("-10.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr -1.75dec"#, BrocStr::from("-1.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 0dec"#, BrocStr::from("0.0"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 1.75dec"#, BrocStr::from("1.75"), BrocStr);
+    assert_evals_to!(r#"Num.toStr 10.75dec"#, BrocStr::from("10.75"), BrocStr);
 
     assert_evals_to!(
         r#"Num.toStr 170141183460469.105727dec"#,
-        RocStr::from("170141183460469.105727"),
-        RocStr
+        BrocStr::from("170141183460469.105727"),
+        BrocStr
     );
 
     assert_evals_to!(
         r#"Num.toStr -170141183460469.105727dec"#,
-        RocStr::from("-170141183460469.105727"),
-        RocStr
+        BrocStr::from("-170141183460469.105727"),
+        BrocStr
     );
 }
 
@@ -3711,7 +3711,7 @@ fn to_float_f64() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-// https://github.com/roc-lang/roc/issues/2696
+// https://github.com/roc-lang/broc/issues/2696
 fn upcast_of_int_is_zext() {
     assert_evals_to!(
         indoc!(
@@ -3726,7 +3726,7 @@ fn upcast_of_int_is_zext() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-// https://github.com/roc-lang/roc/issues/2696
+// https://github.com/roc-lang/broc/issues/2696
 fn upcast_of_int_checked_is_zext() {
     assert_evals_to!(
         indoc!(
@@ -3778,7 +3778,7 @@ fn dec_float_suffix() {
             123.0dec
             "#
         ),
-        RocDec::from_str_to_i128_unsafe("123.0"),
+        BrocDec::from_str_to_i128_unsafe("123.0"),
         i128
     );
 }
@@ -3792,7 +3792,7 @@ fn dec_no_decimal() {
             3dec
             "#
         ),
-        RocDec::from_str_to_i128_unsafe("3.0"),
+        BrocDec::from_str_to_i128_unsafe("3.0"),
         i128
     );
 }

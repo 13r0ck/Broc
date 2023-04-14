@@ -1,7 +1,7 @@
-use roc_collections::all::MutMap;
-use roc_problem::can::Problem;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::Variable;
+use broc_collections::all::MutMap;
+use broc_problem::can::Problem;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::Variable;
 
 use crate::{
     lang::{
@@ -38,7 +38,7 @@ enum FieldVar {
 pub(crate) fn canonicalize_fields<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
-    fields: &'a [Loc<roc_parse::ast::AssignedField<'a, roc_parse::ast::Expr<'a>>>],
+    fields: &'a [Loc<broc_parse::ast::AssignedField<'a, broc_parse::ast::Expr<'a>>>],
 ) -> Result<(PoolVec<RecordField>, Output), CanonicalizeRecordProblem> {
     let mut can_fields: MutMap<&'a str, FieldVar> = MutMap::default();
     let mut output = Output::default();
@@ -143,9 +143,9 @@ enum CanonicalField<'a> {
 fn canonicalize_field<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
-    field: &'a roc_parse::ast::AssignedField<'a, roc_parse::ast::Expr<'a>>,
+    field: &'a broc_parse::ast::AssignedField<'a, broc_parse::ast::Expr<'a>>,
 ) -> Result<CanonicalField<'a>, CanonicalizeFieldProblem> {
-    use roc_parse::ast::AssignedField::*;
+    use broc_parse::ast::AssignedField::*;
 
     match field {
         // Both a label and a value, e.g. `{ name: "blah" }`
@@ -197,7 +197,7 @@ fn canonicalize_field<'a>(
 pub(crate) fn canonicalize_when_branch<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
-    branch: &'a roc_parse::ast::WhenBranch<'a>,
+    branch: &'a broc_parse::ast::WhenBranch<'a>,
     output: &mut Output,
 ) -> (WhenBranch, References) {
     let patterns = PoolVec::with_capacity(branch.patterns.len() as u32, env.pool);
@@ -210,7 +210,7 @@ pub(crate) fn canonicalize_when_branch<'a>(
         let (new_output, can_pattern) = to_pattern2(
             env,
             &mut scope,
-            roc_parse::pattern::PatternType::WhenBranch,
+            broc_parse::pattern::PatternType::WhenBranch,
             &loc_pattern.value,
             loc_pattern.region,
         );

@@ -1,13 +1,13 @@
 use bumpalo::collections::vec::Vec;
 use bumpalo::Bump;
 use core::panic;
-use roc_wasm_module::linking::IndexRelocType;
+use broc_wasm_module::linking::IndexRelocType;
 
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_wasm_module::opcodes::{OpCode, OpCode::*};
-use roc_wasm_module::serialize::SerialBuffer;
-use roc_wasm_module::{
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_wasm_module::opcodes::{OpCode, OpCode::*};
+use broc_wasm_module::serialize::SerialBuffer;
+use broc_wasm_module::{
     round_up_to_alignment, Align, LocalId, RelocationEntry, ValueType, WasmModule,
     FRAME_ALIGNMENT_BYTES, STACK_POINTER_GLOBAL_ID,
 };
@@ -663,7 +663,7 @@ impl<'a> CodeBuilder<'a> {
     #[allow(dead_code)]
     fn call_indirect() {
         unimplemented!(
-            "There is no plan to implement call_indirect. Roc doesn't use function pointers"
+            "There is no plan to implement call_indirect. Broc doesn't use function pointers"
         );
     }
 

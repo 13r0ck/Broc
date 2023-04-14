@@ -9,30 +9,30 @@
 
 napi_env napi_global_env;
 
-void *roc_alloc(size_t size, unsigned int alignment) { return malloc(size); }
+void *broc_alloc(size_t size, unsigned int alignment) { return malloc(size); }
 
-void *roc_realloc(void *ptr, size_t new_size, size_t old_size,
+void *broc_realloc(void *ptr, size_t new_size, size_t old_size,
                   unsigned int alignment)
 {
     return realloc(ptr, new_size);
 }
 
-void roc_dealloc(void *ptr, unsigned int alignment) { free(ptr); }
+void broc_dealloc(void *ptr, unsigned int alignment) { free(ptr); }
 
-void roc_panic(void *ptr, unsigned int alignment)
+void broc_panic(void *ptr, unsigned int alignment)
 {
-    // WARNING: If roc_panic is called before napi_global_env is set,
-    // the result will be undefined behavior. So never call any Roc
+    // WARNING: If broc_panic is called before napi_global_env is set,
+    // the result will be undefined behavior. So never call any Broc
     // functions before setting napi_global_env!
     napi_throw_error(napi_global_env, NULL, (char *)ptr);
 }
 
-void *roc_memcpy(void *dest, const void *src, size_t n)
+void *broc_memcpy(void *dest, const void *src, size_t n)
 {
     return memcpy(dest, src, n);
 }
 
-void *roc_memset(void *str, int c, size_t n) { return memset(str, c, n); }
+void *broc_memset(void *str, int c, size_t n) { return memset(str, c, n); }
 
 // Reference counting
 
@@ -57,7 +57,7 @@ void incref(uint8_t* bytes, uint32_t alignment)
 }
 
 // Decrement reference count, given a pointer to the first byte of a collection's elements.
-// Then call roc_dealloc if nothing is referencing this collection anymore.
+// Then call broc_dealloc if nothing is referencing this collection anymore.
 void decref_heap_bytes(uint8_t* bytes, uint32_t alignment)
 {
     size_t extra_bytes = (sizeof(size_t) >= (size_t)alignment) ? sizeof(size_t) : (size_t)alignment;
@@ -70,23 +70,23 @@ void decref_heap_bytes(uint8_t* bytes, uint32_t alignment)
         if (refcount == REFCOUNT_ONE) {
             void *original_allocation = (void *)(refcount_ptr - (extra_bytes - sizeof(size_t)));
 
-            roc_dealloc(original_allocation, alignment);
+            broc_dealloc(original_allocation, alignment);
         }
     }
 }
 
-// RocBytes (List U8)
+// BrocBytes (List U8)
 
-struct RocBytes
+struct BrocBytes
 {
     uint8_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocBytes empty_rocbytes()
+struct BrocBytes empty_brocbytes()
 {
-    struct RocBytes ret = {
+    struct BrocBytes ret = {
         .len = 0,
         .bytes = NULL,
         .capacity = 0,
@@ -95,17 +95,17 @@ struct RocBytes empty_rocbytes()
     return ret;
 }
 
-struct RocBytes init_rocbytes(uint8_t *bytes, size_t len)
+struct BrocBytes init_brocbytes(uint8_t *bytes, size_t len)
 {
     if (len == 0)
     {
-        return empty_rocbytes();
+        return empty_brocbytes();
     }
     else
     {
-        struct RocBytes ret;
+        struct BrocBytes ret;
         size_t refcount_size = sizeof(size_t);
-        uint8_t *new_refcount = (uint8_t *)roc_alloc(len + refcount_size, __alignof__(size_t));
+        uint8_t *new_refcount = (uint8_t *)broc_alloc(len + refcount_size, __alignof__(size_t));
         uint8_t *new_content = new_refcount + refcount_size;
 
         ((ssize_t *)new_refcount)[0] = REFCOUNT_ONE;
@@ -120,18 +120,18 @@ struct RocBytes init_rocbytes(uint8_t *bytes, size_t len)
     }
 }
 
-// RocStr
+// BrocStr
 
-struct RocStr
+struct BrocStr
 {
     uint8_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocStr empty_roc_str()
+struct BrocStr empty_broc_str()
 {
-    struct RocStr ret = {
+    struct BrocStr ret = {
         .len = 0,
         .bytes = NULL,
         .capacity = MASK,
@@ -141,17 +141,17 @@ struct RocStr empty_roc_str()
 }
 
 // Record the small string's length in the last byte of the given stack allocation
-void write_small_str_len(size_t len, struct RocStr *str) {
-    ((uint8_t *)str)[sizeof(struct RocStr) - 1] = (uint8_t)len | 0b10000000;
+void write_small_str_len(size_t len, struct BrocStr *str) {
+    ((uint8_t *)str)[sizeof(struct BrocStr) - 1] = (uint8_t)len | 0b10000000;
 }
 
-struct RocStr roc_str_init_small(uint8_t *bytes, size_t len)
+struct BrocStr broc_str_init_small(uint8_t *bytes, size_t len)
 {
     // Start out with zeroed memory, so that
-    // if we end up comparing two small RocStr values
+    // if we end up comparing two small BrocStr values
     // for equality, we won't risk memory garbage resulting
     // in two equal strings appearing unequal.
-    struct RocStr ret = empty_roc_str();
+    struct BrocStr ret = empty_broc_str();
 
     // Copy the bytes into the stack allocation
     memcpy(&ret, bytes, len);
@@ -161,25 +161,25 @@ struct RocStr roc_str_init_small(uint8_t *bytes, size_t len)
     return ret;
 }
 
-struct RocStr roc_str_init_large(uint8_t *bytes, size_t len, size_t capacity)
+struct BrocStr broc_str_init_large(uint8_t *bytes, size_t len, size_t capacity)
 {
-    // A large RocStr is the same as a List U8 (aka RocBytes) in memory.
-    struct RocBytes roc_bytes = init_rocbytes(bytes, len);
+    // A large BrocStr is the same as a List U8 (aka BrocBytes) in memory.
+    struct BrocBytes broc_bytes = init_brocbytes(bytes, len);
 
-    struct RocStr ret = {
-        .len = roc_bytes.len,
-        .bytes = roc_bytes.bytes,
-        .capacity = roc_bytes.capacity,
+    struct BrocStr ret = {
+        .len = broc_bytes.len,
+        .bytes = broc_bytes.bytes,
+        .capacity = broc_bytes.capacity,
     };
 
     return ret;
 }
 
-bool is_small_str(struct RocStr str) { return ((ssize_t)str.capacity) < 0; }
+bool is_small_str(struct BrocStr str) { return ((ssize_t)str.capacity) < 0; }
 
 // Determine the length of the string, taking into
 // account the small string optimization
-size_t roc_str_len(struct RocStr str)
+size_t broc_str_len(struct BrocStr str)
 {
     uint8_t *bytes = (uint8_t *)&str;
     uint8_t last_byte = bytes[sizeof(str) - 1];
@@ -200,7 +200,7 @@ size_t roc_str_len(struct RocStr str)
     }
 }
 
-void decref_large_str(struct RocStr str)
+void decref_large_str(struct BrocStr str)
 {
     uint8_t* bytes;
 
@@ -218,8 +218,8 @@ void decref_large_str(struct RocStr str)
 }
 
 
-// Turn the given Node string into a RocStr and return it
-napi_status node_string_into_roc_str(napi_env env, napi_value node_string, struct RocStr *roc_str) {
+// Turn the given Node string into a BrocStr and return it
+napi_status node_string_into_broc_str(napi_env env, napi_value node_string, struct BrocStr *broc_str) {
     size_t len;
     napi_status status;
 
@@ -237,18 +237,18 @@ napi_status node_string_into_roc_str(napi_env env, napi_value node_string, struc
     // https://nodejs.org/api/n-api.html#napi_get_value_string_utf8
     size_t capacity = len + 1;
 
-    // Create a RocStr and write it into the out param
-    if (capacity < sizeof(struct RocStr))
+    // Create a BrocStr and write it into the out param
+    if (capacity < sizeof(struct BrocStr))
     {
         // If it can fit in a small string, use the string itself as the buffer.
         // First, zero out those bytes; small strings need to have zeroes for any bytes
         // that are not part of the string, or else comparisons between small strings might fail.
-        *roc_str = empty_roc_str();
+        *broc_str = empty_broc_str();
 
         // This writes the actual number of bytes copied into len. Theoretically they should be the same,
         // but it could be different if the buffer was somehow smaller. This way we guarantee that
-        // the RocStr does not present any memory garbage to the user.
-        status = napi_get_value_string_utf8(env, node_string, (char*)roc_str, sizeof(struct RocStr), &len);
+        // the BrocStr does not present any memory garbage to the user.
+        status = napi_get_value_string_utf8(env, node_string, (char*)broc_str, sizeof(struct BrocStr), &len);
 
         if (status != napi_ok)
         {
@@ -257,106 +257,106 @@ napi_status node_string_into_roc_str(napi_env env, napi_value node_string, struc
 
         // We have to write the length into the buffer *after* Node copies its bytes in,
         // because Node will have written a null terminator, which we may need to overwrite.
-        write_small_str_len(len, roc_str);
+        write_small_str_len(len, broc_str);
     }
     else
     {
         // capacity was too big for a small string, so make a heap allocation and write into that.
-        uint8_t *buf = (uint8_t*)roc_alloc(capacity, __alignof__(char));
+        uint8_t *buf = (uint8_t*)broc_alloc(capacity, __alignof__(char));
 
         // This writes the actual number of bytes copied into len. Theoretically they should be the same,
         // but it could be different if the buffer was somehow smaller. This way we guarantee that
-        // the RocStr does not present any memory garbage to the user.
+        // the BrocStr does not present any memory garbage to the user.
         status = napi_get_value_string_utf8(env, node_string, (char*)buf, capacity, &len);
 
         if (status != napi_ok)
         {
             // Something went wrong, so free the bytes we just allocated before returning.
-            roc_dealloc((void *)&buf, __alignof__(char *));
+            broc_dealloc((void *)&buf, __alignof__(char *));
 
             return status;
         }
 
-        *roc_str = roc_str_init_large(buf, len, capacity);
+        *broc_str = broc_str_init_large(buf, len, capacity);
     }
 
     return status;
 }
 
-// Consume the given RocStr (decrement its refcount) after creating a Node string from it.
-napi_value roc_str_into_node_string(napi_env env, struct RocStr roc_str) {
-    bool is_small = is_small_str(roc_str);
-    char* roc_str_contents;
+// Consume the given BrocStr (decrement its refcount) after creating a Node string from it.
+napi_value broc_str_into_node_string(napi_env env, struct BrocStr broc_str) {
+    bool is_small = is_small_str(broc_str);
+    char* broc_str_contents;
 
     if (is_small)
     {
         // In a small string, the string itself contains its contents.
-        roc_str_contents = (char*)&roc_str;
+        broc_str_contents = (char*)&broc_str;
     }
     else
     {
-        roc_str_contents = (char*)roc_str.bytes;
+        broc_str_contents = (char*)broc_str.bytes;
     }
 
     napi_status status;
     napi_value answer;
 
-    status = napi_create_string_utf8(env, roc_str_contents, roc_str_len(roc_str), &answer);
+    status = napi_create_string_utf8(env, broc_str_contents, broc_str_len(broc_str), &answer);
 
     if (status != napi_ok)
     {
         answer = NULL;
     }
 
-    // Decrement the RocStr because we consumed it.
+    // Decrement the BrocStr because we consumed it.
     if (!is_small)
     {
-        decref_large_str(roc_str);
+        decref_large_str(broc_str);
     }
 
     return answer;
 }
 
-// Create a Node string from the given RocStr.
-// Don't decrement the RocStr's refcount. (To decrement it, use roc_str_into_node_string instead.)
-napi_value roc_str_as_node_string(napi_env env, struct RocStr roc_str) {
-    bool is_small = is_small_str(roc_str);
-    char* roc_str_contents;
+// Create a Node string from the given BrocStr.
+// Don't decrement the BrocStr's refcount. (To decrement it, use broc_str_into_node_string instead.)
+napi_value broc_str_as_node_string(napi_env env, struct BrocStr broc_str) {
+    bool is_small = is_small_str(broc_str);
+    char* broc_str_contents;
 
     if (is_small)
     {
         // In a small string, the string itself contains its contents.
-        roc_str_contents = (char*)&roc_str;
+        broc_str_contents = (char*)&broc_str;
     }
     else
     {
-        roc_str_contents = (char*)roc_str.bytes;
+        broc_str_contents = (char*)broc_str.bytes;
     }
 
     napi_status status;
     napi_value answer;
 
-    status = napi_create_string_utf8(env, roc_str_contents, roc_str_len(roc_str), &answer);
+    status = napi_create_string_utf8(env, broc_str_contents, broc_str_len(broc_str), &answer);
 
     if (status != napi_ok)
     {
         return NULL;
     }
 
-    // Do not decrement the RocStr's refcount because we did not consume it.
+    // Do not decrement the BrocStr's refcount because we did not consume it.
 
     return answer;
 }
 
-extern void roc__mainForHost_1_exposed_generic(struct RocStr *ret, struct RocStr *arg);
+extern void broc__mainForHost_1_exposed_generic(struct BrocStr *ret, struct BrocStr *arg);
 
-// Receive a string value from Node and pass it to Roc as a RocStr, then get a RocStr
-// back from Roc and convert it into a Node string.
-napi_value call_roc(napi_env env, napi_callback_info info) {
+// Receive a string value from Node and pass it to Broc as a BrocStr, then get a BrocStr
+// back from Broc and convert it into a Node string.
+napi_value call_broc(napi_env env, napi_callback_info info) {
     napi_status status;
 
-    // roc_panic needs a napi_env in order to throw a Node exception, so we provide this
-    // one globally in case roc_panic gets called during the execution of our Roc function.
+    // broc_panic needs a napi_env in order to throw a Node exception, so we provide this
+    // one globally in case broc_panic gets called during the execution of our Broc function.
     //
     // According do the docs - https://nodejs.org/api/n-api.html#napi_env -
     // it's very important that the napi_env that was passed into "the initial
@@ -378,28 +378,28 @@ napi_value call_roc(napi_env env, napi_callback_info info) {
 
     napi_value node_arg = argv[0];
 
-    struct RocStr roc_arg;
+    struct BrocStr broc_arg;
 
-    status = node_string_into_roc_str(env, node_arg, &roc_arg);
+    status = node_string_into_broc_str(env, node_arg, &broc_arg);
 
     if (status != napi_ok)
     {
         return NULL;
     }
 
-    struct RocStr roc_ret;
-    // Call the Roc function to populate `roc_ret`'s bytes.
-    roc__mainForHost_1_exposed_generic(&roc_ret, &roc_arg);
+    struct BrocStr broc_ret;
+    // Call the Broc function to populate `broc_ret`'s bytes.
+    broc__mainForHost_1_exposed_generic(&broc_ret, &broc_arg);
 
-    // Consume the RocStr to create the Node string.
-    return roc_str_into_node_string(env, roc_ret);
+    // Consume the BrocStr to create the Node string.
+    return broc_str_into_node_string(env, broc_ret);
 }
 
 napi_value init(napi_env env, napi_value exports) {
     napi_status status;
     napi_value fn;
 
-    status = napi_create_function(env, NULL, 0, call_roc, NULL, &fn);
+    status = napi_create_function(env, NULL, 0, call_broc, NULL, &fn);
 
     if (status != napi_ok)
     {

@@ -6,57 +6,57 @@ use crossbeam::channel::{bounded, Sender};
 use crossbeam::deque::{Injector, Stealer, Worker};
 use crossbeam::thread;
 use parking_lot::Mutex;
-use roc_builtins::roc::module_source;
-use roc_can::abilities::{AbilitiesStore, PendingAbilitiesStore, ResolvedImpl};
-use roc_can::constraint::{Constraint as ConstraintSoa, Constraints, TypeOrVar};
-use roc_can::expr::{DbgLookup, Declarations, ExpectLookup, PendingDerives};
-use roc_can::module::{
+use broc_builtins::broc::module_source;
+use broc_can::abilities::{AbilitiesStore, PendingAbilitiesStore, ResolvedImpl};
+use broc_can::constraint::{Constraint as ConstraintSoa, Constraints, TypeOrVar};
+use broc_can::expr::{DbgLookup, Declarations, ExpectLookup, PendingDerives};
+use broc_can::module::{
     canonicalize_module_defs, ExposedByModule, ExposedForModule, ExposedModuleTypes, Module,
     ResolvedImplementations, TypeState,
 };
-use roc_collections::{default_hasher, BumpMap, MutMap, MutSet, VecMap, VecSet};
-use roc_constrain::module::constrain_module;
-use roc_debug_flags::dbg_do;
+use broc_collections::{default_hasher, BumpMap, MutMap, MutSet, VecMap, VecSet};
+use broc_constrain::module::constrain_module;
+use broc_debug_flags::dbg_do;
 #[cfg(debug_assertions)]
-use roc_debug_flags::{
+use broc_debug_flags::{
     ROC_CHECK_MONO_IR, ROC_PRINT_IR_AFTER_REFCOUNT, ROC_PRINT_IR_AFTER_RESET_REUSE,
     ROC_PRINT_IR_AFTER_SPECIALIZATION, ROC_PRINT_LOAD_LOG,
 };
-use roc_derive::SharedDerivedModule;
-use roc_error_macros::internal_error;
-use roc_late_solve::{AbilitiesView, WorldAbilities};
-use roc_module::ident::{Ident, ModuleName, QualifiedModuleName};
-use roc_module::symbol::{
+use broc_derive::SharedDerivedModule;
+use broc_error_macros::internal_error;
+use broc_late_solve::{AbilitiesView, WorldAbilities};
+use broc_module::ident::{Ident, ModuleName, QualifiedModuleName};
+use broc_module::symbol::{
     IdentIds, IdentIdsByModule, Interns, ModuleId, ModuleIds, PQModuleName, PackageModuleIds,
     PackageQualified, Symbol,
 };
-use roc_mono::ir::{
-    CapturedSymbols, ExternalSpecializations, GlueLayouts, LambdaSetId, PartialProc, Proc,
-    ProcLayout, Procs, ProcsBase, UpdateModeIds,
+use broc_mono::ir::{
+    CapturedSymbols, ExternalSpecializations, GlueLayouts, LambdaSetId, PartialPbroc, Pbroc,
+    PbrocLayout, Pbrocs, PbrocsBase, UpdateModeIds,
 };
-use roc_mono::layout::LayoutInterner;
-use roc_mono::layout::{
+use broc_mono::layout::LayoutInterner;
+use broc_mono::layout::{
     GlobalLayoutInterner, LambdaName, Layout, LayoutCache, LayoutProblem, Niche, STLayoutInterner,
 };
-use roc_packaging::cache::RocCacheDir;
-use roc_parse::ast::{
+use broc_packaging::cache::BrocCacheDir;
+use broc_parse::ast::{
     self, CommentOrNewline, Defs, Expr, ExtractSpaces, Pattern, Spaced, StrLiteral, TypeAnnotation,
     ValueDef,
 };
-use roc_parse::header::{
+use broc_parse::header::{
     ExposedName, ImportsEntry, PackageEntry, PackageHeader, PlatformHeader, To, TypedIdent,
 };
-use roc_parse::header::{HeaderType, PackageName};
-use roc_parse::module::module_defs;
-use roc_parse::parser::{FileError, Parser, SourceError, SyntaxError};
-use roc_problem::Severity;
-use roc_region::all::{LineInfo, Loc, Region};
-use roc_reporting::report::{to_file_problem_report_string, Palette, RenderTarget};
-use roc_solve::module::{extract_module_owned_implementations, Solved, SolvedModule};
-use roc_solve_problem::TypeError;
-use roc_target::TargetInfo;
-use roc_types::subs::{CopiedImport, ExposedTypesStorageSubs, Subs, VarStore, Variable};
-use roc_types::types::{Alias, Types};
+use broc_parse::header::{HeaderType, PackageName};
+use broc_parse::module::module_defs;
+use broc_parse::parser::{FileError, Parser, SourceError, SyntaxError};
+use broc_problem::Severity;
+use broc_region::all::{LineInfo, Loc, Region};
+use broc_reporting::report::{to_file_problem_report_string, Palette, RenderTarget};
+use broc_solve::module::{extract_module_owned_implementations, Solved, SolvedModule};
+use broc_solve_problem::TypeError;
+use broc_target::TargetInfo;
+use broc_types::subs::{CopiedImport, ExposedTypesStorageSubs, Subs, VarStore, Variable};
+use broc_types::types::{Alias, Types};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 use std::env::current_dir;
@@ -69,8 +69,8 @@ use std::sync::Arc;
 use std::{env, fs};
 #[cfg(not(target_family = "wasm"))]
 use {
-    roc_packaging::cache::{self},
-    roc_packaging::https::PackageMetadata,
+    broc_packaging::cache::{self},
+    broc_packaging::https::PackageMetadata,
 };
 
 pub use crate::work::Phase;
@@ -84,8 +84,8 @@ use std::time::{Duration, Instant};
 /// Default name for the binary generated for an app, if an invalid one was specified.
 const DEFAULT_APP_OUTPUT_PATH: &str = "app";
 
-/// Filename extension for normal Roc modules
-const ROC_FILE_EXTENSION: &str = "roc";
+/// Filename extension for normal Broc modules
+const ROC_FILE_EXTENSION: &str = "broc";
 
 /// The . in between module names like Foo.Bar.Baz
 const MODULE_SEPARATOR: char = '.';
@@ -151,7 +151,7 @@ struct ModuleCache<'a> {
     imports: MutMap<ModuleId, MutSet<ModuleId>>,
     top_level_thunks: MutMap<ModuleId, MutSet<Symbol>>,
     documentation: VecMap<ModuleId, ModuleDocumentation>,
-    can_problems: MutMap<ModuleId, Vec<roc_problem::can::Problem>>,
+    can_problems: MutMap<ModuleId, Vec<broc_problem::can::Problem>>,
     type_problems: MutMap<ModuleId, Vec<TypeError>>,
 
     sources: MutMap<ModuleId, (PathBuf, &'a str)>,
@@ -226,7 +226,7 @@ impl Default for ModuleCache<'_> {
     }
 }
 
-type SharedIdentIdsByModule = Arc<Mutex<roc_module::symbol::IdentIdsByModule>>;
+type SharedIdentIdsByModule = Arc<Mutex<broc_module::symbol::IdentIdsByModule>>;
 
 fn start_phase<'a>(
     module_id: ModuleId,
@@ -501,7 +501,7 @@ fn start_phase<'a>(
                     mut ident_ids,
                     mut subs,
                     expectations,
-                    mut procs_base,
+                    mut pbrocs_base,
                     layout_cache,
                     mut module_timing,
                 ) = if state.make_specializations_pass.current_pass() == 1
@@ -514,7 +514,7 @@ fn start_phase<'a>(
                         IdentIds::default(),
                         Subs::default(),
                         None, // no expectations for derived module
-                        ProcsBase::default(),
+                        PbrocsBase::default(),
                         LayoutCache::new(state.layout_interner.fork(), state.target_info),
                         ModuleTiming::new(Instant::now()),
                     )
@@ -528,7 +528,7 @@ fn start_phase<'a>(
                     let FoundSpecializationsModule {
                         ident_ids,
                         subs,
-                        procs_base,
+                        pbrocs_base,
                         layout_cache,
                         module_timing,
                         abilities_store,
@@ -554,7 +554,7 @@ fn start_phase<'a>(
                         ident_ids,
                         subs,
                         expectations,
-                        procs_base,
+                        pbrocs_base,
                         layout_cache,
                         module_timing,
                     )
@@ -565,7 +565,7 @@ fn start_phase<'a>(
                         expectations,
                         module_timing,
                         layout_cache,
-                        procs_base,
+                        pbrocs_base,
                     } = state
                         .module_cache
                         .late_specializations
@@ -576,14 +576,14 @@ fn start_phase<'a>(
                         ident_ids,
                         subs,
                         expectations,
-                        procs_base,
+                        pbrocs_base,
                         layout_cache,
                         module_timing,
                     )
                 };
 
                 if module_id == ModuleId::DERIVED_GEN {
-                    load_derived_partial_procs(
+                    load_derived_partial_pbrocs(
                         module_id,
                         arena,
                         &mut subs,
@@ -592,7 +592,7 @@ fn start_phase<'a>(
                         &mut module_timing,
                         state.target_info,
                         &state.exposed_types,
-                        &mut procs_base,
+                        &mut pbrocs_base,
                         &mut state.world_abilities,
                     );
                 }
@@ -603,7 +603,7 @@ fn start_phase<'a>(
                     module_id,
                     ident_ids,
                     subs,
-                    procs_base,
+                    pbrocs_base,
                     layout_cache,
                     specializations_we_must_make,
                     module_timing,
@@ -625,7 +625,7 @@ pub struct LoadedModule {
     pub module_id: ModuleId,
     pub interns: Interns,
     pub solved: Solved<Subs>,
-    pub can_problems: MutMap<ModuleId, Vec<roc_problem::can::Problem>>,
+    pub can_problems: MutMap<ModuleId, Vec<broc_problem::can::Problem>>,
     pub type_problems: MutMap<ModuleId, Vec<TypeError>>,
     pub declarations_by_id: MutMap<ModuleId, Declarations>,
     pub exposed_to_host: MutMap<Symbol, Variable>,
@@ -687,7 +687,7 @@ struct ModuleHeader<'a> {
     package_qualified_imported_modules: MutSet<PackageQualified<'a, ModuleId>>,
     exposes: Vec<Symbol>,
     exposed_imports: MutMap<Ident, (Symbol, Region)>,
-    parse_state: roc_parse::state::State<'a>,
+    parse_state: broc_parse::state::State<'a>,
     header_type: HeaderType<'a>,
     header_comments: &'a [CommentOrNewline<'a>],
     symbols_from_requires: Vec<(Loc<Symbol>, Loc<TypeAnnotation<'a>>)>,
@@ -728,7 +728,7 @@ pub struct TypeCheckedModule<'a> {
 struct FoundSpecializationsModule<'a> {
     ident_ids: IdentIds,
     layout_cache: LayoutCache<'a>,
-    procs_base: ProcsBase<'a>,
+    pbrocs_base: PbrocsBase<'a>,
     subs: Subs,
     module_timing: ModuleTiming,
     abilities_store: AbilitiesStore,
@@ -741,7 +741,7 @@ struct LateSpecializationsModule<'a> {
     subs: Subs,
     module_timing: ModuleTiming,
     layout_cache: LayoutCache<'a>,
-    procs_base: ProcsBase<'a>,
+    pbrocs_base: PbrocsBase<'a>,
     expectations: Option<Expectations>,
 }
 
@@ -758,9 +758,9 @@ pub struct MonomorphizedModule<'a> {
     pub subs: Subs,
     pub layout_interner: STLayoutInterner<'a>,
     pub output_path: Box<Path>,
-    pub can_problems: MutMap<ModuleId, Vec<roc_problem::can::Problem>>,
+    pub can_problems: MutMap<ModuleId, Vec<broc_problem::can::Problem>>,
     pub type_problems: MutMap<ModuleId, Vec<TypeError>>,
-    pub procedures: MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    pub procedures: MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
     pub toplevel_expects: ToplevelExpects,
     pub entry_point: EntryPoint<'a>,
     pub exposed_to_host: ExposedToHost,
@@ -781,7 +781,7 @@ pub struct ExpectMetadata<'a> {
 #[derive(Debug)]
 pub enum EntryPoint<'a> {
     Executable {
-        exposed_to_host: &'a [(Symbol, ProcLayout<'a>)],
+        exposed_to_host: &'a [(Symbol, PbrocLayout<'a>)],
         platform_path: PathBuf,
     },
     Test,
@@ -789,7 +789,7 @@ pub enum EntryPoint<'a> {
 
 #[derive(Debug)]
 pub struct Expectations {
-    pub subs: roc_types::subs::Subs,
+    pub subs: broc_types::subs::Subs,
     pub path: PathBuf,
     pub expectations: VecMap<Region, Vec<ExpectLookup>>,
     pub dbgs: VecMap<Symbol, DbgLookup>,
@@ -876,7 +876,7 @@ enum Msg<'a> {
         module_id: ModuleId,
         ident_ids: IdentIds,
         layout_cache: LayoutCache<'a>,
-        procs_base: ProcsBase<'a>,
+        pbrocs_base: PbrocsBase<'a>,
         solved_subs: Solved<Subs>,
         module_timing: ModuleTiming,
         abilities_store: AbilitiesStore,
@@ -888,8 +888,8 @@ enum Msg<'a> {
         ident_ids: IdentIds,
         layout_cache: LayoutCache<'a>,
         external_specializations_requested: BumpMap<ModuleId, ExternalSpecializations<'a>>,
-        procs_base: ProcsBase<'a>,
-        procedures: MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+        pbrocs_base: PbrocsBase<'a>,
+        procedures: MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
         update_mode_ids: UpdateModeIds,
         module_timing: ModuleTiming,
         subs: Subs,
@@ -920,7 +920,7 @@ enum Msg<'a> {
 #[derive(Debug)]
 struct CanAndCon {
     constrained_module: ConstrainedModule,
-    canonicalization_problems: Vec<roc_problem::can::Problem>,
+    canonicalization_problems: Vec<broc_problem::can::Problem>,
     module_docs: Option<ModuleDocumentation>,
 }
 
@@ -983,7 +983,7 @@ struct State<'a> {
 
     pub module_cache: ModuleCache<'a>,
     pub dependencies: Dependencies<'a>,
-    pub procedures: MutMap<(Symbol, ProcLayout<'a>), Proc<'a>>,
+    pub procedures: MutMap<(Symbol, PbrocLayout<'a>), Pbroc<'a>>,
     pub toplevel_expects: ToplevelExpects,
     pub exposed_to_host: ExposedToHost,
 
@@ -1047,7 +1047,7 @@ impl<'a> State<'a> {
         exec_mode: ExecutionMode,
     ) -> Self {
         let arc_shorthands = Arc::new(Mutex::new(MutMap::default()));
-        let cache_dir = roc_packaging::cache::roc_cache_dir();
+        let cache_dir = broc_packaging::cache::broc_cache_dir();
         let dependencies = Dependencies::new(exec_mode.goal_phase());
 
         Self {
@@ -1088,7 +1088,7 @@ impl<'a> State<'a> {
 
 #[derive(Debug)]
 pub struct ModuleTiming {
-    pub read_roc_file: Duration,
+    pub read_broc_file: Duration,
     pub parse_header: Duration,
     pub parse_body: Duration,
     pub canonicalize: Duration,
@@ -1107,7 +1107,7 @@ pub struct ModuleTiming {
 impl ModuleTiming {
     pub fn new(start_time: Instant) -> Self {
         ModuleTiming {
-            read_roc_file: Duration::default(),
+            read_broc_file: Duration::default(),
             parse_header: Duration::default(),
             parse_body: Duration::default(),
             canonicalize: Duration::default(),
@@ -1127,7 +1127,7 @@ impl ModuleTiming {
     /// Subtract all the other fields from total_start_to_finish
     pub fn other(&self) -> Duration {
         let Self {
-            read_roc_file,
+            read_broc_file,
             parse_header,
             parse_body,
             canonicalize,
@@ -1149,7 +1149,7 @@ impl ModuleTiming {
                 .checked_sub(*canonicalize)?
                 .checked_sub(*parse_body)?
                 .checked_sub(*parse_header)?
-                .checked_sub(*read_roc_file)
+                .checked_sub(*read_broc_file)
         };
 
         calculate(Some(end_time.duration_since(*start_time))).unwrap_or_default()
@@ -1173,7 +1173,7 @@ impl std::fmt::Display for ModuleTiming {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let module_timing = self;
 
-        report_timing(f, "Read .roc file from disk", module_timing.read_roc_file)?;
+        report_timing(f, "Read .broc file from disk", module_timing.read_broc_file)?;
         report_timing(f, "Parse header", module_timing.parse_header)?;
         report_timing(f, "Parse body", module_timing.parse_body)?;
         report_timing(f, "Canonicalize", module_timing.canonicalize)?;
@@ -1258,7 +1258,7 @@ enum BuildTask<'a> {
         module_id: ModuleId,
         ident_ids: IdentIds,
         subs: Subs,
-        procs_base: ProcsBase<'a>,
+        pbrocs_base: PbrocsBase<'a>,
         layout_cache: LayoutCache<'a>,
         specializations_we_must_make: Vec<ExternalSpecializations<'a>>,
         module_timing: ModuleTiming,
@@ -1338,12 +1338,12 @@ pub fn load_and_typecheck_str<'a>(
     target_info: TargetInfo,
     render: RenderTarget,
     palette: Palette,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     threading: Threading,
 ) -> Result<LoadedModule, LoadingProblem<'a>> {
     use LoadResult::*;
 
-    let load_start = LoadStart::from_str(arena, filename, source, roc_cache_dir, src_dir)?;
+    let load_start = LoadStart::from_str(arena, filename, source, broc_cache_dir, src_dir)?;
 
     // this function is used specifically in the case
     // where we want to regenerate the cached data
@@ -1362,7 +1362,7 @@ pub fn load_and_typecheck_str<'a>(
         load_start,
         exposed_types,
         cached_subs,
-        roc_cache_dir,
+        broc_cache_dir,
         load_config,
     )? {
         Monomorphized(_) => unreachable!(""),
@@ -1390,7 +1390,7 @@ impl<'a> LoadStart<'a> {
         arena: &'a Bump,
         filename: PathBuf,
         render: RenderTarget,
-        roc_cache_dir: RocCacheDir<'_>,
+        broc_cache_dir: BrocCacheDir<'_>,
         palette: Palette,
     ) -> Result<Self, LoadingProblem<'a>> {
         let arc_modules = Arc::new(Mutex::new(PackageModuleIds::default()));
@@ -1398,7 +1398,7 @@ impl<'a> LoadStart<'a> {
         let ident_ids_by_module = Arc::new(Mutex::new(root_exposed_ident_ids));
         let mut src_dir = filename.parent().unwrap().to_path_buf();
 
-        // Load the root module synchronously; we can't proceed until we have its id.
+        // Load the root module synchronously; we can't pbroceed until we have its id.
         let header_output = {
             let root_start_time = Instant::now();
 
@@ -1410,7 +1410,7 @@ impl<'a> LoadStart<'a> {
                 None,
                 Arc::clone(&arc_modules),
                 Arc::clone(&ident_ids_by_module),
-                roc_cache_dir,
+                broc_cache_dir,
                 root_start_time,
             );
 
@@ -1473,14 +1473,14 @@ impl<'a> LoadStart<'a> {
         arena: &'a Bump,
         filename: PathBuf,
         src: &'a str,
-        roc_cache_dir: RocCacheDir<'_>,
+        broc_cache_dir: BrocCacheDir<'_>,
         src_dir: PathBuf,
     ) -> Result<Self, LoadingProblem<'a>> {
         let arc_modules = Arc::new(Mutex::new(PackageModuleIds::default()));
         let root_exposed_ident_ids = IdentIds::exposed_builtins(0);
         let ident_ids_by_module = Arc::new(Mutex::new(root_exposed_ident_ids));
 
-        // Load the root module synchronously; we can't proceed until we have its id.
+        // Load the root module synchronously; we can't pbroceed until we have its id.
         let HeaderOutput {
             module_id: root_id,
             msg: root_msg,
@@ -1494,7 +1494,7 @@ impl<'a> LoadStart<'a> {
                 src,
                 Arc::clone(&arc_modules),
                 Arc::clone(&ident_ids_by_module),
-                roc_cache_dir,
+                broc_cache_dir,
                 root_start_time,
             )?
         };
@@ -1522,7 +1522,7 @@ pub enum Threading {
     AtMost(usize),
 }
 
-/// The loading process works like this, starting from the given filename (e.g. "main.roc"):
+/// The loading process works like this, starting from the given filename (e.g. "main.broc"):
 ///
 /// 1. Open the file.
 /// 2. Parse the module's header.
@@ -1532,7 +1532,7 @@ pub enum Threading {
 /// 5. Parse the module's defs.
 /// 6. Canonicalize the module.
 /// 7. Before type checking, block on waiting for type checking to complete on all imports.
-///    (Since Roc doesn't allow cyclic dependencies, this cannot deadlock.)
+///    (Since Broc doesn't allow cyclic dependencies, this cannot deadlock.)
 /// 8. Type check the module and create type annotations for its top-level declarations.
 /// 9. Report the completed type annotation to the coordinator thread, so other modules
 ///    that are waiting in step 7 can unblock.
@@ -1541,7 +1541,7 @@ pub enum Threading {
 /// It typically contains *at least* the standard modules, but is empty when loading
 /// the standard modules themselves.
 ///
-/// If we're just type-checking everything (e.g. running `roc check` at the command line),
+/// If we're just type-checking everything (e.g. running `broc check` at the command line),
 /// we can stop there. However, if we're generating code, then there are additional steps.
 ///
 /// 10. After reporting the completed type annotation, we have all the information necessary
@@ -1549,7 +1549,7 @@ pub enum Threading {
 ///     duplicating work, we do monomorphization in two steps. First, we go through and
 ///     determine all the specializations this module *wants*. We compute the hashes
 ///     and report them to the coordinator thread, along with the mono::expr::Expr values of
-///     the current function's body. At this point, we have not yet begun to assemble Procs;
+///     the current function's body. At this point, we have not yet begun to assemble Pbrocs;
 ///     all we've done is send a list of requested specializations to the coordinator.
 /// 11. The coordinator works through the specialization requests in parallel, adding them
 ///     to a global map once they're finished. Performing one specialization may result
@@ -1566,7 +1566,7 @@ pub enum Threading {
 ///        "f" that uses "ability1", and module App implements "ability1" and calls "f" with the
 ///        implementing type. Then the specialization of "Ab#f" depends on the specialization of
 ///        "ability1" back in the App module.
-/// 12. Now that we have our final map of specializations, we can proceed to code gen!
+/// 12. Now that we have our final map of specializations, we can pbroceed to code gen!
 ///     As long as the specializations are stored in a per-ModuleId map, we can also
 ///     parallelize this code gen. (e.g. in dev builds, building separate LLVM modules
 ///     and then linking them together, and possibly caching them by the hash of their
@@ -1577,7 +1577,7 @@ pub fn load<'a>(
     load_start: LoadStart<'a>,
     exposed_types: ExposedByModule,
     cached_types: MutMap<ModuleId, TypeState>,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     load_config: LoadConfig,
 ) -> Result<LoadResult<'a>, LoadingProblem<'a>> {
     enum Threads {
@@ -1614,7 +1614,7 @@ pub fn load<'a>(
             load_config.render,
             load_config.palette,
             load_config.exec_mode,
-            roc_cache_dir,
+            broc_cache_dir,
         ),
         Threads::Many(threads) => load_multi_threaded(
             arena,
@@ -1626,7 +1626,7 @@ pub fn load<'a>(
             load_config.palette,
             threads,
             load_config.exec_mode,
-            roc_cache_dir,
+            broc_cache_dir,
         ),
     }
 }
@@ -1641,7 +1641,7 @@ pub fn load_single_threaded<'a>(
     render: RenderTarget,
     palette: Palette,
     exec_mode: ExecutionMode,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
 ) -> Result<LoadResult<'a>, LoadingProblem<'a>> {
     let LoadStart {
         arc_modules,
@@ -1712,7 +1712,7 @@ pub fn load_single_threaded<'a>(
             &worker_msg_rx,
             &msg_tx,
             &src_dir,
-            roc_cache_dir,
+            broc_cache_dir,
             target_info,
         );
 
@@ -1956,7 +1956,7 @@ fn load_multi_threaded<'a>(
     palette: Palette,
     available_threads: usize,
     exec_mode: ExecutionMode,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
 ) -> Result<LoadResult<'a>, LoadingProblem<'a>> {
     let LoadStart {
         arc_modules,
@@ -2062,7 +2062,7 @@ fn load_multi_threaded<'a>(
                             worker_msg_rx,
                             msg_tx,
                             src_dir,
-                            roc_cache_dir,
+                            broc_cache_dir,
                             target_info,
                         )
                     });
@@ -2131,7 +2131,7 @@ fn worker_task_step<'a>(
     worker_msg_rx: &crossbeam::channel::Receiver<WorkerMsg>,
     msg_tx: &MsgSender<'a>,
     src_dir: &Path,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     target_info: TargetInfo,
 ) -> Result<ControlFlow<(), ()>, LoadingProblem<'a>> {
     match worker_msg_rx.try_recv() {
@@ -2160,7 +2160,7 @@ fn worker_task_step<'a>(
                             worker_arena,
                             src_dir,
                             msg_tx.clone(),
-                            roc_cache_dir,
+                            broc_cache_dir,
                             target_info,
                         );
 
@@ -2205,7 +2205,7 @@ fn worker_task<'a>(
     worker_msg_rx: crossbeam::channel::Receiver<WorkerMsg>,
     msg_tx: MsgSender<'a>,
     src_dir: &Path,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     target_info: TargetInfo,
 ) -> Result<(), LoadingProblem<'a>> {
     // Keep listening until we receive a Shutdown msg
@@ -2259,7 +2259,7 @@ fn worker_task<'a>(
                         worker_arena,
                         src_dir,
                         msg_tx.clone(),
-                        roc_cache_dir,
+                        broc_cache_dir,
                         target_info,
                     );
 
@@ -2310,13 +2310,13 @@ fn start_tasks<'a>(
 macro_rules! debug_print_ir {
     ($state:expr, $interner:expr, $flag:path) => {
         dbg_do!($flag, {
-            let procs_string = $state
+            let pbrocs_string = $state
                 .procedures
                 .values()
-                .map(|proc| proc.to_pretty($interner, 200, true))
+                .map(|pbroc| pbroc.to_pretty($interner, 200, true))
                 .collect::<Vec<_>>();
 
-            let result = procs_string.join("\n");
+            let result = pbrocs_string.join("\n");
 
             eprintln!("{}", result);
         })
@@ -2326,7 +2326,7 @@ macro_rules! debug_print_ir {
 macro_rules! debug_check_ir {
     ($state:expr, $arena:expr, $interner:expr, $flag:path) => {
         dbg_do!($flag, {
-            use roc_mono::debug::{check_procs, format_problems};
+            use broc_mono::debug::{check_pbrocs, format_problems};
 
             let interns = Interns {
                 module_ids: $state.arc_modules.lock().clone().into_module_ids(),
@@ -2335,7 +2335,7 @@ macro_rules! debug_check_ir {
 
             let procedures = &$state.procedures;
 
-            let problems = check_procs($arena, &mut $interner, procedures);
+            let problems = check_pbrocs($arena, &mut $interner, procedures);
             if !problems.is_empty() {
                 let formatted = format_problems(&interns, &$interner, problems);
                 eprintln!("IR PROBLEMS FOUND:\n{formatted}");
@@ -2370,14 +2370,14 @@ fn report_unused_imported_modules<'a>(
 
     for (unused, region) in unused_imported_modules.drain() {
         if !unused.is_builtin() {
-            existing.push(roc_problem::can::Problem::UnusedModuleImport(
+            existing.push(broc_problem::can::Problem::UnusedModuleImport(
                 unused, region,
             ));
         }
     }
 
     for (unused, region) in unused_imports.drain() {
-        existing.push(roc_problem::can::Problem::UnusedImport(unused, region));
+        existing.push(broc_problem::can::Problem::UnusedImport(unused, region));
     }
 }
 
@@ -2443,7 +2443,7 @@ fn update<'a>(
                                         .join(url_metadata.cache_subdir)
                                         .join(url_metadata.content_hash);
                                     let root_module = root_module_dir.join(
-                                        url_metadata.root_module_filename.unwrap_or("main.roc"),
+                                        url_metadata.root_module_filename.unwrap_or("main.broc"),
                                     );
 
                                     ShorthandPath::FromHttpsUrl {
@@ -2913,7 +2913,7 @@ fn update<'a>(
         }
         FoundSpecializations {
             module_id,
-            procs_base,
+            pbrocs_base,
             solved_subs,
             ident_ids,
             layout_cache,
@@ -2934,12 +2934,12 @@ fn update<'a>(
                 .top_level_thunks
                 .entry(module_id)
                 .or_default()
-                .extend(procs_base.module_thunks.iter().copied());
+                .extend(pbrocs_base.module_thunks.iter().copied());
 
             let found_specializations_module = FoundSpecializationsModule {
                 ident_ids,
                 layout_cache,
-                procs_base,
+                pbrocs_base,
                 subs,
                 module_timing,
                 abilities_store,
@@ -2964,7 +2964,7 @@ fn update<'a>(
             ident_ids,
             mut update_mode_ids,
             subs,
-            procs_base,
+            pbrocs_base,
             procedures,
             external_specializations_requested,
             module_timing,
@@ -2990,7 +2990,7 @@ fn update<'a>(
                     module_timing,
                     subs,
                     layout_cache,
-                    procs_base,
+                    pbrocs_base,
                     expectations,
                 },
             );
@@ -3062,7 +3062,7 @@ fn update<'a>(
                             subs,
                             module_timing,
                             layout_cache: _layout_cache,
-                            procs_base: _,
+                            pbrocs_base: _,
                             expectations,
                         },
                     ) in state.module_cache.late_specializations.drain()
@@ -3098,7 +3098,7 @@ fn update<'a>(
 
                     let ident_ids = state.constrained_ident_ids.get_mut(&module_id).unwrap();
 
-                    Proc::insert_reset_reuse_operations(
+                    Pbroc::insert_reset_reuse_operations(
                         arena,
                         &mut layout_interner,
                         module_id,
@@ -3109,26 +3109,26 @@ fn update<'a>(
 
                     debug_print_ir!(state, &layout_interner, ROC_PRINT_IR_AFTER_RESET_REUSE);
 
-                    let host_exposed_procs = bumpalo::collections::Vec::from_iter_in(
+                    let host_exposed_pbrocs = bumpalo::collections::Vec::from_iter_in(
                         state.exposed_to_host.top_level_values.keys().copied(),
                         arena,
                     );
 
-                    Proc::insert_refcount_operations(
+                    Pbroc::insert_refcount_operations(
                         arena,
                         &layout_interner,
                         module_id,
                         ident_ids,
                         &mut update_mode_ids,
                         &mut state.procedures,
-                        &host_exposed_procs,
+                        &host_exposed_pbrocs,
                     );
 
                     debug_print_ir!(state, &layout_interner, ROC_PRINT_IR_AFTER_REFCOUNT);
 
                     // This is not safe with the new non-recursive RC updates that we do for tag unions
                     //
-                    // Proc::optimize_refcount_operations(
+                    // Pbroc::optimize_refcount_operations(
                     //     arena,
                     //     module_id,
                     //     &mut ident_ids,
@@ -3195,10 +3195,10 @@ fn update<'a>(
                     //   "bouncing back and forth" between ability calls, which is likely to be
                     //   small in practice
                     // - the phases will always terminate. suppose they didn't; then there must be
-                    //   an infinite chain of calls all of which have different layouts. In Roc
+                    //   an infinite chain of calls all of which have different layouts. In Broc
                     //   this can only be true if the calls are all mutually recursive, and
                     //   furthermore are polymorphically recursive. But polymorphic recursion is
-                    //   illegal in Roc, will have been enforced during type inference.
+                    //   illegal in Broc, will have been enforced during type inference.
 
                     if state
                         .module_cache
@@ -3256,7 +3256,7 @@ fn update<'a>(
 #[cfg(debug_assertions)]
 fn log_layout_stats(module_id: ModuleId, layout_cache: &LayoutCache) {
     let (cache_stats, raw_function_cache_stats) = layout_cache.statistics();
-    roc_tracing::info!(
+    broc_tracing::info!(
         module = ?module_id,
         insertions = cache_stats.insertions,
         hits = cache_stats.hits,
@@ -3265,7 +3265,7 @@ fn log_layout_stats(module_id: ModuleId, layout_cache: &LayoutCache) {
         non_reusable = cache_stats.non_reusable,
         "cache stats"
     );
-    roc_tracing::info!(
+    broc_tracing::info!(
         module = ?module_id,
         insertions = raw_function_cache_stats.insertions,
         hits = raw_function_cache_stats.hits,
@@ -3287,7 +3287,7 @@ fn finish_specialization<'a>(
     if false {
         println!(
             "total Type clones: {} ",
-            roc_types::types::get_type_clone_count()
+            broc_types::types::get_type_clone_count()
         );
     }
     let module_ids = Arc::try_unwrap(state.arc_modules)
@@ -3338,10 +3338,10 @@ fn finish_specialization<'a>(
                         let mut buf = bumpalo::collections::Vec::with_capacity_in(src.len(), arena);
 
                         for &symbol in src.keys() {
-                            let proc_layout =
-                                proc_layout_for(state.procedures.keys().copied(), symbol);
+                            let pbroc_layout =
+                                pbroc_layout_for(state.procedures.keys().copied(), symbol);
 
-                            buf.push((symbol, proc_layout));
+                            buf.push((symbol, pbroc_layout));
                         }
 
                         buf.into_bump_slice()
@@ -3358,10 +3358,10 @@ fn finish_specialization<'a>(
                         for (loc_name, _loc_typed_ident) in provides {
                             let ident_id = ident_ids.get_or_insert(loc_name.value.as_str());
                             let symbol = Symbol::new(module_id, ident_id);
-                            let proc_layout =
-                                proc_layout_for(state.procedures.keys().copied(), symbol);
+                            let pbroc_layout =
+                                pbroc_layout_for(state.procedures.keys().copied(), symbol);
 
-                            buf.push((symbol, proc_layout));
+                            buf.push((symbol, pbroc_layout));
                         }
 
                         buf.into_bump_slice()
@@ -3413,12 +3413,12 @@ fn finish_specialization<'a>(
         // Expose glue for the platform, not for the app module!
         let module_id = platform_data.module_id;
 
-        for (_name, proc_layout) in exposed_top_levels.iter() {
-            let ret = &proc_layout.result;
-            for in_layout in proc_layout.arguments.iter().chain([ret]) {
+        for (_name, pbroc_layout) in exposed_top_levels.iter() {
+            let ret = &pbroc_layout.result;
+            for in_layout in pbroc_layout.arguments.iter().chain([ret]) {
                 let layout = layout_interner.get(*in_layout);
                 let ident_ids = interns.all_ident_ids.get_mut(&module_id).unwrap();
-                let all_glue_procs = roc_mono::ir::generate_glue_procs(
+                let all_glue_pbrocs = broc_mono::ir::generate_glue_pbrocs(
                     module_id,
                     ident_ids,
                     arena,
@@ -3426,22 +3426,22 @@ fn finish_specialization<'a>(
                     arena.alloc(layout),
                 );
 
-                let lambda_set_names = all_glue_procs
+                let lambda_set_names = all_glue_pbrocs
                     .extern_names
                     .iter()
                     .map(|(lambda_set_id, _)| (*_name, *lambda_set_id));
                 exposed_to_host.lambda_sets.extend(lambda_set_names);
 
-                let getter_names = all_glue_procs
+                let getter_names = all_glue_pbrocs
                     .getters
                     .iter()
-                    .flat_map(|(_, glue_procs)| glue_procs.iter().map(|glue_proc| glue_proc.name));
+                    .flat_map(|(_, glue_pbrocs)| glue_pbrocs.iter().map(|glue_pbroc| glue_pbroc.name));
                 exposed_to_host.getters.extend(getter_names);
 
-                glue_getters.extend(all_glue_procs.getters.iter().flat_map(|(_, glue_procs)| {
-                    glue_procs
+                glue_getters.extend(all_glue_pbrocs.getters.iter().flat_map(|(_, glue_pbrocs)| {
+                    glue_pbrocs
                         .iter()
-                        .map(|glue_proc| (glue_proc.name, glue_proc.proc_layout))
+                        .map(|glue_pbroc| (glue_pbroc.name, glue_pbroc.pbroc_layout))
                 }));
             }
         }
@@ -3481,16 +3481,16 @@ fn finish_specialization<'a>(
     })
 }
 
-fn proc_layout_for<'a>(
-    mut proc_symbols: impl Iterator<Item = (Symbol, ProcLayout<'a>)>,
+fn pbroc_layout_for<'a>(
+    mut pbroc_symbols: impl Iterator<Item = (Symbol, PbrocLayout<'a>)>,
     symbol: Symbol,
-) -> ProcLayout<'a> {
-    match proc_symbols.find(|(s, _)| *s == symbol) {
+) -> PbrocLayout<'a> {
+    match pbroc_symbols.find(|(s, _)| *s == symbol) {
         Some((_, layout)) => layout,
         None => {
             // the entry point is not specialized. This can happen if the repl output
             // is a function value
-            roc_mono::ir::ProcLayout {
+            broc_mono::ir::PbrocLayout {
                 arguments: &[],
                 result: Layout::UNIT,
                 niche: Niche::NONE,
@@ -3579,14 +3579,14 @@ fn load_package_from_disk<'a>(
         Ok(bytes_vec) => {
             let parse_start = Instant::now();
             let bytes = arena.alloc(bytes_vec);
-            let parse_state = roc_parse::state::State::new(bytes);
-            let parsed = roc_parse::module::parse_header(arena, parse_state.clone());
+            let parse_state = broc_parse::state::State::new(bytes);
+            let parsed = broc_parse::module::parse_header(arena, parse_state.clone());
             let parse_header_duration = parse_start.elapsed();
 
             // Insert the first entries for this module's timings
             let mut pkg_module_timing = ModuleTiming::new(module_start_time);
 
-            pkg_module_timing.read_roc_file = file_io_duration;
+            pkg_module_timing.read_broc_file = file_io_duration;
             pkg_module_timing.parse_header = parse_header_duration;
 
             match parsed {
@@ -3688,7 +3688,7 @@ fn load_package_from_disk<'a>(
 }
 
 fn get_exposes_ids<'a>(
-    entries: &'a [Loc<Spaced<'a, roc_parse::header::ModuleName<'a>>>],
+    entries: &'a [Loc<Spaced<'a, broc_parse::header::ModuleName<'a>>>],
     arena: &'a Bump,
     module_ids: &Arc<Mutex<PackageModuleIds<'a>>>,
     ident_ids_by_module: &Arc<Mutex<IdentIdsByModule>>,
@@ -3717,14 +3717,14 @@ fn load_builtin_module_help<'a>(
     arena: &'a Bump,
     filename: &str,
     src_bytes: &'a str,
-) -> (HeaderInfo<'a>, roc_parse::state::State<'a>) {
+) -> (HeaderInfo<'a>, broc_parse::state::State<'a>) {
     let is_root_module = false;
     let opt_shorthand = None;
 
     let filename = PathBuf::from(filename);
 
-    let parse_state = roc_parse::state::State::new(src_bytes.as_bytes());
-    let parsed = roc_parse::module::parse_header(arena, parse_state.clone());
+    let parse_state = broc_parse::state::State::new(src_bytes.as_bytes());
+    let parsed = broc_parse::module::parse_header(arena, parse_state.clone());
 
     match parsed {
         Ok((
@@ -3788,7 +3788,7 @@ fn load_module<'a>(
     module_name: PQModuleName<'a>,
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     arc_shorthands: Arc<Mutex<MutMap<&'a str, ShorthandPath>>>,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     ident_ids_by_module: SharedIdentIdsByModule,
 ) -> Result<HeaderOutput<'a>, LoadingProblem<'a>> {
     let module_start_time = Instant::now();
@@ -3799,7 +3799,7 @@ fn load_module<'a>(
     // Insert the first entries for this module's timings
     let mut module_timing = ModuleTiming::new(module_start_time);
 
-    module_timing.read_roc_file = Default::default();
+    module_timing.read_broc_file = Default::default();
     module_timing.parse_header = parse_header_duration;
 
     macro_rules! load_builtins {
@@ -3813,7 +3813,7 @@ fn load_module<'a>(
                         ident_ids_by_module,
                         module_timing,
                         $module_id,
-                        concat!($name, ".roc")
+                        concat!($name, ".broc")
                     )?;
 
                     return Ok(HeaderOutput { module_id, msg, opt_platform_shorthand: None });
@@ -3848,24 +3848,24 @@ fn load_module<'a>(
         Some(module_name),
         module_ids,
         ident_ids_by_module,
-        roc_cache_dir,
+        broc_cache_dir,
         module_start_time,
     )
 }
 
 #[derive(Debug)]
 enum ShorthandPath {
-    /// e.g. "/home/rtfeldman/.cache/roc/0.1.0/oUkxSOI9zFGtSoIaMB40QPdrXphr1p1780eiui2iO9Mz"
+    /// e.g. "/home/rtfeldman/.cache/broc/0.1.0/oUkxSOI9zFGtSoIaMB40QPdrXphr1p1780eiui2iO9Mz"
     FromHttpsUrl {
-        /// e.g. "/home/rtfeldman/.cache/roc/0.1.0/oUkxSOI9zFGtSoIaMB40QPdrXphr1p1780eiui2iO9Mz"
+        /// e.g. "/home/rtfeldman/.cache/broc/0.1.0/oUkxSOI9zFGtSoIaMB40QPdrXphr1p1780eiui2iO9Mz"
         root_module_dir: PathBuf,
-        /// e.g. "/home/rtfeldman/.cache/roc/0.1.0/oUkxSOI9zFGtSoIaMB40QPdrXphr1p1780eiui2iO9Mz/main.roc"
+        /// e.g. "/home/rtfeldman/.cache/broc/0.1.0/oUkxSOI9zFGtSoIaMB40QPdrXphr1p1780eiui2iO9Mz/main.broc"
         root_module: PathBuf,
     },
     RelativeToSrc {
-        /// e.g. "/home/rtfeldman/my-roc-code/examples/cli/cli-platform/"
+        /// e.g. "/home/rtfeldman/my-broc-code/examples/cli/cli-platform/"
         root_module_dir: PathBuf,
-        /// e.g. "/home/rtfeldman/my-roc-code/examples/cli/cli-platform/main.roc"
+        /// e.g. "/home/rtfeldman/my-broc-code/examples/cli/cli-platform/main.broc"
         root_module: PathBuf,
     },
 }
@@ -3924,7 +3924,7 @@ fn module_name_to_path<'a>(
         }
     }
 
-    // End with .roc
+    // End with .broc
     filename.set_extension(ROC_FILE_EXTENSION);
 
     (filename, opt_shorthand)
@@ -3957,9 +3957,9 @@ fn find_task<T>(local: &Worker<T>, global: &Injector<T>, stealers: &[Stealer<T>]
 }
 
 fn verify_interface_matches_file_path<'a>(
-    interface_name: Loc<roc_parse::header::ModuleName<'a>>,
+    interface_name: Loc<broc_parse::header::ModuleName<'a>>,
     path: &Path,
-    state: &roc_parse::state::State<'a>,
+    state: &broc_parse::state::State<'a>,
 ) -> Result<(), LoadingProblem<'a>> {
     let module_parts = interface_name.value.as_str().split(MODULE_SEPARATOR).rev();
 
@@ -3985,7 +3985,7 @@ fn verify_interface_matches_file_path<'a>(
         return Ok(());
     }
 
-    use roc_parse::parser::EHeader;
+    use broc_parse::parser::EHeader;
     let syntax_problem =
         SyntaxError::Header(EHeader::InconsistentModuleName(interface_name.region));
     let problem = LoadingProblem::ParsingFailed(FileError {
@@ -4013,18 +4013,18 @@ fn parse_header<'a>(
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     ident_ids_by_module: SharedIdentIdsByModule,
     src_bytes: &'a [u8],
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     start_time: Instant,
 ) -> Result<HeaderOutput<'a>, LoadingProblem<'a>> {
     let parse_start = Instant::now();
-    let parse_state = roc_parse::state::State::new(src_bytes);
-    let parsed = roc_parse::module::parse_header(arena, parse_state.clone());
+    let parse_state = broc_parse::state::State::new(src_bytes);
+    let parsed = broc_parse::module::parse_header(arena, parse_state.clone());
     let parse_header_duration = parse_start.elapsed();
 
     // Insert the first entries for this module's timings
     let mut module_timing = ModuleTiming::new(start_time);
 
-    module_timing.read_roc_file = read_file_duration;
+    module_timing.read_broc_file = read_file_duration;
     module_timing.parse_header = parse_header_duration;
 
     match parsed {
@@ -4185,7 +4185,7 @@ fn parse_header<'a>(
             load_packages(
                 packages,
                 &mut messages,
-                roc_cache_dir,
+                broc_cache_dir,
                 app_file_dir,
                 arena,
                 module_id,
@@ -4287,7 +4287,7 @@ fn parse_header<'a>(
 fn load_packages<'a>(
     packages: &[Loc<PackageEntry<'a>>],
     load_messages: &mut Vec<Msg<'a>>,
-    roc_cache_dir: RocCacheDir,
+    broc_cache_dir: BrocCacheDir,
     cwd: PathBuf,
     arena: &'a Bump,
     module_id: ModuleId,
@@ -4314,22 +4314,22 @@ fn load_packages<'a>(
             #[cfg(not(target_family = "wasm"))]
             {
                 // If this is a HTTPS package, synchronously download it
-                // to the cache before proceeding.
+                // to the cache before pbroceeding.
 
                 // TODO we should do this async; however, with the current
                 // architecture of file.rs (which doesn't use async/await),
                 // this would be very difficult!
-                let (package_dir, opt_root_module) = cache::install_package(roc_cache_dir, src)
+                let (package_dir, opt_root_module) = cache::install_package(broc_cache_dir, src)
                     .unwrap_or_else(|err| {
                         todo!("TODO gracefully handle package install error {:?}", err);
                     });
 
                 // You can optionally specify the root module using the URL fragment,
-                // e.g. #foo.roc
-                // (defaults to main.roc)
+                // e.g. #foo.broc
+                // (defaults to main.broc)
                 match opt_root_module {
                     Some(root_module) => package_dir.join(root_module),
-                    None => package_dir.join("main.roc"),
+                    None => package_dir.join("main.broc"),
                 }
             }
 
@@ -4368,7 +4368,7 @@ fn load_filename<'a>(
     opt_expected_module_name: Option<PackageQualified<'a, ModuleName>>,
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     ident_ids_by_module: SharedIdentIdsByModule,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     module_start_time: Instant,
 ) -> Result<HeaderOutput<'a>, LoadingProblem<'a>> {
     let file_io_start = Instant::now();
@@ -4386,7 +4386,7 @@ fn load_filename<'a>(
             module_ids,
             ident_ids_by_module,
             arena.alloc(bytes),
-            roc_cache_dir,
+            broc_cache_dir,
             module_start_time,
         ),
         Err(err) => Err(LoadingProblem::FileProblem {
@@ -4404,7 +4404,7 @@ fn load_from_str<'a>(
     src: &'a str,
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     ident_ids_by_module: SharedIdentIdsByModule,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     module_start_time: Instant,
 ) -> Result<HeaderOutput<'a>, LoadingProblem<'a>> {
     let file_io_start = Instant::now();
@@ -4420,7 +4420,7 @@ fn load_from_str<'a>(
         module_ids,
         ident_ids_by_module,
         src.as_bytes(),
-        roc_cache_dir,
+        broc_cache_dir,
         module_start_time,
     )
 }
@@ -4439,7 +4439,7 @@ struct HeaderInfo<'a> {
 fn build_header<'a>(
     arena: &'a Bump,
     info: HeaderInfo<'a>,
-    parse_state: roc_parse::state::State<'a>,
+    parse_state: broc_parse::state::State<'a>,
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     ident_ids_by_module: SharedIdentIdsByModule,
     module_timing: ModuleTiming,
@@ -4465,7 +4465,7 @@ fn build_header<'a>(
             opt_app_module_id, ..
         } => {
             // Add standard imports, if there is an app module.
-            // (There might not be, e.g. when running `roc check myplatform.roc` or
+            // (There might not be, e.g. when running `broc check myplatform.broc` or
             // when generating bindings.)
             if let Some(app_module_id) = opt_app_module_id {
                 imported_modules.insert(*app_module_id, Region::zero());
@@ -4572,7 +4572,7 @@ fn build_header<'a>(
         } = header_type
         {
             // If we don't have an app module id (e.g. because we're doing
-            // `roc check myplatform.roc` or because we're generating glue code),
+            // `broc check myplatform.broc` or because we're generating glue code),
             // insert the `requires` symbols into the platform module's IdentIds.
             //
             // Otherwise, get them from the app module's IdentIds, because it
@@ -4720,7 +4720,7 @@ fn build_header<'a>(
         }
     }
 
-    // make sure when we run the bulitin modules in /compiler/builtins/roc that we
+    // make sure when we run the bulitin modules in /compiler/builtins/broc that we
     // mark these modules as Builtin. Otherwise the builtin functions are not instantiated
     // and we just have a bunch of definitions with runtime errors in their bodies
     let header_type = {
@@ -4800,8 +4800,8 @@ impl<'a> BuildTask<'a> {
     }
 }
 
-fn synth_import(subs: &mut Subs, content: roc_types::subs::Content) -> Variable {
-    use roc_types::subs::{Descriptor, Mark, OptVariable, Rank};
+fn synth_import(subs: &mut Subs, content: broc_types::subs::Content) -> Variable {
+    use broc_types::subs::{Descriptor, Mark, OptVariable, Rank};
     subs.fresh(Descriptor {
         content,
         rank: Rank::import(),
@@ -4811,7 +4811,7 @@ fn synth_import(subs: &mut Subs, content: roc_types::subs::Content) -> Variable 
 }
 
 fn synth_list_len_type(subs: &mut Subs) -> Variable {
-    use roc_types::subs::{Content, FlatType, LambdaSet, OptVariable, SubsSlice, UnionLabels};
+    use broc_types::subs::{Content, FlatType, LambdaSet, OptVariable, SubsSlice, UnionLabels};
 
     // List.len : List a -> Nat
     let a = synth_import(subs, Content::FlexVar(None));
@@ -5095,7 +5095,7 @@ fn run_solve_solve(
         &import_variables,
     );
 
-    let mut solve_aliases = roc_solve::solve::Aliases::with_capacity(aliases.len());
+    let mut solve_aliases = broc_solve::solve::Aliases::with_capacity(aliases.len());
     for (name, (_, alias)) in aliases.iter() {
         solve_aliases.insert(&mut types, *name, alias.clone());
     }
@@ -5103,7 +5103,7 @@ fn run_solve_solve(
     let (solved_subs, solved_implementations, exposed_vars_by_symbol, problems, abilities_store) = {
         let module_id = module.module_id;
 
-        let (solved_subs, solved_env, problems, abilities_store) = roc_solve::module::run_solve(
+        let (solved_subs, solved_env, problems, abilities_store) = broc_solve::module::run_solve(
             module_id,
             types,
             &constraints,
@@ -5177,7 +5177,7 @@ fn run_solve<'a>(
 
     let module_id = module.module_id;
 
-    // TODO remove when we write builtins in roc
+    // TODO remove when we write builtins in broc
     let aliases = module.aliases.clone();
 
     let mut module = module;
@@ -5226,7 +5226,7 @@ fn run_solve<'a>(
     };
 
     let mut solved_subs = solved_subs;
-    let exposed_types = roc_solve::module::exposed_types_storage_subs(
+    let exposed_types = broc_solve::module::exposed_types_storage_subs(
         module_id,
         &mut solved_subs,
         &exposed_vars_by_symbol,
@@ -5276,7 +5276,7 @@ fn build_package_header<'a>(
     opt_shorthand: Option<&'a str>,
     is_root_module: bool,
     filename: PathBuf,
-    parse_state: roc_parse::state::State<'a>,
+    parse_state: broc_parse::state::State<'a>,
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     ident_ids_by_module: SharedIdentIdsByModule,
     header: &PackageHeader<'a>,
@@ -5326,7 +5326,7 @@ fn build_platform_header<'a>(
     opt_shorthand: Option<&'a str>,
     opt_app_module_id: Option<ModuleId>,
     filename: PathBuf,
-    parse_state: roc_parse::state::State<'a>,
+    parse_state: broc_parse::state::State<'a>,
     module_ids: Arc<Mutex<PackageModuleIds<'a>>>,
     exposes_ids: &'a [ModuleId],
     ident_ids_by_module: SharedIdentIdsByModule,
@@ -5414,7 +5414,7 @@ fn canonicalize_and_constrain<'a>(
     } = parsed;
 
     // _before has an underscore because it's unused in --release builds
-    let _before = roc_types::types::get_type_clone_count();
+    let _before = broc_types::types::get_type_clone_count();
 
     let parsed_defs_for_docs = parsed_defs.clone();
     let parsed_defs = arena.alloc(parsed_defs);
@@ -5438,7 +5438,7 @@ fn canonicalize_and_constrain<'a>(
     let mut types = Types::new();
 
     // _after has an underscore because it's unused in --release builds
-    let _after = roc_types::types::get_type_clone_count();
+    let _after = broc_types::types::get_type_clone_count();
 
     log!(
         "canonicalize of {:?} cloned Type {} times ({} -> {})",
@@ -5487,12 +5487,12 @@ fn canonicalize_and_constrain<'a>(
     };
 
     // _before has an underscore because it's unused in --release builds
-    let _before = roc_types::types::get_type_clone_count();
+    let _before = broc_types::types::get_type_clone_count();
 
     let mut constraints = Constraints::new();
 
     let constraint = if skip_constraint_gen {
-        roc_can::constraint::Constraint::True
+        broc_can::constraint::Constraint::True
     } else {
         constrain_module(
             &mut types,
@@ -5505,7 +5505,7 @@ fn canonicalize_and_constrain<'a>(
     };
 
     // _after has an underscore because it's unused in --release builds
-    let _after = roc_types::types::get_type_clone_count();
+    let _after = broc_types::types::get_type_clone_count();
 
     log!(
         "constraint gen of {:?} cloned Type {} times ({} -> {})",
@@ -5643,7 +5643,7 @@ fn parse<'a>(arena: &'a Bump, header: ModuleHeader<'a>) -> Result<Msg<'a>, Loadi
 fn exposed_from_import<'a>(
     entry: &ImportsEntry<'a>,
 ) -> Option<(QualifiedModuleName<'a>, Vec<Loc<Ident>>)> {
-    use roc_parse::header::ImportsEntry::*;
+    use broc_parse::header::ImportsEntry::*;
 
     match entry {
         Module(module_name, exposes) => {
@@ -5685,7 +5685,7 @@ fn value_def_from_imports<'a>(
     header_path: &Path,
     entry: &Loc<ImportsEntry<'a>>,
 ) -> Result<Option<ValueDef<'a>>, LoadingProblem<'a>> {
-    use roc_parse::header::ImportsEntry::*;
+    use broc_parse::header::ImportsEntry::*;
 
     let value = match entry.value {
         Module(_, _) => None,
@@ -5746,7 +5746,7 @@ fn make_specializations<'a>(
     home: ModuleId,
     mut ident_ids: IdentIds,
     mut subs: Subs,
-    procs_base: ProcsBase<'a>,
+    pbrocs_base: PbrocsBase<'a>,
     mut layout_cache: LayoutCache<'a>,
     specializations_we_must_make: Vec<ExternalSpecializations<'a>>,
     mut module_timing: ModuleTiming,
@@ -5759,7 +5759,7 @@ fn make_specializations<'a>(
     let make_specializations_start = Instant::now();
     let mut update_mode_ids = UpdateModeIds::new();
     // do the thing
-    let mut mono_env = roc_mono::ir::Env {
+    let mut mono_env = broc_mono::ir::Env {
         arena,
         subs: &mut subs,
         expectation_subs: expectations.as_mut().map(|e| &mut e.subs),
@@ -5774,33 +5774,33 @@ fn make_specializations<'a>(
         derived_module: &derived_module,
     };
 
-    let mut procs = Procs::new_in(arena);
+    let mut pbrocs = Pbrocs::new_in(arena);
 
     let host_exposed_symbols: bumpalo::collections::Vec<_> =
-        procs_base.get_host_exposed_symbols().collect_in(arena);
+        pbrocs_base.get_host_exposed_symbols().collect_in(arena);
 
-    for (symbol, partial_proc) in procs_base.partial_procs.into_iter() {
-        procs.partial_procs.insert(symbol, partial_proc);
+    for (symbol, partial_pbroc) in pbrocs_base.partial_pbrocs.into_iter() {
+        pbrocs.partial_pbrocs.insert(symbol, partial_pbroc);
     }
 
-    procs.host_exposed_symbols = host_exposed_symbols.into_bump_slice();
-    procs.module_thunks = procs_base.module_thunks;
-    procs.runtime_errors = procs_base.runtime_errors;
-    procs.imported_module_thunks = procs_base.imported_module_thunks;
+    pbrocs.host_exposed_symbols = host_exposed_symbols.into_bump_slice();
+    pbrocs.module_thunks = pbrocs_base.module_thunks;
+    pbrocs.runtime_errors = pbrocs_base.runtime_errors;
+    pbrocs.imported_module_thunks = pbrocs_base.imported_module_thunks;
 
     // TODO: for now this final specialization pass is sequential,
     // with no parallelization at all. We should try to parallelize
-    // this, but doing so will require a redesign of Procs.
-    procs = roc_mono::ir::specialize_all(
+    // this, but doing so will require a redesign of Pbrocs.
+    pbrocs = broc_mono::ir::specialize_all(
         &mut mono_env,
-        procs,
+        pbrocs,
         specializations_we_must_make,
-        procs_base.host_specializations,
+        pbrocs_base.host_specializations,
         &mut layout_cache,
     );
 
-    let external_specializations_requested = procs.externals_we_need.clone();
-    let (procedures, restored_procs_base) = procs.get_specialized_procs_without_rc(&mut mono_env);
+    let external_specializations_requested = pbrocs.externals_we_need.clone();
+    let (procedures, restored_pbrocs_base) = pbrocs.get_specialized_pbrocs_without_rc(&mut mono_env);
 
     // Turn `Bytes.Decode.IdentId(238)` into `Bytes.Decode.238`, we rely on this in mono tests
     mono_env.home.register_debug_idents(mono_env.ident_ids);
@@ -5814,7 +5814,7 @@ fn make_specializations<'a>(
         module_id: home,
         ident_ids,
         layout_cache,
-        procs_base: restored_procs_base,
+        pbrocs_base: restored_pbrocs_base,
         procedures,
         update_mode_ids,
         subs,
@@ -5846,17 +5846,17 @@ fn build_pending_specializations<'a>(
     let mut module_thunks = bumpalo::collections::Vec::new_in(arena);
     let mut toplevel_expects = ToplevelExpects::default();
 
-    let mut procs_base = ProcsBase {
-        partial_procs: BumpMap::default(),
+    let mut pbrocs_base = PbrocsBase {
+        partial_pbrocs: BumpMap::default(),
         module_thunks: &[],
-        host_specializations: roc_mono::ir::HostSpecializations::new(),
+        host_specializations: broc_mono::ir::HostSpecializations::new(),
         runtime_errors: BumpMap::default(),
         imported_module_thunks,
     };
 
     let mut update_mode_ids = UpdateModeIds::new();
     let mut subs = solved_subs.into_inner();
-    let mut mono_env = roc_mono::ir::Env {
+    let mut mono_env = broc_mono::ir::Env {
         arena,
         subs: &mut subs,
         expectation_subs: expectations.as_mut().map(|e| &mut e.subs),
@@ -5876,9 +5876,9 @@ fn build_pending_specializations<'a>(
 
     let layout_cache_snapshot = layout_cache.snapshot();
 
-    // Add modules' decls to Procs
+    // Add modules' decls to Pbrocs
     for index in 0..declarations.len() {
-        use roc_can::expr::DeclarationTag::*;
+        use broc_can::expr::DeclarationTag::*;
 
         let symbol = declarations.symbols[index].value;
         let expr_var = declarations.variables[index];
@@ -5894,7 +5894,7 @@ fn build_pending_specializations<'a>(
             Value => {
                 // If this is an exposed symbol, we need to
                 // register it as such. Otherwise, since it
-                // never gets called by Roc code, it will never
+                // never gets called by Broc code, it will never
                 // get specialized!
                 if is_host_exposed {
                     let layout_result =
@@ -5905,7 +5905,7 @@ fn build_pending_specializations<'a>(
                         match e {
                             LayoutProblem::Erroneous => {
                                 let message = "top level function has erroneous type";
-                                procs_base.runtime_errors.insert(symbol, message);
+                                pbrocs_base.runtime_errors.insert(symbol, message);
                                 continue;
                             }
                             LayoutProblem::UnresolvedTypeVar(v) => {
@@ -5913,7 +5913,7 @@ fn build_pending_specializations<'a>(
                                     "top level function has unresolved type variable {:?}",
                                     v
                                 );
-                                procs_base
+                                pbrocs_base
                                     .runtime_errors
                                     .insert(symbol, mono_env.arena.alloc(message));
                                 continue;
@@ -5921,7 +5921,7 @@ fn build_pending_specializations<'a>(
                         }
                     }
 
-                    procs_base.host_specializations.insert_host_exposed(
+                    pbrocs_base.host_specializations.insert_host_exposed(
                         mono_env.subs,
                         LambdaName::no_niche(symbol),
                         annotation,
@@ -5930,12 +5930,12 @@ fn build_pending_specializations<'a>(
                 }
 
                 match body.value {
-                    roc_can::expr::Expr::RecordAccessor(accessor_data) => {
+                    broc_can::expr::Expr::RecordAccessor(accessor_data) => {
                         let fresh_record_symbol = mono_env.unique_symbol();
                         let closure_data = accessor_data.to_closure_data(fresh_record_symbol);
-                        register_toplevel_function_into_procs_base(
+                        register_toplevel_function_into_pbrocs_base(
                             &mut mono_env,
-                            &mut procs_base,
+                            &mut pbrocs_base,
                             closure_data.name,
                             expr_var,
                             closure_data.arguments,
@@ -5945,10 +5945,10 @@ fn build_pending_specializations<'a>(
                         );
                     }
                     _ => {
-                        // mark this symbols as a top-level thunk before any other work on the procs
+                        // mark this symbols as a top-level thunk before any other work on the pbrocs
                         module_thunks.push(symbol);
 
-                        let proc = PartialProc {
+                        let pbroc = PartialPbroc {
                             annotation: expr_var,
                             // This is a 0-arity thunk, so it has no arguments.
                             pattern_symbols: &[],
@@ -5960,7 +5960,7 @@ fn build_pending_specializations<'a>(
                             is_self_recursive: false,
                         };
 
-                        procs_base.partial_procs.insert(symbol, proc);
+                        pbrocs_base.partial_pbrocs.insert(symbol, pbroc);
                     }
                 }
             }
@@ -5975,7 +5975,7 @@ fn build_pending_specializations<'a>(
 
                 // If this is an exposed symbol, we need to
                 // register it as such. Otherwise, since it
-                // never gets called by Roc code, it will never
+                // never gets called by Broc code, it will never
                 // get specialized!
                 if is_host_exposed {
                     let layout_result =
@@ -5986,7 +5986,7 @@ fn build_pending_specializations<'a>(
                         match e {
                             LayoutProblem::Erroneous => {
                                 let message = "top level function has erroneous type";
-                                procs_base.runtime_errors.insert(symbol, message);
+                                pbrocs_base.runtime_errors.insert(symbol, message);
                                 continue;
                             }
                             LayoutProblem::UnresolvedTypeVar(v) => {
@@ -5994,7 +5994,7 @@ fn build_pending_specializations<'a>(
                                     "top level function has unresolved type variable {:?}",
                                     v
                                 );
-                                procs_base
+                                pbrocs_base
                                     .runtime_errors
                                     .insert(symbol, mono_env.arena.alloc(message));
                                 continue;
@@ -6002,7 +6002,7 @@ fn build_pending_specializations<'a>(
                         }
                     }
 
-                    procs_base.host_specializations.insert_host_exposed(
+                    pbrocs_base.host_specializations.insert_host_exposed(
                         mono_env.subs,
                         LambdaName::no_niche(symbol),
                         annotation,
@@ -6012,9 +6012,9 @@ fn build_pending_specializations<'a>(
 
                 let is_recursive = matches!(tag, Recursive(_) | TailRecursive(_));
 
-                register_toplevel_function_into_procs_base(
+                register_toplevel_function_into_pbrocs_base(
                     &mut mono_env,
-                    &mut procs_base,
+                    &mut pbrocs_base,
                     symbol,
                     expr_var,
                     function_def.arguments.clone(),
@@ -6026,7 +6026,7 @@ fn build_pending_specializations<'a>(
             Destructure(d_index) => {
                 let loc_pattern = &declarations.destructs[d_index.index()].loc_pattern;
 
-                use roc_can::pattern::Pattern;
+                use broc_can::pattern::Pattern;
                 let symbol = match &loc_pattern.value {
                     Pattern::Identifier(_) => {
                         debug_assert!(false, "identifier ended up in Destructure {:?}", symbol);
@@ -6047,12 +6047,12 @@ fn build_pending_specializations<'a>(
                     _ => todo!("top-level destrucuture patterns are not implemented"),
                 };
 
-                // mark this symbols as a top-level thunk before any other work on the procs
+                // mark this symbols as a top-level thunk before any other work on the pbrocs
                 module_thunks.push(symbol);
 
                 // If this is an exposed symbol, we need to
                 // register it as such. Otherwise, since it
-                // never gets called by Roc code, it will never
+                // never gets called by Broc code, it will never
                 // get specialized!
                 if is_host_exposed {
                     let layout_result =
@@ -6063,7 +6063,7 @@ fn build_pending_specializations<'a>(
                         match e {
                             LayoutProblem::Erroneous => {
                                 let message = "top level function has erroneous type";
-                                procs_base.runtime_errors.insert(symbol, message);
+                                pbrocs_base.runtime_errors.insert(symbol, message);
                                 continue;
                             }
                             LayoutProblem::UnresolvedTypeVar(v) => {
@@ -6071,7 +6071,7 @@ fn build_pending_specializations<'a>(
                                     "top level function has unresolved type variable {:?}",
                                     v
                                 );
-                                procs_base
+                                pbrocs_base
                                     .runtime_errors
                                     .insert(symbol, mono_env.arena.alloc(message));
                                 continue;
@@ -6079,7 +6079,7 @@ fn build_pending_specializations<'a>(
                         }
                     }
 
-                    procs_base.host_specializations.insert_host_exposed(
+                    pbrocs_base.host_specializations.insert_host_exposed(
                         mono_env.subs,
                         LambdaName::no_niche(symbol),
                         annotation,
@@ -6087,7 +6087,7 @@ fn build_pending_specializations<'a>(
                     );
                 }
 
-                let proc = PartialProc {
+                let pbroc = PartialPbroc {
                     annotation: expr_var,
                     // This is a 0-arity thunk, so it has no arguments.
                     pattern_symbols: &[],
@@ -6099,7 +6099,7 @@ fn build_pending_specializations<'a>(
                     is_self_recursive: false,
                 };
 
-                procs_base.partial_procs.insert(symbol, proc);
+                pbrocs_base.partial_pbrocs.insert(symbol, pbroc);
             }
             MutualRecursion { .. } => {
                 // the declarations of this group will be treaded individually by later iterations
@@ -6110,7 +6110,7 @@ fn build_pending_specializations<'a>(
                     continue;
                 }
 
-                // mark this symbol as a top-level thunk before any other work on the procs
+                // mark this symbol as a top-level thunk before any other work on the pbrocs
                 module_thunks.push(symbol);
 
                 let expr_var = Variable::EMPTY_RECORD;
@@ -6119,7 +6119,7 @@ fn build_pending_specializations<'a>(
 
                 // If this is an exposed symbol, we need to
                 // register it as such. Otherwise, since it
-                // never gets called by Roc code, it will never
+                // never gets called by Broc code, it will never
                 // get specialized!
                 if is_host_exposed {
                     let layout_result =
@@ -6130,7 +6130,7 @@ fn build_pending_specializations<'a>(
                         match e {
                             LayoutProblem::Erroneous => {
                                 let message = "top level function has erroneous type";
-                                procs_base.runtime_errors.insert(symbol, message);
+                                pbrocs_base.runtime_errors.insert(symbol, message);
                                 continue;
                             }
                             LayoutProblem::UnresolvedTypeVar(v) => {
@@ -6138,7 +6138,7 @@ fn build_pending_specializations<'a>(
                                     "top level function has unresolved type variable {:?}",
                                     v
                                 );
-                                procs_base
+                                pbrocs_base
                                     .runtime_errors
                                     .insert(symbol, mono_env.arena.alloc(message));
                                 continue;
@@ -6146,7 +6146,7 @@ fn build_pending_specializations<'a>(
                         }
                     }
 
-                    procs_base.host_specializations.insert_host_exposed(
+                    pbrocs_base.host_specializations.insert_host_exposed(
                         mono_env.subs,
                         LambdaName::no_niche(symbol),
                         annotation,
@@ -6154,9 +6154,9 @@ fn build_pending_specializations<'a>(
                     );
                 }
 
-                let body = roc_can::expr::toplevel_expect_to_inline_expect_pure(body);
+                let body = broc_can::expr::toplevel_expect_to_inline_expect_pure(body);
 
-                let proc = PartialProc {
+                let pbroc = PartialPbroc {
                     annotation: expr_var,
                     // This is a 0-arity thunk, so it has no arguments.
                     pattern_symbols: &[],
@@ -6175,7 +6175,7 @@ fn build_pending_specializations<'a>(
                 let region = Region::span_across(&name_region, &expr_region);
 
                 toplevel_expects.pure.insert(symbol, region);
-                procs_base.partial_procs.insert(symbol, proc);
+                pbrocs_base.partial_pbrocs.insert(symbol, pbroc);
             }
             ExpectationFx => {
                 // skip expectations if we're not going to run them
@@ -6183,7 +6183,7 @@ fn build_pending_specializations<'a>(
                     continue;
                 }
 
-                // mark this symbol as a top-level thunk before any other work on the procs
+                // mark this symbol as a top-level thunk before any other work on the pbrocs
                 module_thunks.push(symbol);
 
                 let expr_var = Variable::EMPTY_RECORD;
@@ -6192,7 +6192,7 @@ fn build_pending_specializations<'a>(
 
                 // If this is an exposed symbol, we need to
                 // register it as such. Otherwise, since it
-                // never gets called by Roc code, it will never
+                // never gets called by Broc code, it will never
                 // get specialized!
                 if is_host_exposed {
                     let layout_result =
@@ -6203,7 +6203,7 @@ fn build_pending_specializations<'a>(
                         match e {
                             LayoutProblem::Erroneous => {
                                 let message = "top level function has erroneous type";
-                                procs_base.runtime_errors.insert(symbol, message);
+                                pbrocs_base.runtime_errors.insert(symbol, message);
                                 continue;
                             }
                             LayoutProblem::UnresolvedTypeVar(v) => {
@@ -6211,7 +6211,7 @@ fn build_pending_specializations<'a>(
                                     "top level function has unresolved type variable {:?}",
                                     v
                                 );
-                                procs_base
+                                pbrocs_base
                                     .runtime_errors
                                     .insert(symbol, mono_env.arena.alloc(message));
                                 continue;
@@ -6219,7 +6219,7 @@ fn build_pending_specializations<'a>(
                         }
                     }
 
-                    procs_base.host_specializations.insert_host_exposed(
+                    pbrocs_base.host_specializations.insert_host_exposed(
                         mono_env.subs,
                         LambdaName::no_niche(symbol),
                         annotation,
@@ -6227,9 +6227,9 @@ fn build_pending_specializations<'a>(
                     );
                 }
 
-                let body = roc_can::expr::toplevel_expect_to_inline_expect_fx(body);
+                let body = broc_can::expr::toplevel_expect_to_inline_expect_fx(body);
 
-                let proc = PartialProc {
+                let pbroc = PartialPbroc {
                     annotation: expr_var,
                     // This is a 0-arity thunk, so it has no arguments.
                     pattern_symbols: &[],
@@ -6248,14 +6248,14 @@ fn build_pending_specializations<'a>(
                 let region = Region::span_across(&name_region, &expr_region);
 
                 toplevel_expects.fx.insert(symbol, region);
-                procs_base.partial_procs.insert(symbol, proc);
+                pbrocs_base.partial_pbrocs.insert(symbol, pbroc);
             }
         }
     }
 
     layout_cache.rollback_to(layout_cache_snapshot);
 
-    procs_base.module_thunks = module_thunks.into_bump_slice();
+    pbrocs_base.module_thunks = module_thunks.into_bump_slice();
 
     let find_specializations_end = Instant::now();
     module_timing.find_specializations =
@@ -6266,7 +6266,7 @@ fn build_pending_specializations<'a>(
         solved_subs: Solved(subs),
         ident_ids,
         layout_cache,
-        procs_base,
+        pbrocs_base,
         module_timing,
         abilities_store,
         toplevel_expects,
@@ -6274,21 +6274,21 @@ fn build_pending_specializations<'a>(
     }
 }
 
-fn register_toplevel_function_into_procs_base<'a>(
-    mono_env: &mut roc_mono::ir::Env<'a, '_>,
-    procs_base: &mut ProcsBase<'a>,
+fn register_toplevel_function_into_pbrocs_base<'a>(
+    mono_env: &mut broc_mono::ir::Env<'a, '_>,
+    pbrocs_base: &mut PbrocsBase<'a>,
     symbol: Symbol,
     expr_var: Variable,
     arguments: Vec<(
         Variable,
-        roc_can::expr::AnnotatedMark,
-        Loc<roc_can::pattern::Pattern>,
+        broc_can::expr::AnnotatedMark,
+        Loc<broc_can::pattern::Pattern>,
     )>,
     return_type: Variable,
-    body: Loc<roc_can::expr::Expr>,
+    body: Loc<broc_can::expr::Expr>,
     is_recursive: bool,
 ) {
-    let partial_proc = PartialProc::from_named_function(
+    let partial_pbroc = PartialPbroc::from_named_function(
         mono_env,
         expr_var,
         arguments,
@@ -6298,14 +6298,14 @@ fn register_toplevel_function_into_procs_base<'a>(
         return_type,
     );
 
-    procs_base.partial_procs.insert(symbol, partial_proc);
+    pbrocs_base.partial_pbrocs.insert(symbol, partial_pbroc);
 }
 
 /// Loads derived ability members up for specialization into the Derived module, prior to making
 /// their specializations.
 // TODO: right now, this runs sequentially, and no other modules are mono'd in parallel to the
 // derived module.
-fn load_derived_partial_procs<'a>(
+fn load_derived_partial_pbrocs<'a>(
     home: ModuleId,
     arena: &'a Bump,
     subs: &mut Subs,
@@ -6314,12 +6314,12 @@ fn load_derived_partial_procs<'a>(
     module_timing: &mut ModuleTiming,
     target_info: TargetInfo,
     exposed_by_module: &ExposedByModule,
-    procs_base: &mut ProcsBase<'a>,
+    pbrocs_base: &mut PbrocsBase<'a>,
     world_abilities: &mut WorldAbilities,
 ) {
     debug_assert_eq!(home, ModuleId::DERIVED_GEN);
 
-    let load_derived_procs_start = Instant::now();
+    let load_derived_pbrocs_start = Instant::now();
 
     let mut new_module_thunks = bumpalo::collections::Vec::new_in(arena);
 
@@ -6329,14 +6329,14 @@ fn load_derived_partial_procs<'a>(
         let mut derived_module = derived_module.lock().unwrap();
 
         derived_module.iter_load_for_gen_module(subs, |symbol| {
-            !procs_base.partial_procs.contains_key(&symbol)
+            !pbrocs_base.partial_pbrocs.contains_key(&symbol)
         })
     };
 
     // TODO: we can be even lazier here if we move `add_def_to_module` to happen in mono. Also, the
     // timings would be more accurate.
     for (derived_symbol, (derived_expr, derived_expr_var)) in derives_to_add.into_iter() {
-        let mut mono_env = roc_mono::ir::Env {
+        let mut mono_env = broc_mono::ir::Env {
             arena,
             subs,
             // There are no derived expectations.
@@ -6355,8 +6355,8 @@ fn load_derived_partial_procs<'a>(
             derived_module,
         };
 
-        let partial_proc = match derived_expr {
-            roc_can::expr::Expr::Closure(roc_can::expr::ClosureData {
+        let partial_pbroc = match derived_expr {
+            broc_can::expr::Expr::Closure(broc_can::expr::ClosureData {
                 function_type,
                 arguments,
                 loc_body,
@@ -6366,7 +6366,7 @@ fn load_derived_partial_procs<'a>(
                 ..
             }) => {
                 debug_assert!(captured_symbols.is_empty());
-                PartialProc::from_named_function(
+                PartialPbroc::from_named_function(
                     &mut mono_env,
                     function_type,
                     arguments.clone(),
@@ -6377,10 +6377,10 @@ fn load_derived_partial_procs<'a>(
                 )
             }
             _ => {
-                // mark this symbols as a top-level thunk before any other work on the procs
+                // mark this symbols as a top-level thunk before any other work on the pbrocs
                 new_module_thunks.push(derived_symbol);
 
-                PartialProc {
+                PartialPbroc {
                     annotation: derived_expr_var,
                     // This is a 0-arity thunk, so it has no arguments.
                     pattern_symbols: &[],
@@ -6394,20 +6394,20 @@ fn load_derived_partial_procs<'a>(
             }
         };
 
-        procs_base
-            .partial_procs
-            .insert(derived_symbol, partial_proc);
+        pbrocs_base
+            .partial_pbrocs
+            .insert(derived_symbol, partial_pbroc);
     }
 
     if !new_module_thunks.is_empty() {
-        new_module_thunks.extend(procs_base.module_thunks);
-        procs_base.module_thunks = new_module_thunks.into_bump_slice();
+        new_module_thunks.extend(pbrocs_base.module_thunks);
+        pbrocs_base.module_thunks = new_module_thunks.into_bump_slice();
     }
 
-    let load_derived_procs_end = Instant::now();
+    let load_derived_pbrocs_end = Instant::now();
 
     module_timing.find_specializations =
-        load_derived_procs_end.duration_since(load_derived_procs_start);
+        load_derived_pbrocs_end.duration_since(load_derived_pbrocs_start);
 }
 
 fn run_task<'a>(
@@ -6415,7 +6415,7 @@ fn run_task<'a>(
     arena: &'a Bump,
     src_dir: &Path,
     msg_tx: MsgSender<'a>,
-    roc_cache_dir: RocCacheDir<'_>,
+    broc_cache_dir: BrocCacheDir<'_>,
     target_info: TargetInfo,
 ) -> Result<(), LoadingProblem<'a>> {
     use BuildTask::*;
@@ -6432,7 +6432,7 @@ fn run_task<'a>(
             module_name,
             module_ids,
             shorthands,
-            roc_cache_dir,
+            broc_cache_dir,
             ident_ids_by_module,
         )
         .map(|HeaderOutput { msg, .. }| msg),
@@ -6525,7 +6525,7 @@ fn run_task<'a>(
             module_id,
             ident_ids,
             subs,
-            procs_base,
+            pbrocs_base,
             layout_cache,
             specializations_we_must_make,
             module_timing,
@@ -6538,7 +6538,7 @@ fn run_task<'a>(
             module_id,
             ident_ids,
             subs,
-            procs_base,
+            pbrocs_base,
             layout_cache,
             specializations_we_must_make,
             module_timing,
@@ -6564,7 +6564,7 @@ fn to_import_cycle_report(
     filename: PathBuf,
     render: RenderTarget,
 ) -> String {
-    use roc_reporting::report::{Report, RocDocAllocator, DEFAULT_PALETTE};
+    use broc_reporting::report::{Report, BrocDocAllocator, DEFAULT_PALETTE};
     use ven_pretty::DocAllocator;
 
     // import_cycle looks like CycleModule, Import1, ..., ImportN, CycleModule
@@ -6580,7 +6580,7 @@ fn to_import_cycle_report(
         module_ids,
         all_ident_ids,
     };
-    let alloc = RocDocAllocator::new(src_lines, *source_of_cycle, &interns);
+    let alloc = BrocDocAllocator::new(src_lines, *source_of_cycle, &interns);
 
     let doc = alloc.stack([
         alloc.concat([
@@ -6590,7 +6590,7 @@ fn to_import_cycle_report(
                 " because it depends on itself through the following chain of module imports:",
             ),
         ]),
-        roc_reporting::report::cycle(
+        broc_reporting::report::cycle(
             &alloc,
             4,
             alloc.module(*source_of_cycle),
@@ -6600,7 +6600,7 @@ fn to_import_cycle_report(
                 .map(|module| alloc.module(module))
                 .collect(),
         ),
-        alloc.reflow("Cyclic dependencies are not allowed in Roc! Can you restructure a module in this import chain so that it doesn't have to depend on itself?")
+        alloc.reflow("Cyclic dependencies are not allowed in Broc! Can you restructure a module in this import chain so that it doesn't have to depend on itself?")
     ]);
 
     let report = Report {
@@ -6624,7 +6624,7 @@ fn to_incorrect_module_name_report<'a>(
     src: &'a [u8],
     render: RenderTarget,
 ) -> String {
-    use roc_reporting::report::{Report, RocDocAllocator, DEFAULT_PALETTE};
+    use broc_reporting::report::{Report, BrocDocAllocator, DEFAULT_PALETTE};
     use ven_pretty::DocAllocator;
 
     let IncorrectModuleName {
@@ -6643,7 +6643,7 @@ fn to_incorrect_module_name_report<'a>(
         module_ids,
         all_ident_ids,
     };
-    let alloc = RocDocAllocator::new(&src_lines, module_id, &interns);
+    let alloc = BrocDocAllocator::new(&src_lines, module_id, &interns);
 
     let doc = alloc.stack([
         alloc.reflow("This module has a different name than I expected:"),
@@ -6672,7 +6672,7 @@ fn to_parse_problem_report<'a>(
     render: RenderTarget,
     palette: Palette,
 ) -> String {
-    use roc_reporting::report::{parse_problem, RocDocAllocator};
+    use broc_reporting::report::{parse_problem, BrocDocAllocator};
 
     // TODO this is not in fact safe
     let src = unsafe { from_utf8_unchecked(problem.problem.bytes) };
@@ -6688,7 +6688,7 @@ fn to_parse_problem_report<'a>(
     };
 
     // Report parsing and canonicalization problems
-    let alloc = RocDocAllocator::new(&src_lines, module_id, &interns);
+    let alloc = BrocDocAllocator::new(&src_lines, module_id, &interns);
 
     let starting_line = 0;
 
@@ -6710,13 +6710,13 @@ fn to_parse_problem_report<'a>(
 }
 
 fn to_missing_platform_report(module_id: ModuleId, other: &PlatformPath) -> String {
-    use roc_reporting::report::{Report, RocDocAllocator, DEFAULT_PALETTE};
+    use broc_reporting::report::{Report, BrocDocAllocator, DEFAULT_PALETTE};
     use ven_pretty::DocAllocator;
     use PlatformPath::*;
 
     // Report parsing and canonicalization problems
     let interns = Interns::default();
-    let alloc = RocDocAllocator::new(&[], module_id, &interns);
+    let alloc = BrocDocAllocator::new(&[], module_id, &interns);
 
     let report = {
         match other {
@@ -6732,7 +6732,7 @@ fn to_missing_platform_report(module_id: ModuleId, other: &PlatformPath) -> Stri
                 ]);
 
                 Report {
-                    filename: "UNKNOWN.roc".into(),
+                    filename: "UNKNOWN.broc".into(),
                     doc,
                     title: "NO PLATFORM".to_string(),
                     severity: Severity::RuntimeError,
@@ -6743,11 +6743,11 @@ fn to_missing_platform_report(module_id: ModuleId, other: &PlatformPath) -> Stri
                     alloc.reflow(
                         r"The input file is an `interface` module, but only `app` modules can be run.",
                     ),
-                    alloc.reflow(r"Tip: You can use `roc check` or `roc test` to verify an interface module like this one."),
+                    alloc.reflow(r"Tip: You can use `broc check` or `broc test` to verify an interface module like this one."),
                 ]);
 
                 Report {
-                    filename: "UNKNOWN.roc".into(),
+                    filename: "UNKNOWN.broc".into(),
                     doc,
                     title: "NO PLATFORM".to_string(),
                     severity: Severity::RuntimeError,
@@ -6758,11 +6758,11 @@ fn to_missing_platform_report(module_id: ModuleId, other: &PlatformPath) -> Stri
                     alloc.reflow(
                         r"The input file is a `hosted` module, but only `app` modules can be run.",
                     ),
-                    alloc.reflow(r"Tip: You can use `roc check` or `roc test` to verify a hosted module like this one."),
+                    alloc.reflow(r"Tip: You can use `broc check` or `broc test` to verify a hosted module like this one."),
                 ]);
 
                 Report {
-                    filename: "UNKNOWN.roc".into(),
+                    filename: "UNKNOWN.broc".into(),
                     doc,
                     title: "NO PLATFORM".to_string(),
                     severity: Severity::RuntimeError,
@@ -6773,11 +6773,11 @@ fn to_missing_platform_report(module_id: ModuleId, other: &PlatformPath) -> Stri
                     alloc.reflow(
                         r"The input file is a `platform` module, but only `app` modules can be run.",
                     ),
-                    alloc.reflow(r"Tip: You can use `roc check` or `roc test` to verify a platform module like this one."),
+                    alloc.reflow(r"Tip: You can use `broc check` or `broc test` to verify a platform module like this one."),
                 ]);
 
                 Report {
-                    filename: "UNKNOWN.roc".into(),
+                    filename: "UNKNOWN.broc".into(),
                     doc,
                     title: "NO PLATFORM".to_string(),
                     severity: Severity::RuntimeError,

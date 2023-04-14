@@ -1,10 +1,10 @@
-use roc_collections::{VecMap, VecSet};
-use roc_module::ident::Ident;
-use roc_module::symbol::{IdentId, IdentIds, ModuleId, Symbol};
-use roc_problem::can::RuntimeError;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::Variable;
-use roc_types::types::{Alias, AliasKind, AliasVar, Type};
+use broc_collections::{VecMap, VecSet};
+use broc_module::ident::Ident;
+use broc_module::symbol::{IdentId, IdentIds, ModuleId, Symbol};
+use broc_problem::can::RuntimeError;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::Variable;
+use broc_types::types::{Alias, AliasKind, AliasVar, Type};
 
 use crate::abilities::PendingAbilitiesStore;
 
@@ -453,7 +453,7 @@ pub fn create_alias(
     typ: Type,
     kind: AliasKind,
 ) -> Alias {
-    let roc_types::types::VariableDetail {
+    let broc_types::types::VariableDetail {
         type_variables,
         lambda_set_variables,
         recursion_variables,
@@ -481,7 +481,7 @@ pub fn create_alias(
 
     let lambda_set_variables: Vec<_> = lambda_set_variables
         .into_iter()
-        .map(|v| roc_types::types::LambdaSet(Type::Variable(v)))
+        .map(|v| broc_types::types::LambdaSet(Type::Variable(v)))
         .collect();
 
     Alias {
@@ -612,8 +612,8 @@ impl ScopedIdentIds {
 #[cfg(test)]
 mod test {
     use super::*;
-    use roc_module::symbol::ModuleIds;
-    use roc_region::all::Position;
+    use broc_module::symbol::ModuleIds;
+    use broc_region::all::Position;
 
     use pretty_assertions::{assert_eq, assert_ne};
 

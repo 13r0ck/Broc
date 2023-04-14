@@ -1,7 +1,7 @@
 use super::create_exported_function_no_locals;
 use crate::{DefaultImportDispatcher, Instance};
 use bumpalo::{collections::Vec, Bump};
-use roc_wasm_module::{
+use broc_wasm_module::{
     opcodes::OpCode,
     sections::{DataMode, DataSegment, MemorySection},
     ConstExpr, SerialBuffer, Signature, Value, ValueType, WasmModule,
@@ -82,7 +82,7 @@ fn test_load(load_op: OpCode, ty: ValueType, data: &[u8], addr: u32, offset: u32
     if false {
         let mut outfile_buf = Vec::new_in(&arena);
         module.serialize(&mut outfile_buf);
-        std::fs::write("/tmp/roc/interp_load_test.wasm", outfile_buf).unwrap();
+        std::fs::write("/tmp/broc/interp_load_test.wasm", outfile_buf).unwrap();
     }
 
     let mut inst = Instance::for_module(

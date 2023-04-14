@@ -1,7 +1,7 @@
-use roc_types::subs::Variable;
+use broc_types::subs::Variable;
 
 use crate::mem_pool::pool_str::PoolStr;
-use roc_module::symbol::Symbol;
+use broc_module::symbol::Symbol;
 
 use super::expr2::ExprId;
 

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::test_op_example;
-use roc_wasm_module::{opcodes::OpCode::*, Value};
+use broc_wasm_module::{opcodes::OpCode::*, Value};
 
 #[test]
 fn test_i32wrapi64() {

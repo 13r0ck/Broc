@@ -8,16 +8,16 @@ use morphic_lib::{
     FuncDef, FuncDefBuilder, FuncName, ModDefBuilder, ModName, ProgramBuilder, Result,
     TypeDefBuilder, TypeId, TypeName, UpdateModeVar, ValueId,
 };
-use roc_collections::all::{MutMap, MutSet};
-use roc_error_macros::internal_error;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
+use broc_collections::all::{MutMap, MutSet};
+use broc_error_macros::internal_error;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
 
-use roc_mono::ir::{
+use broc_mono::ir::{
     Call, CallType, EntryPoint, Expr, HigherOrderLowLevel, HostExposedLayouts, ListLiteralElement,
-    Literal, ModifyRc, OptLevel, Proc, ProcLayout, SingleEntryPoint, Stmt,
+    Literal, ModifyRc, OptLevel, Pbroc, PbrocLayout, SingleEntryPoint, Stmt,
 };
-use roc_mono::layout::{
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutInterner, Niche, RawFunctionLayout, STLayoutInterner,
     UnionLayout,
 };
@@ -30,22 +30,22 @@ pub const STATIC_LIST_NAME: ConstName = ConstName(b"THIS IS A STATIC LIST");
 
 const ENTRY_POINT_NAME: &[u8] = b"mainForHost";
 
-pub fn func_name_bytes(proc: &Proc) -> [u8; SIZE] {
+pub fn func_name_bytes(pbroc: &Pbroc) -> [u8; SIZE] {
     let bytes = func_name_bytes_help(
-        proc.name.name(),
-        proc.args.iter().map(|x| x.0),
-        proc.name.niche(),
-        proc.ret_layout,
+        pbroc.name.name(),
+        pbroc.args.iter().map(|x| x.0),
+        pbroc.name.niche(),
+        pbroc.ret_layout,
     );
     bytes
 }
 
 #[inline(always)]
 fn debug() -> bool {
-    use roc_debug_flags::dbg_do;
+    use broc_debug_flags::dbg_do;
 
     #[cfg(debug_assertions)]
-    use roc_debug_flags::ROC_DEBUG_ALIAS_ANALYSIS;
+    use broc_debug_flags::ROC_DEBUG_ALIAS_ANALYSIS;
 
     dbg_do!(ROC_DEBUG_ALIAS_ANALYSIS, {
         return true;
@@ -141,11 +141,11 @@ pub fn spec_program<'a, 'r, I>(
     arena: &'a Bump,
     interner: &'r mut STLayoutInterner<'a>,
     opt_level: OptLevel,
-    entry_point: roc_mono::ir::EntryPoint<'a>,
-    procs: I,
+    entry_point: broc_mono::ir::EntryPoint<'a>,
+    pbrocs: I,
 ) -> Result<morphic_lib::Solutions>
 where
-    I: Iterator<Item = &'r Proc<'a>>,
+    I: Iterator<Item = &'r Pbroc<'a>>,
 {
     let main_module = {
         let mut m = ModDefBuilder::new();
@@ -183,33 +183,33 @@ where
         let mut host_exposed_functions = Vec::new();
 
         // all other functions
-        for proc in procs {
-            let bytes = func_name_bytes(proc);
+        for pbroc in pbrocs {
+            let bytes = func_name_bytes(pbroc);
             let func_name = FuncName(&bytes);
 
-            if let HostExposedLayouts::HostExposed { aliases, .. } = &proc.host_exposed_layouts {
+            if let HostExposedLayouts::HostExposed { aliases, .. } = &pbroc.host_exposed_layouts {
                 for (_, hels) in aliases {
                     match hels.raw_function_layout {
                         RawFunctionLayout::Function(_, _, _) => {
-                            let it = hels.proc_layout.arguments.iter().copied();
+                            let it = hels.pbroc_layout.arguments.iter().copied();
                             let bytes = func_name_bytes_help(
                                 hels.symbol,
                                 it,
                                 Niche::NONE,
-                                hels.proc_layout.result,
+                                hels.pbroc_layout.result,
                             );
 
-                            host_exposed_functions.push((bytes, hels.proc_layout.arguments));
+                            host_exposed_functions.push((bytes, hels.pbroc_layout.arguments));
                         }
                         RawFunctionLayout::ZeroArgumentThunk(_) => {
                             let bytes = func_name_bytes_help(
                                 hels.symbol,
                                 [],
                                 Niche::NONE,
-                                hels.proc_layout.result,
+                                hels.pbroc_layout.result,
                             );
 
-                            host_exposed_functions.push((bytes, hels.proc_layout.arguments));
+                            host_exposed_functions.push((bytes, hels.pbroc_layout.arguments));
                         }
                     }
                 }
@@ -218,13 +218,13 @@ where
             if debug() {
                 eprintln!(
                     "{:?}: {:?} with {:?} args",
-                    proc.name,
+                    pbroc.name,
                     bytes_as_ascii(&bytes),
-                    (proc.args, proc.ret_layout),
+                    (pbroc.args, pbroc.ret_layout),
                 );
             }
 
-            let (spec, type_names) = proc_spec(arena, interner, proc)?;
+            let (spec, type_names) = pbroc_spec(arena, interner, pbroc)?;
 
             type_definitions.extend(type_names);
 
@@ -237,13 +237,13 @@ where
                 layout: entry_point_layout,
             }) => {
                 // the entry point wrapper
-                let roc_main_bytes = func_name_bytes_help(
+                let broc_main_bytes = func_name_bytes_help(
                     entry_point_symbol,
                     entry_point_layout.arguments.iter().copied(),
                     Niche::NONE,
                     entry_point_layout.result,
                 );
-                let roc_main = FuncName(&roc_main_bytes);
+                let broc_main = FuncName(&broc_main_bytes);
 
                 let mut env = Env::new();
 
@@ -251,7 +251,7 @@ where
                     &mut env,
                     interner,
                     entry_point_layout,
-                    Some(roc_main),
+                    Some(broc_main),
                     &host_exposed_functions,
                 )?;
 
@@ -262,7 +262,7 @@ where
             }
             EntryPoint::Expects { symbols } => {
                 // construct a big pattern match picking one of the expects at random
-                let layout: ProcLayout<'a> = ProcLayout {
+                let layout: PbrocLayout<'a> = PbrocLayout {
                     arguments: &[],
                     result: Layout::UNIT,
                     niche: Niche::NONE,
@@ -361,7 +361,7 @@ fn terrible_hack(builder: &mut FuncDefBuilder, block: BlockId, type_id: TypeId) 
 fn build_entry_point<'a>(
     env: &mut Env<'a>,
     interner: &mut STLayoutInterner<'a>,
-    layout: roc_mono::ir::ProcLayout<'a>,
+    layout: broc_mono::ir::PbrocLayout<'a>,
     entry_point_function: Option<FuncName>,
     host_exposed_functions: &[([u8; SIZE], &'a [InLayout<'a>])],
 ) -> Result<FuncDef> {
@@ -431,10 +431,10 @@ fn build_entry_point<'a>(
     Ok(spec)
 }
 
-fn proc_spec<'a>(
+fn pbroc_spec<'a>(
     arena: &'a Bump,
     interner: &mut STLayoutInterner<'a>,
-    proc: &Proc<'a>,
+    pbroc: &Pbroc<'a>,
 ) -> Result<(FuncDef, MutSet<UnionLayout<'a>>)> {
     let mut builder = FuncDefBuilder::new();
     let mut env = Env::new();
@@ -442,8 +442,8 @@ fn proc_spec<'a>(
     let block = builder.add_block();
 
     // introduce the arguments
-    let mut argument_layouts = bumpalo::collections::Vec::with_capacity_in(proc.args.len(), arena);
-    for (i, (layout, symbol)) in proc.args.iter().enumerate() {
+    let mut argument_layouts = bumpalo::collections::Vec::with_capacity_in(pbroc.args.len(), arena);
+    for (i, (layout, symbol)) in pbroc.args.iter().enumerate() {
         let value_id = builder.add_get_tuple_field(block, builder.get_argument(), i as u32)?;
         env.symbols.insert(*symbol, value_id);
 
@@ -455,8 +455,8 @@ fn proc_spec<'a>(
         interner,
         &mut env,
         block,
-        proc.ret_layout,
-        &proc.body,
+        pbroc.ret_layout,
+        &pbroc.body,
     )?;
 
     let root = BlockExpr(block, value_id);
@@ -464,7 +464,7 @@ fn proc_spec<'a>(
         argument_layouts.into_bump_slice(),
     ));
     let arg_type_id = layout_spec(&mut env, &mut builder, interner, args_struct_layout)?;
-    let ret_type_id = layout_spec(&mut env, &mut builder, interner, proc.ret_layout)?;
+    let ret_type_id = layout_spec(&mut env, &mut builder, interner, pbroc.ret_layout)?;
 
     let spec = builder.build(arg_type_id, ret_type_id, root)?;
 
@@ -473,7 +473,7 @@ fn proc_spec<'a>(
 
 struct Env<'a> {
     symbols: MutMap<Symbol, ValueId>,
-    join_points: MutMap<roc_mono::ir::JoinPointId, morphic_lib::ContinuationId>,
+    join_points: MutMap<broc_mono::ir::JoinPointId, morphic_lib::ContinuationId>,
     type_names: MutSet<UnionLayout<'a>>,
 }
 
@@ -800,7 +800,7 @@ fn call_spec<'a>(
             passed_function,
             ..
         }) => {
-            use roc_mono::low_level::HigherOrder::*;
+            use broc_mono::low_level::HigherOrder::*;
 
             let array = passed_function.specialization_id.to_bytes();
             let spec_var = CalleeSpecVar(&array);
@@ -1033,7 +1033,7 @@ fn lowlevel_spec<'a>(
     block: BlockId,
     layout: InLayout<'a>,
     op: &LowLevel,
-    update_mode: roc_mono::ir::UpdateModeId,
+    update_mode: broc_mono::ir::UpdateModeId,
     arguments: &[Symbol],
 ) -> Result<ValueId> {
     use LowLevel::*;

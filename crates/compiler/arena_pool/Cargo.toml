@@ -9,4 +9,4 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_error_macros = { path = "../../error_macros" }
+broc_error_macros = { path = "../../error_macros" }

@@ -8,8 +8,8 @@ pub mod wasi;
 pub use instance::Instance;
 pub use wasi::{WasiDispatcher, WasiFile};
 
-pub use roc_wasm_module::Value;
-use roc_wasm_module::ValueType;
+pub use broc_wasm_module::Value;
+use broc_wasm_module::ValueType;
 
 pub trait ImportDispatcher {
     /// Dispatch a call from WebAssembly to your own code, based on module and function name.

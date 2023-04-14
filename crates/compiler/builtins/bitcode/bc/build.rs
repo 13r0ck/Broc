@@ -1,4 +1,4 @@
-use roc_command_utils::{pretty_command_string, zig};
+use broc_command_utils::{pretty_command_string, zig};
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -81,7 +81,7 @@ fn generate_bc_file(bitcode_path: &Path, zig_object: &str, file_name: &str) {
 }
 
 pub fn get_lib_dir() -> PathBuf {
-    // Currently we have the OUT_DIR variable which points to `/target/debug/build/roc_builtins-*/out/`.
+    // Currently we have the OUT_DIR variable which points to `/target/debug/build/broc_builtins-*/out/`.
     // So we just need to add "/bitcode" to that.
     let dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 

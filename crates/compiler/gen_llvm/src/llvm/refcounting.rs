@@ -2,27 +2,27 @@ use crate::debug_info_init;
 use crate::llvm::bitcode::call_void_bitcode_fn;
 use crate::llvm::build::BuilderExt;
 use crate::llvm::build::{
-    add_func, cast_basic_basic, get_tag_id, tag_pointer_clear_tag_id, use_roc_value, Env,
+    add_func, cast_basic_basic, get_tag_id, tag_pointer_clear_tag_id, use_broc_value, Env,
     FAST_CALL_CONV,
 };
 use crate::llvm::build_list::{
     incrementing_elem_loop, list_capacity_or_ref_ptr, list_refcount_ptr, load_list,
 };
 use crate::llvm::build_str::str_refcount_ptr;
-use crate::llvm::convert::{basic_type_from_layout, zig_str_type, RocUnion};
+use crate::llvm::convert::{basic_type_from_layout, zig_str_type, BrocUnion};
 use bumpalo::collections::Vec;
 use inkwell::basic_block::BasicBlock;
 use inkwell::module::Linkage;
 use inkwell::types::{AnyTypeEnum, BasicMetadataTypeEnum, BasicType, BasicTypeEnum};
 use inkwell::values::{BasicValueEnum, FunctionValue, IntValue, PointerValue};
 use inkwell::{AddressSpace, IntPredicate};
-use roc_module::symbol::Interns;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{
+use broc_module::symbol::Interns;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutIds, LayoutInterner, STLayoutInterner, UnionLayout,
 };
 
-use super::build::{cast_if_necessary_for_opaque_recursive_pointers, load_roc_value, FunctionSpec};
+use super::build::{cast_if_necessary_for_opaque_recursive_pointers, load_broc_value, FunctionSpec};
 use super::convert::{argument_type_from_layout, argument_type_from_union_layout};
 
 pub struct PointerToRefcount<'ctx> {
@@ -79,10 +79,10 @@ impl<'ctx> PointerToRefcount<'ctx> {
     pub fn is_1<'a, 'env>(&self, env: &Env<'a, 'ctx, 'env>) -> IntValue<'ctx> {
         let current = self.get_refcount(env);
         let one = match env.target_info.ptr_width() {
-            roc_target::PtrWidth::Bytes4 => {
+            broc_target::PtrWidth::Bytes4 => {
                 env.context.i32_type().const_int(i32::MIN as u64, false)
             }
-            roc_target::PtrWidth::Bytes8 => {
+            broc_target::PtrWidth::Bytes8 => {
                 env.context.i64_type().const_int(i64::MIN as u64, false)
             }
         };
@@ -212,7 +212,7 @@ fn incref_pointer<'a, 'ctx, 'env>(
                 .into(),
             amount.into(),
         ],
-        roc_builtins::bitcode::UTILS_INCREF,
+        broc_builtins::bitcode::UTILS_INCREF,
     );
 }
 
@@ -234,7 +234,7 @@ fn decref_pointer<'a, 'ctx, 'env>(
                 .into(),
             alignment.into(),
         ],
-        roc_builtins::bitcode::UTILS_DECREF,
+        broc_builtins::bitcode::UTILS_DECREF,
     );
 }
 
@@ -257,7 +257,7 @@ pub fn decref_pointer_check_null<'a, 'ctx, 'env>(
                 .into(),
             alignment.into(),
         ],
-        roc_builtins::bitcode::UTILS_DECREF_CHECK_NULL,
+        broc_builtins::bitcode::UTILS_DECREF_CHECK_NULL,
     );
 }
 
@@ -341,7 +341,7 @@ fn modify_refcount_struct_help<'a, 'ctx, 'env>(
                 .build_extract_value(wrapper_struct, i as u32, "decrement_struct_field")
                 .unwrap();
 
-            let field_value = use_roc_value(
+            let field_value = use_broc_value(
                 env,
                 layout_interner,
                 *field_layout,
@@ -966,7 +966,7 @@ pub fn build_header_help<'a, 'ctx, 'env>(
 
     // this should be `Linkage::Private`, but that will remove all of the code for the inc/dec
     // functions on windows. LLVM just does not emit the assembly for them. Investigate why this is
-    let linkage = if let roc_target::OperatingSystem::Windows = env.target_info.operating_system {
+    let linkage = if let broc_target::OperatingSystem::Windows = env.target_info.operating_system {
         Linkage::External
     } else {
         Linkage::Private
@@ -1282,7 +1282,7 @@ fn build_rec_union_recursive_decrement<'a, 'ctx, 'env>(
                     )
                     .unwrap();
 
-                let field = load_roc_value(
+                let field = load_broc_value(
                     env,
                     layout_interner,
                     *field_layout,
@@ -1659,7 +1659,7 @@ fn modify_refcount_nonrecursive_help<'a, 'ctx, 'env>(
         .new_build_struct_gep(
             union_struct_type,
             arg_ptr,
-            RocUnion::TAG_ID_INDEX,
+            BrocUnion::TAG_ID_INDEX,
             "tag_id_ptr",
         )
         .unwrap();
@@ -1706,7 +1706,7 @@ fn modify_refcount_nonrecursive_help<'a, 'ctx, 'env>(
             .new_build_struct_gep(
                 union_struct_type,
                 arg_ptr,
-                RocUnion::TAG_DATA_INDEX,
+                BrocUnion::TAG_DATA_INDEX,
                 "field_ptr",
             )
             .unwrap();

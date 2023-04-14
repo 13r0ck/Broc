@@ -3,13 +3,13 @@ use crate::def::Def;
 use crate::expr::{AnnotatedMark, ClosureData, Declarations, Expr, Recursive, WhenBranchPattern};
 use crate::pattern::Pattern;
 use crate::scope::Scope;
-use roc_collections::{SendMap, VecMap, VecSet};
-use roc_module::called_via::CalledVia;
-use roc_module::ident::TagName;
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{ExhaustiveMark, RedundantMark, VarStore, Variable};
-use roc_types::types::{AliasKind, LambdaSet, OptAbleType, OptAbleVar, Type, TypeExtension};
+use broc_collections::{SendMap, VecMap, VecSet};
+use broc_module::called_via::CalledVia;
+use broc_module::ident::TagName;
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{ExhaustiveMark, RedundantMark, VarStore, Variable};
+use broc_types::types::{AliasKind, LambdaSet, OptAbleType, OptAbleVar, Type, TypeExtension};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub(crate) struct HostedGeneratedFunctions {
@@ -1077,7 +1077,7 @@ fn build_effect_loop(
             Type::Alias {
                 symbol: effect_symbol,
                 type_arguments: vec![OptAbleType::unbound(state_type)],
-                lambda_set_variables: vec![roc_types::types::LambdaSet(Type::Variable(
+                lambda_set_variables: vec![broc_types::types::LambdaSet(Type::Variable(
                     closure_var,
                 ))],
                 infer_ext_in_output_types: vec![],
@@ -1381,7 +1381,7 @@ pub fn build_host_exposed_def(
                     linked_symbol_arguments.push((arg_var, Expr::Var(arg_symbol, arg_var)));
                 }
 
-                let foreign_symbol_name = format!("roc_fx_{}", ident);
+                let foreign_symbol_name = format!("broc_fx_{}", ident);
                 let low_level_call = Expr::ForeignCall {
                     foreign_symbol: foreign_symbol_name.into(),
                     args: linked_symbol_arguments,
@@ -1435,7 +1435,7 @@ pub fn build_host_exposed_def(
             _ => {
                 // not a function
 
-                let foreign_symbol_name = format!("roc_fx_{}", ident);
+                let foreign_symbol_name = format!("broc_fx_{}", ident);
                 let low_level_call = Expr::ForeignCall {
                     foreign_symbol: foreign_symbol_name.into(),
                     args: linked_symbol_arguments,
@@ -1531,7 +1531,7 @@ fn build_effect_opaque(
     Type::Alias {
         symbol: effect_symbol,
         type_arguments: vec![OptAbleType::unbound(Type::Variable(a_var))],
-        lambda_set_variables: vec![roc_types::types::LambdaSet(Type::Variable(closure_var))],
+        lambda_set_variables: vec![broc_types::types::LambdaSet(Type::Variable(closure_var))],
         infer_ext_in_output_types: vec![],
         actual: Box::new(actual),
         kind: AliasKind::Opaque,
@@ -1556,7 +1556,7 @@ fn build_fresh_opaque_variables(
         var: a_var,
         opt_abilities: None,
     }];
-    let lambda_set_variables = vec![roc_types::types::LambdaSet(Type::Variable(closure_var))];
+    let lambda_set_variables = vec![broc_types::types::LambdaSet(Type::Variable(closure_var))];
 
     (Box::new(actual), type_arguments, lambda_set_variables)
 }

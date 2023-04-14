@@ -6,8 +6,8 @@ use crate::ident::{lowercase_ident, UppercaseIdent};
 use crate::parser::{optional, then};
 use crate::parser::{specialize, word1, EPackageEntry, EPackageName, Parser};
 use crate::string_literal;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_region::all::Loc;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_region::all::Loc;
 use std::fmt::Debug;
 
 impl<'a> HeaderType<'a> {
@@ -302,7 +302,7 @@ pub struct PackageEntry<'a> {
 pub fn package_entry<'a>() -> impl Parser<'a, Spaced<'a, PackageEntry<'a>>, EPackageEntry<'a>> {
     map!(
         // You may optionally have a package shorthand,
-        // e.g. "uc" in `uc: roc/unicode 1.0.0`
+        // e.g. "uc" in `uc: broc/unicode 1.0.0`
         //
         // (Indirect dependencies don't have a shorthand.)
         and!(

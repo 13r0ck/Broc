@@ -1,11 +1,11 @@
 use bumpalo::collections::vec::Vec;
 use bumpalo::Bump;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::{IdentIds, ModuleId, Symbol};
-use roc_target::TargetInfo;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::{IdentIds, ModuleId, Symbol};
+use broc_target::TargetInfo;
 
 use crate::ir::{
-    Call, CallSpecId, CallType, Expr, HostExposedLayouts, JoinPointId, ModifyRc, Proc, ProcLayout,
+    Call, CallSpecId, CallType, Expr, HostExposedLayouts, JoinPointId, ModifyRc, Pbroc, PbrocLayout,
     SelfRecursive, Stmt, UpdateModeId,
 };
 use crate::layout::{
@@ -45,33 +45,33 @@ struct Specialization<'a> {
     op: HelperOp,
     layout: InLayout<'a>,
     symbol: Symbol,
-    proc: Option<Proc<'a>>,
+    pbroc: Option<Pbroc<'a>>,
 }
 
 #[derive(Debug)]
 pub struct Context<'a> {
-    new_linker_data: Vec<'a, (Symbol, ProcLayout<'a>)>,
+    new_linker_data: Vec<'a, (Symbol, PbrocLayout<'a>)>,
     recursive_union: Option<UnionLayout<'a>>,
     op: HelperOp,
 }
 
-/// Generate specialized helper procs for code gen
+/// Generate specialized helper pbrocs for code gen
 /// ----------------------------------------------
 ///
-/// Some low level operations need specialized helper procs to traverse data structures at runtime.
+/// Some low level operations need specialized helper pbrocs to traverse data structures at runtime.
 /// This includes refcounting, hashing, and equality checks.
 ///
 /// For example, when checking List equality, we need to visit each element and compare them.
 /// Depending on the type of the list elements, we may need to recurse deeper into each element.
 /// For tag unions, we may need branches for different tag IDs, etc.
 ///
-/// This module creates specialized helper procs for all such operations and types used in the program.
+/// This module creates specialized helper pbrocs for all such operations and types used in the program.
 ///
 /// The backend drives the process, in two steps:
 /// 1) When it sees the relevant node, it calls CodeGenHelp to get the replacement IR.
-///    CodeGenHelp returns IR for a call to the helper proc, and remembers the specialization.
-/// 2) After the backend has generated code for all user procs, it takes the IR for all of the
-///    specialized helpers procs, and generates target code for them too.
+///    CodeGenHelp returns IR for a call to the helper pbroc, and remembers the specialization.
+/// 2) After the backend has generated code for all user pbrocs, it takes the IR for all of the
+///    specialized helpers pbrocs, and generates target code for them too.
 ///
 pub struct CodeGenHelp<'a> {
     arena: &'a Bump,
@@ -101,12 +101,12 @@ impl<'a> CodeGenHelp<'a> {
         }
     }
 
-    pub fn take_procs(&mut self) -> Vec<'a, Proc<'a>> {
-        let procs_iter = self
+    pub fn take_pbrocs(&mut self) -> Vec<'a, Pbroc<'a>> {
+        let pbrocs_iter = self
             .specializations
             .drain(0..)
-            .map(|spec| spec.proc.unwrap());
-        Vec::from_iter_in(procs_iter, self.arena)
+            .map(|spec| spec.pbroc.unwrap());
+        Vec::from_iter_in(pbrocs_iter, self.arena)
     }
 
     // ============================================================================
@@ -115,8 +115,8 @@ impl<'a> CodeGenHelp<'a> {
     //
     // ============================================================================
 
-    /// Expand a `Refcounting` node to a `Let` node that calls a specialized helper proc.
-    /// The helper procs themselves are to be generated later with `generate_procs`
+    /// Expand a `Refcounting` node to a `Let` node that calls a specialized helper pbroc.
+    /// The helper pbrocs themselves are to be generated later with `generate_pbrocs`
     pub fn expand_refcount_stmt(
         &mut self,
         ident_ids: &mut IdentIds,
@@ -124,7 +124,7 @@ impl<'a> CodeGenHelp<'a> {
         layout: InLayout<'a>,
         modify: &ModifyRc,
         following: &'a Stmt<'a>,
-    ) -> (&'a Stmt<'a>, Vec<'a, (Symbol, ProcLayout<'a>)>) {
+    ) -> (&'a Stmt<'a>, Vec<'a, (Symbol, PbrocLayout<'a>)>) {
         let op = match modify {
             ModifyRc::Inc(..) => HelperOp::Inc,
             ModifyRc::Dec(_) => HelperOp::Dec,
@@ -158,21 +158,21 @@ impl<'a> CodeGenHelp<'a> {
         layout_interner: &mut STLayoutInterner<'a>,
         layout: InLayout<'a>,
         argument: Symbol,
-    ) -> (Expr<'a>, Vec<'a, (Symbol, ProcLayout<'a>)>) {
+    ) -> (Expr<'a>, Vec<'a, (Symbol, PbrocLayout<'a>)>) {
         let mut ctx = Context {
             new_linker_data: Vec::new_in(self.arena),
             recursive_union: None,
             op: HelperOp::Reset,
         };
 
-        let proc_name = self.find_or_create_proc(ident_ids, &mut ctx, layout_interner, layout);
+        let pbroc_name = self.find_or_create_pbroc(ident_ids, &mut ctx, layout_interner, layout);
 
         let arguments = self.arena.alloc([argument]);
         let ret_layout = layout;
         let arg_layouts = self.arena.alloc([layout]);
         let expr = Expr::Call(Call {
             call_type: CallType::ByName {
-                name: LambdaName::no_niche(proc_name),
+                name: LambdaName::no_niche(pbroc_name),
                 ret_layout,
                 arg_layouts,
                 specialization_id: CallSpecId::BACKEND_DUMMY,
@@ -184,35 +184,35 @@ impl<'a> CodeGenHelp<'a> {
     }
 
     /// Generate a refcount increment procedure, *without* a Call expression.
-    /// *This method should be rarely used* - only when the proc is to be called from Zig.
-    /// Otherwise you want to generate the Proc and the Call together, using another method.
-    pub fn gen_refcount_proc(
+    /// *This method should be rarely used* - only when the pbroc is to be called from Zig.
+    /// Otherwise you want to generate the Pbroc and the Call together, using another method.
+    pub fn gen_refcount_pbroc(
         &mut self,
         ident_ids: &mut IdentIds,
         layout_interner: &mut STLayoutInterner<'a>,
         layout: InLayout<'a>,
         op: HelperOp,
-    ) -> (Symbol, Vec<'a, (Symbol, ProcLayout<'a>)>) {
+    ) -> (Symbol, Vec<'a, (Symbol, PbrocLayout<'a>)>) {
         let mut ctx = Context {
             new_linker_data: Vec::new_in(self.arena),
             recursive_union: None,
             op,
         };
 
-        let proc_name = self.find_or_create_proc(ident_ids, &mut ctx, layout_interner, layout);
+        let pbroc_name = self.find_or_create_pbroc(ident_ids, &mut ctx, layout_interner, layout);
 
-        (proc_name, ctx.new_linker_data)
+        (pbroc_name, ctx.new_linker_data)
     }
 
-    /// Replace a generic `Lowlevel::Eq` call with a specialized helper proc.
-    /// The helper procs themselves are to be generated later with `generate_procs`
+    /// Replace a generic `Lowlevel::Eq` call with a specialized helper pbroc.
+    /// The helper pbrocs themselves are to be generated later with `generate_pbrocs`
     pub fn call_specialized_equals(
         &mut self,
         ident_ids: &mut IdentIds,
         layout_interner: &mut STLayoutInterner<'a>,
         layout: InLayout<'a>,
         arguments: &'a [Symbol],
-    ) -> (Expr<'a>, Vec<'a, (Symbol, ProcLayout<'a>)>) {
+    ) -> (Expr<'a>, Vec<'a, (Symbol, PbrocLayout<'a>)>) {
         let mut ctx = Context {
             new_linker_data: Vec::new_in(self.arena),
             recursive_union: None,
@@ -255,8 +255,8 @@ impl<'a> CodeGenHelp<'a> {
             called_layout
         };
 
-        if layout_needs_helper_proc(layout_interner, layout, ctx.op) {
-            let proc_name = self.find_or_create_proc(ident_ids, ctx, layout_interner, layout);
+        if layout_needs_helper_pbroc(layout_interner, layout, ctx.op) {
+            let pbroc_name = self.find_or_create_pbroc(ident_ids, ctx, layout_interner, layout);
 
             let (ret_layout, arg_layouts): (InLayout<'a>, &'a [InLayout<'a>]) = {
                 let arg = self.replace_rec_ptr(ctx, layout_interner, layout);
@@ -270,7 +270,7 @@ impl<'a> CodeGenHelp<'a> {
 
             Some(Expr::Call(Call {
                 call_type: CallType::ByName {
-                    name: LambdaName::no_niche(proc_name),
+                    name: LambdaName::no_niche(pbroc_name),
                     ret_layout,
                     arg_layouts,
                     specialization_id: CallSpecId::BACKEND_DUMMY,
@@ -290,7 +290,7 @@ impl<'a> CodeGenHelp<'a> {
         }
     }
 
-    fn find_or_create_proc(
+    fn find_or_create_pbroc(
         &mut self,
         ident_ids: &mut IdentIds,
         ctx: &mut Context<'a>,
@@ -310,20 +310,20 @@ impl<'a> CodeGenHelp<'a> {
             return spec.symbol;
         }
 
-        // Procs can be recursive, so we need to create the symbol before the body is complete
-        // But with nested recursion, that means Symbols and Procs can end up in different orders.
+        // Pbrocs can be recursive, so we need to create the symbol before the body is complete
+        // But with nested recursion, that means Symbols and Pbrocs can end up in different orders.
         // We want the same order, especially for function indices in Wasm. So create an empty slot and fill it in later.
-        let (proc_symbol, proc_layout) = self.create_proc_symbol(ident_ids, ctx, layout);
-        ctx.new_linker_data.push((proc_symbol, proc_layout));
+        let (pbroc_symbol, pbroc_layout) = self.create_pbroc_symbol(ident_ids, ctx, layout);
+        ctx.new_linker_data.push((pbroc_symbol, pbroc_layout));
         let spec_index = self.specializations.len();
         self.specializations.push(Specialization {
             op: ctx.op,
             layout,
-            symbol: proc_symbol,
-            proc: None,
+            symbol: pbroc_symbol,
+            pbroc: None,
         });
 
-        // Recursively generate the body of the Proc and sub-procs
+        // Recursively generate the body of the Pbroc and sub-pbrocs
         let (ret_layout, body) = match ctx.op {
             Inc | Dec | DecRef(_) => (
                 LAYOUT_UNIT,
@@ -338,7 +338,7 @@ impl<'a> CodeGenHelp<'a> {
             ),
             Reset => (
                 layout,
-                refcount::refcount_reset_proc_body(
+                refcount::refcount_reset_pbroc_body(
                     self,
                     ident_ids,
                     ctx,
@@ -354,19 +354,19 @@ impl<'a> CodeGenHelp<'a> {
         };
 
         let args: &'a [(InLayout<'a>, Symbol)] = {
-            let roc_value = (layout, ARG_1);
+            let broc_value = (layout, ARG_1);
             match ctx.op {
                 Inc => {
                     let inc_amount = (self.layout_isize, ARG_2);
-                    self.arena.alloc([roc_value, inc_amount])
+                    self.arena.alloc([broc_value, inc_amount])
                 }
-                Dec | DecRef(_) | Reset => self.arena.alloc([roc_value]),
-                Eq => self.arena.alloc([roc_value, (layout, ARG_2)]),
+                Dec | DecRef(_) | Reset => self.arena.alloc([broc_value]),
+                Eq => self.arena.alloc([broc_value, (layout, ARG_2)]),
             }
         };
 
-        self.specializations[spec_index].proc = Some(Proc {
-            name: LambdaName::no_niche(proc_symbol),
+        self.specializations[spec_index].pbroc = Some(Pbroc {
+            name: LambdaName::no_niche(pbroc_symbol),
             args,
             body,
             closure_data_layout: None,
@@ -376,15 +376,15 @@ impl<'a> CodeGenHelp<'a> {
             host_exposed_layouts: HostExposedLayouts::NotHostExposed,
         });
 
-        proc_symbol
+        pbroc_symbol
     }
 
-    fn create_proc_symbol(
+    fn create_pbroc_symbol(
         &self,
         ident_ids: &mut IdentIds,
         ctx: &mut Context<'a>,
         layout: InLayout<'a>,
-    ) -> (Symbol, ProcLayout<'a>) {
+    ) -> (Symbol, PbrocLayout<'a>) {
         let debug_name = format!(
             "#help{}_{:?}_{:?}",
             self.specializations.len(),
@@ -392,33 +392,33 @@ impl<'a> CodeGenHelp<'a> {
             layout
         )
         .replace("Builtin", "");
-        let proc_symbol: Symbol = self.create_symbol(ident_ids, &debug_name);
+        let pbroc_symbol: Symbol = self.create_symbol(ident_ids, &debug_name);
 
-        let proc_layout = match ctx.op {
-            HelperOp::Inc => ProcLayout {
+        let pbroc_layout = match ctx.op {
+            HelperOp::Inc => PbrocLayout {
                 arguments: self.arena.alloc([layout, self.layout_isize]),
                 result: LAYOUT_UNIT,
                 niche: Niche::NONE,
             },
-            HelperOp::Dec => ProcLayout {
+            HelperOp::Dec => PbrocLayout {
                 arguments: self.arena.alloc([layout]),
                 result: LAYOUT_UNIT,
                 niche: Niche::NONE,
             },
-            HelperOp::Reset => ProcLayout {
+            HelperOp::Reset => PbrocLayout {
                 arguments: self.arena.alloc([layout]),
                 result: layout,
                 niche: Niche::NONE,
             },
-            HelperOp::DecRef(_) => unreachable!("No generated Proc for DecRef"),
-            HelperOp::Eq => ProcLayout {
+            HelperOp::DecRef(_) => unreachable!("No generated Pbroc for DecRef"),
+            HelperOp::Eq => PbrocLayout {
                 arguments: self.arena.alloc([layout, layout]),
                 result: LAYOUT_BOOL,
                 niche: Niche::NONE,
             },
         };
 
-        (proc_symbol, proc_layout)
+        (pbroc_symbol, pbroc_layout)
     }
 
     fn create_symbol(&self, ident_ids: &mut IdentIds, debug_name: &str) -> Symbol {
@@ -559,7 +559,7 @@ fn let_lowlevel<'a>(
     )
 }
 
-fn layout_needs_helper_proc<'a>(
+fn layout_needs_helper_pbroc<'a>(
     layout_interner: &STLayoutInterner<'a>,
     layout: InLayout<'a>,
     op: HelperOp,

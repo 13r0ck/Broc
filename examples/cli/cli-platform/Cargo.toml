@@ -1,6 +1,6 @@
 [package]
 name = "host"
-authors = ["The Roc Contributors"]
+authors = ["The Broc Contributors"]
 edition = "2021"
 license = "UPL-1.0"
 version = "0.0.1"
@@ -20,6 +20,6 @@ path = "src/main.rs"
 backtrace = "0.3"
 libc = "0.2"
 reqwest = { version = "0.11.11", default-features = false, features = ["blocking", "rustls-tls"] }
-roc_std = { path = "../../../crates/roc_std" }
+broc_std = { path = "../../../crates/broc_std" }
 
 [workspace]

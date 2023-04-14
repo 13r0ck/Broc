@@ -1,25 +1,25 @@
-use roc_can::abilities::AbilitiesStore;
-use roc_can::expr::PendingDerives;
-use roc_collections::{VecMap, VecSet};
-use roc_debug_flags::dbg_do;
+use broc_can::abilities::AbilitiesStore;
+use broc_can::expr::PendingDerives;
+use broc_collections::{VecMap, VecSet};
+use broc_debug_flags::dbg_do;
 #[cfg(debug_assertions)]
-use roc_debug_flags::ROC_PRINT_UNDERIVABLE;
-use roc_derive_key::{DeriveError, Derived};
-use roc_error_macros::internal_error;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_region::all::{Loc, Region};
-use roc_solve_problem::{
+use broc_debug_flags::ROC_PRINT_UNDERIVABLE;
+use broc_derive_key::{DeriveError, Derived};
+use broc_error_macros::internal_error;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_region::all::{Loc, Region};
+use broc_solve_problem::{
     NotDerivableContext, NotDerivableDecode, NotDerivableEncode, NotDerivableEq, TypeError,
     UnderivableReason, Unfulfilled,
 };
-use roc_types::num::NumericRange;
-use roc_types::subs::{
+use broc_types::num::NumericRange;
+use broc_types::subs::{
     instantiate_rigids, Content, FlatType, GetSubsSlice, Rank, RecordFields, Subs, SubsSlice,
     TupleElems, Variable,
 };
-use roc_types::types::{AliasKind, Category, MemberImpl, PatternCategory, Polarity, Types};
-use roc_unify::unify::{Env, MustImplementConstraints};
-use roc_unify::unify::{MustImplementAbility, Obligated};
+use broc_types::types::{AliasKind, Category, MemberImpl, PatternCategory, Polarity, Types};
+use broc_unify::unify::{Env, MustImplementConstraints};
+use broc_unify::unify::{MustImplementAbility, Obligated};
 
 use crate::solve::type_to_var;
 use crate::solve::{Aliases, Pools};
@@ -374,7 +374,7 @@ impl ObligationCache {
         let has_declared_impl = abilities_store.has_declared_implementation(opaque, ability);
 
         // Some builtins, like Float32 and Bool, would have a cyclic dependency on Encode/Decode/etc.
-        // if their Roc implementations explicitly defined some abilities they support.
+        // if their Broc implementations explicitly defined some abilities they support.
         let builtin_opaque_impl_ok = || match ability {
             DeriveEncoding::ABILITY => DeriveEncoding::is_derivable_builtin_opaque(opaque),
             DeriveDecoding::ABILITY => DeriveDecoding::is_derivable_builtin_opaque(opaque),
@@ -690,7 +690,7 @@ trait DerivableVisitor {
                 }
                 FlexAbleVar(opt_name, abilities) => {
                     // This flex var inherits the ability.
-                    let merged_abilites = roc_unify::unify::merged_ability_slices(
+                    let merged_abilites = broc_unify::unify::merged_ability_slices(
                         subs,
                         abilities,
                         Self::ABILITY_SLICE,
@@ -1280,7 +1280,7 @@ impl DerivableVisitor for DeriveEq {
         subs: &mut Subs,
         content_var: Variable,
     ) -> Result<Descend, NotDerivable> {
-        use roc_unify::unify::{unify, Mode};
+        use broc_unify::unify::{unify, Mode};
 
         // Of the floating-point types,
         // only Dec implements Eq.
@@ -1293,8 +1293,8 @@ impl DerivableVisitor for DeriveEq {
             Polarity::Pos,
         );
         match unified {
-            roc_unify::unify::Unified::Success { .. } => Ok(Descend(false)),
-            roc_unify::unify::Unified::Failure(..) => Err(NotDerivable {
+            broc_unify::unify::Unified::Success { .. } => Ok(Descend(false)),
+            broc_unify::unify::Unified::Failure(..) => Err(NotDerivable {
                 var,
                 context: NotDerivableContext::Eq(NotDerivableEq::FloatingPoint),
             }),
@@ -1359,8 +1359,8 @@ pub trait AbilityResolver {
         home_subs: &mut Subs,
     ) -> Option<(Symbol, Variable)>;
 
-    /// Finds the declared implementation of an [`ImplKey`][roc_can::abilities::ImplKey].
-    fn get_implementation(&self, impl_key: roc_can::abilities::ImplKey) -> Option<MemberImpl>;
+    /// Finds the declared implementation of an [`ImplKey`][broc_can::abilities::ImplKey].
+    fn get_implementation(&self, impl_key: broc_can::abilities::ImplKey) -> Option<MemberImpl>;
 }
 
 /// Trivial implementation of a resolver for a module-local abilities store, that defers all
@@ -1377,7 +1377,7 @@ impl AbilityResolver for AbilitiesStore {
     }
 
     #[inline(always)]
-    fn get_implementation(&self, impl_key: roc_can::abilities::ImplKey) -> Option<MemberImpl> {
+    fn get_implementation(&self, impl_key: broc_can::abilities::ImplKey) -> Option<MemberImpl> {
         self.get_implementation(impl_key).copied()
     }
 }
@@ -1408,7 +1408,7 @@ pub fn resolve_ability_specialization<R: AbilityResolver>(
     ability_member: Symbol,
     specialization_var: Variable,
 ) -> Result<Resolved, ResolveError> {
-    use roc_unify::unify::{unify, Mode};
+    use broc_unify::unify::{unify, Mode};
 
     let (parent_ability, signature_var) = resolver
         .member_parent_and_signature_var(ability_member, subs)
@@ -1439,14 +1439,14 @@ pub fn resolve_ability_specialization<R: AbilityResolver>(
     let resolved = match obligated {
         Obligated::Opaque(symbol) => {
             if builtin_module_with_unlisted_ability_impl(symbol.module_id()) {
-                let derive_key = roc_derive_key::Derived::builtin_with_builtin_symbol(
+                let derive_key = broc_derive_key::Derived::builtin_with_builtin_symbol(
                     ability_member.try_into().map_err(NonDerivableAbility)?,
                     symbol,
                 )?;
 
                 Resolved::Derive(derive_key)
             } else {
-                let impl_key = roc_can::abilities::ImplKey {
+                let impl_key = broc_can::abilities::ImplKey {
                     opaque: symbol,
                     ability_member,
                 };
@@ -1455,19 +1455,19 @@ pub fn resolve_ability_specialization<R: AbilityResolver>(
                     .get_implementation(impl_key)
                     .ok_or(NoTypeImplementingSpecialization)?
                 {
-                    roc_types::types::MemberImpl::Impl(spec_symbol) => {
+                    broc_types::types::MemberImpl::Impl(spec_symbol) => {
                         Resolved::Specialization(spec_symbol)
                     }
                     // TODO this is not correct. We can replace `Resolved` with `MemberImpl` entirely,
                     // which will make this simpler.
-                    roc_types::types::MemberImpl::Error => {
+                    broc_types::types::MemberImpl::Error => {
                         Resolved::Specialization(Symbol::UNDERSCORE)
                     }
                 }
             }
         }
         Obligated::Adhoc(variable) => {
-            let derive_key = roc_derive_key::Derived::builtin(
+            let derive_key = broc_derive_key::Derived::builtin(
                 ability_member.try_into().map_err(NonDerivableAbility)?,
                 subs,
                 variable,

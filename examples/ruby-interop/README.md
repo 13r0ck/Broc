@@ -1,10 +1,10 @@
 # Ruby Interop
 
-This is an example of calling Roc code from [Ruby](https://www.ruby-lang.org).
+This is an example of calling Broc code from [Ruby](https://www.ruby-lang.org).
 
 ## Installation
 
-To run this example, you will need these to be installed already (in addition to Roc):
+To run this example, you will need these to be installed already (in addition to Broc):
 
 - [`ruby`](https://www.ruby-lang.org/en/downloads) version 2.7.6 or later
 - [`clang`](https://clang.llvm.org/) version 11.0.0 or later
@@ -12,15 +12,15 @@ To run this example, you will need these to be installed already (in addition to
 
 Make sure you have the right versions of Ruby and Clang especially! This example won't work with earlier versions.
 
-## Building the Roc library
+## Building the Broc library
 
 First, `cd` into this directory and run this in your terminal:
 
 ```sh
-roc build --lib
+broc build --lib
 ```
 
-This compiles your Roc code into a binary library in the current directory. The library's filename will be `libhello` plus an OS-specific extension (e.g. `libhello.dylib` on macOS).
+This compiles your Broc code into a binary library in the current directory. The library's filename will be `libhello` plus an OS-specific extension (e.g. `libhello.dylib` on macOS).
 
 ## Generating the Makefile
 
@@ -30,9 +30,9 @@ Next, run this: (remember that you need Ruby 2.7.6 or higher - otherwise later s
 ruby extconf.rb
 ```
 
-This generates a `Makefile`. (There are only two Roc-specific lines in `extconf.rb`; they are both commented.) You only need to do this step once; now that you have the `Makefile`, you can use it along with `roc build` to rebuild from now.
+This generates a `Makefile`. (There are only two Broc-specific lines in `extconf.rb`; they are both commented.) You only need to do this step once; now that you have the `Makefile`, you can use it along with `broc build` to rebuild from now.
 
-## Building the Ruby Library from the Roc Library
+## Building the Ruby Library from the Broc Library
 
 Finally, run this:
 
@@ -40,7 +40,7 @@ Finally, run this:
 make
 ```
 
-This uses the `Makefile` generated earlier to take the compiled Roc library and combine it with `demo.c` to generate a Ruby library.
+This uses the `Makefile` generated earlier to take the compiled Broc library and combine it with `demo.c` to generate a Ruby library.
 
 ## Try it out!
 
@@ -50,19 +50,19 @@ You can now try this out in Ruby's REPL (`irb`), like so:
 $ irb
 irb(main):001:0> require_relative 'demo'
 => true
-irb(main):002:0> RocApp::call_roc 42
+irb(main):002:0> BrocApp::call_broc 42
 => "The number was 42, OH YEAH!!! 🤘🤘"
 ```
 
 ## Rebuilding after Changes
 
-To rebuild after changing either the `demo.c` file or any `.roc` files, run:
+To rebuild after changing either the `demo.c` file or any `.broc` files, run:
 
 ```sh
-roc build --lib && make -B
+broc build --lib && make -B
 ```
 
-The `-B` flag is necessary when you only change .roc files, because otherwise `make` thinks there's no work to do and doesn't bother rebuilding.
+The `-B` flag is necessary when you only change .broc files, because otherwise `make` thinks there's no work to do and doesn't bother rebuilding.
 
 ## About this example
 

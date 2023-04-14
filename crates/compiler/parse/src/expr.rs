@@ -20,9 +20,9 @@ use crate::string_literal::StrLikeLiteral;
 use crate::type_annotation;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_collections::soa::Slice;
-use roc_module::called_via::{BinOp, CalledVia, UnaryOp};
-use roc_region::all::{Loc, Position, Region};
+use broc_collections::soa::Slice;
+use broc_module::called_via::{BinOp, CalledVia, UnaryOp};
+use broc_region::all::{Loc, Position, Region};
 
 use crate::parser::Progress::{self, *};
 
@@ -882,7 +882,7 @@ macro_rules! join_ann_to_body {
 
         (
             value_def,
-            roc_region::all::Region::span_across(&$ann_pattern.region, &$region),
+            broc_region::all::Region::span_across(&$ann_pattern.region, &$region),
         )
     }};
 }
@@ -891,7 +891,7 @@ macro_rules! join_ann_to_body {
 #[macro_export]
 macro_rules! join_alias_to_body {
     ($arena:expr, $loc_pattern:expr, $loc_def_expr:expr, $header:expr, $ann_type:expr, $spaces_before_current:expr, $region:expr) => {{
-        use roc_region::all::Region;
+        use broc_region::all::Region;
 
         // This is a case like
         //   UserId x : [UserId Int]

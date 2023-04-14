@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 #[cfg(not(windows))]
 use bumpalo::Bump;
-use roc_module::symbol::ModuleId;
+use broc_module::symbol::ModuleId;
 
 const SKIP_SUBS_CACHE: bool = {
     match option_env!("ROC_SKIP_SUBS_CACHE") {
@@ -13,18 +13,18 @@ const SKIP_SUBS_CACHE: bool = {
 
 // IFTTT: crates/compiler/load/src/lib.rs
 const MODULES: &[(ModuleId, &str)] = &[
-    (ModuleId::BOOL, "Bool.roc"),
-    (ModuleId::DICT, "Dict.roc"),
-    (ModuleId::SET, "Set.roc"),
-    (ModuleId::RESULT, "Result.roc"),
-    (ModuleId::NUM, "Num.roc"),
-    (ModuleId::LIST, "List.roc"),
-    (ModuleId::STR, "Str.roc"),
-    (ModuleId::BOX, "Box.roc"),
-    (ModuleId::ENCODE, "Encode.roc"),
-    (ModuleId::DECODE, "Decode.roc"),
-    (ModuleId::HASH, "Hash.roc"),
-    (ModuleId::JSON, "Json.roc"),
+    (ModuleId::BOOL, "Bool.broc"),
+    (ModuleId::DICT, "Dict.broc"),
+    (ModuleId::SET, "Set.broc"),
+    (ModuleId::RESULT, "Result.broc"),
+    (ModuleId::NUM, "Num.broc"),
+    (ModuleId::LIST, "List.broc"),
+    (ModuleId::STR, "Str.broc"),
+    (ModuleId::BOX, "Box.broc"),
+    (ModuleId::ENCODE, "Encode.broc"),
+    (ModuleId::DECODE, "Decode.broc"),
+    (ModuleId::HASH, "Hash.broc"),
+    (ModuleId::JSON, "Json.broc"),
 ];
 
 fn main() {
@@ -37,7 +37,7 @@ fn write_subs_for_module(module_id: ModuleId, filename: &str) {
     // Tell Cargo that if the given file changes, to rerun this build script.
     let filepath = PathBuf::from("..")
         .join("builtins")
-        .join("roc")
+        .join("broc")
         .join(filename);
     println!("cargo:rerun-if-changed={}", filepath.to_str().unwrap());
 
@@ -67,26 +67,26 @@ fn write_types_for_module_dummy(output_path: &Path) {
 
 #[cfg(not(windows))]
 fn write_types_for_module_real(module_id: ModuleId, filename: &str, output_path: &Path) {
-    use roc_can::module::TypeState;
-    use roc_load_internal::file::{LoadingProblem, Threading};
-    use roc_packaging::cache::RocCacheDir;
-    use roc_reporting::cli::report_problems;
+    use broc_can::module::TypeState;
+    use broc_load_internal::file::{LoadingProblem, Threading};
+    use broc_packaging::cache::BrocCacheDir;
+    use broc_reporting::cli::report_problems;
 
     let arena = Bump::new();
     let cwd = std::env::current_dir().unwrap();
-    let source = roc_builtins::roc::module_source(module_id);
-    let target_info = roc_target::TargetInfo::default_x86_64();
+    let source = broc_builtins::broc::module_source(module_id);
+    let target_info = broc_target::TargetInfo::default_x86_64();
 
-    let res_module = roc_load_internal::file::load_and_typecheck_str(
+    let res_module = broc_load_internal::file::load_and_typecheck_str(
         &arena,
         PathBuf::from(filename),
         source,
         cwd,
         Default::default(),
         target_info,
-        roc_reporting::report::RenderTarget::ColorTerminal,
-        roc_reporting::report::DEFAULT_PALETTE,
-        RocCacheDir::Disallowed,
+        broc_reporting::report::RenderTarget::ColorTerminal,
+        broc_reporting::report::DEFAULT_PALETTE,
+        BrocCacheDir::Disallowed,
         Threading::AllAvailable,
     );
 

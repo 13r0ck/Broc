@@ -27,11 +27,11 @@ rm -rf $DESIGN_ASSETS_TARFILE $DESIGN_ASSETS_DIR
 
 # grab the source code and copy it to Netlify's server; if it's not there, fail the build.
 pushd build
-curl -LJO https://github.com/roc-lang/roc/archive/www.tar.gz
+curl -LJO https://github.com/roc-lang/broc/archive/www.tar.gz
 
 # Download the latest pre-built Web REPL as a zip file. (Build takes longer than Netlify's timeout.)
-REPL_TARFILE="roc_repl_wasm.tar.gz"
-curl -LJO https://github.com/roc-lang/roc/releases/download/nightly/$REPL_TARFILE
+REPL_TARFILE="broc_repl_wasm.tar.gz"
+curl -LJO https://github.com/roc-lang/broc/releases/download/nightly/$REPL_TARFILE
 tar -xzf $REPL_TARFILE -C repl
 rm $REPL_TARFILE
 ls -lh repl
@@ -47,7 +47,7 @@ cargo --version
 # is set up to serve them.
 export ROC_DOCS_URL_ROOT=/builtins
 
-cargo run --release --bin roc-docs crates/compiler/builtins/roc/main.roc
+cargo run --release --bin broc-docs crates/compiler/builtins/broc/main.broc
 mv generated-docs/*.* www/build # move all the .js, .css, etc. files to build/
 mv generated-docs/ www/build/builtins # move all the folders to build/builtins/
 
@@ -56,43 +56,43 @@ find www/build/builtins -type f -name 'index.html' -exec sed -i 's!</nav>!<div c
 
 
 # cleanup files that could have stayed behind if the script failed
-rm -rf roc_nightly roc_releases.json
+rm -rf broc_nightly broc_releases.json
 
 # to prevent GitHub from rate limiting netlify servers
 if ! [ -v GITHUB_TOKEN_READ_ONLY ]; then
   echo 'Building tutorial.html from tutorial.md...'
   mkdir www/build/tutorial
 
-  cargo run --release --bin roc run www/generate_tutorial/src/tutorial.roc -- www/generate_tutorial/src/input/ www/build/tutorial/
+  cargo run --release --bin broc run www/generate_tutorial/src/tutorial.broc -- www/generate_tutorial/src/input/ www/build/tutorial/
 else
-  echo 'Fetching latest roc nightly...'
+  echo 'Fetching latest broc nightly...'
   
   # we assume that we're on a netlify server if GITHUB_TOKEN_READ_ONLY is set
   curl --request GET \
-          --url https://api.github.com/repos/roc-lang/roc/releases \
+          --url https://api.github.com/repos/roc-lang/broc/releases \
           -u $GITHUB_TOKEN_READ_ONLY \
-          --output roc_releases.json
+          --output broc_releases.json
 
   RELEASE_MACHINE="linux_x86_64"
 
   export ROC_RELEASE_URL=$(./ci/get_latest_release_url.sh $RELEASE_MACHINE)
-  # get roc release archive
+  # get broc release archive
   curl -OL $ROC_RELEASE_URL
   # extract archive
-  ls | grep "roc_nightly" | xargs tar -xzvf
+  ls | grep "broc_nightly" | xargs tar -xzvf
   # delete archive
-  ls | grep "roc_nightly.*tar.gz" | xargs rm
+  ls | grep "broc_nightly.*tar.gz" | xargs rm
   # simplify dir name
-  mv roc_nightly* roc_nightly
+  mv broc_nightly* broc_nightly
 
   echo 'Building tutorial.html from tutorial.md...'
   mkdir www/build/tutorial
 
-  ./roc_nightly/roc version
-  ./roc_nightly/roc run www/generate_tutorial/src/tutorial.roc -- www/generate_tutorial/src/input/ www/build/tutorial/
+  ./broc_nightly/broc version
+  ./broc_nightly/broc run www/generate_tutorial/src/tutorial.broc -- www/generate_tutorial/src/input/ www/build/tutorial/
 
   # cleanup
-  rm -rf roc_nightly roc_releases.json
+  rm -rf broc_nightly broc_releases.json
 fi
 
 mv www/build/tutorial/tutorial.html www/build/tutorial/index.html

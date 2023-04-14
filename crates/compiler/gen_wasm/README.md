@@ -6,7 +6,7 @@ One of the security features of WebAssembly is that it does not allow unrestrict
 
 [control-inst]: https://webassembly.github.io/spec/core/syntax/instructions.html#control-instructions
 
-This way of representing control flow is similar to parts of the Roc AST like `When`, `If` and `LetRec`. But Mono IR converts this to jumps and join points, which are more of a Control Flow Graph than a tree. We need to map back from graph to a tree again in the Wasm backend.
+This way of representing control flow is similar to parts of the Broc AST like `When`, `If` and `LetRec`. But Mono IR converts this to jumps and join points, which are more of a Control Flow Graph than a tree. We need to map back from graph to a tree again in the Wasm backend.
 
 Our solution is to wrap all joinpoint/jump graphs in an outer `loop`, with nested `block`s inside it.
 
@@ -24,7 +24,7 @@ This means that WebAssembly has a concept of type checking. When you load a .was
 
 Note that the instruction makes no mention of any source or destination registers, because there is no such thing. It just pops two values and pushes one. (This architecture choice helps to keep WebAssembly programs quite compact. There are no extra bytes specifying source and destination registers.)
 
-Implications of the stack machine for Roc:
+Implications of the stack machine for Broc:
 
 - There is no such thing as register allocation, since there are no registers! There is no reason to maintain hashmaps of what registers are free or not. And there is no need to do a pass over the IR to find the "last seen" occurrence of a symbol in the IR. That means we don't need the `Backend` methods `scan_ast`, `scan_ast_call`, `set_last_seen`, `last_seen_map`, `free_map`, `free_symbols`, `free_symbol`, `set_free_map`.
 
@@ -34,7 +34,7 @@ Implications of the stack machine for Roc:
 
 WebAssembly functions can have any number of local variables. They are declared at the beginning of the function, along with their types (just like C). WebAssembly has 4 value types: `i32`, `i64`, `f32`, `f64`.
 
-In this backend, each symbol in the Mono IR gets one WebAssembly local. To illustrate, let's translate a simple Roc example to WebAssembly text format.
+In this backend, each symbol in the Mono IR gets one WebAssembly local. To illustrate, let's translate a simple Broc example to WebAssembly text format.
 The WebAssembly code below is completely unoptimised and uses far more locals than necessary. But that does help to illustrate the concept of locals.
 
 ```coffee
@@ -186,7 +186,7 @@ The [official spec](https://webassembly.github.io/spec/core/binary/modules.html#
 
 We implement a few linking operations in the Wasm backend. The most important are host-to-app calls.
 
-In the host .wasm file, `roc__mainForHost_1_exposed` is defined as a Wasm Import, as if it were an external JavaScript function. But when we link the host and app, we need to make it an internal function instead.
+In the host .wasm file, `broc__mainForHost_1_exposed` is defined as a Wasm Import, as if it were an external JavaScript function. But when we link the host and app, we need to make it an internal function instead.
 
 There are a few important facts to note about the Wasm binary format:
 
@@ -197,8 +197,8 @@ There are a few important facts to note about the Wasm binary format:
 
 With that background, here are the linking steps for a single app function that gets called by the host:
 
-- Remove `roc__mainForHost_1_exposed` from the imports, updating all call sites to the new index, which is somewhere in the app.
-- Swap the _last_ JavaScript import into the slot where `roc__mainForHost_1_exposed` was, updating all of its call sites in the host.
+- Remove `broc__mainForHost_1_exposed` from the imports, updating all call sites to the new index, which is somewhere in the app.
+- Swap the _last_ JavaScript import into the slot where `broc__mainForHost_1_exposed` was, updating all of its call sites in the host.
 - Insert an internally-defined dummy function at the index where the last JavaScript import used to be.
 
 The diagram below illustrates this process.

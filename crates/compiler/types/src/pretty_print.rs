@@ -7,10 +7,10 @@ use crate::subs::{
 use crate::types::{
     name_type_var, name_type_var_with_hint, AbilitySet, Polarity, RecordField, Uls,
 };
-use roc_collections::all::MutMap;
-use roc_collections::VecSet;
-use roc_module::ident::{Lowercase, TagName};
-use roc_module::symbol::{Interns, ModuleId, Symbol};
+use broc_collections::all::MutMap;
+use broc_collections::VecSet;
+use broc_module::ident::{Lowercase, TagName};
+use broc_module::symbol::{Interns, ModuleId, Symbol};
 
 pub static WILDCARD: &str = "*";
 static EMPTY_RECORD: &str = "{}";
@@ -777,7 +777,7 @@ fn write_content<'a>(
                         write_content(env, ctx, var, subs, buf, Parens::InTypeParam, pol);
                     }
 
-                    roc_debug_flags::dbg_do!(roc_debug_flags::ROC_PRETTY_PRINT_ALIAS_CONTENTS, {
+                    broc_debug_flags::dbg_do!(broc_debug_flags::ROC_PRETTY_PRINT_ALIAS_CONTENTS, {
                         buf.push_str("[[ but really ");
                         write_content(env, ctx, *actual, subs, buf, parens, pol);
                         buf.push_str("]]");

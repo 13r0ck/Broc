@@ -1,0 +1,6 @@
+app "brocLovesRust"
+    packages { pf: "rust-platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main = "Broc <3 Rust!\n"

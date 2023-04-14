@@ -2,9 +2,9 @@
 
 Builtins are the functions and modules that are implicitly imported into every module. All of them compile down to llvm, but some are implemented directly as llvm and others in terms of intermediate functions. Either way, making a new builtin means touching many files. Lets make it easy for you and just list out which modules you need to visit to make a builtin. Here is what it takes:
 
-## A builtin written only in Roc
+## A builtin written only in Broc
 
-Edit the appropriate `roc/*.roc` file with your new implementation. All normal rules for writing Roc code apply. Be sure to add a declaration, definition, some documentation and add it to the exposes list it in the module head.
+Edit the appropriate `broc/*.broc` file with your new implementation. All normal rules for writing Broc code apply. Be sure to add a declaration, definition, some documentation and add it to the exposes list it in the module head.
 
 Next, look towards the bottom of the  `compiler/module/src/symbol.rs` file. Inside the `define_builtins!` macro, there is a list for each of the builtin modules and the function or value names it contains. Add a new entry to the appropriate list for your new function.
 
@@ -18,7 +18,7 @@ You can run your new tests locally using `cargo test-gen-llvm`. You can add a fi
 
 Towards the bottom of `symbol.rs` there is a `define_builtins!` macro being used that takes many modules and function names. The first level (`List`, `Int` ..) is the module name, and the second level is the function or value name (`reverse`, `rem` ..). If you wanted to add a `Int` function called `addTwo` go to `2 Int: "Int" => {` and inside that case add to the bottom `38 INT_ADD_TWO: "addTwo"` (assuming there are 37 existing ones).
 
-Some of these have `#` inside their name (`first#list`, `#lt` ..). This is a trick we are doing to hide implementation details from Roc programmers. To a Roc programmer, a name with `#` in it is invalid, because `#` means everything after it is parsed to a comment. We are constructing these functions manually, so we are circumventing the parsing step and dont have such restrictions. We get to make functions and values with `#` which as a consequence are not accessible to Roc programmers. Roc programmers simply cannot reference them.
+Some of these have `#` inside their name (`first#list`, `#lt` ..). This is a trick we are doing to hide implementation details from Broc programmers. To a Broc programmer, a name with `#` in it is invalid, because `#` means everything after it is parsed to a comment. We are constructing these functions manually, so we are circumventing the parsing step and dont have such restrictions. We get to make functions and values with `#` which as a consequence are not accessible to Broc programmers. Broc programmers simply cannot reference them.
 
 But we can use these values and some of these are necessary for implementing builtins. For example, `List.get` returns tags, and it is not easy for us to create tags when composing LLVM. What is easier however, is:
 
@@ -76,7 +76,7 @@ This is where bottom-level functions that need to be written as LLVM are created
 
 ### builtins/src/std.rs
 
-It's one thing to actually write these functions, it's _another_ thing to let the Roc compiler know they exist as part of the standard library. You have to tell the compiler "Hey, this function exists, and it has this type signature". That happens in `std.rs`.
+It's one thing to actually write these functions, it's _another_ thing to let the Broc compiler know they exist as part of the standard library. You have to tell the compiler "Hey, this function exists, and it has this type signature". That happens in `std.rs`.
 
 ## Specifying how we pass args to the function
 
@@ -88,7 +88,7 @@ After we have all of this, we need to specify if the arguments we're passing are
 
 ### solve/tests/solve_expr.rs
 
-To make sure that Roc is properly inferring the type of the new builtin, add a test to this file similar to:
+To make sure that Broc is properly inferring the type of the new builtin, add a test to this file similar to:
 
 ```rust
  #[test]

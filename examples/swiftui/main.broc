@@ -1,0 +1,6 @@
+app "swiftui"
+    packages { pf: "platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main = "Broc <3 Swift!\n"

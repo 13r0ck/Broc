@@ -12,7 +12,7 @@ use crate::string_literal::StrLikeLiteral;
 use bumpalo::collections::string::String;
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_region::all::{Loc, Region};
+use broc_region::all::{Loc, Region};
 
 /// Different patterns are supported in different circumstances.
 /// For example, when branches can pattern match on number literals, but

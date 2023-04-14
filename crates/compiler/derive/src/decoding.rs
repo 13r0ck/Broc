@@ -1,13 +1,13 @@
 //! Derivers for the `Decoding` ability.
 
-use roc_can::expr::{AnnotatedMark, ClosureData, Expr, Recursive};
-use roc_can::pattern::Pattern;
+use broc_can::expr::{AnnotatedMark, ClosureData, Expr, Recursive};
+use broc_can::pattern::Pattern;
 
-use roc_derive_key::decoding::FlatDecodableKey;
-use roc_module::called_via::CalledVia;
-use roc_module::symbol::Symbol;
-use roc_region::all::Loc;
-use roc_types::subs::{
+use broc_derive_key::decoding::FlatDecodableKey;
+use broc_module::called_via::CalledVia;
+use broc_module::symbol::Symbol;
+use broc_region::all::Loc;
+use broc_types::subs::{
     Content, FlatType, LambdaSet, OptVariable, SubsSlice, UnionLambdas, Variable,
 };
 
@@ -41,7 +41,7 @@ pub(crate) fn derive_decoder(
 
 // Wraps `myDecoder` in `Decode.custom \bytes, fmt -> Decode.decodeWith bytes myDecoder fmt`.
 //
-// Needed to work around the Higher-Region Restriction. See https://github.com/roc-lang/roc/issues/3724.
+// Needed to work around the Higher-Region Restriction. See https://github.com/roc-lang/broc/issues/3724.
 fn wrap_in_decode_custom_decode_with(
     env: &mut Env,
     bytes: Symbol,

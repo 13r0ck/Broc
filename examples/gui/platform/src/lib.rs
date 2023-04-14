@@ -1,18 +1,18 @@
 mod graphics;
 mod gui;
 mod rects_and_texts;
-mod roc;
+mod broc;
 
-use crate::roc::RocElem;
+use crate::broc::BrocElem;
 
 extern "C" {
-    #[link_name = "roc__renderForHost_1_exposed"]
-    fn roc_render() -> RocElem;
+    #[link_name = "broc__renderForHost_1_exposed"]
+    fn broc_render() -> BrocElem;
 }
 
 #[no_mangle]
 pub extern "C" fn rust_main() -> i32 {
-    let root_elem = unsafe { roc_render() };
+    let root_elem = unsafe { broc_render() };
 
     gui::render("test title".into(), root_elem);
 

@@ -6,30 +6,30 @@ use crate::builtins::{
     empty_list_type, float_literal, int_literal, list_type, num_literal, single_quote_literal,
 };
 use crate::pattern::{constrain_pattern, PatternState};
-use roc_can::annotation::IntroducedVariables;
-use roc_can::constraint::{
+use broc_can::annotation::IntroducedVariables;
+use broc_can::constraint::{
     Constraint, Constraints, ExpectedTypeIndex, Generalizable, OpportunisticResolve, TypeOrVar,
 };
-use roc_can::def::Def;
-use roc_can::exhaustive::{sketch_pattern_to_rows, sketch_when_branches, ExhaustiveContext};
-use roc_can::expected::Expected::{self, *};
-use roc_can::expected::PExpected;
-use roc_can::expr::Expr::{self, *};
-use roc_can::expr::{
+use broc_can::def::Def;
+use broc_can::exhaustive::{sketch_pattern_to_rows, sketch_when_branches, ExhaustiveContext};
+use broc_can::expected::Expected::{self, *};
+use broc_can::expected::PExpected;
+use broc_can::expr::Expr::{self, *};
+use broc_can::expr::{
     AnnotatedMark, ClosureData, DeclarationTag, Declarations, DestructureDef, ExpectLookup, Field,
     FunctionDef, OpaqueWrapFunctionData, StructAccessorData, WhenBranch,
 };
-use roc_can::pattern::Pattern;
-use roc_can::traverse::symbols_introduced_from_pattern;
-use roc_collections::all::{HumanIndex, MutMap, SendMap};
-use roc_collections::soa::{Index, Slice};
-use roc_collections::VecMap;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{IllegalCycleMark, Variable};
-use roc_types::types::Type::{self, *};
-use roc_types::types::{
+use broc_can::pattern::Pattern;
+use broc_can::traverse::symbols_introduced_from_pattern;
+use broc_collections::all::{HumanIndex, MutMap, SendMap};
+use broc_collections::soa::{Index, Slice};
+use broc_collections::VecMap;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{IllegalCycleMark, Variable};
+use broc_types::types::Type::{self, *};
+use broc_types::types::{
     AliasKind, AnnotationSource, Category, IndexOrField, OptAbleType, PReason, Reason, RecordField,
     TypeExtension, TypeTag, Types,
 };
@@ -2483,7 +2483,7 @@ pub fn constrain_decls(
         // rigids are not shared between top-level definitions
         env.rigids.clear();
 
-        use roc_can::expr::DeclarationTag::*;
+        use broc_can::expr::DeclarationTag::*;
         let tag = declarations.declarations[index];
         match tag {
             Value => {
@@ -2649,7 +2649,7 @@ fn constrain_typed_def(
     env: &mut Env,
     def: &Def,
     body_con: Constraint,
-    annotation: &roc_can::def::Annotation,
+    annotation: &broc_can::def::Annotation,
 ) -> Constraint {
     let expr_var = def.expr_var;
     let expr_type_index = constraints.push_variable(expr_var);
@@ -3975,8 +3975,8 @@ fn is_generalizable_expr(mut expr: &Expr) -> bool {
                 // Opaque wrapper functions `@Q` are equivalent to closures `\x -> @Q x`, no need to weaken them.
                 return true;
             }
-            RuntimeError(roc_problem::can::RuntimeError::NoImplementation)
-            | RuntimeError(roc_problem::can::RuntimeError::NoImplementationNamed { .. }) => {
+            RuntimeError(broc_problem::can::RuntimeError::NoImplementation)
+            | RuntimeError(broc_problem::can::RuntimeError::NoImplementationNamed { .. }) => {
                 // Allow generalization of signatures with no implementation
                 return true;
             }

@@ -30,7 +30,7 @@ public class Demo {
 
       // number + panic demo
       // This can be implemented more peacefully but for sake of demonstration-
-      // this will panic from the roc side if n is negative
+      // this will panic from the broc side if n is negative
       // and in turn will throw a JVM RuntimeException
       long n = -1;
       System.out.println("Factorial of " + n + " is " + factorial(n));

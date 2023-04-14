@@ -6,15 +6,15 @@ use bumpalo::collections::Vec;
 use inkwell::types::BasicType;
 use inkwell::values::{BasicValueEnum, FunctionValue, IntValue, PointerValue, StructValue};
 use inkwell::{AddressSpace, FloatPredicate, IntPredicate};
-use roc_builtins::bitcode;
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_mono::layout::{
+use broc_builtins::bitcode;
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutIds, LayoutInterner, STLayoutInterner, UnionLayout,
 };
 
-use super::build::{load_roc_value, use_roc_value, BuilderExt};
+use super::build::{load_broc_value, use_broc_value, BuilderExt};
 use super::convert::argument_type_from_union_layout;
 use super::lowlevel::dec_binop_with_unchecked;
 
@@ -573,14 +573,14 @@ fn build_list_eq_help<'a, 'ctx, 'env>(
                 let elem_ptr = unsafe {
                     builder.new_build_in_bounds_gep(element_type, ptr1, &[curr_index], "load_index")
                 };
-                load_roc_value(env, layout_interner, element_layout, elem_ptr, "get_elem")
+                load_broc_value(env, layout_interner, element_layout, elem_ptr, "get_elem")
             };
 
             let elem2 = {
                 let elem_ptr = unsafe {
                     builder.new_build_in_bounds_gep(element_type, ptr2, &[curr_index], "load_index")
                 };
-                load_roc_value(env, layout_interner, element_layout, elem_ptr, "get_elem")
+                load_broc_value(env, layout_interner, element_layout, elem_ptr, "get_elem")
             };
 
             let are_equal = build_eq(
@@ -776,8 +776,8 @@ fn build_struct_eq_help<'a, 'ctx, 'env>(
             )
             .into_int_value()
         } else {
-            let lhs = use_roc_value(env, layout_interner, *field_layout, field1, "field1");
-            let rhs = use_roc_value(env, layout_interner, *field_layout, field2, "field2");
+            let lhs = use_broc_value(env, layout_interner, *field_layout, field1, "field1");
+            let rhs = use_broc_value(env, layout_interner, *field_layout, field2, "field2");
             build_eq(
                 env,
                 layout_interner,
@@ -1435,8 +1435,8 @@ fn build_box_eq_help<'a, 'ctx, 'env>(
     let box1 = box1.into_pointer_value();
     let box2 = box2.into_pointer_value();
 
-    let value1 = load_roc_value(env, layout_interner, inner_layout, box1, "load_box1");
-    let value2 = load_roc_value(env, layout_interner, inner_layout, box2, "load_box2");
+    let value1 = load_broc_value(env, layout_interner, inner_layout, box1, "load_box1");
+    let value2 = load_broc_value(env, layout_interner, inner_layout, box2, "load_box2");
 
     let is_equal = build_eq(
         env,

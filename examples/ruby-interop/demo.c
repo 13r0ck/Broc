@@ -8,27 +8,27 @@
 #include <ruby.h>
 #include "extconf.h"
 
-void *roc_alloc(size_t size, unsigned int alignment) { return malloc(size); }
+void *broc_alloc(size_t size, unsigned int alignment) { return malloc(size); }
 
-void *roc_realloc(void *ptr, size_t new_size, size_t old_size,
+void *broc_realloc(void *ptr, size_t new_size, size_t old_size,
                   unsigned int alignment)
 {
     return realloc(ptr, new_size);
 }
 
-void roc_dealloc(void *ptr, unsigned int alignment) { free(ptr); }
+void broc_dealloc(void *ptr, unsigned int alignment) { free(ptr); }
 
-__attribute__((noreturn)) void roc_panic(void *ptr, unsigned int alignment)
+__attribute__((noreturn)) void broc_panic(void *ptr, unsigned int alignment)
 {
     rb_raise(rb_eException, "%s", (char *)ptr);
 }
 
-void *roc_memcpy(void *dest, const void *src, size_t n)
+void *broc_memcpy(void *dest, const void *src, size_t n)
 {
     return memcpy(dest, src, n);
 }
 
-void *roc_memset(void *str, int c, size_t n) { return memset(str, c, n); }
+void *broc_memset(void *str, int c, size_t n) { return memset(str, c, n); }
 
 // Reference counting
 
@@ -53,7 +53,7 @@ void incref(uint8_t* bytes, uint32_t alignment)
 }
 
 // Decrement reference count, given a pointer to the first element in a collection.
-// Then call roc_dealloc if nothing is referencing this collection anymore.
+// Then call broc_dealloc if nothing is referencing this collection anymore.
 void decref(uint8_t* bytes, uint32_t alignment)
 {
     if (bytes == NULL) {
@@ -70,25 +70,25 @@ void decref(uint8_t* bytes, uint32_t alignment)
         if (refcount == REFCOUNT_ONE) {
             void *original_allocation = (void *)(refcount_ptr - (extra_bytes - sizeof(size_t)));
 
-            roc_dealloc(original_allocation, alignment);
+            broc_dealloc(original_allocation, alignment);
         }
     }
 }
 
-// RocBytes (List U8)
+// BrocBytes (List U8)
 
-struct RocBytes
+struct BrocBytes
 {
     uint8_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocBytes init_rocbytes(uint8_t *bytes, size_t len)
+struct BrocBytes init_brocbytes(uint8_t *bytes, size_t len)
 {
     if (len == 0)
     {
-        struct RocBytes ret = {
+        struct BrocBytes ret = {
             .len = 0,
             .bytes = NULL,
             .capacity = 0,
@@ -98,9 +98,9 @@ struct RocBytes init_rocbytes(uint8_t *bytes, size_t len)
     }
     else
     {
-        struct RocBytes ret;
+        struct BrocBytes ret;
         size_t refcount_size = sizeof(size_t);
-        uint8_t *new_content = (uint8_t *)roc_alloc(len + refcount_size, alignof(size_t)) + refcount_size;
+        uint8_t *new_content = (uint8_t *)broc_alloc(len + refcount_size, alignof(size_t)) + refcount_size;
 
         memcpy(new_content, bytes, len);
 
@@ -112,20 +112,20 @@ struct RocBytes init_rocbytes(uint8_t *bytes, size_t len)
     }
 }
 
-// RocStr
+// BrocStr
 
-struct RocStr
+struct BrocStr
 {
     uint8_t *bytes;
     size_t len;
     size_t capacity;
 };
 
-struct RocStr init_rocstr(uint8_t *bytes, size_t len)
+struct BrocStr init_brocstr(uint8_t *bytes, size_t len)
 {
     if (len == 0)
     {
-        struct RocStr ret = {
+        struct BrocStr ret = {
             .len = 0,
             .bytes = NULL,
             .capacity = MASK,
@@ -133,13 +133,13 @@ struct RocStr init_rocstr(uint8_t *bytes, size_t len)
 
         return ret;
     }
-    else if (len < sizeof(struct RocStr))
+    else if (len < sizeof(struct BrocStr))
     {
         // Start out with zeroed memory, so that
-        // if we end up comparing two small RocStr values
+        // if we end up comparing two small BrocStr values
         // for equality, we won't risk memory garbage resulting
         // in two equal strings appearing unequal.
-        struct RocStr ret = {
+        struct BrocStr ret = {
             .len = 0,
             .bytes = NULL,
             .capacity = MASK,
@@ -149,30 +149,30 @@ struct RocStr init_rocstr(uint8_t *bytes, size_t len)
         memcpy(&ret, bytes, len);
 
         // Record the string's length in the last byte of the stack allocation
-        ((uint8_t *)&ret)[sizeof(struct RocStr) - 1] = (uint8_t)len | 0b10000000;
+        ((uint8_t *)&ret)[sizeof(struct BrocStr) - 1] = (uint8_t)len | 0b10000000;
 
         return ret;
     }
     else
     {
-        // A large RocStr is the same as a List U8 (aka RocBytes) in memory.
-        struct RocBytes roc_bytes = init_rocbytes(bytes, len);
+        // A large BrocStr is the same as a List U8 (aka BrocBytes) in memory.
+        struct BrocBytes broc_bytes = init_brocbytes(bytes, len);
 
-        struct RocStr ret = {
-            .len = roc_bytes.len,
-            .bytes = roc_bytes.bytes,
-            .capacity = roc_bytes.capacity,
+        struct BrocStr ret = {
+            .len = broc_bytes.len,
+            .bytes = broc_bytes.bytes,
+            .capacity = broc_bytes.capacity,
         };
 
         return ret;
     }
 }
 
-bool is_small_str(struct RocStr str) { return ((ssize_t)str.capacity) < 0; }
+bool is_small_str(struct BrocStr str) { return ((ssize_t)str.capacity) < 0; }
 
 // Determine the length of the string, taking into
 // account the small string optimization
-size_t roc_str_len(struct RocStr str)
+size_t broc_str_len(struct BrocStr str)
 {
     uint8_t *bytes = (uint8_t *)&str;
     uint8_t last_byte = bytes[sizeof(str) - 1];
@@ -193,13 +193,13 @@ size_t roc_str_len(struct RocStr str)
     }
 }
 
-extern void roc__mainForHost_1_exposed_generic(struct RocBytes *ret, struct RocBytes *arg);
+extern void broc__mainForHost_1_exposed_generic(struct BrocBytes *ret, struct BrocBytes *arg);
 
-// Receive a value from Ruby, JSON serialized it and pass it to Roc as a List U8
-// (at which point the Roc platform will decode it and crash if it's invalid,
-// which roc_panic will translate into a Ruby exception), then get some JSON back from Roc
+// Receive a value from Ruby, JSON serialized it and pass it to Broc as a List U8
+// (at which point the Broc platform will decode it and crash if it's invalid,
+// which broc_panic will translate into a Ruby exception), then get some JSON back from Broc
 // - also as a List U8 - and have Ruby JSON.parse it into a plain Ruby value to return.
-VALUE call_roc(VALUE self, VALUE rb_arg)
+VALUE call_broc(VALUE self, VALUE rb_arg)
 {
     // This must be required before the to_json method will exist on String.
     rb_require("json");
@@ -208,16 +208,16 @@ VALUE call_roc(VALUE self, VALUE rb_arg)
     // TODO should we defensively encode it as UTF-8 first?
     VALUE json_arg = rb_funcall(rb_arg, rb_intern("to_json"), 0);
 
-    struct RocBytes arg = init_rocbytes((uint8_t *)RSTRING_PTR(json_arg), RSTRING_LEN(json_arg));
-    struct RocBytes ret;
+    struct BrocBytes arg = init_brocbytes((uint8_t *)RSTRING_PTR(json_arg), RSTRING_LEN(json_arg));
+    struct BrocBytes ret;
 
-    // Call the Roc function to populate `ret`'s bytes.
-    roc__mainForHost_1_exposed_generic(&ret, &arg);
+    // Call the Broc function to populate `ret`'s bytes.
+    broc__mainForHost_1_exposed_generic(&ret, &arg);
 
-    // Create a rb_utf8_str from the heap-allocated JSON bytes the Roc function returned.
+    // Create a rb_utf8_str from the heap-allocated JSON bytes the Broc function returned.
     VALUE returned_json = rb_utf8_str_new((char *)ret.bytes, ret.len);
 
-    // Now that we've created our Ruby JSON string, we're no longer referencing the RocBytes.
+    // Now that we've created our Ruby JSON string, we're no longer referencing the BrocBytes.
     decref((void *)&ret, alignof(uint8_t *));
 
     return rb_funcall(rb_define_module("JSON"), rb_intern("parse"), 1, returned_json);
@@ -225,6 +225,6 @@ VALUE call_roc(VALUE self, VALUE rb_arg)
 
 void Init_demo()
 {
-    VALUE roc_app = rb_define_module("RocApp");
-    rb_define_module_function(roc_app, "call_roc", &call_roc, 1);
+    VALUE broc_app = rb_define_module("BrocApp");
+    rb_define_module_function(broc_app, "call_broc", &call_broc, 1);
 }

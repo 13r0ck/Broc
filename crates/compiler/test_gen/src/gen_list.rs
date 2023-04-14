@@ -13,41 +13,41 @@ use crate::helpers::with_larger_debug_stack;
 #[allow(unused_imports)]
 use indoc::indoc;
 #[allow(unused_imports)]
-use roc_std::{RocList, RocResult, RocStr};
+use broc_std::{BrocList, BrocResult, BrocStr};
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
-fn roc_list_construction() {
-    let list = RocList::from_slice(&[1i64; 23]);
+fn broc_list_construction() {
+    let list = BrocList::from_slice(&[1i64; 23]);
     assert_eq!(&list, &list);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn empty_list_literal() {
-    assert_evals_to!("[]", RocList::<i64>::from_slice(&[]), RocList<i64>);
+    assert_evals_to!("[]", BrocList::<i64>::from_slice(&[]), BrocList<i64>);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn list_literal_empty_record() {
-    assert_evals_to!("[{}]", RocList::from_slice(&[()]), RocList<()>);
+    assert_evals_to!("[{}]", BrocList::from_slice(&[()]), BrocList<()>);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn int_singleton_list_literal() {
-    assert_evals_to!("[1, 2]", RocList::from_slice(&[1, 2]), RocList<i64>);
+    assert_evals_to!("[1, 2]", BrocList::from_slice(&[1, 2]), BrocList<i64>);
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn int_list_literal() {
-    assert_evals_to!("[12, 9]", RocList::from_slice(&[12, 9]), RocList<i64>);
+    assert_evals_to!("[12, 9]", BrocList::from_slice(&[12, 9]), BrocList<i64>);
     assert_evals_to!(
         "[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]",
-        RocList::from_slice(&[1i64; 23]),
-        RocList<i64>
+        BrocList::from_slice(&[1i64; 23]),
+        BrocList<i64>
     );
 }
 
@@ -62,14 +62,14 @@ fn bool_list_literal() {
                [false]
                "#
         ),
-        RocList::from_slice(&[false; 1]),
-        RocList<bool>
+        BrocList::from_slice(&[false; 1]),
+        BrocList<bool>
     );
 
     assert_evals_to!(
         "[Bool.true, Bool.false, Bool.true]",
-        RocList::from_slice(&[true, false, true]),
-        RocList<bool>
+        BrocList::from_slice(&[true, false, true]),
+        BrocList<bool>
     );
 
     assert_evals_to!(
@@ -81,8 +81,8 @@ fn bool_list_literal() {
                [false]
                "#
         ),
-        RocList::from_slice(&[false; 1]),
-        RocList<bool>
+        BrocList::from_slice(&[false; 1]),
+        BrocList<bool>
     );
 }
 
@@ -95,8 +95,8 @@ fn bool_list_concat() {
                List.concat [Bool.true, Bool.false] [Bool.false, Bool.true]
                "#
         ),
-        RocList::from_slice(&[true, false, false, true]),
-        RocList<bool>
+        BrocList::from_slice(&[true, false, false, true]),
+        BrocList<bool>
     );
 
     assert_evals_to!(
@@ -105,8 +105,8 @@ fn bool_list_concat() {
                List.concat [] [Bool.false, Bool.true]
                "#
         ),
-        RocList::from_slice(&[false, true]),
-        RocList<bool>
+        BrocList::from_slice(&[false, true]),
+        BrocList<bool>
     );
 
     assert_evals_to!(
@@ -115,8 +115,8 @@ fn bool_list_concat() {
                List.concat [Bool.true, Bool.false] []
                "#
         ),
-        RocList::from_slice(&[true, false]),
-        RocList<bool>
+        BrocList::from_slice(&[true, false]),
+        BrocList<bool>
     );
 }
 
@@ -132,8 +132,8 @@ fn bool_list_literal_repeat() {
                List.repeat true 23
                "#
         ),
-        RocList::from_slice(&[true; 23]),
-        RocList<bool>
+        BrocList::from_slice(&[true; 23]),
+        BrocList<bool>
     );
 
     assert_evals_to!(
@@ -145,8 +145,8 @@ fn bool_list_literal_repeat() {
                List.repeat { x: true, y: true } 23
                "#
         ),
-        RocList::from_slice(&[[true, true]; 23]),
-        RocList<[bool; 2]>
+        BrocList::from_slice(&[[true, true]; 23]),
+        BrocList<[bool; 2]>
     );
 
     assert_evals_to!(
@@ -158,27 +158,27 @@ fn bool_list_literal_repeat() {
                List.repeat { x: true, y: true, a: true, b: true, c: true, d : true, e: true, f: true } 23
                "#
         ),
-        RocList::from_slice(&[[true, true, true, true, true, true, true, true]; 23]),
-        RocList<[bool; 8]>
+        BrocList::from_slice(&[[true, true, true, true, true, true, true, true]; 23]),
+        BrocList<[bool; 8]>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn variously_sized_list_literals() {
-    assert_evals_to!("[]", RocList::<i64>::from_slice(&[]), RocList<i64>);
-    assert_evals_to!("[1]", RocList::from_slice(&[1]), RocList<i64>);
-    assert_evals_to!("[1, 2]", RocList::from_slice(&[1, 2]), RocList<i64>);
-    assert_evals_to!("[1, 2, 3]", RocList::from_slice(&[1, 2, 3]), RocList<i64>);
+    assert_evals_to!("[]", BrocList::<i64>::from_slice(&[]), BrocList<i64>);
+    assert_evals_to!("[1]", BrocList::from_slice(&[1]), BrocList<i64>);
+    assert_evals_to!("[1, 2]", BrocList::from_slice(&[1, 2]), BrocList<i64>);
+    assert_evals_to!("[1, 2, 3]", BrocList::from_slice(&[1, 2, 3]), BrocList<i64>);
     assert_evals_to!(
         "[1, 2, 3, 4]",
-        RocList::from_slice(&[1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "[1, 2, 3, 4, 5]",
-        RocList::from_slice(&[1, 2, 3, 4, 5]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4, 5]),
+        BrocList<i64>
     );
 }
 
@@ -187,13 +187,13 @@ fn variously_sized_list_literals() {
 fn list_append_basic() {
     assert_evals_to!(
         "List.append [1] 2",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.append [1, 1] 2",
-        RocList::from_slice(&[1, 1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -202,23 +202,23 @@ fn list_append_basic() {
 fn list_take_first() {
     assert_evals_to!(
         "List.takeFirst [1, 2, 3] 2",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.takeFirst [1, 2, 3] 0",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.takeFirst [] 1",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.takeFirst [1,2] 5",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -227,23 +227,23 @@ fn list_take_first() {
 fn list_take_last() {
     assert_evals_to!(
         "List.takeLast [1, 2, 3] 2",
-        RocList::from_slice(&[2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.takeLast [1, 2, 3] 0",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.takeLast [] 1",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.takeLast [1,2] 5",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -252,38 +252,38 @@ fn list_take_last() {
 fn list_sublist() {
     assert_evals_to!(
         "List.sublist [1, 2, 3] { start: 0 , len: 2 } ",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sublist [1, 2, 3] { start: 1 , len: 2 } ",
-        RocList::from_slice(&[2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sublist [1, 2, 3] { start: 2 , len: 2 } ",
-        RocList::from_slice(&[3]),
-        RocList<i64>
+        BrocList::from_slice(&[3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sublist [1, 2, 3] { start: 3 , len: 2 } ",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sublist [] { start: 1 , len: 1 } ",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sublist [1, 2, 3] { start: 1 , len: 0 } ",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sublist [1, 2, 3] { start: 0 , len: 5 } ",
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 }
 
@@ -296,8 +296,8 @@ fn list_map_try_ok() {
             List.mapTry [1, 2, 3] \elem -> Ok elem
         "#,
         // Result I64 [] is unwrapped to just I64
-        RocList::<i64>::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         // Transformation
@@ -308,12 +308,12 @@ fn list_map_try_ok() {
                 Ok "\(str)!"
         "#,
         // Result Str [] is unwrapped to just Str
-        RocList::<RocStr>::from_slice(&[
-            RocStr::from("2!"),
-            RocStr::from("4!"),
-            RocStr::from("6!"),
+        BrocList::<BrocStr>::from_slice(&[
+            BrocStr::from("2!"),
+            BrocStr::from("4!"),
+            BrocStr::from("6!"),
         ]),
-        RocList<RocStr>
+        BrocList<BrocStr>
     );
 }
 
@@ -326,8 +326,8 @@ fn list_map_try_err() {
         r#"
             List.mapTry [1, 2, 3] \_ -> Err -1
         "#,
-        RocResult::err(-1),
-        RocResult<RocList<Infallible>, i64>
+        BrocResult::err(-1),
+        BrocResult<BrocList<Infallible>, i64>
     );
 
     assert_evals_to!(
@@ -339,8 +339,8 @@ fn list_map_try_err() {
                 else
                     Ok num
         "#,
-        RocResult::err(-1),
-        RocResult<RocList<i64>, i64>
+        BrocResult::err(-1),
+        BrocResult<BrocList<i64>, i64>
     );
 }
 
@@ -352,46 +352,46 @@ fn list_split() {
                list = List.split [1, 2, 3] 0
                list.before
             "#,
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         r#"
                list = List.split [1, 2, 3] 0
                list.others
             "#,
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
         "List.split [1, 2, 3] 1",
-        (RocList::from_slice(&[1]), RocList::from_slice(&[2, 3]),),
-        (RocList<i64>, RocList<i64>,)
+        (BrocList::from_slice(&[1]), BrocList::from_slice(&[2, 3]),),
+        (BrocList<i64>, BrocList<i64>,)
     );
     assert_evals_to!(
         "List.split [1, 2, 3] 3",
         (
-            RocList::from_slice(&[1, 2, 3]),
-            RocList::<i64>::from_slice(&[]),
+            BrocList::from_slice(&[1, 2, 3]),
+            BrocList::<i64>::from_slice(&[]),
         ),
-        (RocList<i64>, RocList<i64>,)
+        (BrocList<i64>, BrocList<i64>,)
     );
     assert_evals_to!(
         "List.split [1, 2, 3] 4",
         (
-            RocList::from_slice(&[1, 2, 3]),
-            RocList::<i64>::from_slice(&[]),
+            BrocList::from_slice(&[1, 2, 3]),
+            BrocList::<i64>::from_slice(&[]),
         ),
-        (RocList<i64>, RocList<i64>,)
+        (BrocList<i64>, BrocList<i64>,)
     );
     assert_evals_to!(
         "List.split [] 1",
         (
-            RocList::<i64>::from_slice(&[]),
-            RocList::<i64>::from_slice(&[]),
+            BrocList::<i64>::from_slice(&[]),
+            BrocList::<i64>::from_slice(&[]),
         ),
-        (RocList<i64>, RocList<i64>,)
+        (BrocList<i64>, BrocList<i64>,)
     );
 }
 
@@ -403,28 +403,28 @@ fn list_split_first() {
                List.splitFirst [2, 3, 0, 4, 0, 6, 0, 8, 9] 0
                |> Result.map .before
         "#,
-        RocResult::ok(RocList::<i64>::from_slice(&[2, 3])),
-        RocResult<RocList<i64>, ()>
+        BrocResult::ok(BrocList::<i64>::from_slice(&[2, 3])),
+        BrocResult<BrocList<i64>, ()>
     );
     assert_evals_to!(
         r#"
                List.splitFirst [2, 3, 0, 4, 0, 6, 0, 8, 9] 0
                |> Result.map .after
         "#,
-        RocResult::ok(RocList::<i64>::from_slice(&[4, 0, 6, 0, 8, 9])),
-        RocResult<RocList<i64>, ()>
+        BrocResult::ok(BrocList::<i64>::from_slice(&[4, 0, 6, 0, 8, 9])),
+        BrocResult<BrocList<i64>, ()>
     );
 
     assert_evals_to!(
         "List.splitFirst [1, 2, 3] 0",
-        RocResult::err(()),
-        RocResult<(RocList<i64>, RocList<i64>), ()>
+        BrocResult::err(()),
+        BrocResult<(BrocList<i64>, BrocList<i64>), ()>
     );
 
     assert_evals_to!(
         "List.splitFirst [] 1",
-        RocResult::err(()),
-        RocResult<(RocList<i64>, RocList<i64>), ()>
+        BrocResult::err(()),
+        BrocResult<(BrocList<i64>, BrocList<i64>), ()>
     );
 }
 
@@ -436,28 +436,28 @@ fn list_split_last() {
                List.splitLast [2, 3, 0, 4, 0, 6, 0, 8, 9] 0
                |> Result.map .before
         "#,
-        RocResult::ok(RocList::<i64>::from_slice(&[2, 3, 0, 4, 0, 6])),
-        RocResult<RocList<i64>, ()>
+        BrocResult::ok(BrocList::<i64>::from_slice(&[2, 3, 0, 4, 0, 6])),
+        BrocResult<BrocList<i64>, ()>
     );
     assert_evals_to!(
         r#"
                List.splitLast [2, 3, 0, 4, 0, 6, 0, 8, 9] 0
                |> Result.map .after
         "#,
-        RocResult::ok(RocList::<i64>::from_slice(&[8, 9])),
-        RocResult<RocList<i64>, ()>
+        BrocResult::ok(BrocList::<i64>::from_slice(&[8, 9])),
+        BrocResult<BrocList<i64>, ()>
     );
 
     assert_evals_to!(
         "List.splitLast [1, 2, 3] 0",
-        RocResult::err(()),
-        RocResult<(RocList<i64>, RocList<i64>), ()>
+        BrocResult::err(()),
+        BrocResult<(BrocList<i64>, BrocList<i64>), ()>
     );
 
     assert_evals_to!(
         "List.splitLast [] 1",
-        RocResult::err(()),
-        RocResult<(RocList<i64>, RocList<i64>), ()>
+        BrocResult::err(()),
+        BrocResult<(BrocList<i64>, BrocList<i64>), ()>
     );
 }
 
@@ -466,18 +466,18 @@ fn list_split_last() {
 fn list_drop() {
     assert_evals_to!(
         "List.drop [1,2,3] 2",
-        RocList::from_slice(&[3]),
-        RocList<i64>
+        BrocList::from_slice(&[3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.drop [] 1",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.drop [1,2] 5",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -486,23 +486,23 @@ fn list_drop() {
 fn list_drop_at() {
     assert_evals_to!(
         "List.dropAt [1, 2, 3] 0",
-        RocList::from_slice(&[2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropAt [0, 0, 0] 3",
-        RocList::from_slice(&[0, 0, 0]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 0, 0]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropAt [] 1",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropAt [0] 0",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -515,8 +515,8 @@ fn list_intersperse() {
                     List.intersperse [0, 0, 0] 1
                 "#
         ),
-        RocList::from_slice(&[0, 1, 0, 1, 0]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 1, 0, 1, 0]),
+        BrocList<i64>
     );
     assert_evals_to!(
         indoc!(
@@ -524,8 +524,8 @@ fn list_intersperse() {
                     List.intersperse [] 1
                 "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -543,11 +543,11 @@ fn list_drop_at_shared() {
         ),
         (
             // new_list
-            RocList::from_slice(&[5, 6]),
+            BrocList::from_slice(&[5, 6]),
             // original
-            RocList::from_slice(&[4, 5, 6]),
+            BrocList::from_slice(&[4, 5, 6]),
         ),
-        (RocList<i64>, RocList<i64>,)
+        (BrocList<i64>, BrocList<i64>,)
     );
 }
 
@@ -563,8 +563,8 @@ fn list_drop_if_empty_list_of_int() {
             List.dropIf empty \_ -> Bool.true
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -580,8 +580,8 @@ fn list_drop_if_empty_list() {
             List.dropIf [] alwaysTrue
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -594,8 +594,8 @@ fn list_drop_if_always_false_for_non_empty_list() {
             List.dropIf [1,2,3,4,5,6,7,8] (\_ -> Bool.false)
             "#
         ),
-        RocList::from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]),
+        BrocList<i64>
     );
 }
 
@@ -608,8 +608,8 @@ fn list_drop_if_always_true_for_non_empty_list() {
             List.dropIf [1,2,3,4,5,6,7,8] (\_ -> Bool.true)
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -622,8 +622,8 @@ fn list_drop_if_geq3() {
             List.dropIf [1,2,3,4,5,6,7,8] (\n -> n >= 3)
             "#
         ),
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -636,8 +636,8 @@ fn list_drop_if_string_eq() {
              List.dropIf ["x", "y", "x"] (\s -> s == "y")
              "#
         ),
-        RocList::from_slice(&[RocStr::from("x"), RocStr::from("x")]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("x"), BrocStr::from("x")]),
+        BrocList<BrocStr>
     );
 }
 
@@ -646,18 +646,18 @@ fn list_drop_if_string_eq() {
 fn list_drop_last() {
     assert_evals_to!(
         "List.dropLast [1, 2, 3]",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropLast []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropLast [0]",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -675,11 +675,11 @@ fn list_drop_last_mutable() {
         ),
         (
             // new_list
-            RocList::from_slice(&[4, 5]),
+            BrocList::from_slice(&[4, 5]),
             // original
-            RocList::from_slice(&[4, 5, 6]),
+            BrocList::from_slice(&[4, 5, 6]),
         ),
-        (RocList<i64>, RocList<i64>,)
+        (BrocList<i64>, BrocList<i64>,)
     );
 }
 
@@ -688,18 +688,18 @@ fn list_drop_last_mutable() {
 fn list_drop_first() {
     assert_evals_to!(
         "List.dropFirst [1, 2, 3]",
-        RocList::from_slice(&[2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 3]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropFirst []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.dropFirst [0]",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -708,41 +708,41 @@ fn list_drop_first() {
 fn list_swap() {
     assert_evals_to!(
         "List.swap [] 0 1",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
-    assert_evals_to!("List.swap [0] 1 2", RocList::from_slice(&[0]), RocList<i64>);
+    assert_evals_to!("List.swap [0] 1 2", BrocList::from_slice(&[0]), BrocList<i64>);
     assert_evals_to!(
         "List.swap [1, 2] 0 1",
-        RocList::from_slice(&[2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 1]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.swap [1, 2] 1 0",
-        RocList::from_slice(&[2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 1]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.swap [0, 1, 2, 3, 4, 5] 2 4",
-        RocList::from_slice(&[0, 1, 4, 3, 2, 5]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 1, 4, 3, 2, 5]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.swap [0, 1, 2] 1 3",
-        RocList::from_slice(&[0, 1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.swap [1, 2, 3] 1 1",
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn list_append_to_empty_list() {
-    assert_evals_to!("List.append [] 3", RocList::from_slice(&[3]), RocList<i64>);
+    assert_evals_to!("List.append [] 3", BrocList::from_slice(&[3]), BrocList<i64>);
 }
 
 #[test]
@@ -758,8 +758,8 @@ fn list_append_to_empty_list_of_int() {
                 List.append (List.append initThrees 3) 3
             "#
         ),
-        RocList::from_slice(&[3, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[3, 3]),
+        BrocList<i64>
     );
 }
 
@@ -768,8 +768,8 @@ fn list_append_to_empty_list_of_int() {
 fn list_append_bools() {
     assert_evals_to!(
         "List.append [Bool.true, Bool.false] Bool.true",
-        RocList::from_slice(&[true, false, true]),
-        RocList<bool>
+        BrocList::from_slice(&[true, false, true]),
+        BrocList<bool>
     );
 }
 
@@ -778,19 +778,19 @@ fn list_append_bools() {
 fn list_append_longer_list() {
     assert_evals_to!(
         "List.append [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22] 23",
-        RocList::from_slice(&[11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]),
-        RocList<i64>
+        BrocList::from_slice(&[11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]),
+        BrocList<i64>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn list_prepend() {
-    assert_evals_to!("List.prepend [] 1", RocList::from_slice(&[1]), RocList<i64>);
+    assert_evals_to!("List.prepend [] 1", BrocList::from_slice(&[1]), BrocList<i64>);
     assert_evals_to!(
         "List.prepend [2] 1",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
@@ -803,8 +803,8 @@ fn list_prepend() {
                 List.prepend (List.prepend init 4) 6
             "#
         ),
-        RocList::from_slice(&[6, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[6, 4]),
+        BrocList<i64>
     );
 }
 
@@ -821,8 +821,8 @@ fn list_prepend_str() {
                 List.prepend init "bar"
             "#
         ),
-        RocList::from_slice(&[RocStr::from("bar"), RocStr::from("foo"),]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("bar"), BrocStr::from("foo"),]),
+        BrocList<BrocStr>
     );
 }
 
@@ -831,8 +831,8 @@ fn list_prepend_str() {
 fn list_prepend_bools() {
     assert_evals_to!(
         "List.prepend [Bool.true, Bool.false] Bool.true",
-        RocList::from_slice(&[true, true, false]),
-        RocList<bool>
+        BrocList::from_slice(&[true, true, false]),
+        BrocList<bool>
     );
 }
 
@@ -841,10 +841,10 @@ fn list_prepend_bools() {
 fn list_prepend_big_list() {
     assert_evals_to!(
         "List.prepend [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 100, 100, 100, 100] 9",
-        RocList::from_slice(&[
+        BrocList::from_slice(&[
             9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 100, 100, 100, 100
         ]),
-        RocList<i64>
+        BrocList<i64>
     );
 }
 
@@ -881,14 +881,14 @@ fn list_walk_backwards_empty_all_inline() {
 fn list_walk_backwards_with_str() {
     assert_evals_to!(
         r#"List.walkBackwards ["x", "y", "z"] "<" Str.concat"#,
-        RocStr::from("<zyx"),
-        RocStr
+        BrocStr::from("<zyx"),
+        BrocStr
     );
 
     assert_evals_to!(
         r#"List.walkBackwards ["Second", "Third", "Fourth"] "First" Str.concat"#,
-        RocStr::from("FirstFourthThirdSecond"),
-        RocStr
+        BrocStr::from("FirstFourthThirdSecond"),
+        BrocStr
     );
 }
 
@@ -925,14 +925,14 @@ fn list_walk_backwards_with_record() {
 fn list_walk_with_str() {
     assert_evals_to!(
         r#"List.walk ["x", "y", "z"] "<" Str.concat"#,
-        RocStr::from("<xyz"),
-        RocStr
+        BrocStr::from("<xyz"),
+        BrocStr
     );
 
     assert_evals_to!(
         r#"List.walk ["Second", "Third", "Fourth"] "First" Str.concat"#,
-        RocStr::from("FirstSecondThirdFourth"),
-        RocStr
+        BrocStr::from("FirstSecondThirdFourth"),
+        BrocStr
     );
 }
 
@@ -1017,8 +1017,8 @@ fn list_keep_if_empty_list_of_int() {
             List.keepIf empty \_ -> Bool.true
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1036,8 +1036,8 @@ fn list_keep_if_empty_list() {
             List.keepIf [] alwaysTrue
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1058,8 +1058,8 @@ fn list_keep_if_always_true_for_non_empty_list() {
             List.keepIf oneThroughEight alwaysTrue
             "#
         ),
-        RocList::from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]),
+        BrocList<i64>
     );
 }
 
@@ -1076,8 +1076,8 @@ fn list_keep_if_always_false_for_non_empty_list() {
             List.keepIf [1,2,3,4,5,6,7,8] alwaysFalse
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1094,8 +1094,8 @@ fn list_keep_if_one() {
             List.keepIf [1,2,3,4,5,6,7,8] intIsLessThanThree
             "#
         ),
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
 }
 
@@ -1108,8 +1108,8 @@ fn list_keep_if_str_is_hello() {
              List.keepIf ["x", "y", "x"] (\x -> x == "x")
              "#
         ),
-        RocList::from_slice(&[RocStr::from("x"), RocStr::from("x")]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("x"), BrocStr::from("x")]),
+        BrocList<BrocStr>
     );
 }
 
@@ -1212,8 +1212,8 @@ fn list_map_on_empty_list_with_int_layout() {
             List.map empty (\x -> x)
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1230,8 +1230,8 @@ fn list_map_on_non_empty_list() {
             List.map nonEmpty (\x -> x)
             "#
         ),
-        RocList::from_slice(&[1]),
-        RocList<i64>
+        BrocList::from_slice(&[1]),
+        BrocList<i64>
     );
 }
 
@@ -1248,8 +1248,8 @@ fn list_map_changes_input() {
             List.map nonEmpty (\x -> x + 1)
             "#
         ),
-        RocList::from_slice(&[2]),
-        RocList<i64>
+        BrocList::from_slice(&[2]),
+        BrocList<i64>
     );
 }
 
@@ -1266,10 +1266,10 @@ fn list_map_on_big_list() {
             List.map nonEmpty (\x -> x * 2)
             "#
         ),
-        RocList::from_slice(&[
+        BrocList::from_slice(&[
             2, 4, 6, 8, 10, 2, 4, 6, 8, 10, 2, 4, 6, 8, 10, 2, 4, 6, 8, 10, 2, 4, 6, 8, 10
         ]),
-        RocList<i64>
+        BrocList<i64>
     );
 }
 
@@ -1287,8 +1287,8 @@ fn list_map_with_type_change() {
             List.map nonEmpty (\x -> x > 0)
             "#
         ),
-        RocList::from_slice(&[true, true, false, true, true]),
-        RocList<bool>
+        BrocList::from_slice(&[true, true, false, true, true]),
+        BrocList<bool>
     );
 }
 
@@ -1309,8 +1309,8 @@ fn list_map_using_defined_function() {
              List.map nonEmpty greaterThanOne
              "#
         ),
-        RocList::from_slice(&[true, true, false, true, true]),
-        RocList<bool>
+        BrocList::from_slice(&[true, true, false, true, true]),
+        BrocList<bool>
     );
 }
 
@@ -1323,8 +1323,8 @@ fn list_map_all_inline() {
             List.map [] (\x -> x > 0)
             "#
         ),
-        RocList::<bool>::from_slice(&[]),
-        RocList<bool>
+        BrocList::<bool>::from_slice(&[]),
+        BrocList<bool>
     );
 }
 
@@ -1344,8 +1344,8 @@ fn list_map_closure() {
             List.map single (\x -> x + float)
             "#
         ),
-        RocList::from_slice(&[1.23]),
-        RocList<f64>
+        BrocList::from_slice(&[1.23]),
+        BrocList<f64>
     );
 }
 
@@ -1358,8 +1358,8 @@ fn list_map4_group() {
             List.map4 [1,2,3] [3,2,1] [2,1,3] [3,1,2] (\a, b, c, d -> Group a b c d)
             "#
         ),
-        RocList::from_slice(&[[1, 3, 2, 3], [2, 2, 1, 1], [3, 1, 3, 2]]),
-        RocList<[i64; 4]>
+        BrocList::from_slice(&[[1, 3, 2, 3], [2, 2, 1, 1], [3, 1, 3, 2]]),
+        BrocList<[i64; 4]>
     );
 }
 
@@ -1377,8 +1377,8 @@ fn list_map4_different_length() {
                 (\a, b, c, d -> Str.concat a (Str.concat b (Str.concat c d)))
             "#
         ),
-        RocList::from_slice(&[RocStr::from("hola"),]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("hola"),]),
+        BrocList<BrocStr>
     );
 }
 
@@ -1391,8 +1391,8 @@ fn list_map3_group() {
             List.map3 [1,2,3] [3,2,1] [2,1,3] (\a, b, c -> Group a b c)
             "#
         ),
-        RocList::from_slice(&[(1, 3, 2), (2, 2, 1), (3, 1, 3)]),
-        RocList<(i64, i64, i64)>
+        BrocList::from_slice(&[(1, 3, 2), (2, 2, 1), (3, 1, 3)]),
+        BrocList<(i64, i64, i64)>
     );
 }
 
@@ -1409,8 +1409,8 @@ fn list_map3_different_length() {
                 (\a, b, c -> Str.concat a (Str.concat b c))
             "#
         ),
-        RocList::from_slice(&[RocStr::from("abc"),]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("abc"),]),
+        BrocList<BrocStr>
     );
 }
 
@@ -1424,8 +1424,8 @@ fn list_map2_pair() {
             List.map2 [1,2,3] [3,2,1] f
             "#
         ),
-        RocList::from_slice(&[(1, 3), (2, 2), (3, 1)]),
-        RocList<(i64, i64)>
+        BrocList::from_slice(&[(1, 3), (2, 2), (3, 1)]),
+        BrocList<(i64, i64)>
     );
 }
 
@@ -1441,8 +1441,8 @@ fn list_map2_different_lengths() {
                 (\a, b -> Str.concat a b)
             "#
         ),
-        RocList::from_slice(&[RocStr::from("ab"),]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("ab"),]),
+        BrocList<BrocStr>
     );
 }
 
@@ -1451,8 +1451,8 @@ fn list_map2_different_lengths() {
 fn list_join_empty_list() {
     assert_evals_to!(
         "List.join []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1461,8 +1461,8 @@ fn list_join_empty_list() {
 fn list_join_one_list() {
     assert_evals_to!(
         "List.join [[1, 2, 3]]",
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 }
 
@@ -1471,8 +1471,8 @@ fn list_join_one_list() {
 fn list_join_two_non_empty_lists() {
     assert_evals_to!(
         "List.join [[1, 2, 3] , [4 ,5, 6]]",
-        RocList::from_slice(&[1, 2, 3, 4, 5, 6]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4, 5, 6]),
+        BrocList<i64>
     );
 }
 
@@ -1481,8 +1481,8 @@ fn list_join_two_non_empty_lists() {
 fn list_join_two_non_empty_lists_of_float() {
     assert_evals_to!(
         "List.join [[1.2, 1.1], [2.1, 2.2]]",
-        RocList::from_slice(&[1.2, 1.1, 2.1, 2.2]),
-        RocList<f64>
+        BrocList::from_slice(&[1.2, 1.1, 2.1, 2.2]),
+        BrocList<f64>
     );
 }
 
@@ -1504,11 +1504,11 @@ fn list_join_to_big_list() {
                    ]
             "#
         ),
-        RocList::from_slice(&[
+        BrocList::from_slice(&[
             1.2, 1.1, 2.1, 2.2, 3.0, 4.0, 5.0, 6.1, 9.0, 3.0, 4.0, 5.0, 6.1, 9.0, 3.0, 4.0, 5.0,
             6.1, 9.0, 3.0, 4.0, 5.0, 6.1, 9.0, 3.0, 4.0, 5.0, 6.1, 9.0
         ]),
-        RocList<f64>
+        BrocList<f64>
     );
 }
 
@@ -1525,8 +1525,8 @@ fn list_join_defined_empty_list() {
                 List.join [[0.2, 11.11], empty]
             "#
         ),
-        RocList::from_slice(&[0.2, 11.11]),
-        RocList<f64>
+        BrocList::from_slice(&[0.2, 11.11]),
+        BrocList<f64>
     );
 }
 
@@ -1535,8 +1535,8 @@ fn list_join_defined_empty_list() {
 fn list_join_all_empty_lists() {
     assert_evals_to!(
         "List.join [[], [], []]",
-        RocList::<f64>::from_slice(&[]),
-        RocList<f64>
+        BrocList::<f64>::from_slice(&[]),
+        BrocList<f64>
     );
 }
 
@@ -1545,16 +1545,16 @@ fn list_join_all_empty_lists() {
 fn list_join_one_empty_list() {
     assert_evals_to!(
         "List.join [[1.2, 1.1], []]",
-        RocList::from_slice(&[1.2, 1.1]),
-        RocList<f64>
+        BrocList::from_slice(&[1.2, 1.1]),
+        BrocList<f64>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn list_single() {
-    assert_evals_to!("List.single 1", RocList::from_slice(&[1]), RocList<i64>);
-    assert_evals_to!("List.single 5.6", RocList::from_slice(&[5.6]), RocList<f64>);
+    assert_evals_to!("List.single 1", BrocList::from_slice(&[1]), BrocList<i64>);
+    assert_evals_to!("List.single 5.6", BrocList::from_slice(&[5.6]), BrocList<f64>);
 }
 
 #[test]
@@ -1562,19 +1562,19 @@ fn list_single() {
 fn list_repeat() {
     assert_evals_to!(
         "List.repeat 1 5",
-        RocList::from_slice(&[1, 1, 1, 1, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 1, 1, 1, 1]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.repeat 2 4",
-        RocList::from_slice(&[2, 2, 2, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 2, 2, 2]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
         "List.repeat [] 2",
-        RocList::from_slice(&[RocList::<i64>::default(), RocList::default()]),
-        RocList<RocList<i64>>
+        BrocList::from_slice(&[BrocList::<i64>::default(), BrocList::default()]),
+        BrocList<BrocList<i64>>
     );
 
     assert_evals_to!(
@@ -1587,14 +1587,14 @@ fn list_repeat() {
                 List.repeat noStrs 2
             "#
         ),
-        RocList::from_slice(&[RocList::<i64>::default(), RocList::default()]),
-        RocList<RocList<i64>>
+        BrocList::from_slice(&[BrocList::<i64>::default(), BrocList::default()]),
+        BrocList<BrocList<i64>>
     );
 
     assert_evals_to!(
         "List.repeat 4 15",
-        RocList::from_slice(&[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]),
+        BrocList<i64>
     );
 }
 
@@ -1603,15 +1603,15 @@ fn list_repeat() {
 fn list_reverse() {
     assert_evals_to!(
         "List.reverse [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",
-        RocList::from_slice(&[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.reverse [1, 2, 3]",
-        RocList::from_slice(&[3, 2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[3, 2, 1]),
+        BrocList<i64>
     );
-    assert_evals_to!("List.reverse [4]", RocList::from_slice(&[4]), RocList<i64>);
+    assert_evals_to!("List.reverse [4]", BrocList::from_slice(&[4]), BrocList<i64>);
 }
 
 #[test]
@@ -1627,8 +1627,8 @@ fn list_reverse_empty_list_of_int() {
                 List.reverse emptyList
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1637,8 +1637,8 @@ fn list_reverse_empty_list_of_int() {
 fn list_reverse_empty_list() {
     assert_evals_to!(
         "List.reverse []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1647,8 +1647,8 @@ fn list_reverse_empty_list() {
 fn list_concat_two_empty_lists() {
     assert_evals_to!(
         "List.concat [] []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1669,8 +1669,8 @@ fn list_concat_two_empty_lists_of_int() {
                 List.concat firstList secondList
             "#
         ),
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
 }
 
@@ -1679,8 +1679,8 @@ fn list_concat_two_empty_lists_of_int() {
 fn list_concat_second_list_is_empty() {
     assert_evals_to!(
         "List.concat [12, 13] []",
-        RocList::from_slice(&[12, 13]),
-        RocList<i64>
+        BrocList::from_slice(&[12, 13]),
+        BrocList<i64>
     );
 }
 
@@ -1689,8 +1689,8 @@ fn list_concat_second_list_is_empty() {
 fn list_concat_first_list_is_empty() {
     assert_evals_to!(
         "List.concat [] [23, 24]",
-        RocList::from_slice(&[23, 24]),
-        RocList<i64>
+        BrocList::from_slice(&[23, 24]),
+        BrocList<i64>
     );
 }
 
@@ -1699,14 +1699,14 @@ fn list_concat_first_list_is_empty() {
 fn list_concat_two_non_empty_lists() {
     assert_evals_to!(
         "List.concat [1, 2] [3, 4]",
-        RocList::from_slice(&[1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
         "List.concat [34, 43] [64, 55, 66]",
-        RocList::from_slice(&[34, 43, 64, 55, 66]),
-        RocList<i64>
+        BrocList::from_slice(&[34, 43, 64, 55, 66]),
+        BrocList<i64>
     );
 }
 
@@ -1715,8 +1715,8 @@ fn list_concat_two_non_empty_lists() {
 fn list_concat_two_bigger_non_empty_lists() {
     assert_evals_to!(
         "List.concat [1.1, 2.2] [3.3, 4.4, 5.5]",
-        RocList::from_slice(&[1.1, 2.2, 3.3, 4.4, 5.5]),
-        RocList<f64>
+        BrocList::from_slice(&[1.1, 2.2, 3.3, 4.4, 5.5]),
+        BrocList<f64>
     );
 }
 
@@ -1737,8 +1737,8 @@ fn assert_concat_worked(num_elems1: i64, num_elems2: i64) {
 
     assert_evals_to!(
         &format!("List.concat {} {}", slice_str1, slice_str2),
-        RocList::from_slice(&expected),
-        RocList<i64>
+        BrocList::from_slice(&expected),
+        BrocList<i64>
     );
 }
 
@@ -1862,8 +1862,8 @@ fn first_int_list() {
             List.first [12, 9, 6, 3]
             "#
         ),
-        RocResult::ok(12),
-        RocResult<i64, ()>
+        BrocResult::ok(12),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1876,8 +1876,8 @@ fn first_str_list() {
             List.first ["short", "bar"]
             "#
         ),
-        RocResult::ok(RocStr::from("short")),
-        RocResult<RocStr, ()>
+        BrocResult::ok(BrocStr::from("short")),
+        BrocResult<BrocStr, ()>
     );
 }
 
@@ -1890,8 +1890,8 @@ fn first_wildcard_empty_list() {
             List.last [] |> Result.map (\_ -> 0i64)
             "#
         ),
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1907,8 +1907,8 @@ fn first_empty_list() {
             List.first list
             "#
         ),
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1921,8 +1921,8 @@ fn last_int_list() {
             List.last [12, 9, 6, 3]
             "#
         ),
-        RocResult::ok(3),
-        RocResult<i64, ()>
+        BrocResult::ok(3),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1935,8 +1935,8 @@ fn last_wildcard_empty_list() {
             List.last [] |> Result.map (\_ -> 0i64)
             "#
         ),
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1952,8 +1952,8 @@ fn last_empty_list() {
             List.last list
             "#
         ),
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1969,8 +1969,8 @@ fn get_empty_list() {
             List.get list 0
             "#
         ),
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -1978,8 +1978,8 @@ fn get_empty_list() {
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn get_wildcard_empty_list() {
     // NOTE: by default, the return type is `Result [] [NotFound]`, which is actually represented
-    // as just `[NotFound]`. Casting that to `RocResult<(), ()>` is invalid! But accepting any `()`
-    // would make the test pointless. Therefore, we must explicitly change the type on the roc side
+    // as just `[NotFound]`. Casting that to `BrocResult<(), ()>` is invalid! But accepting any `()`
+    // would make the test pointless. Therefore, we must explicitly change the type on the broc side
     assert_evals_to!(
         indoc!(
             r#"
@@ -1987,8 +1987,8 @@ fn get_wildcard_empty_list() {
             |> Result.map (\_ -> {})
             "#
         ),
-        RocResult::err(()),
-        RocResult<(), ()>
+        BrocResult::err(()),
+        BrocResult<(), ()>
     );
 }
 
@@ -2001,8 +2001,8 @@ fn get_str_list_ok() {
             List.get ["foo", "bar"] 1
             "#
         ),
-        RocResult::ok(RocStr::from("bar")),
-        RocResult<RocStr, ()>
+        BrocResult::ok(BrocStr::from("bar")),
+        BrocResult<BrocStr, ()>
     );
 }
 
@@ -2015,8 +2015,8 @@ fn get_int_list_ok() {
             List.get [12, 9, 6] 1
             "#
         ),
-        RocResult::ok(9),
-        RocResult<i64, ()>
+        BrocResult::ok(9),
+        BrocResult<i64, ()>
     );
 }
 
@@ -2029,8 +2029,8 @@ fn get_int_list_oob() {
             List.get [12, 9, 6] 1000
             "#
         ),
-        RocResult::err(()),
-        RocResult<i64, ()>
+        BrocResult::err(()),
+        BrocResult<i64, ()>
     );
 }
 
@@ -2044,8 +2044,8 @@ fn replace_unique_int_list() {
                 record.list
             "#
         ),
-        RocList::from_slice(&[12, 9, 33, 1, 5]),
-        RocList<i64>
+        BrocList::from_slice(&[12, 9, 33, 1, 5]),
+        BrocList<i64>
     );
 }
 
@@ -2134,8 +2134,8 @@ fn get_set_unique_int_list_i64() {
             List.get (List.set [12, 9, 7, 3] 1 42) 1
             "#
         ),
-        RocResult::ok(42),
-        RocResult<i64, ()>
+        BrocResult::ok(42),
+        BrocResult<i64, ()>
     );
 }
 
@@ -2148,8 +2148,8 @@ fn get_set_unique_int_list_i8() {
             List.get (List.set [12, 9, 7, 3] 1 42i8) 1
             "#
         ),
-        RocResult::ok(42),
-        RocResult<i8, ()>
+        BrocResult::ok(42),
+        BrocResult<i8, ()>
     );
 }
 
@@ -2158,8 +2158,8 @@ fn get_set_unique_int_list_i8() {
 fn set_unique_int_list() {
     assert_evals_to!(
         "List.set [12, 9, 7, 1, 5] 2 33",
-        RocList::from_slice(&[12, 9, 33, 1, 5]),
-        RocList<i64>
+        BrocList::from_slice(&[12, 9, 33, 1, 5]),
+        BrocList<i64>
     );
 }
 
@@ -2168,8 +2168,8 @@ fn set_unique_int_list() {
 fn set_unique_list_oob() {
     assert_evals_to!(
         "List.set [3, 17, 4.1] 1337 9.25",
-        RocList::from_slice(&[3.0, 17.0, 4.1]),
-        RocList<f64>
+        BrocList::from_slice(&[3.0, 17.0, 4.1]),
+        BrocList<f64>
     );
 }
 
@@ -2239,8 +2239,8 @@ fn get_unique_int_list() {
                 List.get unique 1
             "#
         ),
-        RocResult::ok(4),
-        RocResult<i64, ()>
+        BrocResult::ok(4),
+        BrocResult<i64, ()>
     );
 }
 
@@ -2256,8 +2256,8 @@ fn gen_wrap_len() {
                 wrapLen [1, 7, 9]
             "#
         ),
-        RocList::from_slice(&[3]),
-        RocList<i64>
+        BrocList::from_slice(&[3]),
+        BrocList<i64>
     );
 }
 
@@ -2273,8 +2273,8 @@ fn gen_wrap_first() {
                 wrapFirst [1, 2]
             "#
         ),
-        RocList::from_slice(&[1]),
-        RocList<i64>
+        BrocList::from_slice(&[1]),
+        BrocList<i64>
     );
 }
 
@@ -2296,8 +2296,8 @@ fn gen_duplicate() {
                 dupe [1, 2]
             "#
         ),
-        RocList::from_slice(&[1, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 1]),
+        BrocList<i64>
     );
 }
 
@@ -2325,8 +2325,8 @@ fn gen_swap() {
                 swap 0 1 [1, 2]
             "#
         ),
-        RocList::from_slice(&[2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[2, 1]),
+        BrocList<i64>
     );
 }
 
@@ -2398,8 +2398,8 @@ fn gen_quicksort() {
                 main = quicksort [7, 4, 21, 19]
             "#
             ),
-            RocList::from_slice(&[4, 7, 19, 21]),
-            RocList<i64>
+            BrocList::from_slice(&[4, 7, 19, 21]),
+            BrocList<i64>
         );
     })
 }
@@ -2474,8 +2474,8 @@ fn quicksort() {
                    main = quicksort [7, 4, 21, 19]
                "#
             ),
-            RocList::from_slice(&[19, 7, 4, 21]),
-            RocList<i64>
+            BrocList::from_slice(&[19, 7, 4, 21]),
+            BrocList<i64>
         );
     })
 }
@@ -2606,8 +2606,8 @@ fn list_pass_to_function() {
             id x
             "#
         ),
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 }
 
@@ -2626,8 +2626,8 @@ fn list_pass_to_set() {
             id x
             "#
         ),
-        RocList::from_slice(&[0, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 2, 3]),
+        BrocList<i64>
     );
 }
 
@@ -2644,8 +2644,8 @@ fn list_wrap_in_tag() {
                 Pair v _ -> v
             "#
         ),
-        RocList::from_slice(&[1, 2, 3]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3]),
+        BrocList<i64>
     );
 }
 
@@ -2689,8 +2689,8 @@ fn list_manual_range() {
             range 0 5 [42]
             "#
         ),
-        RocList::from_slice(&[42, 0, 1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[42, 0, 1, 2, 3, 4]),
+        BrocList<i64>
     );
 }
 
@@ -2704,8 +2704,8 @@ fn list_min() {
             |> Result.map (\_ -> {})
             "#
         ),
-        RocResult::err(()),
-        RocResult<(), ()>
+        BrocResult::err(()),
+        BrocResult<(), ()>
     );
 
     assert_evals_to!(
@@ -2714,8 +2714,8 @@ fn list_min() {
             List.min [3, 1, 2]
             "#
         ),
-        RocResult::ok(1),
-        RocResult<i64, ()>
+        BrocResult::ok(1),
+        BrocResult<i64, ()>
     );
 }
 
@@ -2729,8 +2729,8 @@ fn list_max() {
             |> Result.map (\_ -> {})
             "#
         ),
-        RocResult::err(()),
-        RocResult<(), ()>
+        BrocResult::err(()),
+        BrocResult<(), ()>
     );
 
     assert_evals_to!(
@@ -2739,8 +2739,8 @@ fn list_max() {
             List.max [3, 1, 2]
             "#
         ),
-        RocResult::ok(3),
-        RocResult<i64, ()>
+        BrocResult::ok(3),
+        BrocResult<i64, ()>
     );
 }
 
@@ -2765,14 +2765,14 @@ fn list_product() {
 fn list_keep_void() {
     assert_evals_to!(
         "List.keepOks [] (\\x -> x)",
-        RocList::from_slice(&[]),
-        RocList<()>
+        BrocList::from_slice(&[]),
+        BrocList<()>
     );
 
     assert_evals_to!(
         "List.keepErrs [] (\\x -> x)",
-        RocList::from_slice(&[]),
-        RocList<()>
+        BrocList::from_slice(&[]),
+        BrocList<()>
     );
 }
 
@@ -2781,23 +2781,23 @@ fn list_keep_void() {
 fn list_keep_oks() {
     assert_evals_to!(
         "List.keepOks [Ok {}, Ok {}] (\\x -> x)",
-        RocList::from_slice(&[(), ()]),
-        RocList<()>
+        BrocList::from_slice(&[(), ()]),
+        BrocList<()>
     );
     assert_evals_to!(
         "List.keepOks [1,2] (\\x -> Ok x)",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.keepOks [1,2] (\\x -> Num.remChecked x 2)",
-        RocList::from_slice(&[1, 0]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 0]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.keepOks [Ok 1, Err 2] (\\x -> x)",
-        RocList::from_slice(&[1]),
-        RocList<i64>
+        BrocList::from_slice(&[1]),
+        BrocList<i64>
     );
 }
 
@@ -2806,13 +2806,13 @@ fn list_keep_oks() {
 fn list_keep_errs() {
     assert_evals_to!(
         "List.keepErrs [Err {}, Err {}] (\\x -> x)",
-        RocList::from_slice(&[(), ()]),
-        RocList<()>
+        BrocList::from_slice(&[(), ()]),
+        BrocList<()>
     );
     assert_evals_to!(
         "List.keepErrs [1,2] (\\x -> Err x)",
-        RocList::from_slice(&[1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<i64>
     );
     assert_evals_to!(
         indoc!(
@@ -2820,14 +2820,14 @@ fn list_keep_errs() {
             List.keepErrs [0,1,2] (\x -> Num.remChecked x 0 |> Result.mapErr (\_ -> 32))
             "#
         ),
-        RocList::from_slice(&[32, 32, 32]),
-        RocList<i64>
+        BrocList::from_slice(&[32, 32, 32]),
+        BrocList<i64>
     );
 
     assert_evals_to!(
         "List.keepErrs [Ok 1, Err 2] (\\x -> x)",
-        RocList::from_slice(&[2]),
-        RocList<i64>
+        BrocList::from_slice(&[2]),
+        BrocList<i64>
     );
 }
 
@@ -2836,14 +2836,14 @@ fn list_keep_errs() {
 fn list_map_with_index() {
     assert_evals_to!(
         "List.mapWithIndex [0,0,0] (\\x, index -> Num.intCast index + x)",
-        RocList::from_slice(&[0, 1, 2]),
-        RocList<i64>
+        BrocList::from_slice(&[0, 1, 2]),
+        BrocList<i64>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = r#"Roc failed with message: "integer addition overflowed!"#)]
+#[should_panic(expected = r#"Broc failed with message: "integer addition overflowed!"#)]
 fn cleanup_because_exception() {
     assert_evals_to!(
         indoc!(
@@ -2866,18 +2866,18 @@ fn cleanup_because_exception() {
 fn list_sort_with() {
     assert_evals_to!(
         "List.sortWith [] Num.compare",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sortWith [4,3,2,1] Num.compare",
-        RocList::from_slice(&[1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sortWith [1,2,3,4] (\\a,b -> Num.compare b a)",
-        RocList::from_slice(&[4, 3, 2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[4, 3, 2, 1]),
+        BrocList<i64>
     );
 }
 
@@ -2886,13 +2886,13 @@ fn list_sort_with() {
 fn list_sort_asc() {
     assert_evals_to!(
         "List.sortAsc []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sortAsc [4,3,2,1]",
-        RocList::from_slice(&[1, 2, 3, 4]),
-        RocList<i64>
+        BrocList::from_slice(&[1, 2, 3, 4]),
+        BrocList<i64>
     );
 }
 
@@ -2901,13 +2901,13 @@ fn list_sort_asc() {
 fn list_sort_desc() {
     assert_evals_to!(
         "List.sortDesc []",
-        RocList::<i64>::from_slice(&[]),
-        RocList<i64>
+        BrocList::<i64>::from_slice(&[]),
+        BrocList<i64>
     );
     assert_evals_to!(
         "List.sortDesc [1,2,3,4]",
-        RocList::from_slice(&[4, 3, 2, 1]),
-        RocList<i64>
+        BrocList::from_slice(&[4, 3, 2, 1]),
+        BrocList<i64>
     );
 }
 
@@ -2947,7 +2947,7 @@ fn list_all_empty_with_unknown_element_type() {
     not(target_family = "windows"),
     any(feature = "gen-llvm", feature = "gen-wasm")
 ))]
-#[should_panic(expected = r#"Roc failed with message: "invalid ret_layout""#)]
+#[should_panic(expected = r#"Broc failed with message: "invalid ret_layout""#)]
 fn lists_with_incompatible_type_param_in_if() {
     assert_evals_to!(
         indoc!(
@@ -2961,30 +2961,30 @@ fn lists_with_incompatible_type_param_in_if() {
             ""
             "#
         ),
-        RocStr::default(),
-        RocStr
+        BrocStr::default(),
+        BrocStr
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn map_with_index_multi_record() {
-    // see https://github.com/roc-lang/roc/issues/1700
+    // see https://github.com/roc-lang/broc/issues/1700
     assert_evals_to!(
         indoc!(
             r#"
             List.mapWithIndex [{ x: {}, y: {} }] \_, _ -> {}
             "#
         ),
-        RocList::from_slice(&[((), ())]),
-        RocList<((), ())>
+        BrocList::from_slice(&[((), ())]),
+        BrocList<((), ())>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn empty_list_of_function_type() {
-    // see https://github.com/roc-lang/roc/issues/1732
+    // see https://github.com/roc-lang/broc/issues/1732
     assert_evals_to!(
         indoc!(
             r#"
@@ -3005,8 +3005,8 @@ fn empty_list_of_function_type() {
                 Err _ -> "bad!"
             "#
         ),
-        RocStr::from("bar"),
-        RocStr
+        BrocStr::from("bar"),
+        BrocStr
     );
 }
 
@@ -3019,14 +3019,14 @@ fn list_join_map() {
             List.joinMap ["guava,apple,pear", "bailey,cyrus"] (\s -> Str.split s ",")
             "#
         ),
-        RocList::from_slice(&[
-            RocStr::from("guava"),
-            RocStr::from("apple"),
-            RocStr::from("pear"),
-            RocStr::from("bailey"),
-            RocStr::from("cyrus"),
+        BrocList::from_slice(&[
+            BrocStr::from("guava"),
+            BrocStr::from("apple"),
+            BrocStr::from("pear"),
+            BrocStr::from("bailey"),
+            BrocStr::from("cyrus"),
         ]),
-        RocList<RocStr>
+        BrocList<BrocStr>
     )
 }
 
@@ -3039,8 +3039,8 @@ fn list_join_map_empty() {
             List.joinMap [] (\s -> Str.split s ",")
             "#
         ),
-        RocList::from_slice(&[]),
-        RocList<RocStr>
+        BrocList::from_slice(&[]),
+        BrocList<BrocStr>
     )
 }
 
@@ -3055,8 +3055,8 @@ fn list_find() {
                 Err _ -> "not found"
             "#
         ),
-        RocStr::from("bc"),
-        RocStr
+        BrocStr::from("bc"),
+        BrocStr
     );
 
     assert_evals_to!(
@@ -3067,8 +3067,8 @@ fn list_find() {
                 Err _ -> "not found"
             "#
         ),
-        RocStr::from("def"),
-        RocStr
+        BrocStr::from("def"),
+        BrocStr
     );
 }
 
@@ -3083,8 +3083,8 @@ fn list_find_not_found() {
                 Err _ -> "not found"
             "#
         ),
-        RocStr::from("not found"),
-        RocStr
+        BrocStr::from("not found"),
+        BrocStr
     );
 
     assert_evals_to!(
@@ -3095,8 +3095,8 @@ fn list_find_not_found() {
                 Err _ -> "not found"
             "#
         ),
-        RocStr::from("not found"),
-        RocStr
+        BrocStr::from("not found"),
+        BrocStr
     );
 }
 
@@ -3111,8 +3111,8 @@ fn list_find_empty_typed_list() {
                 Err _ -> "not found"
             "#
         ),
-        RocStr::from("not found"),
-        RocStr
+        BrocStr::from("not found"),
+        BrocStr
     );
 
     assert_evals_to!(
@@ -3123,8 +3123,8 @@ fn list_find_empty_typed_list() {
                 Err _ -> "not found"
             "#
         ),
-        RocStr::from("not found"),
-        RocStr
+        BrocStr::from("not found"),
+        BrocStr
     );
 }
 
@@ -3427,17 +3427,17 @@ fn with_capacity() {
             l
             "#
         ),
-        // Equality check for RocList does not account for capacity
-        (10, RocList::with_capacity(10)),
-        RocList<u64>,
-        |value: RocList<u64>| (value.capacity(), value)
+        // Equality check for BrocList does not account for capacity
+        (10, BrocList::with_capacity(10)),
+        BrocList<u64>,
+        |value: BrocList<u64>| (value.capacity(), value)
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
 fn with_capacity_append() {
-    // see https://github.com/roc-lang/roc/issues/1732
+    // see https://github.com/roc-lang/broc/issues/1732
     assert_evals_to!(
         indoc!(
             r#"
@@ -3448,9 +3448,9 @@ fn with_capacity_append() {
                 |> List.append 3u64
             "#
         ),
-        (10, RocList::from_slice(&[0, 1, 2, 3])),
-        RocList<u64>,
-        |value: RocList<u64>| (value.capacity(), value)
+        (10, BrocList::from_slice(&[0, 1, 2, 3])),
+        BrocList<u64>,
+        |value: BrocList<u64>| (value.capacity(), value)
     );
 }
 
@@ -3463,9 +3463,9 @@ fn reserve() {
             List.reserve [] 15
             "#
         ),
-        (15, RocList::empty()),
-        RocList<u64>,
-        |value: RocList<u64>| (value.capacity(), value)
+        (15, BrocList::empty()),
+        BrocList<u64>,
+        |value: BrocList<u64>| (value.capacity(), value)
     );
 }
 
@@ -3482,9 +3482,9 @@ fn reserve_unchanged() {
         ),
         // a's capacity is unchanged when we reserve 15 more capcity
         // both lists are empty.
-        (0, RocList::empty(), 15, RocList::empty()),
-        (RocList<u64>, RocList<u64>),
-        |(value_a, value_b): (RocList<u64>, RocList<u64>)| (
+        (0, BrocList::empty(), 15, BrocList::empty()),
+        (BrocList<u64>, BrocList<u64>),
+        |(value_a, value_b): (BrocList<u64>, BrocList<u64>)| (
             value_a.capacity(),
             value_a,
             value_b.capacity(),
@@ -3503,9 +3503,9 @@ fn release_excess_capacity() {
             |> List.releaseExcessCapacity
             "#
         ),
-        (0, RocList::empty()),
-        RocList<u64>,
-        |value: RocList<u64>| (value.capacity(), value)
+        (0, BrocList::empty()),
+        BrocList<u64>,
+        |value: BrocList<u64>| (value.capacity(), value)
     );
 }
 
@@ -3519,9 +3519,9 @@ fn release_excess_capacity_with_len() {
             |> List.releaseExcessCapacity
             "#
         ),
-        (1, RocList::from_slice(&[1])),
-        RocList<u64>,
-        |value: RocList<u64>| (value.capacity(), value)
+        (1, BrocList::from_slice(&[1])),
+        BrocList<u64>,
+        |value: BrocList<u64>| (value.capacity(), value)
     );
 }
 
@@ -3534,9 +3534,9 @@ fn release_excess_capacity_empty() {
             List.releaseExcessCapacity []
             "#
         ),
-        (0, RocList::empty()),
-        RocList<u64>,
-        |value: RocList<u64>| (value.capacity(), value)
+        (0, BrocList::empty()),
+        BrocList<u64>,
+        |value: BrocList<u64>| (value.capacity(), value)
     );
 }
 
@@ -3551,8 +3551,8 @@ fn call_function_in_empty_list() {
             List.map lst \f -> f {}
             "#
         ),
-        RocList::from_slice(&[]),
-        RocList<()>
+        BrocList::from_slice(&[]),
+        BrocList<()>
     )
 }
 
@@ -3566,8 +3566,8 @@ fn call_function_in_empty_list_unbound() {
             List.map lst \f -> f {}
             "#
         ),
-        RocList::from_slice(&[]),
-        RocList<()>
+        BrocList::from_slice(&[]),
+        BrocList<()>
     )
 }
 
@@ -3598,8 +3598,8 @@ fn issue_3571_lowlevel_call_function_with_bool_lambda_set() {
             main = foo |> apply bar |> Str.joinWith ", "
             "#
         ),
-        RocStr::from("added 1, added 2, added 3, added 4, multiplied 1, multiplied 2, multiplied 3, multiplied 4"),
-        RocStr
+        BrocStr::from("added 1, added 2, added 3, added 4, multiplied 1, multiplied 2, multiplied 3, multiplied 4"),
+        BrocStr
     )
 }
 
@@ -3718,10 +3718,10 @@ fn concat_unique_to_nonunique_overlapping_issue_4697() {
         {a: originalList, b: new}
         "#,
         (
-            RocList::from_slice(&[1u8]),
-            RocList::from_slice(&[1u8, 2, 3, 4]),
+            BrocList::from_slice(&[1u8]),
+            BrocList::from_slice(&[1u8, 2, 3, 4]),
         ),
-        (RocList<u8>, RocList<u8>)
+        (BrocList<u8>, BrocList<u8>)
     );
 }
 
@@ -3745,7 +3745,7 @@ fn list_walk_from_even_prefix_sum() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-// TODO: update how roc decides whether or not to print `User crashed` or `Roc failed` such that this prints `Roc failed ...``
+// TODO: update how broc decides whether or not to print `User crashed` or `Broc failed` such that this prints `Broc failed ...``
 #[should_panic(
     expected = r#"User crash with message: "List.range: failed to generate enough elements to fill the range before overflowing the numeric type"#
 )]
@@ -3756,8 +3756,8 @@ fn list_range_length_overflow() {
             List.range {start: At 255u8, end: Length 2}
                "#
         ),
-        RocList::<u8>::default(),
-        RocList::<u8>
+        BrocList::<u8>::default(),
+        BrocList::<u8>
     );
 }
 
@@ -3769,7 +3769,7 @@ mod pattern_match {
     #[cfg(feature = "gen-wasm")]
     use crate::helpers::wasm::assert_evals_to;
 
-    use super::RocList;
+    use super::BrocList;
 
     #[test]
     fn unary_exact_size_match() {
@@ -3781,8 +3781,8 @@ mod pattern_match {
 
             [ helper [], helper [{}] ]
             "#,
-            RocList::from_slice(&[1, 2]),
-            RocList<u8>
+            BrocList::from_slice(&[1, 2]),
+            BrocList<u8>
         )
     }
 
@@ -3799,8 +3799,8 @@ mod pattern_match {
 
             [ helper [], helper [{}], helper [{}, {}], helper [{}, {}, {}], helper [{}, {}, {}, {}] ]
             "#,
-            RocList::from_slice(&[1, 2, 3, 4, 5]),
-            RocList<u8>
+            BrocList::from_slice(&[1, 2, 3, 4, 5]),
+            BrocList<u8>
         )
     }
 
@@ -3823,14 +3823,14 @@ mod pattern_match {
                 helper [B], helper [B, A], helper [B, B], helper [B, A, B, B],
             ]
             "#,
-            RocList::from_slice(&[
+            BrocList::from_slice(&[
                 1, //
                 2, //
                 3, 3, 3, 3, //
                 4, 4, 4, 4, //
                 5, 5, 5, 5, //
             ]),
-            RocList<u8>
+            BrocList<u8>
         )
     }
 
@@ -3853,14 +3853,14 @@ mod pattern_match {
                 helper [B], helper [A, B], helper [B, B], helper [B, A, B, B],
             ]
             "#,
-            RocList::from_slice(&[
+            BrocList::from_slice(&[
                 1, //
                 2, //
                 3, 3, 3, 3, //
                 4, 4, 4, 4, //
                 5, 5, 5, 5, //
             ]),
-            RocList<u8>
+            BrocList<u8>
         )
     }
 
@@ -3882,13 +3882,13 @@ mod pattern_match {
                 helper [2, 3, 5, 7], helper [11, 2, 3, 5, 7], helper [13, 11, 2, 3, 5, 7],
             ]
             "#,
-            RocList::from_slice(&[
+            BrocList::from_slice(&[
                 1, //
                 5, //
                 15, 15, //
                 210, 210, 210, //
             ]),
-            RocList<u16>
+            BrocList<u16>
         )
     }
 
@@ -3925,7 +3925,7 @@ mod pattern_match {
                 helper [], helper [7],
             ]
             "#,
-            RocList::from_slice(&[
+            BrocList::from_slice(&[
                 1, 1, //
                 2, 2, //
                 3, 3, //
@@ -3935,7 +3935,7 @@ mod pattern_match {
                 7, 7, //
                 8, 8, //
             ]),
-            RocList<u8>
+            BrocList<u8>
         )
     }
 }

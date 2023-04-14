@@ -1,8 +1,8 @@
 /**
  * Browser implementation of the WebAssembly System Interface (WASI)
- * The REPL generates an "app" from the user's Roc code and it can import from WASI
+ * The REPL generates an "app" from the user's Broc code and it can import from WASI
  *
- * We only implement writes to stdout/stderr as console.log/console.err, and proc_exit as `throw`
+ * We only implement writes to stdout/stderr as console.log/console.err, and pbroc_exit as `throw`
  * The rest of the interface just consists of dummy functions with the right number of arguments
  *
  * The wasiLinkObject provides a reference to the app so we can write to its memory
@@ -114,8 +114,8 @@ export function getMockWasiImports(wasiLinkObject) {
     return 0;
   }
 
-  // proc_exit : (i32) -> nil
-  function proc_exit(exit_code) {
+  // pbroc_exit : (i32) -> nil
+  function pbroc_exit(exit_code) {
     if (exit_code) {
       throw new Error(`Wasm exited with code ${exit_code}`);
     }
@@ -180,8 +180,8 @@ export function getMockWasiImports(wasiLinkObject) {
       path_symlink: sig17,
       path_unlink_file: sig7,
       poll_oneoff: sig15,
-      proc_exit,
-      proc_raise: sig12,
+      pbroc_exit,
+      pbroc_raise: sig12,
       sched_yield: sig22,
       random_get: sig6,
       sock_recv: sig21,

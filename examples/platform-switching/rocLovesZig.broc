@@ -1,0 +1,6 @@
+app "brocLovesZig"
+    packages { pf: "zig-platform/main.broc" }
+    imports []
+    provides [main] to pf
+
+main = "Broc <3 Zig!\n"

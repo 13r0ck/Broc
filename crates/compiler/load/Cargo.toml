@@ -1,6 +1,6 @@
 [package]
-name = "roc_load"
-description = "Used to load a .roc file and coordinate the compiler pipeline, including parsing, type checking, and code generation."
+name = "broc_load"
+description = "Used to load a .broc file and coordinate the compiler pipeline, including parsing, type checking, and code generation."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,26 +8,26 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_can = { path = "../can" }
-roc_collections = { path = "../collections" }
-roc_load_internal = { path = "../load_internal" }
-roc_module = { path = "../module" }
-roc_packaging = { path = "../../packaging" }
-roc_reporting = { path = "../../reporting" }
-roc_target = { path = "../roc_target" }
-roc_types = { path = "../types" }
+broc_can = { path = "../can" }
+broc_collections = { path = "../collections" }
+broc_load_internal = { path = "../load_internal" }
+broc_module = { path = "../module" }
+broc_packaging = { path = "../../packaging" }
+broc_reporting = { path = "../../reporting" }
+broc_target = { path = "../broc_target" }
+broc_types = { path = "../types" }
 
 bumpalo.workspace = true
 
 [build-dependencies]
-roc_builtins = { path = "../builtins" }
-roc_can = { path = "../can" }
-roc_module = { path = "../module" }
-roc_packaging = { path = "../../packaging" }
-roc_reporting = { path = "../../reporting" }
-roc_target = { path = "../roc_target" }
+broc_builtins = { path = "../builtins" }
+broc_can = { path = "../can" }
+broc_module = { path = "../module" }
+broc_packaging = { path = "../../packaging" }
+broc_reporting = { path = "../../reporting" }
+broc_target = { path = "../broc_target" }
 
 bumpalo.workspace = true
 
 [target.'cfg(not(windows))'.build-dependencies]
-roc_load_internal = { path = "../load_internal" }
+broc_load_internal = { path = "../load_internal" }

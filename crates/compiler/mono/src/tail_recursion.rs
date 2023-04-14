@@ -5,7 +5,7 @@ use crate::ir::{CallType, Expr, JoinPointId, Param, Stmt};
 use crate::layout::{InLayout, LambdaName};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_module::symbol::Symbol;
+use broc_module::symbol::Symbol;
 
 /// Make tail calls into loops (using join points)
 ///

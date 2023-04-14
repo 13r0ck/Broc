@@ -1,5 +1,5 @@
-use roc_collections::MutMap;
-use roc_types::subs::Variable;
+use broc_collections::MutMap;
+use broc_types::subs::Variable;
 
 #[derive(Copy, Clone, Debug, Default)]
 struct StructId(u64);
@@ -10,7 +10,7 @@ impl StructId {
     }
 }
 
-/// Whenever we register a new Roc record type,
+/// Whenever we register a new Broc record type,
 /// give it a unique and short name (e.g. R1, R2, R3...)
 /// and then from then on, whenever we ask for that
 /// same record type, return the same name.

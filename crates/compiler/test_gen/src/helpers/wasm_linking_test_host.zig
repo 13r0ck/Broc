@@ -1,17 +1,17 @@
-extern fn js_called_directly_from_roc() i32;
-extern fn js_called_indirectly_from_roc() i32;
+extern fn js_called_directly_from_broc() i32;
+extern fn js_called_indirectly_from_broc() i32;
 extern fn js_called_directly_from_main() i32;
 extern fn js_called_indirectly_from_main() i32;
 extern fn js_unused() i32;
 
-extern fn roc__app_proc_1_exposed() i32;
+extern fn broc__app_pbroc_1_exposed() i32;
 
-fn host_called_indirectly_from_roc() i32 {
+fn host_called_indirectly_from_broc() i32 {
     return 0x40;
 }
 
-export fn host_called_directly_from_roc() i32 {
-    return 0x80 | host_called_indirectly_from_roc() | js_called_indirectly_from_roc();
+export fn host_called_directly_from_broc() i32 {
+    return 0x80 | host_called_indirectly_from_broc() | js_called_indirectly_from_broc();
 }
 
 fn host_called_indirectly_from_main() i32 {
@@ -24,7 +24,7 @@ fn host_called_directly_from_main() i32 {
 
 export fn host_unused() i32 {
     // Call some functions from here to get them included in the output file
-    return 0x400 | js_unused() | js_called_directly_from_roc();
+    return 0x400 | js_unused() | js_called_directly_from_broc();
 }
 
 var host_result: i32 = 0;
@@ -36,7 +36,7 @@ export fn read_host_result() i32 {
 pub fn main() !void {
     const host = host_called_directly_from_main();
     const js = js_called_directly_from_main();
-    const app = roc__app_proc_1_exposed();
+    const app = broc__app_pbroc_1_exposed();
 
     // Make sure read_host_result is not eliminated! We know it's zero.
     const avoid_dead_code_elim = read_host_result();

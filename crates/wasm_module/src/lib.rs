@@ -8,7 +8,7 @@ use std::iter::repeat;
 
 pub use linking::{OffsetRelocType, RelocationEntry, SymInfo};
 use opcodes::OpCode;
-use roc_error_macros::internal_error;
+use broc_error_macros::internal_error;
 pub use sections::{ConstExpr, Export, ExportType, Global, GlobalType, Signature};
 
 use bitvec::vec::BitVec;
@@ -396,7 +396,7 @@ impl<'a> WasmModule<'a> {
 
             // For each live function in the current pass
             for fn_index in current_pass_fns.iter_ones() {
-                // Skip JS imports and Roc functions
+                // Skip JS imports and Broc functions
                 if fn_index < fn_index_min as usize || fn_index >= fn_index_max as usize {
                     continue;
                 }
@@ -459,7 +459,7 @@ impl<'a> WasmModule<'a> {
             })
     }
 
-    /// Linking steps for host-to-app functions like `roc__mainForHost_1_exposed`
+    /// Linking steps for host-to-app functions like `broc__mainForHost_1_exposed`
     /// (See further explanation in the gen_wasm README)
     /// - Remove the target function from the ImportSection. It's not a JS import but the host declared it as one.
     /// - Update all of its call sites to the new index in the app
@@ -574,15 +574,15 @@ impl<'a> WasmModule<'a> {
 
     /// Create a name->index lookup table for host functions that may be called from the app
     pub fn get_host_function_lookup(&self, arena: &'a Bump) -> Vec<'a, (&'a str, u32)> {
-        // Functions beginning with `roc_` go first, since they're most likely to be called
-        let roc_global_fns =
+        // Functions beginning with `broc_` go first, since they're most likely to be called
+        let broc_global_fns =
             self.linking
                 .symbol_table
                 .iter()
                 .filter_map(|sym_info| match sym_info {
                     SymInfo::Function(WasmObjectSymbol::ExplicitlyNamed { flags, index, name })
                         if flags & linking::WASM_SYM_BINDING_LOCAL == 0
-                            && name.starts_with("roc_") =>
+                            && name.starts_with("broc_") =>
                     {
                         Some((*name, *index))
                     }
@@ -596,7 +596,7 @@ impl<'a> WasmModule<'a> {
                 .filter_map(|sym_info| match sym_info {
                     SymInfo::Function(WasmObjectSymbol::ExplicitlyNamed { flags, index, name })
                         if flags & linking::WASM_SYM_BINDING_LOCAL == 0
-                            && !name.starts_with("roc_") =>
+                            && !name.starts_with("broc_") =>
                     {
                         Some((*name, *index))
                     }
@@ -612,7 +612,7 @@ impl<'a> WasmModule<'a> {
             .map(|(fn_index, import)| (import.name, fn_index as u32));
 
         Vec::from_iter_in(
-            roc_global_fns.chain(other_global_fns).chain(import_fns),
+            broc_global_fns.chain(other_global_fns).chain(import_fns),
             arena,
         )
     }

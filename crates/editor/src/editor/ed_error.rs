@@ -1,10 +1,10 @@
 use crate::ui::text::text_pos::TextPos;
 use colored::*;
-use roc_ast::ast_error::ASTError;
-use roc_ast::lang::core::ast::ASTNodeId;
-use roc_code_markup::markup_error::MarkError;
-use roc_code_markup::slow_pool::MarkNodeId;
-use roc_module::module_err::ModuleError;
+use broc_ast::ast_error::ASTError;
+use broc_ast::lang::core::ast::ASTNodeId;
+use broc_code_markup::markup_error::MarkError;
+use broc_code_markup::slow_pool::MarkNodeId;
+use broc_module::module_err::ModuleError;
 use snafu::{Backtrace, ErrorCompat, Snafu};
 
 //import errors as follows:
@@ -192,9 +192,9 @@ pub enum EdError {
     },
 
     #[snafu(display(
-        "RocCheckFailed: `cargo run check`/`roc check` detected errors(see terminal)."
+        "BrocCheckFailed: `cargo run check`/`broc check` detected errors(see terminal)."
     ))]
-    RocCheckFailed,
+    BrocCheckFailed,
 
     #[snafu(display("ParseError: Failed to parse AST: SyntaxError: {}.", syntax_err))]
     SrcParseError {

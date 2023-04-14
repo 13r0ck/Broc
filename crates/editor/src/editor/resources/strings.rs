@@ -12,12 +12,12 @@ Use backspace after `Ctrl+Shift+Up` to delete the selected expression.
 `Ctrl+R` to run.
 
 Input chars that would create parse errors or change formatting will be ignored.
-For convenience and consistency, there is only one way to format roc.
+For convenience and consistency, there is only one way to format broc.
 "#;
 
 pub const HELLO_WORLD: &str = r#"
 app "untitled-app"
-    packages { pf: "rust-platform/main.roc" }
+    packages { pf: "rust-platform/main.broc" }
     imports []
     provides [main] to pf
 
@@ -30,7 +30,7 @@ pub fn nr_hello_world_lines() -> usize {
 }
 
 pub const PLATFORM_DIR_NAME: &str = "rust-platform";
-pub const PLATFORM_FILE_NAME: &str = "main.roc";
+pub const PLATFORM_FILE_NAME: &str = "main.broc";
 
 pub const PLATFORM_STR: &str = r#"
 platform "test-platform"

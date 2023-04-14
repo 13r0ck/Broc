@@ -1,19 +1,19 @@
 use bitflags::bitflags;
-use roc_collections::{VecMap, VecSet};
-use roc_debug_flags::{dbg_do, dbg_set};
+use broc_collections::{VecMap, VecSet};
+use broc_debug_flags::{dbg_do, dbg_set};
 #[cfg(debug_assertions)]
-use roc_debug_flags::{ROC_PRINT_MISMATCHES, ROC_PRINT_UNIFICATIONS, ROC_VERIFY_OCCURS_RECURSION};
-use roc_error_macros::internal_error;
-use roc_module::ident::{Lowercase, TagName};
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_types::num::{FloatWidth, IntLitWidth, NumericRange};
-use roc_types::subs::Content::{self, *};
-use roc_types::subs::{
+use broc_debug_flags::{ROC_PRINT_MISMATCHES, ROC_PRINT_UNIFICATIONS, ROC_VERIFY_OCCURS_RECURSION};
+use broc_error_macros::internal_error;
+use broc_module::ident::{Lowercase, TagName};
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_types::num::{FloatWidth, IntLitWidth, NumericRange};
+use broc_types::subs::Content::{self, *};
+use broc_types::subs::{
     AliasVariables, Descriptor, ErrorTypeContext, FlatType, GetSubsSlice, LambdaSet, Mark,
     OptVariable, RecordFields, Subs, SubsIndex, SubsSlice, TagExt, TupleElems, UlsOfVar,
     UnionLabels, UnionLambdas, UnionTags, Variable, VariableSubsSlice,
 };
-use roc_types::types::{
+use broc_types::types::{
     AliasKind, DoesNotImplementAbility, ErrorType, Mismatch, Polarity, RecordField, Uls,
 };
 
@@ -523,7 +523,7 @@ fn debug_print_unified_types<M: MetaCollector>(
     ctx: &Context,
     opt_outcome: Option<&Outcome<M>>,
 ) {
-    use roc_types::subs::SubsFmtContent;
+    use broc_types::subs::SubsFmtContent;
 
     static mut UNIFICATION_DEPTH: usize = 0;
 
@@ -884,7 +884,7 @@ fn unify_two_aliases<M: MetaCollector>(
             // introduced, we may still need to unify the "actual types" of the alias or opaque!
             //
             // The unification is not necessary from a types perspective (and in fact, we may want
-            // to disable it for `roc check` later on), but it is necessary for the monomorphizer,
+            // to disable it for `broc check` later on), but it is necessary for the monomorphizer,
             // which expects identical types to be reflected in the same variable.
             //
             // As a concrete example, consider the unification of two opaques
@@ -1139,7 +1139,7 @@ fn unify_structure<M: MetaCollector>(
                     debug_assert!(
                         is_recursion_var(env.subs, *rec),
                         "{:?}",
-                        roc_types::subs::SubsFmtContent(
+                        broc_types::subs::SubsFmtContent(
                             env.subs.get_content_without_compacting(*rec),
                             env.subs
                         )
@@ -1185,8 +1185,8 @@ fn unify_structure<M: MetaCollector>(
         LambdaSet(..) => {
             mismatch!(
                 "Cannot unify structure \n{:?} \nwith lambda set\n {:?}",
-                roc_types::subs::SubsFmtContent(&Content::Structure(*flat_type), env.subs),
-                roc_types::subs::SubsFmtContent(other, env.subs),
+                broc_types::subs::SubsFmtContent(&Content::Structure(*flat_type), env.subs),
+                broc_types::subs::SubsFmtContent(other, env.subs),
                 // &flat_type,
                 // other
             )
@@ -1211,7 +1211,7 @@ fn unify_lambda_set<M: MetaCollector>(
         FlexVar(_) => {
             if M::UNIFYING_SPECIALIZATION {
                 // TODO: It appears that this can happen in well-typed, reasonable programs, but it's
-                // open question as to why! See also https://github.com/roc-lang/roc/issues/3163.
+                // open question as to why! See also https://github.com/roc-lang/broc/issues/3163.
                 let zero_lambda_set = LambdaSet {
                     solved: UnionLabels::default(),
                     recursion_var: OptVariable::NONE,
@@ -1298,7 +1298,7 @@ fn extract_specialization_lambda_set<M: MetaCollector>(
         // here the lambda set of `F`'s payload is part of the specialization signature, but it is
         // irrelevant to the specialization. As such, I believe it is safe to drop the
         // empty specialization lambda set.
-        roc_tracing::info!(ambient_function=?env.subs.get_root_key_without_compacting(specialization_lset.ambient_function), "ambient function in a specialization has a zero-lambda set");
+        broc_tracing::info!(ambient_function=?env.subs.get_root_key_without_compacting(specialization_lset.ambient_function), "ambient function in a specialization has a zero-lambda set");
 
         return merge(env, ctx, Content::LambdaSet(specialization_lset));
     }
@@ -1440,7 +1440,7 @@ fn separate_union_lambdas<M: MetaCollector>(
                                 // Lambda sets are effectively tags under another name, and their usage can also result
                                 // in the arguments of a lambda name being recursive. It very well may happen that
                                 // during unification, a lambda set previously marked as not recursive becomes
-                                // recursive. See the docs of [LambdaSet] for one example, or https://github.com/roc-lang/roc/pull/2307.
+                                // recursive. See the docs of [LambdaSet] for one example, or https://github.com/roc-lang/broc/pull/2307.
                                 //
                                 // Like with tag unions, if it is, we'll always pass through this branch. So, take
                                 // this opportunity to promote the lambda set to recursive if need be.
@@ -1467,7 +1467,7 @@ fn separate_union_lambdas<M: MetaCollector>(
                             //
                             // # Nested lambda sets
                             //
-                            // XREF https://github.com/roc-lang/roc/issues/4712
+                            // XREF https://github.com/roc-lang/broc/issues/4712
                             //
                             // We must be careful to ensure that if unifying nested lambda sets
                             // results in disjoint lambdas, that the parent lambda sets are
@@ -3236,7 +3236,7 @@ fn unify_flat_type<M: MetaCollector>(
     left: &FlatType,
     right: &FlatType,
 ) -> Outcome<M> {
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::FlatType::*;
 
     match (left, right) {
         (EmptyRecord, EmptyRecord) => merge(env, ctx, Structure(*left)),
@@ -3444,8 +3444,8 @@ fn unify_flat_type<M: MetaCollector>(
             // any other combination is a mismatch
             mismatch!(
                 "Trying to unify two flat types that are incompatible: {:?} ~ {:?}",
-                roc_types::subs::SubsFmtFlatType(_other1, env.subs),
-                roc_types::subs::SubsFmtFlatType(_other2, env.subs)
+                broc_types::subs::SubsFmtFlatType(_other1, env.subs),
+                broc_types::subs::SubsFmtFlatType(_other2, env.subs)
             )
         }
     }

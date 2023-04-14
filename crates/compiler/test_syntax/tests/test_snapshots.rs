@@ -2,21 +2,21 @@
 extern crate pretty_assertions;
 extern crate bumpalo;
 
-extern crate roc_module;
-extern crate roc_parse;
+extern crate broc_module;
+extern crate broc_parse;
 
 #[cfg(test)]
 mod test_snapshots {
     use bumpalo::collections::vec::Vec;
     use bumpalo::{self, Bump};
-    use roc_parse::ast::Expr::{self, *};
-    use roc_parse::ast::StrSegment::*;
-    use roc_parse::ast::{self, EscapedChar};
-    use roc_parse::ast::{Malformed, StrLiteral::*};
-    use roc_parse::parser::SyntaxError;
-    use roc_parse::test_helpers::parse_expr_with;
-    use roc_region::all::{Loc, Region};
-    use roc_test_utils::assert_multiline_str_eq;
+    use broc_parse::ast::Expr::{self, *};
+    use broc_parse::ast::StrSegment::*;
+    use broc_parse::ast::{self, EscapedChar};
+    use broc_parse::ast::{Malformed, StrLiteral::*};
+    use broc_parse::parser::SyntaxError;
+    use broc_parse::test_helpers::parse_expr_with;
+    use broc_region::all::{Loc, Region};
+    use broc_test_utils::assert_multiline_str_eq;
     use std::path::{Path, PathBuf};
     use test_syntax::test_helpers::Input;
 
@@ -93,9 +93,9 @@ mod test_snapshots {
                     assert!(res == "pass" || res == "fail" || res == "malformed", "expected only pass/fail/malformed dirs, but I see: {:?}", res);
                     let res_dir = base.join(&res);
                     for file in list(&res_dir) {
-                        let test = if let Some(test) = file.strip_suffix(".formatted.roc") {
+                        let test = if let Some(test) = file.strip_suffix(".formatted.broc") {
                             test
-                        } else if let Some(test) = file.strip_suffix(".roc") {
+                        } else if let Some(test) = file.strip_suffix(".broc") {
                             test
                         } else if let Some(test) = file.strip_suffix(".result-ast") {
                             test
@@ -179,7 +179,7 @@ mod test_snapshots {
         };
     }
 
-    // see tests/snapshots to see test input(.roc) and expected output(.result-ast)
+    // see tests/snapshots to see test input(.broc) and expected output(.result-ast)
     snapshot_tests! {
         // BEGIN SNAPSHOTS (for automatic test detection via `env ROC_SNAPSHOT_TEST_OVERWRITE=1 cargo test`)
         fail/ability_demand_value_has_args.expr,
@@ -249,8 +249,8 @@ mod test_snapshots {
         fail/wild_case_arrow.expr,
         malformed/bad_opaque_ref.expr,
         malformed/malformed_ident_due_to_underscore.expr,
-        malformed/malformed_pattern_field_access.expr, // See https://github.com/roc-lang/roc/issues/399
-        malformed/malformed_pattern_module_name.expr, // See https://github.com/roc-lang/roc/issues/399
+        malformed/malformed_pattern_field_access.expr, // See https://github.com/roc-lang/broc/issues/399
+        malformed/malformed_pattern_module_name.expr, // See https://github.com/roc-lang/broc/issues/399
         malformed/module_dot_tuple.expr,
         malformed/qualified_tag.expr,
         malformed/underscore_expr_in_def.expr,
@@ -359,7 +359,7 @@ mod test_snapshots {
         pass/nested_def_without_newline.expr,
         pass/nested_if.expr,
         pass/nested_module.header,
-        pass/newline_after_equals.expr, // Regression test for https://github.com/roc-lang/roc/issues/51
+        pass/newline_after_equals.expr, // Regression test for https://github.com/roc-lang/broc/issues/51
         pass/newline_after_mul.expr,
         pass/newline_after_paren.expr,
         pass/newline_after_sub.expr,
@@ -412,7 +412,7 @@ mod test_snapshots {
         pass/pattern_as.expr,
         pass/pattern_as_list_rest.expr,
         pass/pattern_as_spaces.expr,
-        pass/pattern_with_space_in_parens.expr, // https://github.com/roc-lang/roc/issues/929
+        pass/pattern_with_space_in_parens.expr, // https://github.com/roc-lang/broc/issues/929
         pass/plus_if.expr,
         pass/plus_when.expr,
         pass/pos_inf_float.expr,
@@ -454,7 +454,7 @@ mod test_snapshots {
         pass/type_signature_def.expr,
         pass/type_signature_function_def.expr,
         pass/unary_negation.expr,
-        pass/unary_negation_access.expr, // Regression test for https://github.com/roc-lang/roc/issues/509
+        pass/unary_negation_access.expr, // Regression test for https://github.com/roc-lang/broc/issues/509
         pass/unary_negation_arg.expr,
         pass/unary_negation_with_parens.expr,
         pass/unary_not.expr,
@@ -544,9 +544,9 @@ mod test_snapshots {
         let mut parent = std::path::PathBuf::from("tests");
         parent.push("snapshots");
         parent.push(expect.to_dir_name());
-        let input_path = parent.join(&format!("{}.{}.roc", name, ty));
+        let input_path = parent.join(&format!("{}.{}.broc", name, ty));
         let result_path = parent.join(&format!("{}.{}.result-ast", name, ty));
-        let formatted_path = parent.join(&format!("{}.{}.formatted.roc", name, ty));
+        let formatted_path = parent.join(&format!("{}.{}.formatted.broc", name, ty));
 
         let source = std::fs::read_to_string(&input_path).unwrap_or_else(|err| {
             panic!(
@@ -569,9 +569,9 @@ mod test_snapshots {
         };
 
         if expect == TestExpectation::Pass {
-            let tokens = roc_parse::highlight::highlight(&source);
+            let tokens = broc_parse::highlight::highlight(&source);
             for token in tokens {
-                if token.value == roc_parse::highlight::Token::Error {
+                if token.value == broc_parse::highlight::Token::Error {
                     panic!("Found an error highlight token in the input: {:?}", token);
                 }
             }
@@ -631,7 +631,7 @@ mod test_snapshots {
     ) {
         let arena = Bump::new();
 
-        // Try parsing with each of the escaped chars Roc supports
+        // Try parsing with each of the escaped chars Broc supports
         for (string, escaped) in &[
             ("\\\\", EscapedChar::Backslash),
             ("\\n", EscapedChar::Newline),

@@ -2,7 +2,7 @@ use encode_unicode::CharExt;
 use std::collections::HashSet;
 
 use bumpalo::Bump;
-use roc_region::all::{Loc, Region};
+use broc_region::all::{Loc, Region};
 
 use crate::{
     ast::CommentOrNewline,
@@ -353,7 +353,7 @@ fn highlight_inner<'a>(
 fn fast_forward_to(
     state: &mut State,
     tokens: &mut Vec<Loc<Token>>,
-    start: roc_region::all::Position,
+    start: broc_region::all::Position,
     end: impl Fn(u8) -> bool,
 ) {
     while let Some(b) = state.bytes().first() {
@@ -384,7 +384,7 @@ pub const HEADER_KEYWORDS: [&str; 14] = [
 
 #[cfg(test)]
 mod tests {
-    use roc_region::all::Position;
+    use broc_region::all::Position;
 
     use super::*;
 

@@ -1,4 +1,4 @@
-use roc_command_utils::zig;
+use broc_command_utils::zig;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -99,7 +99,7 @@ fn build_wasm_test_host() {
     let mut outfile = PathBuf::from(&out_dir).join(PLATFORM_FILENAME);
     outfile.set_extension("wasm");
 
-    let builtins_host_tempfile = roc_bitcode::host_wasm_tempfile()
+    let builtins_host_tempfile = broc_bitcode::host_wasm_tempfile()
         .expect("failed to write host builtins object to tempfile");
 
     run_zig(&[

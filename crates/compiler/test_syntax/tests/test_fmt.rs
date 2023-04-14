@@ -4,14 +4,14 @@ extern crate indoc;
 #[cfg(test)]
 mod test_fmt {
     use bumpalo::Bump;
-    use roc_fmt::def::fmt_defs;
-    use roc_fmt::module::fmt_module;
-    use roc_fmt::Buf;
-    use roc_parse::ast::Module;
-    use roc_parse::module::{self, module_defs};
-    use roc_parse::parser::Parser;
-    use roc_parse::state::State;
-    use roc_test_utils::{assert_multiline_str_eq, workspace_root};
+    use broc_fmt::def::fmt_defs;
+    use broc_fmt::module::fmt_module;
+    use broc_fmt::Buf;
+    use broc_parse::ast::Module;
+    use broc_parse::module::{self, module_defs};
+    use broc_parse::parser::Parser;
+    use broc_parse::state::State;
+    use broc_test_utils::{assert_multiline_str_eq, workspace_root};
     use test_syntax::test_helpers::Input;
 
     fn check_formatting(expected: &'_ str) -> impl Fn(Input) + '_ {
@@ -57,7 +57,7 @@ mod test_fmt {
 
         match module::parse_header(&arena, State::new(src.as_bytes())) {
             Ok((actual, state)) => {
-                use roc_fmt::spaces::RemoveSpaces;
+                use broc_fmt::spaces::RemoveSpaces;
 
                 let mut buf = Buf::new_in(&arena);
 
@@ -4684,7 +4684,7 @@ mod test_fmt {
     fn single_line_app() {
         module_formats_same(indoc!(
             r#"
-                app "Foo" packages { pf: "platform/main.roc" } imports [] provides [main] to pf"#
+                app "Foo" packages { pf: "platform/main.broc" } imports [] provides [main] to pf"#
         ));
     }
 
@@ -5472,7 +5472,7 @@ mod test_fmt {
     /// Test that everything under examples/ is formatted correctly
     /// If this test fails on your diff, it probably means you need to re-format the examples.
     /// Try this:
-    /// `cargo run -- format $(find examples -name \*.roc)`
+    /// `cargo run -- format $(find examples -name \*.broc)`
     fn test_fmt_examples() {
         let mut count = 0;
         let mut root = workspace_root();
@@ -5480,7 +5480,7 @@ mod test_fmt {
         for entry in walkdir::WalkDir::new(&root) {
             let entry = entry.unwrap();
             let path = entry.path();
-            if path.extension() == Some(std::ffi::OsStr::new("roc")) {
+            if path.extension() == Some(std::ffi::OsStr::new("broc")) {
                 count += 1;
                 let src = std::fs::read_to_string(path).unwrap();
                 println!("Now trying to format {}", path.display());
@@ -5489,7 +5489,7 @@ mod test_fmt {
         }
         assert!(
             count > 0,
-            "Expecting to find at least 1 .roc file to format under {}",
+            "Expecting to find at least 1 .broc file to format under {}",
             root.display()
         );
     }
@@ -5498,19 +5498,19 @@ mod test_fmt {
     /// Test that builtins are formatted correctly
     /// If this test fails on your diff, it probably means you need to re-format a builtin.
     /// Try this:
-    /// `cargo run -- format $(find crates/compiler/builtins/roc -name \*.roc)`
+    /// `cargo run -- format $(find crates/compiler/builtins/broc -name \*.broc)`
     fn test_fmt_builtins() {
         let mut count = 0;
         let builtins_path = workspace_root()
             .join("crates")
             .join("compiler")
             .join("builtins")
-            .join("roc");
+            .join("broc");
 
         for entry in walkdir::WalkDir::new(&builtins_path) {
             let entry = entry.unwrap();
             let path = entry.path();
-            if path.extension() == Some(std::ffi::OsStr::new("roc")) {
+            if path.extension() == Some(std::ffi::OsStr::new("broc")) {
                 count += 1;
                 let src = std::fs::read_to_string(path).unwrap();
                 println!("Now trying to format {}", path.display());
@@ -5519,7 +5519,7 @@ mod test_fmt {
         }
         assert!(
             count > 0,
-            "Expecting to find at least 1 .roc file to format under {}",
+            "Expecting to find at least 1 .broc file to format under {}",
             builtins_path.display()
         );
     }

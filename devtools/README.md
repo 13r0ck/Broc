@@ -1,25 +1,25 @@
 # devtools
 
-To make rust-analyzer and other vscode extensions work well you want them using the same rustc, glibc, zig... as specified in the roc nix flake.
-The easiest way to do this is to use another flake for all your dev tools that takes the roc flake as an input.
+To make rust-analyzer and other vscode extensions work well you want them using the same rustc, glibc, zig... as specified in the broc nix flake.
+The easiest way to do this is to use another flake for all your dev tools that takes the broc flake as an input.
 
 The flake in this folder is meant for vscode, feel free to create a PR if you'like to add a flake for a different editor.
 
 Further steps:
 
-1. Copy the flake.nix and flake.lock file to a new folder outside of the roc repo folder.
+1. Copy the flake.nix and flake.lock file to a new folder outside of the broc repo folder.
 1. Run `git init` in the new folder.
 1. Execute `git add flake.nix`, nix will error if you don't do this.
-1. Change `roc.url = "path:/home/username/gitrepos/roc1/roc";` to the location of the roc folder on your machine.
+1. Change `broc.url = "path:/home/username/gitrepos/broc1/broc";` to the location of the broc folder on your machine.
 1. Follow instructions about vscode extensions [here](#extensions).
 1. add other dev tools you like in the `devInputs` list. You can search for those [here](https://search.nixos.org/packages).
 1. Run `nix develop`.
-1. `cd` to the folder of the roc repo
+1. `cd` to the folder of the broc repo
 1. Run `code .` to start vscode.
 
 vscode is able to share settings between this nix version and your regular vscode so there is no need to set everything up from scratch.
 
-If you use lorri or direnv it is possible to load the dev flake instead of the roc flake.
+If you use lorri or direnv it is possible to load the dev flake instead of the broc flake.
 For lorri:
 
 1. copy the `shell.nix` at the root of this repo to the folder containing your dev tools flake.

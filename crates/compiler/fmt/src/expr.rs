@@ -7,17 +7,17 @@ use crate::spaces::{
     INDENT,
 };
 use crate::Buf;
-use roc_module::called_via::{self, BinOp};
-use roc_parse::ast::{
+use broc_module::called_via::{self, BinOp};
+use broc_parse::ast::{
     AssignedField, Base, Collection, CommentOrNewline, Expr, ExtractSpaces, Pattern, WhenBranch,
 };
-use roc_parse::ast::{StrLiteral, StrSegment};
-use roc_parse::ident::Accessor;
-use roc_region::all::Loc;
+use broc_parse::ast::{StrLiteral, StrSegment};
+use broc_parse::ident::Accessor;
+use broc_region::all::Loc;
 
 impl<'a> Formattable for Expr<'a> {
     fn is_multiline(&self) -> bool {
-        use roc_parse::ast::Expr::*;
+        use broc_parse::ast::Expr::*;
         // TODO cache these answers using a Map<Pointer, bool>, so
         // we don't have to traverse subexpressions repeatedly
 
@@ -75,7 +75,7 @@ impl<'a> Formattable for Expr<'a> {
             }
 
             UnaryOp(loc_subexpr, _)
-            | PrecedenceConflict(roc_parse::ast::PrecedenceConflict {
+            | PrecedenceConflict(broc_parse::ast::PrecedenceConflict {
                 expr: loc_subexpr, ..
             }) => loc_subexpr.is_multiline(),
 
@@ -484,7 +484,7 @@ impl<'a> Formattable for Expr<'a> {
 }
 
 fn is_str_multiline(literal: &StrLiteral) -> bool {
-    use roc_parse::ast::StrLiteral::*;
+    use broc_parse::ast::StrLiteral::*;
 
     match literal {
         PlainLine(string) => {
@@ -541,7 +541,7 @@ fn is_outdentable(expr: &Expr) -> bool {
 }
 
 fn starts_with_newline(expr: &Expr) -> bool {
-    use roc_parse::ast::Expr::*;
+    use broc_parse::ast::Expr::*;
 
     match expr {
         SpaceBefore(_, comment_or_newline) => {
@@ -615,7 +615,7 @@ fn push_op(buf: &mut Buf, op: BinOp) {
 }
 
 pub fn fmt_str_literal<'buf>(buf: &mut Buf<'buf>, literal: StrLiteral, indent: u16) {
-    use roc_parse::ast::StrLiteral::*;
+    use broc_parse::ast::StrLiteral::*;
 
     match literal {
         PlainLine(string) => {

@@ -4,15 +4,15 @@ use crate::subs::{
     GetSubsSlice, RecordFields, Subs, TagExt, TupleElems, UnionTags, VarStore, Variable,
     VariableSubsSlice,
 };
-use roc_collections::all::{HumanIndex, ImMap, ImSet, MutMap, MutSet, SendMap};
-use roc_collections::soa::{Index, Slice};
-use roc_collections::VecMap;
-use roc_error_macros::internal_error;
-use roc_module::called_via::CalledVia;
-use roc_module::ident::{ForeignSymbol, Lowercase, TagName};
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::{Interns, Symbol};
-use roc_region::all::{Loc, Region};
+use broc_collections::all::{HumanIndex, ImMap, ImSet, MutMap, MutSet, SendMap};
+use broc_collections::soa::{Index, Slice};
+use broc_collections::VecMap;
+use broc_error_macros::internal_error;
+use broc_module::called_via::CalledVia;
+use broc_module::ident::{ForeignSymbol, Lowercase, TagName};
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::{Interns, Symbol};
+use broc_region::all::{Loc, Region};
 use std::fmt;
 use std::fmt::Write;
 use std::path::PathBuf;
@@ -241,7 +241,7 @@ pub struct AliasCommon {
 /// Represents a collection of abilities bound to a type variable.
 ///
 /// Enforces the invariants
-///   - There are no duplicate abilities (like a [VecSet][roc_collections::VecSet])
+///   - There are no duplicate abilities (like a [VecSet][broc_collections::VecSet])
 ///   - Inserted abilities are in sorted order; they can be extracted with
 ///     [AbilitySet::into_sorted_iter]
 ///
@@ -1341,8 +1341,8 @@ mod debug_types {
     };
 
     use super::{TypeTag, Types};
-    use roc_collections::soa::{Index, Slice};
-    use roc_module::ident::TagName;
+    use broc_collections::soa::{Index, Slice};
+    use broc_module::ident::TagName;
     use ven_pretty::{Arena, DocAllocator, DocBuilder};
 
     pub struct DebugTag<'a>(pub &'a Types, pub Index<TypeTag>);
@@ -2878,7 +2878,7 @@ impl Type {
     ///
     /// The following are narrow:
     ///
-    /// ```roc
+    /// ```broc
     /// U8
     /// [A I8]
     /// [A [B [C U8]]]
@@ -2887,7 +2887,7 @@ impl Type {
     ///
     /// The following are not:
     ///
-    /// ```roc
+    /// ```broc
     /// [A I8, B U8 ]
     /// [A [B [Result U8 {}]]]         (Result U8 {} is actually [Ok U8, Err {}])
     /// [A { lst: List (R a) }] as R a     (List a is morally [Cons (List a), Nil] as List a)

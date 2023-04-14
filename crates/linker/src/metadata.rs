@@ -4,8 +4,8 @@ use std::{
 };
 
 use bincode::{deserialize_from, serialize_into};
-use roc_collections::all::MutMap;
-use roc_error_macros::internal_error;
+use broc_collections::all::MutMap;
+use broc_error_macros::internal_error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -33,7 +33,7 @@ pub struct Metadata {
     pub surgeries: MutMap<String, Vec<SurgeryEntry>>,
     pub dynamic_symbol_indices: MutMap<String, u64>,
     pub static_symbol_indices: MutMap<String, u64>,
-    pub roc_symbol_vaddresses: MutMap<String, u64>,
+    pub broc_symbol_vaddresses: MutMap<String, u64>,
     pub exec_len: u64,
     pub load_align_constraint: u64,
     pub added_byte_count: u64,

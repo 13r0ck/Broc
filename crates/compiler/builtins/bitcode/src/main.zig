@@ -5,7 +5,7 @@ const utils = @import("utils.zig");
 const expect = @import("expect.zig");
 const panic_utils = @import("panic.zig");
 
-const ROC_BUILTINS = "roc_builtins";
+const ROC_BUILTINS = "broc_builtins";
 const NUM = "num";
 const STR = "str";
 
@@ -177,7 +177,7 @@ comptime {
     exportUtilsFn(utils.decrefCheckNullC, "decref_check_null");
     exportUtilsFn(utils.allocateWithRefcountC, "allocate_with_refcount");
 
-    @export(panic_utils.panic, .{ .name = "roc_builtins.utils." ++ "panic", .linkage = .Weak });
+    @export(panic_utils.panic, .{ .name = "broc_builtins.utils." ++ "panic", .linkage = .Weak });
 
     if (builtin.target.cpu.arch != .wasm32) {
         exportUtilsFn(expect.expectFailedStartSharedBuffer, "expect_failed_start_shared_buffer");
@@ -192,14 +192,14 @@ comptime {
     }
 
     if (builtin.target.cpu.arch == .aarch64) {
-        @export(__roc_force_setjmp, .{ .name = "__roc_force_setjmp", .linkage = .Weak });
-        @export(__roc_force_longjmp, .{ .name = "__roc_force_longjmp", .linkage = .Weak });
+        @export(__broc_force_setjmp, .{ .name = "__broc_force_setjmp", .linkage = .Weak });
+        @export(__broc_force_longjmp, .{ .name = "__broc_force_longjmp", .linkage = .Weak });
     }
 }
 
 // Utils continued - SJLJ
-// For tests (in particular test_gen), roc_panic is implemented in terms of
-// setjmp/longjmp. LLVM is unable to generate code for longjmp on AArch64 (https://github.com/roc-lang/roc/issues/2965),
+// For tests (in particular test_gen), broc_panic is implemented in terms of
+// setjmp/longjmp. LLVM is unable to generate code for longjmp on AArch64 (https://github.com/roc-lang/broc/issues/2965),
 // so instead we ask Zig to please provide implementations for us, which is does
 // (seemingly via musl).
 pub extern fn setjmp([*c]c_int) c_int;
@@ -210,16 +210,16 @@ pub extern fn sigsetjmp([*c]c_int, c_int) c_int;
 pub extern fn siglongjmp([*c]c_int, c_int) noreturn;
 pub extern fn longjmperror() void;
 // Zig won't expose the externs (and hence link correctly) unless we force them to be used.
-fn __roc_force_setjmp(it: [*c]c_int) callconv(.C) c_int {
+fn __broc_force_setjmp(it: [*c]c_int) callconv(.C) c_int {
     return setjmp(it);
 }
-fn __roc_force_longjmp(a0: [*c]c_int, a1: c_int) callconv(.C) noreturn {
+fn __broc_force_longjmp(a0: [*c]c_int, a1: c_int) callconv(.C) noreturn {
     longjmp(a0, a1);
 }
 
 // Export helpers - Must be run inside a comptime
 fn exportBuiltinFn(comptime func: anytype, comptime func_name: []const u8) void {
-    @export(func, .{ .name = "roc_builtins." ++ func_name, .linkage = .Strong });
+    @export(func, .{ .name = "broc_builtins." ++ func_name, .linkage = .Strong });
 }
 fn exportNumFn(comptime func: anytype, comptime func_name: []const u8) void {
     exportBuiltinFn(func, "num." ++ func_name);

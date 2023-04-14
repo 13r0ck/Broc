@@ -3,18 +3,18 @@
 #![allow(unused_imports)]
 
 use bumpalo::collections::Vec as BumpVec;
-use roc_can::expr::IntValue;
-use roc_can::num::{
+use broc_can::expr::IntValue;
+use broc_can::num::{
     finish_parsing_base, finish_parsing_float, finish_parsing_num, ParsedNumResult,
 };
-use roc_collections::all::BumpMap;
-use roc_error_macros::internal_error;
-use roc_module::symbol::{Interns, Symbol};
-use roc_parse::ast::{StrLiteral, StrSegment};
-use roc_parse::pattern::PatternType;
-use roc_problem::can::{MalformedPatternProblem, Problem, RuntimeError, ShadowKind};
-use roc_region::all::Region;
-use roc_types::subs::Variable;
+use broc_collections::all::BumpMap;
+use broc_error_macros::internal_error;
+use broc_module::symbol::{Interns, Symbol};
+use broc_parse::ast::{StrLiteral, StrSegment};
+use broc_parse::pattern::PatternType;
+use broc_problem::can::{MalformedPatternProblem, Problem, RuntimeError, ShadowKind};
+use broc_region::all::Region;
+use broc_types::subs::Variable;
 
 use crate::ast_error::{ASTResult, UnexpectedPattern2VariantSnafu};
 use crate::constrain::Constraint;
@@ -102,7 +102,7 @@ pub fn as_pattern_id<'a>(
     scope: &mut Scope,
     pattern_id: PatternId,
     pattern_type: PatternType,
-    pattern: &roc_parse::ast::Pattern<'a>,
+    pattern: &broc_parse::ast::Pattern<'a>,
     region: Region,
 ) -> Output {
     let (output, can_pattern) = to_pattern2(env, scope, pattern_type, pattern, region);
@@ -117,7 +117,7 @@ pub fn to_pattern_id<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
     pattern_type: PatternType,
-    pattern: &roc_parse::ast::Pattern<'a>,
+    pattern: &broc_parse::ast::Pattern<'a>,
     region: Region,
 ) -> (Output, PatternId) {
     let (output, can_pattern) = to_pattern2(env, scope, pattern_type, pattern, region);
@@ -132,10 +132,10 @@ pub fn to_pattern2<'a>(
     env: &mut Env<'a>,
     scope: &mut Scope,
     pattern_type: PatternType,
-    pattern: &roc_parse::ast::Pattern<'a>,
+    pattern: &broc_parse::ast::Pattern<'a>,
     region: Region,
 ) -> (Output, Pattern2) {
-    use roc_parse::ast::Pattern::*;
+    use broc_parse::ast::Pattern::*;
     use PatternType::*;
 
     let mut output = Output::default();
@@ -584,7 +584,7 @@ fn unsupported_pattern<'a>(
     pattern_type: PatternType,
     region: Region,
 ) -> Pattern2 {
-    use roc_problem::can::BadPattern;
+    use broc_problem::can::BadPattern;
     env.problem(Problem::UnsupportedPattern(
         BadPattern::Unsupported(pattern_type),
         region,
@@ -594,7 +594,7 @@ fn unsupported_pattern<'a>(
 }
 
 pub(crate) fn flatten_str_literal(pool: &mut Pool, literal: &StrLiteral<'_>) -> Pattern2 {
-    use roc_parse::ast::StrLiteral::*;
+    use broc_parse::ast::StrLiteral::*;
 
     match literal {
         PlainLine(str_slice) => Pattern2::StrLiteral(PoolStr::new(str_slice, pool)),

@@ -1,4 +1,4 @@
-use roc_module::symbol::Symbol;
+use broc_module::symbol::Symbol;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HigherOrder {

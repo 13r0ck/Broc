@@ -1,5 +1,5 @@
 [package]
-name = "roc_highlight"
+name = "broc_highlight"
 description = "For syntax highlighting, starts with a string and returns our markup nodes."
 
 authors.workspace = true
@@ -9,6 +9,6 @@ version.workspace = true
 
 [dependencies]
 html-escape = "0.2"
-roc_parse = { path = "../compiler/parse" }
-roc_region = { path = "../compiler/region" }
+broc_parse = { path = "../compiler/parse" }
+broc_region = { path = "../compiler/region" }
 

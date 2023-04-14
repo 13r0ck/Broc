@@ -9,18 +9,18 @@ use crate::expr::{
 use crate::pattern::{BindingsFromPattern, Pattern};
 use crate::scope::Scope;
 use bumpalo::Bump;
-use roc_collections::{MutMap, SendMap, VecMap, VecSet};
-use roc_error_macros::internal_error;
-use roc_module::ident::Ident;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::{IdentIds, IdentIdsByModule, ModuleId, ModuleIds, Symbol};
-use roc_parse::ast::{Defs, TypeAnnotation};
-use roc_parse::header::HeaderType;
-use roc_parse::pattern::PatternType;
-use roc_problem::can::{Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{ExposedTypesStorageSubs, Subs, VarStore, Variable};
-use roc_types::types::{AbilitySet, Alias, AliasKind, AliasVar, Type};
+use broc_collections::{MutMap, SendMap, VecMap, VecSet};
+use broc_error_macros::internal_error;
+use broc_module::ident::Ident;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::{IdentIds, IdentIdsByModule, ModuleId, ModuleIds, Symbol};
+use broc_parse::ast::{Defs, TypeAnnotation};
+use broc_parse::header::HeaderType;
+use broc_parse::pattern::PatternType;
+use broc_problem::can::{Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{ExposedTypesStorageSubs, Subs, VarStore, Variable};
+use broc_types::types::{AbilitySet, Alias, AliasKind, AliasVar, Type};
 
 /// The types of all exposed values/functions of a collection of modules
 #[derive(Clone, Debug, Default)]
@@ -161,7 +161,7 @@ pub struct ModuleOutput {
 }
 
 fn validate_generate_with<'a>(
-    generate_with: &'a [Loc<roc_parse::header::ExposedName<'a>>],
+    generate_with: &'a [Loc<broc_parse::header::ExposedName<'a>>],
 ) -> (HostedGeneratedFunctions, Vec<Loc<Ident>>) {
     let mut functions = HostedGeneratedFunctions::default();
     let mut unknown = Vec::new();
@@ -273,7 +273,7 @@ fn has_no_implementation(expr: &Expr) -> bool {
 pub fn canonicalize_module_defs<'a>(
     arena: &'a Bump,
     loc_defs: &'a mut Defs<'a>,
-    header_type: &roc_parse::header::HeaderType,
+    header_type: &broc_parse::header::HeaderType,
     home: ModuleId,
     module_ids: &'a ModuleIds,
     exposed_ident_ids: IdentIds,

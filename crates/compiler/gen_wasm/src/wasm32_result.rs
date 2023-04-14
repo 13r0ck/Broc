@@ -6,10 +6,10 @@ The user needs to analyse the Wasm module's memory to decode the result.
 
 use bumpalo::{collections::Vec, Bump};
 
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_mono::layout::{Builtin, InLayout, Layout, LayoutInterner, UnionLayout};
-use roc_std::{RocBox, RocDec, RocList, RocOrder, RocResult, RocStr, I128, U128};
-use roc_wasm_module::{
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_mono::layout::{Builtin, InLayout, Layout, LayoutInterner, UnionLayout};
+use broc_std::{BrocBox, BrocDec, BrocList, BrocOrder, BrocResult, BrocStr, I128, U128};
+use broc_wasm_module::{
     linking::SymInfo, linking::WasmObjectSymbol, Align, Export, ExportType, LocalId, Signature,
     ValueType, WasmModule,
 };
@@ -169,7 +169,7 @@ macro_rules! wasm_result_stack_memory {
 }
 
 wasm_result_primitive!(bool, i32_store8, Align::Bytes1);
-wasm_result_primitive!(RocOrder, i32_store8, Align::Bytes1);
+wasm_result_primitive!(BrocOrder, i32_store8, Align::Bytes1);
 
 wasm_result_primitive!(u8, i32_store8, Align::Bytes1);
 wasm_result_primitive!(i8, i32_store8, Align::Bytes1);
@@ -189,28 +189,28 @@ wasm_result_stack_memory!(u128);
 wasm_result_stack_memory!(i128);
 wasm_result_stack_memory!(U128);
 wasm_result_stack_memory!(I128);
-wasm_result_stack_memory!(RocDec);
+wasm_result_stack_memory!(BrocDec);
 
-impl Wasm32Result for RocStr {
+impl Wasm32Result for BrocStr {
     fn build_wrapper_body(code_builder: &mut CodeBuilder, main_function_index: u32) {
         build_wrapper_body_stack_memory(code_builder, main_function_index, 12)
     }
 }
 
-impl<T: Wasm32Result> Wasm32Result for RocList<T> {
+impl<T: Wasm32Result> Wasm32Result for BrocList<T> {
     fn build_wrapper_body(code_builder: &mut CodeBuilder, main_function_index: u32) {
         build_wrapper_body_stack_memory(code_builder, main_function_index, 12)
     }
 }
 
-impl<T: Wasm32Result> Wasm32Result for RocBox<T> {
+impl<T: Wasm32Result> Wasm32Result for BrocBox<T> {
     fn build_wrapper_body(code_builder: &mut CodeBuilder, main_function_index: u32) {
         // treat box as if it's just a isize value
         <i32 as Wasm32Result>::build_wrapper_body(code_builder, main_function_index)
     }
 }
 
-impl<T: Wasm32Sized, E: Wasm32Sized> Wasm32Result for RocResult<T, E> {
+impl<T: Wasm32Sized, E: Wasm32Sized> Wasm32Result for BrocResult<T, E> {
     fn build_wrapper_body(code_builder: &mut CodeBuilder, main_function_index: u32) {
         build_wrapper_body_stack_memory(
             code_builder,

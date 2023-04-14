@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8">
 
-  <title>The Roc Programming Language</title>
+  <title>The Broc Programming Language</title>
   <!-- <meta name="description" content="A language for making delightful software."> -->
   <meta name="viewport" content="width=device-width">
   <link rel="stylesheet" href="/homepage.css">
@@ -13,46 +13,46 @@
 </head>
 
 <body>
-  <h1>The Roc Programming Language</h1>
-  <p>Roc's goal is to be a fast, friendly, functional language. It's very much a work in progress;
+  <h1>The Broc Programming Language</h1>
+  <p>Broc's goal is to be a fast, friendly, functional language. It's very much a work in progress;
     below, you can see the current progress towards this goal. This website is intentionally unstyled
     as a way to emphasize the language's current level of incompleteness. The website will become
     more polished after the language itself becomes more polished!</p>
 
-  <p>Roc compiles to machine code or to <a href="https://webassembly.org">WebAssembly</a>. Eventually
-    you'll be able to use Roc to build high-quality servers, command-line applications, graphical
+  <p>Broc compiles to machine code or to <a href="https://webassembly.org">WebAssembly</a>. Eventually
+    you'll be able to use Broc to build high-quality servers, command-line applications, graphical
     native desktop user interfaces, among other classes of applications. Today, only command-line interfaces have support beyond the
     proof-of-concept stage; the other use cases will mature over time.</p>
 
-  <p>Like <a href="https://www.lua.org/">Lua</a>, Roc's automatic memory management doesn't require
-    a virtual machine, and it's possible to call Roc functions directly from any language that can
+  <p>Like <a href="https://www.lua.org/">Lua</a>, Broc's automatic memory management doesn't require
+    a virtual machine, and it's possible to call Broc functions directly from any language that can
     call <a href="https://en.wikipedia.org/wiki/C_(programming_language)">C</a> functions. This makes
-    Roc additionally useful as a language for implementing plugins, and gives you a way to
-    incrementally transition a legacy code base from another language to Roc.</p>
+    Broc additionally useful as a language for implementing plugins, and gives you a way to
+    incrementally transition a legacy code base from another language to Broc.</p>
 
-  <p>So far, the Roc compiler has progressed past the "proof of concept" stage, but there are
+  <p>So far, the Broc compiler has progressed past the "proof of concept" stage, but there are
     currently lots of known bugs and unimplemented features, and the documentation for both the
     language and the standard library is incomplete. The overall ecosystem is in its infancy, and
-    the compiler is neither battle-tested nor fuzz-tested yet, so we don't recommend relying on Roc
+    the compiler is neither battle-tested nor fuzz-tested yet, so we don't recommend relying on Broc
     for critical projects until its development is further along.</p>
 
   <p>With all that context in mind, if you'd like to try it out or to get involved with contributing,
-    the <a href="https://github.com/roc-lang/roc">source code repository</a> has
-    <a href="https://github.com/roc-lang/roc/releases">nightly builds</a> you can download,
+    the <a href="https://github.com/roc-lang/broc">source code repository</a> has
+    <a href="https://github.com/roc-lang/broc/releases">nightly builds</a> you can download,
     and a <a href="https://roc-lang.org/tutorial">tutorial</a>.</p>
 
-  <p>If you'd like to learn more about Roc, you can continue reading here, or check out one of these videos:</p>
+  <p>If you'd like to learn more about Broc, you can continue reading here, or check out one of these videos:</p>
   <ul>
-    <li><a href="https://media.handmade-seattle.com/roc-lang">Roc at Handmade Seattle</a> - November 12,
-      2021 (very low-level explanation of how Roc's compiler makes programs run fast)</li>
+    <li><a href="https://media.handmade-seattle.com/roc-lang">Broc at Handmade Seattle</a> - November 12,
+      2021 (very low-level explanation of how Broc's compiler makes programs run fast)</li>
     <li><a href="https://youtu.be/vzfy4EKwG_Y">Outperforming Imperative with Pure Functional Languages</a> - October 1,
-      2021 (about Roc's runtime performance and optimizer)</li>
-    <li><a href="https://youtu.be/6qzWm_eoUXM">A taste of Roc</a> - September 23, 2021 (syntax, application examples)
+      2021 (about Broc's runtime performance and optimizer)</li>
+    <li><a href="https://youtu.be/6qzWm_eoUXM">A taste of Broc</a> - September 23, 2021 (syntax, application examples)
     </li>
-    <li><a href="https://youtu.be/cpQwtwVKAfU?t=75">Roc at the Philly ETE conference</a> - May 6, 2021 (platforms and
+    <li><a href="https://youtu.be/cpQwtwVKAfU?t=75">Broc at the Philly ETE conference</a> - May 6, 2021 (platforms and
       applications)</li>
-    <li><a href="https://youtu.be/FMyyYdFSOHA">Roc on Zig Showtime</a> - April 24, 2021 (making a platform)</li>
-    <li><a href="https://youtu.be/ZnYa99QoznE?t=4790">Roc at the Berlin FP Meetup</a> - September 1, 2020 (overall
+    <li><a href="https://youtu.be/FMyyYdFSOHA">Broc on Zig Showtime</a> - April 24, 2021 (making a platform)</li>
+    <li><a href="https://youtu.be/ZnYa99QoznE?t=4790">Broc at the Berlin FP Meetup</a> - September 1, 2020 (overall
       vision for the language)</li>
   </ul>
 
@@ -60,43 +60,43 @@
 
   <h3>Goal</h3>
 
-  <p>We want Roc to run faster than any non-systems language (like C, C++, Rust, or Zig)
+  <p>We want Broc to run faster than any non-systems language (like C, C++, Rust, or Zig)
     that sees mainstream use in industry. The goal is that nobody should find themselves
-    thinking "I should rewrite my Roc program in [some mainstream garbage-collected language]
+    thinking "I should rewrite my Broc program in [some mainstream garbage-collected language]
     because that will make it run significantly faster."
     </p>
 
-  <p>When benchmarking Roc code against similarly-optimized programs written in
+  <p>When benchmarking Broc code against similarly-optimized programs written in
     <a href="https://go.dev">Go</a>,
     <a href="https://www.swift.org/">Swift</a>, <a href="https://www.java.com">Java</a>,
     <a href="https://learn.microsoft.com/en-us/dotnet/csharp">C#</a>, or
     <a href="https://www.ecma-international.org/publications-and-standards/standards/ecma-262">JavaScript</a>,
-    we generally aim for Roc to outperform all of those languages. Outperforming systems
+    we generally aim for Broc to outperform all of those languages. Outperforming systems
     languages like Rust, Zig, C, D, and C++ is a non-goal, as is outperforming research languages
     that see little or no use in industry. (Realistically, there will always be certain specific
-    benchmarks where some popular non-systems-level languages outperform Roc, but the goal is to
+    benchmarks where some popular non-systems-level languages outperform Broc, but the goal is to
     usually be at the front of that pack.)</p>
 
   <h4>Current progress</h4>
 
   <p>Progress towards this performance goal is already quite far along.</p>
 
-  <p>Roc already uses unboxed data structures and unboxed closures, monomorphizes polymorphic code,
+  <p>Broc already uses unboxed data structures and unboxed closures, monomorphizes polymorphic code,
     and uses LLVM as a compiler backend. These optimizations, especially unboxed closures and
     monomorphization, can be found in several systems-level languages (like C++ and Rust), but not
-    in any mainstream garbage-collected languages. Roc closures in particular have the distinction
+    in any mainstream garbage-collected languages. Broc closures in particular have the distinction
     of being as ergonomic as the closures found in garbage-collected languages
     (where they are typically boxed), but have the performance of systems language closures
     (which are typically unboxed, but have more complicated types).
 
-  <p>Because of these optimizations, in many cases Roc code already
+  <p>Because of these optimizations, in many cases Broc code already
     compiles to the same machine instructions that the equivalent code written in one of these
     systems languages would. Something we do regularly is to compare the LLVM instructions generated
-    by Roc's compiler and by these systems languages' compilers, to check whether we're generating
+    by Broc's compiler and by these systems languages' compilers, to check whether we're generating
     equivalent instructions.</p>
 
-  <p>That said, there are also cases where Roc has strictly more runtime overhead than languages
-    like C, C++, Zig, and Rust do. The most costly is automatic memory management, which Roc
+  <p>That said, there are also cases where Broc has strictly more runtime overhead than languages
+    like C, C++, Zig, and Rust do. The most costly is automatic memory management, which Broc
     implements using automatic reference counting. Static reference count optimizations like
     elision and reuse (thanks to Morphic and
     <a href="https://www.microsoft.com/en-us/research/publication/perceus-garbage-free-reference-counting-with-reuse/">Perceus</a>)
@@ -108,42 +108,42 @@
   smaller sources of overhead include mandatory array bounds checks, disallowing cyclic references
   (which rules out a certain niche of efficient graph data structures), and automatic opportunistic
   in-place mutation instead of direct mutation. Even if all of these sources of overhead were
-  completely eliminated, it seems unlikely that typical Roc programs would see a particularly big
+  completely eliminated, it seems unlikely that typical Broc programs would see a particularly big
   performance boost.</p>
 
-<p>Overall, we expect Roc's performance in the use cases mentioned above (servers, CLIs, GUIs, etc.)
+<p>Overall, we expect Broc's performance in the use cases mentioned above (servers, CLIs, GUIs, etc.)
    to be about the same as the equivalent C++ code would be, if all that C++ code
    (including its dependencies) were written in a restricted subset of C++ which always did array
    bounds checks and used shared pointers for all heap allocations.
-   The Roc code might even run somewhat faster, because its reference counts are non-atomic by default,
-   and can be statically optimized away in some cases—but then again, Roc also has a bit of overhead
+   The Broc code might even run somewhat faster, because its reference counts are non-atomic by default,
+   and can be statically optimized away in some cases—but then again, Broc also has a bit of overhead
    to perform opportunistic in-place mutation instead of direct mutation.</p>
 
-<p>To be clear, we don't expect this because we've benchmarked a bunch of programs written in Roc
+<p>To be clear, we don't expect this because we've benchmarked a bunch of programs written in Broc
   and in this restricted C++ subset, and found that the numbers were about the same (although if
   you know C++ well enough and want to do such experiments, we'd happy to help and would be
-  interested to see the results!) but rather because Roc's compiler and
+  interested to see the results!) but rather because Broc's compiler and
   <a href="https://clang.llvm.org/">clang</a> should both be generating essentially the same
   LLVM instructions when the C++ is restricted to that subset.</p>
 
-<p>Of course, <em>unrestricted</em> C++ code can certainly run faster than unrestricted Roc code.
-  The same is true when comparing other such minimal-overhead systems languages to Roc, including
-  Rust, Zig, C, and D. The point of the comparison is to give you a general idea of what Roc
+<p>Of course, <em>unrestricted</em> C++ code can certainly run faster than unrestricted Broc code.
+  The same is true when comparing other such minimal-overhead systems languages to Broc, including
+  Rust, Zig, C, and D. The point of the comparison is to give you a general idea of what Broc
   compiles to, since it is quite different from the VMs and JITted bytecode interpreters found in
   today's most popular garbage-collected languages!</p>
 
-<p>You can read more about the differences between Roc and languages that support memory-unsafe
+<p>You can read more about the differences between Broc and languages that support memory-unsafe
 
 <p>The talk <a href="https://youtu.be/vzfy4EKwG_Y">Outperforming Imperative with Pure Functional Languages</a>
-  discusses some early results from Roc's optimizations, and
-  <a href="https://media.handmade-seattle.com/roc-lang">Roc at Handmade Seattle</a> gets into
-  low-level details of how Roc's compiler generates programs similarly to how clang does.</p>
+  discusses some early results from Broc's optimizations, and
+  <a href="https://media.handmade-seattle.com/roc-lang">Broc at Handmade Seattle</a> gets into
+  low-level details of how Broc's compiler generates programs similarly to how clang does.</p>
 
 <h2>A <em>Friendly</em> Language</h2>
 
 <h3>Goals</h3>
 
-<p>Roc aims to be a user-friendly language with a friendly community of users.</p>
+<p>Broc aims to be a user-friendly language with a friendly community of users.</p>
 
 <p>A programming language can be much more than a tool for writing software, it can also be a way
   for people to come together through shared experiences, to teach and to learn from one another,
@@ -155,7 +155,7 @@
   After all, languages are tools people use to create software, and there's no need for us
   to create artificial divisions between ourselves based on the tools we use!</p>
 
-<p>On a technical level, Roc aims to ship a toolset where user-friendliness is a major priority.
+<p>On a technical level, Broc aims to ship a toolset where user-friendliness is a major priority.
   This includes everything from helpful error messages (aiming to meet the bar set by
   <a href="https://elm-lang.org">Elm</a>) to quality-of-life improvements inspired by dynamic
   languages (always being able to run your program even if there are compile errors, automatic
@@ -163,7 +163,7 @@
   code loading that's always enabled and requires no configuration to set up, etc.) to accessibility
   features in the included editor.</p>
 
-<p>Roc also aims to ship a single binary that includes not only a compiler, but also a
+<p>Broc also aims to ship a single binary that includes not only a compiler, but also a
   <a href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">REPL</a>,
   package manager, test runner, debugger, static analyzer, code formatter, and a full-featured
   editor, all of which are designed to work seamlessly together.</p>
@@ -178,7 +178,7 @@
 <p>The REPL fully supports entering arbitrary expressions, and will evaluate them and print the
   results. It remembers recent expressions entered in the current session (if you press the up arrow),
   but it can't yet execute effects. You can try out the REPL in a browser at
-  <a href="https://roc-lang.org/repl">roc-lang.org/repl</a> - it uses a WebAssembly build of Roc's
+  <a href="https://roc-lang.org/repl">roc-lang.org/repl</a> - it uses a WebAssembly build of Broc's
   compiler, and compiles the code you write to WebAssembly on the fly, which it then executes in
   the browser to display the answer.</p>
 
@@ -192,16 +192,16 @@
 <p>The compiler doesn't yet support incremental compilation or hot code loading, and build times vary
   based on what machine you're building for.</p>
 
-<p>For example, suppose you run `roc check`, which reports errors it finds (type mismatches, naming
+<p>For example, suppose you run `broc check`, which reports errors it finds (type mismatches, naming
   errors, and so on) but doesn't actually build an executable, on a code base that's under a thousand
   lines of code. On an M1 MacBook Pro, this typically takes about 10 milliseconds.</p>
 
-<p>In contrast, if you do `roc build` (or `roc run`) on that same machine, it will take closer to 500
+<p>In contrast, if you do `broc build` (or `broc run`) on that same machine, it will take closer to 500
   milliseconds instead. Almost all that extra time is spent waiting for LLVM to generate (unoptimized)
   machine code, and then for the system linker to assemble an executable from it.</p>
 
 <p> Fortunately, we can eliminate almost all of those extra 490 millisconds of build time by using
-Roc's (work in progress) development backend instead of LLVM. This compiles directly from Roc's
+Broc's (work in progress) development backend instead of LLVM. This compiles directly from Broc's
 internal representation to machine code, like most compilers did before LLVM. (LLVM can optimize
 code into running very fast, but even when it performs no optimization at all, LLVM itself takes a lot
 longer to run than generating unoptimized machine code directly.)</p>
@@ -211,13 +211,13 @@ longer to run than generating unoptimized machine code directly.)</p>
   ways to go, but improving them can be done by anyone with the patience to read some documentation;
   we have issues split up for them, and are happy to help new contributors get up and running!</p>
 
-<p>Builds on Linux and Windows also use Roc's surgical linker instead of the system linker, which
+<p>Builds on Linux and Windows also use Broc's surgical linker instead of the system linker, which
   runs so fast that linking essentially disappears from the performance profile altogether. The
   surgical linker currently only works on Linux and Windows, and it currently supports building
-  executables but not (yet) dynamic libraries, which is relevant if you're using Roc to create
-  plugins or want to call Roc functions from existing code bases in other languages. Work has started
+  executables but not (yet) dynamic libraries, which is relevant if you're using Broc to create
+  plugins or want to call Broc functions from existing code bases in other languages. Work has started
   on macOS surgical linking, but it isn't usable yet. If you're interested in working on that,
-  please get in touch on <a href="https://roc.zulipchat.com/">Roc Zulip</a>!</p>
+  please get in touch on <a href="https://broc.zulipchat.com/">Broc Zulip</a>!</p>
 
 <p>The test runner currently has first-class support for running standard non-effectful tests.
   It does not yet have first-class support for effectful tests, property-based tests, snapshot tests,
@@ -229,7 +229,7 @@ longer to run than generating unoptimized machine code directly.)</p>
   the rest of the compiler, the formatter is one place where the number of known bugs is so small
   that fuzzing would be very helpful as a way to surface bugs we don't yet know about. (If you're
   interested in working on setting up fuzzing for the formatter, please let us know in
-  the <a href="https://roc.zulipchat.com/#narrow/stream/316715-contributing"><code>#contributing</code> channel</a>
+  the <a href="https://broc.zulipchat.com/#narrow/stream/316715-contributing"><code>#contributing</code> channel</a>
   on Zulip! Separately, we're also very interested in fuzzing the compiler, even though we already
   have a sizable list of known bugs there.)</p>
 
@@ -238,34 +238,34 @@ longer to run than generating unoptimized machine code directly.)</p>
   especially by being welcoming towards beginners.</p>
 
 <p>If you'd like to join in, the best place to do that is in our Zulip chat. Feel free to drop by the
-  <a href="https://roc.zulipchat.com/#narrow/stream/231634-beginners/topic/introductions"><code>introductions</code> topic</a>
+  <a href="https://broc.zulipchat.com/#narrow/stream/231634-beginners/topic/introductions"><code>introductions</code> topic</a>
   and introduce yourself!</p>
 
 <h2>A <em>Functional</em> Language</h2>
 
 <h3>Goals</h3>
 
-<p>Roc aims to be a purely functional programming language. This means all Roc functions are
+<p>Broc aims to be a purely functional programming language. This means all Broc functions are
   <a href="https://en.wikipedia.org/wiki/Pure_function">pure functions</a>, and all effects are
   <a href="https://medium.com/@kaw2k/managed-effects-and-elm-36b7fcd246a9">managed effects</a>
   instead of side effects.</p>
 
 <p>A major motivating reason for this is to facilitate tooling. For example, in the future the goal
-  is that Roc's test runner won't bother re-running tests whose outcomes could not possibly have
+  is that Broc's test runner won't bother re-running tests whose outcomes could not possibly have
   changed (because they were pure functions whose inputs did not change). Tests that contain only
   pure functions can be trivially run in parallel, and they will never <a href="https://www.smashingmagazine.com/2021/04/flaky-tests-living-nightmare/">flake</a>.
   Additionally, having the guarantee that the application contains only pure functions can also make
   certain debugging tools more reliable, such as time travel and retroactive tracing.
 </p>
 
-<p>Roc also takes a novel approach to managed effects. In most programming languages, the standard
+<p>Broc also takes a novel approach to managed effects. In most programming languages, the standard
   library contains both data structures and I/O primitives (e.g. for using the file system or the
   network), and then you might decide to use a <a href="https://en.wikipedia.org/wiki/Application_framework">framework</a>
   on top of that standard library.</p>
 
-<p>In Roc, every application is built on a <em>platform</em>. A platform is like a framework except
-  that it also provides I/O primitives and behind-the-scenes memory management. (Roc's standard
-  library only contains data structures.) In practice, this means that using Roc feels similar to
+<p>In Broc, every application is built on a <em>platform</em>. A platform is like a framework except
+  that it also provides I/O primitives and behind-the-scenes memory management. (Broc's standard
+  library only contains data structures.) In practice, this means that using Broc feels similar to
   using any other programming language where you've chosen to use a framework, except that the
   documentation for your I/O primitives comes from the framework instead of the standard library.</p>
 
@@ -278,17 +278,17 @@ longer to run than generating unoptimized machine code directly.)</p>
 <h3>Current Progress</h3>
 
 <p>Today, platforms as a concept already exist, and there are a few different ones implemented.
-  You can find them in the <a href="https://github.com/roc-lang/roc/tree/main/examples"><code>examples/</code></a>
+  You can find them in the <a href="https://github.com/roc-lang/broc/tree/main/examples"><code>examples/</code></a>
   directory in the source code repository. The platform for building command-line interfaces is the
   most fully featured; the others are mostly in the proof-of-concept stage.
 </p>
 
-<p>Roc's built-in tooling is not yet far enough along to take advantage of pure functions. For
+<p>Broc's built-in tooling is not yet far enough along to take advantage of pure functions. For
   example, there is a built-in test runner, but it does not yet run tests in parallel or skip
   running tests whose outcomes could not possibly have changed.
 </p>
 
-<p>Roc is already a purely functional programming language, though, so all of these benefits
+<p>Broc is already a purely functional programming language, though, so all of these benefits
   are ready to be unlocked as the tooling implementations progress!
 </p>
 

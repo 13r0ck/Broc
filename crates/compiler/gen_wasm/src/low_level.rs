@@ -1,25 +1,25 @@
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_builtins::bitcode::{self, FloatWidth, IntWidth};
-use roc_error_macros::internal_error;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
-use roc_mono::code_gen_help::HelperOp;
-use roc_mono::ir::{HigherOrderLowLevel, PassedFunction, ProcLayout};
-use roc_mono::layout::{Builtin, FieldOrderHash, InLayout, Layout, LayoutInterner, UnionLayout};
-use roc_mono::low_level::HigherOrder;
+use broc_builtins::bitcode::{self, FloatWidth, IntWidth};
+use broc_error_macros::internal_error;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
+use broc_mono::code_gen_help::HelperOp;
+use broc_mono::ir::{HigherOrderLowLevel, PassedFunction, PbrocLayout};
+use broc_mono::layout::{Builtin, FieldOrderHash, InLayout, Layout, LayoutInterner, UnionLayout};
+use broc_mono::low_level::HigherOrder;
 
-use crate::backend::{ProcLookupData, ProcSource, WasmBackend};
+use crate::backend::{PbrocLookupData, PbrocSource, WasmBackend};
 use crate::layout::{CallConv, StackMemoryFormat, WasmLayout};
 use crate::storage::{AddressValue, StackMemoryLocation, StoredValue};
 use crate::{PTR_TYPE, TARGET_INFO};
-use roc_wasm_module::{Align, LocalId, ValueType};
+use broc_wasm_module::{Align, LocalId, ValueType};
 
 /// Number types used for Wasm code gen
 /// Unlike other enums, this contains no details about layout or storage.
 /// Its purpose is to help simplify the arms of the main lowlevel `match` below.
 ///
-/// Note: Wasm I32 is used for Roc I8, I16, I32, U8, U16, and U32, since it's
+/// Note: Wasm I32 is used for Broc I8, I16, I32, U8, U16, and U32, since it's
 /// the smallest integer supported in the Wasm instruction set.
 /// We may choose different instructions for signed and unsigned integers,
 /// but they share the same Wasm value type.
@@ -175,7 +175,7 @@ impl<'a> LowLevelCall<'a> {
     /// Wrap an integer that should have less than 32 bits, but is represented in Wasm as i32.
     /// This may seem like deliberately introducing an error!
     /// But we want all targets to behave the same, and hash algos rely on wrapping.
-    /// Discussion: https://github.com/roc-lang/roc/pull/2117#discussion_r760723063
+    /// Discussion: https://github.com/roc-lang/broc/pull/2117#discussion_r760723063
     fn wrap_small_int(&self, backend: &mut WasmBackend<'a, '_>, int_width: IntWidth) {
         let bits = 8 * int_width.stack_size() as i32;
         let shift = 32 - bits;
@@ -260,10 +260,10 @@ impl<'a> LowLevelCall<'a> {
             StrFromUtf8Range => {
                 /*
                 Low-level op returns a struct with all the data for both Ok and Err.
-                Roc AST wrapper converts this to a tag union, with app-dependent tag IDs.
+                Broc AST wrapper converts this to a tag union, with app-dependent tag IDs.
 
                     output: *FromUtf8Result   i32
-                    arg: RocList              i64, i32
+                    arg: BrocList              i64, i32
                     start                     i32
                     count                     i32
                     update_mode: UpdateMode   i32
@@ -427,7 +427,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Load all the arguments for Zig
                 //    (List return pointer)  i32
-                //    list: RocList,         i64, i32
+                //    list: BrocList,         i64, i32
                 //    alignment: u32,        i32
                 //    index: usize,          i32
                 //    element: Opaque,       i32
@@ -490,8 +490,8 @@ impl<'a> LowLevelCall<'a> {
                 // List.concat : List elem, List elem -> List elem
                 // Zig arguments          Wasm types
                 //  (return pointer)       i32
-                //  list_a: RocList        i64, i32
-                //  list_b: RocList        i64, i32
+                //  list_a: BrocList        i64, i32
+                //  list_b: BrocList        i64, i32
                 //  alignment: u32         i32
                 //  element_width: usize   i32
 
@@ -529,7 +529,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList              i64, i32
+                //  list: BrocList              i64, i32
                 //  alignment: u32             i32
                 //  spare: usize               i32
                 //  element_width: usize       i32
@@ -570,7 +570,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList              i64, i32
+                //  list: BrocList              i64, i32
                 //  alignment: u32             i32
                 //  element_width: usize       i32
                 //  update_mode: UpdateMode    i32
@@ -611,7 +611,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList              i64, i32
+                //  list: BrocList              i64, i32
                 //  element: Opaque            i32
                 //  element_width: usize       i32
 
@@ -650,7 +650,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList              i64, i32
+                //  list: BrocList              i64, i32
                 //  alignment: u32             i32
                 //  element: Opaque            i32
                 //  element_width: usize       i32
@@ -700,7 +700,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList,             i64, i32
+                //  list: BrocList,             i64, i32
                 //  alignment: u32,            i32
                 //  element_width: usize,      i32
                 //  start: usize,              i32
@@ -746,7 +746,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList,             i64, i32
+                //  list: BrocList,             i64, i32
                 //  element_width: usize,      i32
                 //  alignment: u32,            i32
                 //  drop_index: usize,         i32
@@ -784,7 +784,7 @@ impl<'a> LowLevelCall<'a> {
 
                 // Zig arguments              Wasm types
                 //  (return pointer)           i32
-                //  list: RocList,             i64, i32
+                //  list: BrocList,             i64, i32
                 //  alignment: u32,            i32
                 //  element_width: usize,      i32
                 //  index_1: usize,            i32
@@ -1175,9 +1175,9 @@ impl<'a> LowLevelCall<'a> {
 
                 // This implements the expression:
                 //            (x != y) as u8 + (x < y) as u8
-                // For x==y:  (false as u8)  + (false as u8) = 0 = RocOrder::Eq
-                // For x>y:   (true as u8)   + (false as u8) = 1 = RocOrder::Gt
-                // For x<y:   (true as u8)   + (true as u8)  = 2 = RocOrder::Lt
+                // For x==y:  (false as u8)  + (false as u8) = 0 = BrocOrder::Eq
+                // For x>y:   (true as u8)   + (false as u8) = 1 = BrocOrder::Gt
+                // For x<y:   (true as u8)   + (true as u8)  = 2 = BrocOrder::Lt
                 // u8 is represented in the stack machine as i32, but written to memory as 1 byte
                 match CodeGenNumType::from(layout) {
                     I32 => {
@@ -1686,7 +1686,7 @@ impl<'a> LowLevelCall<'a> {
                 let bits = self.arguments[1];
                 match CodeGenNumType::from(self.ret_layout) {
                     I32 => {
-                        // In most languages this operation is for signed numbers, but Roc defines it on all integers.
+                        // In most languages this operation is for signed numbers, but Broc defines it on all integers.
                         // So the argument is implicitly converted to signed before the shift operator.
                         // We need to make that conversion explicit for i8 and i16, which use Wasm's i32 type.
                         let bit_width = 8 * self
@@ -1735,7 +1735,7 @@ impl<'a> LowLevelCall<'a> {
                 let bits = self.arguments[1];
                 match CodeGenNumType::from(self.ret_layout) {
                     I32 => {
-                        // In most languages this operation is for unsigned numbers, but Roc defines it on all integers.
+                        // In most languages this operation is for unsigned numbers, but Broc defines it on all integers.
                         // So the argument is implicitly converted to unsigned before the shift operator.
                         // We need to make that conversion explicit for i8 and i16, which use Wasm's i32 type.
                         let bit_width = 8 * self
@@ -2024,7 +2024,7 @@ impl<'a> LowLevelCall<'a> {
             | Layout::Union(_)
             | Layout::LambdaSet(_)
             | Layout::Boxed(_) => {
-                // Don't want Zig calling convention here, we're calling internal Roc functions
+                // Don't want Zig calling convention here, we're calling internal Broc functions
                 backend
                     .storage
                     .load_symbols(&mut backend.code_builder, self.arguments);
@@ -2226,8 +2226,8 @@ pub fn call_higher_order_lowlevel<'a>(
     } = passed_function;
 
     // The zig lowlevel builtins expect the passed functions' closure data to always
-    // be sent as an opaque pointer. On the Roc side, however, we need to call the passed function
-    // with the Roc representation of the closure data. There are three possible cases for that
+    // be sent as an opaque pointer. On the Broc side, however, we need to call the passed function
+    // with the Broc representation of the closure data. There are three possible cases for that
     // representation:
     //
     // 1. The closure data is a struct
@@ -2301,23 +2301,23 @@ pub fn call_higher_order_lowlevel<'a>(
 
     // We create a wrapper around the passed function, which just unboxes the arguments.
     // This allows Zig builtins to have a generic pointer-based interface.
-    let helper_proc_source = {
-        let passed_proc_layout = ProcLayout {
+    let helper_pbroc_source = {
+        let passed_pbroc_layout = PbrocLayout {
             arguments: argument_layouts,
             result: *result_layout,
             niche: fn_name.niche(),
         };
-        let passed_proc_index = backend
-            .proc_lookup
+        let passed_pbroc_index = backend
+            .pbroc_lookup
             .iter()
-            .position(|ProcLookupData { name, layout, .. }| {
-                *name == fn_name.name() && layout == &passed_proc_layout
+            .position(|PbrocLookupData { name, layout, .. }| {
+                *name == fn_name.name() && layout == &passed_pbroc_layout
             })
             .unwrap();
         match op {
-            ListSortWith { .. } => ProcSource::HigherOrderCompare(passed_proc_index),
+            ListSortWith { .. } => PbrocSource::HigherOrderCompare(passed_pbroc_index),
             ListMap { .. } | ListMap2 { .. } | ListMap3 { .. } | ListMap4 { .. } => {
-                ProcSource::HigherOrderMapper(passed_proc_index)
+                PbrocSource::HigherOrderMapper(passed_pbroc_index)
             }
         }
     };
@@ -2340,33 +2340,33 @@ pub fn call_higher_order_lowlevel<'a>(
         wrapper_arg_layouts.push(wrapped_captures_layout);
         wrapper_arg_layouts.extend(boxed_closure_arg_layouts);
 
-        match helper_proc_source {
-            ProcSource::HigherOrderMapper(_) => {
+        match helper_pbroc_source {
+            PbrocSource::HigherOrderMapper(_) => {
                 // Our convention for mappers is that they write to the heap via the last argument
                 wrapper_arg_layouts.push(
                     backend
                         .layout_interner
                         .insert(Layout::Boxed(*result_layout)),
                 );
-                ProcLayout {
+                PbrocLayout {
                     arguments: wrapper_arg_layouts.into_bump_slice(),
                     result: Layout::UNIT,
                     niche: fn_name.niche(),
                 }
             }
-            ProcSource::HigherOrderCompare(_) => ProcLayout {
+            PbrocSource::HigherOrderCompare(_) => PbrocLayout {
                 arguments: wrapper_arg_layouts.into_bump_slice(),
                 result: *result_layout,
                 niche: fn_name.niche(),
             },
-            ProcSource::Roc | ProcSource::Helper => {
-                internal_error!("Should never reach here for {:?}", helper_proc_source)
+            PbrocSource::Broc | PbrocSource::Helper => {
+                internal_error!("Should never reach here for {:?}", helper_pbroc_source)
             }
         }
     };
 
     let wrapper_fn_idx =
-        backend.register_helper_proc(wrapper_sym, wrapper_layout, helper_proc_source);
+        backend.register_helper_pbroc(wrapper_sym, wrapper_layout, helper_pbroc_source);
     let wrapper_fn_ptr = backend.get_fn_ptr(wrapper_fn_idx);
     let inc_fn_ptr = if !closure_data_exists {
         // Our code gen would ignore the Unit arg, but the Zig builtin passes a pointer for it!
@@ -2445,7 +2445,7 @@ pub fn call_higher_order_lowlevel<'a>(
             let cb = &mut backend.code_builder;
 
             // (return pointer)      i32
-            // input: RocList,       i64, i32
+            // input: BrocList,       i64, i32
             // caller: CompareFn,    i32
             // data: Opaque,         i32
             // inc_n_data: IncN,     i32

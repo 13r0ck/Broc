@@ -1,9 +1,9 @@
 #![allow(clippy::too_many_arguments)]
 
 use bumpalo::collections::vec::Vec;
-use roc_module::low_level::{LowLevel, LowLevel::*};
-use roc_module::symbol::{IdentIds, Symbol};
-use roc_target::PtrWidth;
+use broc_module::low_level::{LowLevel, LowLevel::*};
+use broc_module::symbol::{IdentIds, Symbol};
+use broc_target::PtrWidth;
 
 use crate::borrow::Ownership;
 use crate::code_gen_help::let_lowlevel;
@@ -40,7 +40,7 @@ pub fn refcount_stmt<'a>(
             let amount_expr = Expr::Literal(Literal::Int((*amount as i128).to_ne_bytes()));
             let amount_stmt = |next| Stmt::Let(amount_sym, amount_expr, layout_isize, next);
 
-            // Call helper proc, passing the Roc structure and constant amount
+            // Call helper pbroc, passing the Broc structure and constant amount
             let call_result_empty = root.create_symbol(ident_ids, "call_result_empty");
             let call_expr = root
                 .call_specialized_op(
@@ -57,7 +57,7 @@ pub fn refcount_stmt<'a>(
         }
 
         ModifyRc::Dec(structure) => {
-            // Call helper proc, passing the Roc structure
+            // Call helper pbroc, passing the Broc structure
             let call_result_empty = root.create_symbol(ident_ids, "call_result_empty");
             let call_expr = root
                 .call_specialized_op(
@@ -185,7 +185,7 @@ pub fn refcount_generic<'a>(
     }
 }
 
-pub fn refcount_reset_proc_body<'a>(
+pub fn refcount_reset_pbroc_body<'a>(
     root: &mut CodeGenHelp<'a>,
     ident_ids: &mut IdentIds,
     ctx: &mut Context<'a>,

@@ -1,6 +1,6 @@
 [package]
 name = "test_derive"
-description = "Tests Roc's auto-derivers."
+description = "Tests Broc's auto-derivers."
 
 authors.workspace = true
 edition.workspace = true
@@ -12,21 +12,21 @@ name = "test_derive"
 path = "src/tests.rs"
 
 [dev-dependencies]
-roc_builtins = { path = "../builtins" }
-roc_can = { path = "../can" }
-roc_collections = { path = "../collections" }
-roc_constrain = { path = "../constrain" }
-roc_debug_flags = { path = "../debug_flags" }
-roc_derive = { path = "../derive", features = ["debug-derived-symbols", "open-extension-vars"] }
-roc_derive_key = { path = "../derive_key" }
-roc_load_internal = { path = "../load_internal" }
-roc_module = { path = "../module" }
-roc_packaging = { path = "../../packaging" }
-roc_region = { path = "../region" }
-roc_reporting = { path = "../../reporting" }
-roc_solve = { path = "../solve" }
-roc_target = { path = "../roc_target" }
-roc_types = { path = "../types" }
+broc_builtins = { path = "../builtins" }
+broc_can = { path = "../can" }
+broc_collections = { path = "../collections" }
+broc_constrain = { path = "../constrain" }
+broc_debug_flags = { path = "../debug_flags" }
+broc_derive = { path = "../derive", features = ["debug-derived-symbols", "open-extension-vars"] }
+broc_derive_key = { path = "../derive_key" }
+broc_load_internal = { path = "../load_internal" }
+broc_module = { path = "../module" }
+broc_packaging = { path = "../../packaging" }
+broc_region = { path = "../region" }
+broc_reporting = { path = "../../reporting" }
+broc_solve = { path = "../solve" }
+broc_target = { path = "../broc_target" }
+broc_types = { path = "../types" }
 
 ven_pretty = { path = "../../vendor/pretty" }
 

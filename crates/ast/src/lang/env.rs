@@ -1,11 +1,11 @@
 use crate::mem_pool::pool::{NodeId, Pool};
 use bumpalo::{collections::Vec as BumpVec, Bump};
-use roc_collections::all::{MutMap, MutSet};
-use roc_module::ident::{Ident, Lowercase, ModuleName};
-use roc_module::symbol::{IdentIds, IdentIdsByModule, ModuleId, ModuleIds, Symbol};
-use roc_problem::can::{Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
-use roc_types::subs::VarStore;
+use broc_collections::all::{MutMap, MutSet};
+use broc_module::ident::{Ident, Lowercase, ModuleName};
+use broc_module::symbol::{IdentIds, IdentIdsByModule, ModuleId, ModuleIds, Symbol};
+use broc_problem::can::{Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
+use broc_types::subs::VarStore;
 
 use super::core::def::def::References;
 

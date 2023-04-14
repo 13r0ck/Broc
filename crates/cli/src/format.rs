@@ -3,12 +3,12 @@ use std::path::{Path, PathBuf};
 
 use crate::FormatMode;
 use bumpalo::Bump;
-use roc_error_macros::{internal_error, user_error};
-use roc_fmt::def::fmt_defs;
-use roc_fmt::module::fmt_module;
-use roc_fmt::spaces::RemoveSpaces;
-use roc_fmt::{Ast, Buf};
-use roc_parse::{
+use broc_error_macros::{internal_error, user_error};
+use broc_fmt::def::fmt_defs;
+use broc_fmt::module::fmt_module;
+use broc_fmt::spaces::RemoveSpaces;
+use broc_fmt::{Ast, Buf};
+use broc_parse::{
     module::{self, module_defs},
     parser::{Parser, SyntaxError},
     state::State,
@@ -28,7 +28,7 @@ fn flatten_directories(files: std::vec::Vec<PathBuf>) -> std::vec::Vec<PathBuf> 
                                 let file_path = file.path();
                                 if file_path.is_dir() {
                                     to_flatten.push(file_path);
-                                } else if is_roc_file(&file_path) {
+                                } else if is_broc_file(&file_path) {
                                     files.push(file_path);
                                 }
                             }
@@ -46,7 +46,7 @@ fn flatten_directories(files: std::vec::Vec<PathBuf>) -> std::vec::Vec<PathBuf> 
                     error
                 ),
             }
-        } else if is_roc_file(&path) {
+        } else if is_broc_file(&path) {
             files.push(path);
         }
     }
@@ -54,8 +54,8 @@ fn flatten_directories(files: std::vec::Vec<PathBuf>) -> std::vec::Vec<PathBuf> 
     files
 }
 
-fn is_roc_file(path: &Path) -> bool {
-    matches!(path.extension().and_then(OsStr::to_str), Some("roc"))
+fn is_broc_file(path: &Path) -> bool {
+    matches!(path.extension().and_then(OsStr::to_str), Some("broc"))
 }
 
 pub fn format(files: std::vec::Vec<PathBuf>, mode: FormatMode) -> Result<(), String> {
@@ -74,7 +74,7 @@ pub fn format(files: std::vec::Vec<PathBuf>, mode: FormatMode) -> Result<(), Str
 
         let reparsed_ast = arena.alloc(parse_all(&arena, buf.as_str()).unwrap_or_else(|e| {
             let mut fail_file = file.clone();
-            fail_file.set_extension("roc-format-failed");
+            fail_file.set_extension("broc-format-failed");
             std::fs::write(&fail_file, buf.as_str()).unwrap();
             internal_error!(
                 "Formatting bug; formatted code isn't valid\n\n\
@@ -95,15 +95,15 @@ pub fn format(files: std::vec::Vec<PathBuf>, mode: FormatMode) -> Result<(), Str
         // TODO: fix PartialEq impl on ast types
         if format!("{:?}", ast_normalized) != format!("{:?}", reparsed_ast_normalized) {
             let mut fail_file = file.clone();
-            fail_file.set_extension("roc-format-failed");
+            fail_file.set_extension("broc-format-failed");
             std::fs::write(&fail_file, buf.as_str()).unwrap();
 
             let mut before_file = file.clone();
-            before_file.set_extension("roc-format-failed-ast-before");
+            before_file.set_extension("broc-format-failed-ast-before");
             std::fs::write(&before_file, &format!("{:#?}\n", ast_normalized)).unwrap();
 
             let mut after_file = file.clone();
-            after_file.set_extension("roc-format-failed-ast-after");
+            after_file.set_extension("broc-format-failed-ast-after");
             std::fs::write(&after_file, &format!("{:#?}\n", reparsed_ast_normalized)).unwrap();
 
             internal_error!(
@@ -120,11 +120,11 @@ pub fn format(files: std::vec::Vec<PathBuf>, mode: FormatMode) -> Result<(), Str
         fmt_all(&mut reformatted_buf, reparsed_ast);
         if buf.as_str() != reformatted_buf.as_str() {
             let mut unstable_1_file = file.clone();
-            unstable_1_file.set_extension("roc-format-unstable-1");
+            unstable_1_file.set_extension("broc-format-unstable-1");
             std::fs::write(&unstable_1_file, buf.as_str()).unwrap();
 
             let mut unstable_2_file = file.clone();
-            unstable_2_file.set_extension("roc-format-unstable-2");
+            unstable_2_file.set_extension("broc-format-unstable-2");
             std::fs::write(&unstable_2_file, reformatted_buf.as_str()).unwrap();
 
             internal_error!(

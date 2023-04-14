@@ -1,8 +1,8 @@
 //! Traversals over the can ast.
 
-use roc_module::{ident::Lowercase, symbol::Symbol};
-use roc_region::all::{Loc, Region};
-use roc_types::{subs::Variable, types::MemberImpl};
+use broc_module::{ident::Lowercase, symbol::Symbol};
+use broc_region::all::{Loc, Region};
+use broc_types::{subs::Variable, types::MemberImpl};
 
 use crate::{
     abilities::AbilitiesStore,

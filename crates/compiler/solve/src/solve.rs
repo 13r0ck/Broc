@@ -9,35 +9,35 @@ use crate::specialize::{
     compact_lambda_sets_of_vars, AwaitingSpecializations, CompactionResult, DerivedEnv, SolvePhase,
 };
 use bumpalo::Bump;
-use roc_can::abilities::{AbilitiesStore, MemberSpecializationInfo};
-use roc_can::constraint::Constraint::{self, *};
-use roc_can::constraint::{Constraints, Cycle, LetConstraint, OpportunisticResolve, TypeOrVar};
-use roc_can::expected::{Expected, PExpected};
-use roc_can::expr::PendingDerives;
-use roc_can::module::ExposedByModule;
-use roc_collections::all::MutMap;
-use roc_collections::soa::{Index, Slice};
-use roc_debug_flags::dbg_do;
+use broc_can::abilities::{AbilitiesStore, MemberSpecializationInfo};
+use broc_can::constraint::Constraint::{self, *};
+use broc_can::constraint::{Constraints, Cycle, LetConstraint, OpportunisticResolve, TypeOrVar};
+use broc_can::expected::{Expected, PExpected};
+use broc_can::expr::PendingDerives;
+use broc_can::module::ExposedByModule;
+use broc_collections::all::MutMap;
+use broc_collections::soa::{Index, Slice};
+use broc_debug_flags::dbg_do;
 #[cfg(debug_assertions)]
-use roc_debug_flags::ROC_VERIFY_RIGID_LET_GENERALIZED;
-use roc_derive::SharedDerivedModule;
-use roc_error_macros::internal_error;
-use roc_module::ident::TagName;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_problem::can::CycleEntry;
-use roc_region::all::Loc;
-use roc_solve_problem::TypeError;
-use roc_types::subs::{
+use broc_debug_flags::ROC_VERIFY_RIGID_LET_GENERALIZED;
+use broc_derive::SharedDerivedModule;
+use broc_error_macros::internal_error;
+use broc_module::ident::TagName;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_problem::can::CycleEntry;
+use broc_region::all::Loc;
+use broc_solve_problem::TypeError;
+use broc_types::subs::{
     self, AliasVariables, Content, Descriptor, FlatType, GetSubsSlice, LambdaSet, Mark,
     OptVariable, Rank, RecordFields, Subs, SubsSlice, TagExt, TupleElems, UlsOfVar, UnionLabels,
     UnionLambdas, UnionTags, Variable, VariableSubsSlice,
 };
-use roc_types::types::{
+use broc_types::types::{
     gather_fields_unsorted_iter, gather_tuple_elems_unsorted_iter, AliasKind, AliasShared,
     Category, ExtImplicitOpenness, OptAbleVar, Polarity, Reason, RecordField, Type, TypeExtension,
     TypeTag, Types, Uls,
 };
-use roc_unify::unify::{
+use broc_unify::unify::{
     unify, unify_introduced_ability_specialization, Env as UEnv, Mode, Obligated,
     SpecializationLsetCollector, Unified::*,
 };
@@ -92,7 +92,7 @@ use roc_unify::unify::{
 // Ranks are used to limit the number of type variables considered for generalization. Only those inside
 // of the let (so those used in inferring the type of `\x -> x`) are considered.
 
-use roc_types::types::Alias;
+use broc_types::types::Alias;
 
 #[derive(Debug, Clone, Copy)]
 struct DelayedAliasVariables {
@@ -912,7 +912,7 @@ fn solve(
 
                 copy
             }
-            Eq(roc_can::constraint::Eq(type_index, expectation_index, category_index, region)) => {
+            Eq(broc_can::constraint::Eq(type_index, expectation_index, category_index, region)) => {
                 let category = &constraints.categories[category_index.index()];
 
                 let actual = either_type_index_to_var(
@@ -1338,7 +1338,7 @@ fn solve(
             IncludesTag(index) => {
                 let includes_tag = &constraints.includes_tags[index.index()];
 
-                let roc_can::constraint::IncludesTag {
+                let broc_can::constraint::IncludesTag {
                     type_index,
                     tag_name,
                     types,
@@ -1452,7 +1452,7 @@ fn solve(
 
                 let (real_var, real_region, branches_var, category_and_expected) = match eq {
                     Ok(eq) => {
-                        let roc_can::constraint::Eq(real_var, expected, category, real_region) =
+                        let broc_can::constraint::Eq(real_var, expected, category, real_region) =
                             constraints.eq[eq.index()];
                         let expected = &constraints.expectations[expected.index()];
 
@@ -1464,7 +1464,7 @@ fn solve(
                         )
                     }
                     Err(peq) => {
-                        let roc_can::constraint::PatternEq(
+                        let broc_can::constraint::PatternEq(
                             real_var,
                             expected,
                             category,
@@ -1640,7 +1640,7 @@ fn solve(
                 let sketched_rows = constraints.sketched_rows[sketched_rows.index()].clone();
 
                 if should_check_exhaustiveness {
-                    use roc_can::exhaustive::{check, ExhaustiveSummary};
+                    use broc_can::exhaustive::{check, ExhaustiveSummary};
 
                     // If the condition type likely comes from an positive-position value (e.g. a
                     // literal or a return type), rather than an input position, we employ the
@@ -1737,7 +1737,7 @@ fn solve(
                 let symbols = &constraints.loc_symbols[def_names.indices()];
 
                 // If the type of a symbol is not a function, that's an error.
-                // Roc is strict, so only functions can be mutually recursive.
+                // Broc is strict, so only functions can be mutually recursive.
                 let any_is_bad = {
                     use Content::*;
 
@@ -1988,7 +1988,7 @@ fn close_pattern_matched_tag_unions(subs: &mut Subs, var: Variable) {
                         }
                         other => internal_error!(
                             "not a tag union: {:?}",
-                            roc_types::subs::SubsFmtContent(other, subs)
+                            broc_types::subs::SubsFmtContent(other, subs)
                         ),
                     }
                 }
@@ -2276,7 +2276,7 @@ impl LocalDefVarsVec<(Symbol, Loc<Variable>)> {
         types: &mut Types,
         aliases: &mut Aliases,
         subs: &mut Subs,
-        def_types_slice: roc_can::constraint::DefTypes,
+        def_types_slice: broc_can::constraint::DefTypes,
     ) -> Self {
         let type_indices_slice = &constraints.type_slices[def_types_slice.types.indices()];
         let loc_symbols_slice = &constraints.loc_symbols[def_types_slice.loc_symbols.indices()];
@@ -2663,7 +2663,7 @@ fn type_to_variable<'a>(
                     AmbientFunctionPolicy::NoFunction => {
                         debug_assert!(is_alias_lambda_set_arg);
                         // To be filled in during delayed type alias instantiation
-                        roc_types::subs::Variable::NULL
+                        broc_types::subs::Variable::NULL
                     }
                     AmbientFunctionPolicy::Function(var) => var,
                 };
@@ -2721,7 +2721,7 @@ fn type_to_variable<'a>(
 
                 debug_assert!(ext_slice.len() <= 1);
                 let temp_ext_var = match ext_slice.into_iter().next() {
-                    None => roc_types::subs::Variable::EMPTY_RECORD,
+                    None => broc_types::subs::Variable::EMPTY_RECORD,
                     Some(ext) => helper!(ext),
                 };
 
@@ -2760,7 +2760,7 @@ fn type_to_variable<'a>(
 
                 debug_assert!(ext_slice.len() <= 1);
                 let temp_ext_var = match ext_slice.into_iter().next() {
-                    None => roc_types::subs::Variable::EMPTY_TUPLE,
+                    None => broc_types::subs::Variable::EMPTY_TUPLE,
                     Some(ext) => helper!(ext),
                 };
 
@@ -2808,10 +2808,10 @@ fn type_to_variable<'a>(
                         let var = helper!(ext);
                         TagExt::from_can(var, ext_openness)
                     }
-                    None => TagExt::Any(roc_types::subs::Variable::EMPTY_TAG_UNION),
+                    None => TagExt::Any(broc_types::subs::Variable::EMPTY_TAG_UNION),
                 };
 
-                let (it, ext) = roc_types::types::gather_tags_unsorted_iter(
+                let (it, ext) = broc_types::types::gather_tags_unsorted_iter(
                     subs,
                     UnionTags::default(),
                     temp_ext,
@@ -2972,7 +2972,7 @@ fn type_to_variable<'a>(
                     infer_ext_in_output_variables,
                 } = types[shared];
 
-                debug_assert!(roc_types::subs::Variable::get_reserved(symbol).is_none());
+                debug_assert!(broc_types::subs::Variable::get_reserved(symbol).is_none());
 
                 let type_arguments = types.get_type_arguments(typ_index);
 
@@ -3024,7 +3024,7 @@ fn type_to_variable<'a>(
                 };
 
                 let alias_variable = if let Symbol::RESULT_RESULT = symbol {
-                    roc_result_to_var(subs, rank, pools, arena, types, actual, &mut stack)
+                    broc_result_to_var(subs, rank, pools, arena, types, actual, &mut stack)
                 } else {
                     helper!(actual)
                 };
@@ -3203,7 +3203,7 @@ fn type_to_variable<'a>(
 }
 
 #[inline(always)]
-fn roc_result_to_var(
+fn broc_result_to_var(
     subs: &mut Subs,
     rank: Rank,
     pools: &mut Pools,
@@ -3555,7 +3555,7 @@ fn type_to_union_tags(
                 TagExt::from_can(temp_ext_var, ext_openness)
             };
             let (it, ext) =
-                roc_types::types::gather_tags_unsorted_iter(subs, UnionTags::default(), temp_ext)
+                broc_types::types::gather_tags_unsorted_iter(subs, UnionTags::default(), temp_ext)
                     .expect("extension var could not be seen as tag union");
 
             tag_vars.extend(it.map(|(n, v)| (n.clone(), v)));
@@ -3799,8 +3799,8 @@ fn adjust_rank_content(
     group_rank: Rank,
     content: &Content,
 ) -> Rank {
-    use roc_types::subs::Content::*;
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::Content::*;
+    use broc_types::subs::FlatType::*;
 
     match content {
         FlexVar(_) | RigidVar(_) | FlexAbleVar(_, _) | RigidAbleVar(_, _) | Error => group_rank,
@@ -3853,7 +3853,7 @@ fn adjust_rank_content(
                     // inside a lambda set but not on the left or right of an arrow, and records should not
                     // force de-generalization in such cases.
                     //
-                    // See https://github.com/roc-lang/roc/issues/3641 for a longer discussion and
+                    // See https://github.com/roc-lang/broc/issues/3641 for a longer discussion and
                     // example.
                     group_rank
                 }
@@ -4024,7 +4024,7 @@ fn adjust_rank_content(
             }
 
             // from elm-compiler: THEORY: anything in the real_var would be Rank::toplevel()
-            // this theory is not true in Roc! aliases of function types capture the closure var
+            // this theory is not true in Broc! aliases of function types capture the closure var
             rank = rank.max(adjust_rank(
                 subs, young_mark, visit_mark, group_rank, *real_var,
             ));
@@ -4176,8 +4176,8 @@ fn deep_copy_var_help(
     initial_source: Variable,
     initial_copy: Variable,
 ) -> Variable {
-    use roc_types::subs::Content::*;
-    use roc_types::subs::FlatType::*;
+    use broc_types::subs::Content::*;
+    use broc_types::subs::FlatType::*;
 
     struct DeepCopyVarWork {
         source: Variable,
@@ -4450,7 +4450,7 @@ fn deep_copy_uls_precondition(subs: &Subs, original_var: Variable, new_var: Vari
                 Content::FlexAbleVar(..) | Content::RigidAbleVar(..)
             ),
             "var in unspecialized lamba set is not bound to an ability, it is {:?}",
-            roc_types::subs::SubsFmtContent(content, subs)
+            broc_types::subs::SubsFmtContent(content, subs)
         );
         debug_assert!(
             original_var != new_var,

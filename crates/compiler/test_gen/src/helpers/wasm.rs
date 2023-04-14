@@ -1,15 +1,15 @@
 use super::RefCount;
 use crate::helpers::from_wasm32_memory::FromWasm32Memory;
 use bumpalo::Bump;
-use roc_collections::all::MutSet;
-use roc_gen_wasm::wasm32_result::Wasm32Result;
-use roc_gen_wasm::DEBUG_SETTINGS;
-use roc_load::{ExecutionMode, LoadConfig, Threading};
-use roc_packaging::cache::RocCacheDir;
-use roc_reporting::report::DEFAULT_PALETTE_HTML;
-use roc_std::RocStr;
-use roc_wasm_interp::{wasi, ImportDispatcher, Instance, WasiDispatcher};
-use roc_wasm_module::{Export, ExportType, Value, WasmModule};
+use broc_collections::all::MutSet;
+use broc_gen_wasm::wasm32_result::Wasm32Result;
+use broc_gen_wasm::DEBUG_SETTINGS;
+use broc_load::{ExecutionMode, LoadConfig, Threading};
+use broc_packaging::cache::BrocCacheDir;
+use broc_reporting::report::DEFAULT_PALETTE_HTML;
+use broc_std::BrocStr;
+use broc_wasm_interp::{wasi, ImportDispatcher, Instance, WasiDispatcher};
+use broc_wasm_module::{Export, ExportType, Value, WasmModule};
 use std::marker::PhantomData;
 use std::path::PathBuf;
 
@@ -37,9 +37,9 @@ fn promote_expr_to_module(src: &str) -> String {
 }
 
 fn write_final_wasm() -> bool {
-    use roc_debug_flags::dbg_do;
+    use broc_debug_flags::dbg_do;
 
-    dbg_do!(roc_debug_flags::ROC_WRITE_FINAL_WASM, {
+    dbg_do!(broc_debug_flags::ROC_WRITE_FINAL_WASM, {
         return true;
     });
 
@@ -56,7 +56,7 @@ pub fn compile_to_wasm_bytes<'a, T: Wasm32Result>(
     println!("Loading test host {}", host_bytes_path!());
 
     let compiled_bytes =
-        compile_roc_to_wasm_bytes(arena, platform_bytes, src, test_wrapper_type_info);
+        compile_broc_to_wasm_bytes(arena, platform_bytes, src, test_wrapper_type_info);
 
     if write_final_wasm() {
         let build_dir_hash = crate::helpers::src_hash(src);
@@ -66,13 +66,13 @@ pub fn compile_to_wasm_bytes<'a, T: Wasm32Result>(
     compiled_bytes
 }
 
-fn compile_roc_to_wasm_bytes<'a, T: Wasm32Result>(
+fn compile_broc_to_wasm_bytes<'a, T: Wasm32Result>(
     arena: &'a bumpalo::Bump,
     host_bytes: &[u8],
     src: &str,
     _test_wrapper_type_info: PhantomData<T>,
 ) -> Vec<u8> {
-    let filename = PathBuf::from("Test.roc");
+    let filename = PathBuf::from("Test.broc");
     let src_dir = PathBuf::from("fake/test/path");
 
     let module_src;
@@ -87,24 +87,24 @@ fn compile_roc_to_wasm_bytes<'a, T: Wasm32Result>(
     }
 
     let load_config = LoadConfig {
-        target_info: roc_target::TargetInfo::default_wasm32(),
-        render: roc_reporting::report::RenderTarget::ColorTerminal,
+        target_info: broc_target::TargetInfo::default_wasm32(),
+        render: broc_reporting::report::RenderTarget::ColorTerminal,
         palette: DEFAULT_PALETTE_HTML,
         threading: Threading::Single,
         exec_mode: ExecutionMode::Executable,
     };
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
         filename,
         module_src,
         src_dir,
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         load_config,
     );
 
     let loaded = loaded.expect("failed to load module");
 
-    use roc_load::MonomorphizedModule;
+    use broc_load::MonomorphizedModule;
     let MonomorphizedModule {
         module_id,
         procedures,
@@ -122,14 +122,14 @@ fn compile_roc_to_wasm_bytes<'a, T: Wasm32Result>(
         .copied()
         .collect::<MutSet<_>>();
 
-    let env = roc_gen_wasm::Env {
+    let env = broc_gen_wasm::Env {
         arena,
         module_id,
         exposed_to_host,
-        stack_bytes: roc_gen_wasm::Env::DEFAULT_STACK_BYTES,
+        stack_bytes: broc_gen_wasm::Env::DEFAULT_STACK_BYTES,
     };
 
-    let host_module = roc_gen_wasm::parse_host(env.arena, host_bytes).unwrap_or_else(|e| {
+    let host_module = broc_gen_wasm::parse_host(env.arena, host_bytes).unwrap_or_else(|e| {
         panic!(
             "I ran into a problem with the host object file, {} at offset 0x{:x}:\n{}",
             host_bytes_path!(),
@@ -138,7 +138,7 @@ fn compile_roc_to_wasm_bytes<'a, T: Wasm32Result>(
         )
     });
 
-    let (mut module, mut called_fns, main_fn_index) = roc_gen_wasm::build_app_module(
+    let (mut module, mut called_fns, main_fn_index) = broc_gen_wasm::build_app_module(
         &env,
         &mut layout_interner,
         &mut interns,
@@ -201,10 +201,10 @@ impl<'a> ImportDispatcher for TestDispatcher<'a> {
         } else if module_name == "env" && function_name == "send_panic_msg_to_rust" {
             let msg_ptr = arguments[0].expect_i32().unwrap();
             let tag = arguments[1].expect_i32().unwrap();
-            let roc_msg = RocStr::decode(memory, msg_ptr as _);
+            let broc_msg = BrocStr::decode(memory, msg_ptr as _);
             let msg = match tag {
-                0 => format!(r#"Roc failed with message: "{}""#, roc_msg),
-                1 => format!(r#"User crash with message: "{}""#, roc_msg),
+                0 => format!(r#"Broc failed with message: "{}""#, broc_msg),
+                1 => format!(r#"User crash with message: "{}""#, broc_msg),
                 tag => format!(r#"Got an invald panic tag: "{}""#, tag),
             };
             panic!("{}", msg)
@@ -242,7 +242,7 @@ where
     let dispatcher = TestDispatcher {
         wasi: wasi::WasiDispatcher::default(),
     };
-    let is_debug_mode = roc_debug_flags::dbg_set!(roc_debug_flags::ROC_LOG_WASM_INTERP);
+    let is_debug_mode = broc_debug_flags::dbg_set!(broc_debug_flags::ROC_LOG_WASM_INTERP);
     let mut inst = Instance::for_module(&arena, &module, dispatcher, is_debug_mode)?;
     let opt_value = inst.call_export(test_wrapper_name, [])?;
     let addr_value = opt_value.ok_or("No return address from Wasm test")?;
@@ -271,7 +271,7 @@ where
     let dispatcher = TestDispatcher {
         wasi: wasi::WasiDispatcher::default(),
     };
-    let is_debug_mode = roc_debug_flags::dbg_set!(roc_debug_flags::ROC_LOG_WASM_INTERP);
+    let is_debug_mode = broc_debug_flags::dbg_set!(broc_debug_flags::ROC_LOG_WASM_INTERP);
     let mut inst = Instance::for_module(&arena, &module, dispatcher, is_debug_mode)?;
 
     // Allocate a vector in the test host that refcounts will be copied into

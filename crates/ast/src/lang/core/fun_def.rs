@@ -2,8 +2,8 @@ use crate::{
     lang::rigids::Rigids,
     mem_pool::{pool::NodeId, pool_vec::PoolVec, shallow_clone::ShallowClone},
 };
-use roc_module::symbol::Symbol;
-use roc_types::subs::Variable;
+use broc_module::symbol::Symbol;
+use broc_types::subs::Variable;
 
 use super::{
     expr::expr2::ExprId,

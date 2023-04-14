@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use roc_collections::MutMap;
-use roc_module::symbol::{Interns, ModuleId};
-use roc_region::all::LineInfo;
-use roc_solve_problem::TypeError;
+use broc_collections::MutMap;
+use broc_module::symbol::{Interns, ModuleId};
+use broc_region::all::LineInfo;
+use broc_solve_problem::TypeError;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Problems {
@@ -55,11 +55,11 @@ pub fn report_problems(
     total_problems: usize,
     sources: &MutMap<ModuleId, (PathBuf, Box<str>)>,
     interns: &Interns,
-    can_problems: &mut MutMap<ModuleId, Vec<roc_problem::can::Problem>>,
+    can_problems: &mut MutMap<ModuleId, Vec<broc_problem::can::Problem>>,
     type_problems: &mut MutMap<ModuleId, Vec<TypeError>>,
 ) -> Problems {
-    use crate::report::{can_problem, type_problem, Report, RocDocAllocator, DEFAULT_PALETTE};
-    use roc_problem::Severity::*;
+    use crate::report::{can_problem, type_problem, Report, BrocDocAllocator, DEFAULT_PALETTE};
+    use broc_problem::Severity::*;
     let palette = DEFAULT_PALETTE;
 
     // This will often over-allocate total memory, but it means we definitely
@@ -76,7 +76,7 @@ pub fn report_problems(
         let lines = LineInfo::new(&src_lines.join("\n"));
 
         // Report parsing and canonicalization problems
-        let alloc = RocDocAllocator::new(&src_lines, *home, interns);
+        let alloc = BrocDocAllocator::new(&src_lines, *home, interns);
 
         let problems = can_problems.remove(home).unwrap_or_default();
 

@@ -53,7 +53,7 @@ size_t *alloc_ptr_to_rc_ptr(void *ptr, unsigned int alignment)
 
 //--------------------------
 
-void *roc_alloc(size_t size, unsigned int alignment)
+void *broc_alloc(size_t size, unsigned int alignment)
 {
     void *allocated = malloc(size);
 
@@ -71,12 +71,12 @@ void *roc_alloc(size_t size, unsigned int alignment)
 #if ENABLE_PRINTF
     if (!allocated)
     {
-        fprintf(stderr, "roc_alloc failed\n");
+        fprintf(stderr, "broc_alloc failed\n");
         exit(1);
     }
     else
     {
-        printf("roc_alloc allocated %d bytes with alignment %d at %p\n", size, alignment, allocated);
+        printf("broc_alloc allocated %d bytes with alignment %d at %p\n", size, alignment, allocated);
     }
 #endif
     return allocated;
@@ -84,11 +84,11 @@ void *roc_alloc(size_t size, unsigned int alignment)
 
 //--------------------------
 
-void *roc_realloc(void *ptr, size_t new_size, size_t old_size,
+void *broc_realloc(void *ptr, size_t new_size, size_t old_size,
                   unsigned int alignment)
 {
 #if ENABLE_PRINTF
-    printf("roc_realloc reallocated %p from %d to %d with alignment %zd\n",
+    printf("broc_realloc reallocated %p from %d to %d with alignment %zd\n",
            ptr, old_size, new_size, alignment);
 #endif
     return realloc(ptr, new_size);
@@ -96,7 +96,7 @@ void *roc_realloc(void *ptr, size_t new_size, size_t old_size,
 
 //--------------------------
 
-void roc_dealloc(void *ptr, unsigned int alignment)
+void broc_dealloc(void *ptr, unsigned int alignment)
 {
     if (rc_pointers)
     {
@@ -117,7 +117,7 @@ void roc_dealloc(void *ptr, unsigned int alignment)
     }
 
 #if ENABLE_PRINTF
-    printf("roc_dealloc deallocated %p with alignment %zd\n", ptr, alignment);
+    printf("broc_dealloc deallocated %p with alignment %zd\n", ptr, alignment);
 #endif
     free(ptr);
 }
@@ -126,7 +126,7 @@ void roc_dealloc(void *ptr, unsigned int alignment)
 
 extern void send_panic_msg_to_rust(void* msg, uint32_t tag_id);
 
-void roc_panic(void* msg, unsigned int tag_id)
+void broc_panic(void* msg, unsigned int tag_id)
 {
     send_panic_msg_to_rust(msg, tag_id);
     exit(101);
@@ -134,14 +134,14 @@ void roc_panic(void* msg, unsigned int tag_id)
 
 //--------------------------
 
-void roc_memcpy(void *dest, const void *src, size_t n)
+void broc_memcpy(void *dest, const void *src, size_t n)
 {
     memcpy(dest, src, n);
 }
 
 //--------------------------
 
-void *roc_memset(void *str, int c, size_t n)
+void *broc_memset(void *str, int c, size_t n)
 {
     return memset(str, c, n);
 }

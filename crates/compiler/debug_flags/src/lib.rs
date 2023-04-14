@@ -1,4 +1,4 @@
-//! Flags for debugging the Roc compiler.
+//! Flags for debugging the Broc compiler.
 //!
 //! Lists environment variable flags that can be enabled for verbose debugging features in debug
 //! builds of the compiler.

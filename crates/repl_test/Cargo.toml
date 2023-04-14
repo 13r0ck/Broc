@@ -1,6 +1,6 @@
 [package]
 name = "repl_test"
-description = "Tests the roc REPL."
+description = "Tests the broc REPL."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,13 +8,13 @@ license.workspace = true
 version.workspace = true
 
 [build-dependencies]
-roc_cli = { path = "../cli" }
+broc_cli = { path = "../cli" }
 
 [dev-dependencies]
-roc_build = { path = "../compiler/build" }
-roc_repl_cli = { path = "../repl_cli" }
-roc_test_utils = { path = "../test_utils" }
-roc_wasm_interp = { path = "../wasm_interp" }
+broc_build = { path = "../compiler/build" }
+broc_repl_cli = { path = "../repl_cli" }
+broc_test_utils = { path = "../test_utils" }
+broc_wasm_interp = { path = "../wasm_interp" }
 
 bumpalo.workspace = true
 indoc.workspace = true
@@ -22,14 +22,14 @@ strip-ansi-escapes.workspace = true
 
 [features]
 default = ["target-aarch64", "target-x86_64", "target-wasm32"]
-target-aarch64 = ["roc_build/target-aarch64", "roc_repl_cli/target-aarch64"]
-target-arm = ["roc_build/target-arm", "roc_repl_cli/target-arm"]
-target-wasm32 = ["roc_build/target-wasm32", "roc_repl_cli/target-wasm32"]
-target-x86 = ["roc_build/target-x86", "roc_repl_cli/target-x86"]
-target-x86_64 = ["roc_build/target-x86_64", "roc_repl_cli/target-x86_64"]
+target-aarch64 = ["broc_build/target-aarch64", "broc_repl_cli/target-aarch64"]
+target-arm = ["broc_build/target-arm", "broc_repl_cli/target-arm"]
+target-wasm32 = ["broc_build/target-wasm32", "broc_repl_cli/target-wasm32"]
+target-x86 = ["broc_build/target-x86", "broc_repl_cli/target-x86"]
+target-x86_64 = ["broc_build/target-x86_64", "broc_repl_cli/target-x86_64"]
 wasm = ["target-wasm32"]
 
 target-all = ["target-aarch64", "target-arm", "target-x86", "target-x86_64", "target-wasm32"]
 
 [package.metadata.cargo-udeps.ignore]
-development = ["roc_wasm_interp"]
+development = ["broc_wasm_interp"]

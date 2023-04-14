@@ -13,7 +13,7 @@ TL;DR: lambda sets are resolved by unifying their ambient arrow types in a “bo
 
 In this section I’ll explain how lambda sets and specialization lambda sets work today, mostly from the ground-up. I’ll gloss over a few details and assume an understanding of type unification. The background will leave us with a direct presentation of the current specialization lambda set unification algorithm, and its limitation.
 
-Lambda sets are a technique Roc uses for static dispatch of closures. For example,
+Lambda sets are a technique Broc uses for static dispatch of closures. For example,
 
 ```jsx
 id1 = \x -> x
@@ -32,7 +32,7 @@ f = if True then id1 else id2
 ^ f : a -[[id1, id2]] -> a
 ```
 
-The syntax `-[[id1]]->` can be read as “a function that dispatches to `id1`". Then the arrow `-[[id1, id2]]->` then is “a function that dispatches to `id1`, or `id2`". The tag union `[id1, id2]` can contain payloads to represent the captures of `id1` and `id2`; however, the implications of that are out of scope for this discussion, see [Folkert’s great explanation](https://github.com/roc-lang/roc/pull/2307#discussion_r777042512) for more information. During compile-time, Roc would attach a run-time examinable tag to the value in each branch of the `f` expression body, representing whether to dispatch to `id1` or `id2`. Whenever `f` is dispatched, that tag is examined to determine exactly which function should be dispatched to. This is “**defunctionalization**”.
+The syntax `-[[id1]]->` can be read as “a function that dispatches to `id1`". Then the arrow `-[[id1, id2]]->` then is “a function that dispatches to `id1`, or `id2`". The tag union `[id1, id2]` can contain payloads to represent the captures of `id1` and `id2`; however, the implications of that are out of scope for this discussion, see [Folkert’s great explanation](https://github.com/roc-lang/broc/pull/2307#discussion_r777042512) for more information. During compile-time, Broc would attach a run-time examinable tag to the value in each branch of the `f` expression body, representing whether to dispatch to `id1` or `id2`. Whenever `f` is dispatched, that tag is examined to determine exactly which function should be dispatched to. This is “**defunctionalization**”.
 
 In the presence of [abilities](https://docs.google.com/document/d/1kUh53p1Du3fWP_jZp-sdqwb5C9DuS43YJwXHg1NzETY/edit), lambda sets get more complicated. Now, I can write something like
 
@@ -88,7 +88,7 @@ hashThunk = \@Foo {} -> \{} -> 1
 f (@Foo {})
 ```
 
-The unification trace for the call `f (@Foo {})` proceeds as follows. I use `'tN`, where `N` is a number, to represent fresh unbound type variables. Since `f` is a generalized type, `a'` is the fresh type “based on `a`" created for a particular usage of `f`.
+The unification trace for the call `f (@Foo {})` pbroceeds as follows. I use `'tN`, where `N` is a number, to represent fresh unbound type variables. Since `f` is a generalized type, `a'` is the fresh type “based on `a`" created for a particular usage of `f`.
 
 ```text
   typeof f
@@ -158,7 +158,7 @@ Suppose we have the call
 (f (@Fo {})) (@Go {})
 ```
 
-With the present specialization technique, unification proceeds as follows:
+With the present specialization technique, unification pbroceeds as follows:
 
 ```text
 == solve (f (@Fo {})) ==
@@ -198,7 +198,7 @@ So where did we go wrong? Well, our problem is that we never saw that `b'` and `
 
 I’ll now explain the best way I’ve thought of for us to solve this problem. If you see a better way, please let me know! I’m not sure I love this solution, but I do like it a lot more than some other naive approaches.
 
-Okay, so first we’ll enumerate some terminology, and the exact algorithm. Then we’ll illustrate the algorithm with some examples; my hope is this will help explain why it must proceed in the way it does. We’ll see that the algorithm depends on a few key invariants; I’ll discuss them and their consequences along the way. Finally, we’ll discuss a couple details regarding the algorithm not directly related to its operation, but important to recognize. I hope then, you will tell me where I have gone wrong, or where you see a better opportunity to do things.
+Okay, so first we’ll enumerate some terminology, and the exact algorithm. Then we’ll illustrate the algorithm with some examples; my hope is this will help explain why it must pbroceed in the way it does. We’ll see that the algorithm depends on a few key invariants; I’ll discuss them and their consequences along the way. Finally, we’ll discuss a couple details regarding the algorithm not directly related to its operation, but important to recognize. I hope then, you will tell me where I have gone wrong, or where you see a better opportunity to do things.
 
 ### The algorithm
 
@@ -301,7 +301,7 @@ With our algorithm, the call
 (f (@Fo {})) (@Go {})
 ```
 
-has unification proceed as follows:
+has unification pbroceed as follows:
 
 ```text
 == solve (f (@Fo {})) ==
@@ -544,7 +544,7 @@ In fact, to us, detecting these cases is straightforward - such nonsense program
 
 How do we make this a type error? A couple options have been considered, but we haven’t settled on anything.
 
-1. One approach, suggested by Richard, is to sort abilities into strongly-connected components and see if there is any zig-zag chain of member signatures in a SCC where an ability-bound type variable doesn’t escape through the front or back. We can observe two things: (1) such SCCs can only exist within a single module because Roc doesn’t have (source-level) circular dependencies and (2) we only need to examine pairs of functions have at least one type variable only appearing on one side of an arrow. That means the worst case performance of this analysis is quadratic in the number of ability members in a module. The downside of this approach is that it would reject some uses of abilities that can be resolved and code-generated by the compiler.
+1. One approach, suggested by Richard, is to sort abilities into strongly-connected components and see if there is any zig-zag chain of member signatures in a SCC where an ability-bound type variable doesn’t escape through the front or back. We can observe two things: (1) such SCCs can only exist within a single module because Broc doesn’t have (source-level) circular dependencies and (2) we only need to examine pairs of functions have at least one type variable only appearing on one side of an arrow. That means the worst case performance of this analysis is quadratic in the number of ability members in a module. The downside of this approach is that it would reject some uses of abilities that can be resolved and code-generated by the compiler.
 2. Another approach is to check whether generalized variables in a let-bound definition’s body escaped out the front or back of the let-generalized definition’s type (and **not** in a lambda set, for the reasons described above). This admits some programs that would be illegal with the other analysis but can’t be performed until typechecking. As for performance, note that new unbound type variables in a body can only be introduced by using a let-generalized symbol that is polymorphic. Those variables would need to be checked, so the performance of this approach on a per-module basis is linear in the number of let-generalized symbols used in the module (assuming the number of generalized variables returned is a constant factor).
 
 ### A Property that’s lost, and how we can hold on to it

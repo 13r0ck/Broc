@@ -1,11 +1,11 @@
 use crate::procedure::References;
 use crate::scope::Scope;
 use bumpalo::Bump;
-use roc_collections::{MutMap, VecSet};
-use roc_module::ident::{Ident, Lowercase, ModuleName};
-use roc_module::symbol::{IdentIdsByModule, ModuleId, ModuleIds, Symbol};
-use roc_problem::can::{Problem, RuntimeError};
-use roc_region::all::{Loc, Region};
+use broc_collections::{MutMap, VecSet};
+use broc_module::ident::{Ident, Lowercase, ModuleName};
+use broc_module::symbol::{IdentIdsByModule, ModuleId, ModuleIds, Symbol};
+use broc_problem::can::{Problem, RuntimeError};
+use broc_region::all::{Loc, Region};
 
 /// The canonicalization environment for a particular module.
 pub struct Env<'a> {

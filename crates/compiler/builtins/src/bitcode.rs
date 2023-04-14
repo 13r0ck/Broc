@@ -1,5 +1,5 @@
-use roc_module::symbol::Symbol;
-use roc_target::TargetInfo;
+use broc_module::symbol::Symbol;
+use broc_target::TargetInfo;
 use std::ops::Index;
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -31,7 +31,7 @@ impl FloatWidth {
 
         // NOTE: this must never use mem::size_of, because that returns the size
         // for the target of *the compiler itself* (e.g. this Rust code), not what
-        // the compiler is targeting (e.g. what the Roc code will be compiled to).
+        // the compiler is targeting (e.g. what the Broc code will be compiled to).
         match self {
             F32 => 4,
             F64 => 8,
@@ -39,12 +39,12 @@ impl FloatWidth {
     }
 
     pub const fn alignment_bytes(&self, target_info: TargetInfo) -> u32 {
-        use roc_target::Architecture::*;
+        use broc_target::Architecture::*;
         use FloatWidth::*;
 
         // NOTE: this must never use mem::align_of, because that returns the alignment
         // for the target of *the compiler itself* (e.g. this Rust code), not what
-        // the compiler is targeting (e.g. what the Roc code will be compiled to).
+        // the compiler is targeting (e.g. what the Broc code will be compiled to).
         match self {
             F32 => 4,
             F64 => match target_info.architecture {
@@ -90,7 +90,7 @@ impl IntWidth {
 
         // NOTE: this must never use mem::size_of, because that returns the size
         // for the target of *the compiler itself* (e.g. this Rust code), not what
-        // the compiler is targeting (e.g. what the Roc code will be compiled to).
+        // the compiler is targeting (e.g. what the Broc code will be compiled to).
         match self {
             U8 | I8 => 1,
             U16 | I16 => 2,
@@ -101,12 +101,12 @@ impl IntWidth {
     }
 
     pub const fn alignment_bytes(&self, target_info: TargetInfo) -> u32 {
-        use roc_target::Architecture;
+        use broc_target::Architecture;
         use IntWidth::*;
 
         // NOTE: this must never use mem::align_of, because that returns the alignment
         // for the target of *the compiler itself* (e.g. this Rust code), not what
-        // the compiler is targeting (e.g. what the Roc code will be compiled to).
+        // the compiler is targeting (e.g. what the Broc code will be compiled to).
         match self {
             U8 | I8 => 1,
             U16 | I16 => 2,
@@ -257,135 +257,135 @@ macro_rules! int_intrinsic {
     }};
 }
 
-pub const NUM_SIN: IntrinsicName = float_intrinsic!("roc_builtins.num.sin");
-pub const NUM_COS: IntrinsicName = float_intrinsic!("roc_builtins.num.cos");
-pub const NUM_ASIN: IntrinsicName = float_intrinsic!("roc_builtins.num.asin");
-pub const NUM_ACOS: IntrinsicName = float_intrinsic!("roc_builtins.num.acos");
-pub const NUM_ATAN: IntrinsicName = float_intrinsic!("roc_builtins.num.atan");
-pub const NUM_IS_FINITE: IntrinsicName = float_intrinsic!("roc_builtins.num.is_finite");
-pub const NUM_LOG: IntrinsicName = float_intrinsic!("roc_builtins.num.log");
-pub const NUM_POW: IntrinsicName = float_intrinsic!("roc_builtins.num.pow");
+pub const NUM_SIN: IntrinsicName = float_intrinsic!("broc_builtins.num.sin");
+pub const NUM_COS: IntrinsicName = float_intrinsic!("broc_builtins.num.cos");
+pub const NUM_ASIN: IntrinsicName = float_intrinsic!("broc_builtins.num.asin");
+pub const NUM_ACOS: IntrinsicName = float_intrinsic!("broc_builtins.num.acos");
+pub const NUM_ATAN: IntrinsicName = float_intrinsic!("broc_builtins.num.atan");
+pub const NUM_IS_FINITE: IntrinsicName = float_intrinsic!("broc_builtins.num.is_finite");
+pub const NUM_LOG: IntrinsicName = float_intrinsic!("broc_builtins.num.log");
+pub const NUM_POW: IntrinsicName = float_intrinsic!("broc_builtins.num.pow");
 
-pub const NUM_POW_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.pow_int");
-pub const NUM_DIV_CEIL: IntrinsicName = int_intrinsic!("roc_builtins.num.div_ceil");
-pub const NUM_ROUND_F32: IntrinsicName = int_intrinsic!("roc_builtins.num.round_f32");
-pub const NUM_ROUND_F64: IntrinsicName = int_intrinsic!("roc_builtins.num.round_f64");
+pub const NUM_POW_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.pow_int");
+pub const NUM_DIV_CEIL: IntrinsicName = int_intrinsic!("broc_builtins.num.div_ceil");
+pub const NUM_ROUND_F32: IntrinsicName = int_intrinsic!("broc_builtins.num.round_f32");
+pub const NUM_ROUND_F64: IntrinsicName = int_intrinsic!("broc_builtins.num.round_f64");
 
-pub const NUM_ADD_OR_PANIC_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.add_or_panic");
-pub const NUM_ADD_SATURATED_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.add_saturated");
-pub const NUM_ADD_CHECKED_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.add_with_overflow");
+pub const NUM_ADD_OR_PANIC_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.add_or_panic");
+pub const NUM_ADD_SATURATED_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.add_saturated");
+pub const NUM_ADD_CHECKED_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.add_with_overflow");
 pub const NUM_ADD_CHECKED_FLOAT: IntrinsicName =
-    float_intrinsic!("roc_builtins.num.add_with_overflow");
+    float_intrinsic!("broc_builtins.num.add_with_overflow");
 
-pub const NUM_SUB_OR_PANIC_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.sub_or_panic");
-pub const NUM_SUB_SATURATED_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.sub_saturated");
-pub const NUM_SUB_CHECKED_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.sub_with_overflow");
+pub const NUM_SUB_OR_PANIC_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.sub_or_panic");
+pub const NUM_SUB_SATURATED_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.sub_saturated");
+pub const NUM_SUB_CHECKED_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.sub_with_overflow");
 pub const NUM_SUB_CHECKED_FLOAT: IntrinsicName =
-    float_intrinsic!("roc_builtins.num.sub_with_overflow");
+    float_intrinsic!("broc_builtins.num.sub_with_overflow");
 
-pub const NUM_MUL_OR_PANIC_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.mul_or_panic");
-pub const NUM_MUL_SATURATED_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.mul_saturated");
-pub const NUM_MUL_CHECKED_INT: IntrinsicName = int_intrinsic!("roc_builtins.num.mul_with_overflow");
+pub const NUM_MUL_OR_PANIC_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.mul_or_panic");
+pub const NUM_MUL_SATURATED_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.mul_saturated");
+pub const NUM_MUL_CHECKED_INT: IntrinsicName = int_intrinsic!("broc_builtins.num.mul_with_overflow");
 pub const NUM_MUL_CHECKED_FLOAT: IntrinsicName =
-    float_intrinsic!("roc_builtins.num.mul_with_overflow");
+    float_intrinsic!("broc_builtins.num.mul_with_overflow");
 
 pub const NUM_COUNT_LEADING_ZERO_BITS: IntrinsicName =
-    int_intrinsic!("roc_builtins.num.count_leading_zero_bits");
+    int_intrinsic!("broc_builtins.num.count_leading_zero_bits");
 pub const NUM_COUNT_TRAILING_ZERO_BITS: IntrinsicName =
-    int_intrinsic!("roc_builtins.num.count_trailing_zero_bits");
-pub const NUM_COUNT_ONE_BITS: IntrinsicName = int_intrinsic!("roc_builtins.num.count_one_bits");
+    int_intrinsic!("broc_builtins.num.count_trailing_zero_bits");
+pub const NUM_COUNT_ONE_BITS: IntrinsicName = int_intrinsic!("broc_builtins.num.count_one_bits");
 
-pub const NUM_BYTES_TO_U16: &str = "roc_builtins.num.bytes_to_u16";
-pub const NUM_BYTES_TO_U32: &str = "roc_builtins.num.bytes_to_u32";
-pub const NUM_BYTES_TO_U64: &str = "roc_builtins.num.bytes_to_u64";
-pub const NUM_BYTES_TO_U128: &str = "roc_builtins.num.bytes_to_u128";
+pub const NUM_BYTES_TO_U16: &str = "broc_builtins.num.bytes_to_u16";
+pub const NUM_BYTES_TO_U32: &str = "broc_builtins.num.bytes_to_u32";
+pub const NUM_BYTES_TO_U64: &str = "broc_builtins.num.bytes_to_u64";
+pub const NUM_BYTES_TO_U128: &str = "broc_builtins.num.bytes_to_u128";
 
-pub const STR_INIT: &str = "roc_builtins.str.init";
-pub const STR_COUNT_SEGMENTS: &str = "roc_builtins.str.count_segments";
-pub const STR_CONCAT: &str = "roc_builtins.str.concat";
-pub const STR_JOIN_WITH: &str = "roc_builtins.str.joinWith";
-pub const STR_SPLIT: &str = "roc_builtins.str.str_split";
-pub const STR_TO_SCALARS: &str = "roc_builtins.str.to_scalars";
-pub const STR_COUNT_GRAPEHEME_CLUSTERS: &str = "roc_builtins.str.count_grapheme_clusters";
-pub const STR_COUNT_UTF8_BYTES: &str = "roc_builtins.str.count_utf8_bytes";
-pub const STR_CAPACITY: &str = "roc_builtins.str.capacity";
-pub const STR_STARTS_WITH: &str = "roc_builtins.str.starts_with";
-pub const STR_STARTS_WITH_SCALAR: &str = "roc_builtins.str.starts_with_scalar";
-pub const STR_ENDS_WITH: &str = "roc_builtins.str.ends_with";
-pub const STR_NUMBER_OF_BYTES: &str = "roc_builtins.str.number_of_bytes";
-pub const STR_FROM_INT: IntrinsicName = int_intrinsic!("roc_builtins.str.from_int");
-pub const STR_FROM_FLOAT: IntrinsicName = float_intrinsic!("roc_builtins.str.from_float");
-pub const STR_TO_INT: IntrinsicName = int_intrinsic!("roc_builtins.str.to_int");
-pub const STR_TO_FLOAT: IntrinsicName = float_intrinsic!("roc_builtins.str.to_float");
-pub const STR_TO_DECIMAL: &str = "roc_builtins.str.to_decimal";
-pub const STR_EQUAL: &str = "roc_builtins.str.equal";
-pub const STR_SUBSTRING_UNSAFE: &str = "roc_builtins.str.substring_unsafe";
-pub const STR_TO_UTF8: &str = "roc_builtins.str.to_utf8";
-pub const STR_FROM_UTF8_RANGE: &str = "roc_builtins.str.from_utf8_range";
-pub const STR_REPEAT: &str = "roc_builtins.str.repeat";
-pub const STR_TRIM: &str = "roc_builtins.str.trim";
-pub const STR_TRIM_LEFT: &str = "roc_builtins.str.trim_left";
-pub const STR_TRIM_RIGHT: &str = "roc_builtins.str.trim_right";
-pub const STR_GET_UNSAFE: &str = "roc_builtins.str.get_unsafe";
-pub const STR_RESERVE: &str = "roc_builtins.str.reserve";
-pub const STR_APPEND_SCALAR: &str = "roc_builtins.str.append_scalar";
-pub const STR_GET_SCALAR_UNSAFE: &str = "roc_builtins.str.get_scalar_unsafe";
-pub const STR_CLONE_TO: &str = "roc_builtins.str.clone_to";
-pub const STR_WITH_CAPACITY: &str = "roc_builtins.str.with_capacity";
-pub const STR_GRAPHEMES: &str = "roc_builtins.str.graphemes";
-pub const STR_REFCOUNT_PTR: &str = "roc_builtins.str.refcount_ptr";
-pub const STR_RELEASE_EXCESS_CAPACITY: &str = "roc_builtins.str.release_excess_capacity";
+pub const STR_INIT: &str = "broc_builtins.str.init";
+pub const STR_COUNT_SEGMENTS: &str = "broc_builtins.str.count_segments";
+pub const STR_CONCAT: &str = "broc_builtins.str.concat";
+pub const STR_JOIN_WITH: &str = "broc_builtins.str.joinWith";
+pub const STR_SPLIT: &str = "broc_builtins.str.str_split";
+pub const STR_TO_SCALARS: &str = "broc_builtins.str.to_scalars";
+pub const STR_COUNT_GRAPEHEME_CLUSTERS: &str = "broc_builtins.str.count_grapheme_clusters";
+pub const STR_COUNT_UTF8_BYTES: &str = "broc_builtins.str.count_utf8_bytes";
+pub const STR_CAPACITY: &str = "broc_builtins.str.capacity";
+pub const STR_STARTS_WITH: &str = "broc_builtins.str.starts_with";
+pub const STR_STARTS_WITH_SCALAR: &str = "broc_builtins.str.starts_with_scalar";
+pub const STR_ENDS_WITH: &str = "broc_builtins.str.ends_with";
+pub const STR_NUMBER_OF_BYTES: &str = "broc_builtins.str.number_of_bytes";
+pub const STR_FROM_INT: IntrinsicName = int_intrinsic!("broc_builtins.str.from_int");
+pub const STR_FROM_FLOAT: IntrinsicName = float_intrinsic!("broc_builtins.str.from_float");
+pub const STR_TO_INT: IntrinsicName = int_intrinsic!("broc_builtins.str.to_int");
+pub const STR_TO_FLOAT: IntrinsicName = float_intrinsic!("broc_builtins.str.to_float");
+pub const STR_TO_DECIMAL: &str = "broc_builtins.str.to_decimal";
+pub const STR_EQUAL: &str = "broc_builtins.str.equal";
+pub const STR_SUBSTRING_UNSAFE: &str = "broc_builtins.str.substring_unsafe";
+pub const STR_TO_UTF8: &str = "broc_builtins.str.to_utf8";
+pub const STR_FROM_UTF8_RANGE: &str = "broc_builtins.str.from_utf8_range";
+pub const STR_REPEAT: &str = "broc_builtins.str.repeat";
+pub const STR_TRIM: &str = "broc_builtins.str.trim";
+pub const STR_TRIM_LEFT: &str = "broc_builtins.str.trim_left";
+pub const STR_TRIM_RIGHT: &str = "broc_builtins.str.trim_right";
+pub const STR_GET_UNSAFE: &str = "broc_builtins.str.get_unsafe";
+pub const STR_RESERVE: &str = "broc_builtins.str.reserve";
+pub const STR_APPEND_SCALAR: &str = "broc_builtins.str.append_scalar";
+pub const STR_GET_SCALAR_UNSAFE: &str = "broc_builtins.str.get_scalar_unsafe";
+pub const STR_CLONE_TO: &str = "broc_builtins.str.clone_to";
+pub const STR_WITH_CAPACITY: &str = "broc_builtins.str.with_capacity";
+pub const STR_GRAPHEMES: &str = "broc_builtins.str.graphemes";
+pub const STR_REFCOUNT_PTR: &str = "broc_builtins.str.refcount_ptr";
+pub const STR_RELEASE_EXCESS_CAPACITY: &str = "broc_builtins.str.release_excess_capacity";
 
-pub const LIST_MAP: &str = "roc_builtins.list.map";
-pub const LIST_MAP2: &str = "roc_builtins.list.map2";
-pub const LIST_MAP3: &str = "roc_builtins.list.map3";
-pub const LIST_MAP4: &str = "roc_builtins.list.map4";
-pub const LIST_SUBLIST: &str = "roc_builtins.list.sublist";
-pub const LIST_DROP_AT: &str = "roc_builtins.list.drop_at";
-pub const LIST_SWAP: &str = "roc_builtins.list.swap";
-pub const LIST_WITH_CAPACITY: &str = "roc_builtins.list.with_capacity";
-pub const LIST_SORT_WITH: &str = "roc_builtins.list.sort_with";
-pub const LIST_CONCAT: &str = "roc_builtins.list.concat";
-pub const LIST_REPLACE: &str = "roc_builtins.list.replace";
-pub const LIST_REPLACE_IN_PLACE: &str = "roc_builtins.list.replace_in_place";
-pub const LIST_IS_UNIQUE: &str = "roc_builtins.list.is_unique";
-pub const LIST_PREPEND: &str = "roc_builtins.list.prepend";
-pub const LIST_APPEND_UNSAFE: &str = "roc_builtins.list.append_unsafe";
-pub const LIST_RESERVE: &str = "roc_builtins.list.reserve";
-pub const LIST_CAPACITY: &str = "roc_builtins.list.capacity";
-pub const LIST_REFCOUNT_PTR: &str = "roc_builtins.list.refcount_ptr";
-pub const LIST_RELEASE_EXCESS_CAPACITY: &str = "roc_builtins.list.release_excess_capacity";
+pub const LIST_MAP: &str = "broc_builtins.list.map";
+pub const LIST_MAP2: &str = "broc_builtins.list.map2";
+pub const LIST_MAP3: &str = "broc_builtins.list.map3";
+pub const LIST_MAP4: &str = "broc_builtins.list.map4";
+pub const LIST_SUBLIST: &str = "broc_builtins.list.sublist";
+pub const LIST_DROP_AT: &str = "broc_builtins.list.drop_at";
+pub const LIST_SWAP: &str = "broc_builtins.list.swap";
+pub const LIST_WITH_CAPACITY: &str = "broc_builtins.list.with_capacity";
+pub const LIST_SORT_WITH: &str = "broc_builtins.list.sort_with";
+pub const LIST_CONCAT: &str = "broc_builtins.list.concat";
+pub const LIST_REPLACE: &str = "broc_builtins.list.replace";
+pub const LIST_REPLACE_IN_PLACE: &str = "broc_builtins.list.replace_in_place";
+pub const LIST_IS_UNIQUE: &str = "broc_builtins.list.is_unique";
+pub const LIST_PREPEND: &str = "broc_builtins.list.prepend";
+pub const LIST_APPEND_UNSAFE: &str = "broc_builtins.list.append_unsafe";
+pub const LIST_RESERVE: &str = "broc_builtins.list.reserve";
+pub const LIST_CAPACITY: &str = "broc_builtins.list.capacity";
+pub const LIST_REFCOUNT_PTR: &str = "broc_builtins.list.refcount_ptr";
+pub const LIST_RELEASE_EXCESS_CAPACITY: &str = "broc_builtins.list.release_excess_capacity";
 
-pub const DEC_FROM_STR: &str = "roc_builtins.dec.from_str";
-pub const DEC_TO_STR: &str = "roc_builtins.dec.to_str";
-pub const DEC_FROM_F64: &str = "roc_builtins.dec.from_f64";
-pub const DEC_EQ: &str = "roc_builtins.dec.eq";
-pub const DEC_NEQ: &str = "roc_builtins.dec.neq";
-pub const DEC_NEGATE: &str = "roc_builtins.dec.negate";
-pub const DEC_MUL_WITH_OVERFLOW: &str = "roc_builtins.dec.mul_with_overflow";
-pub const DEC_DIV: &str = "roc_builtins.dec.div";
-pub const DEC_ADD_WITH_OVERFLOW: &str = "roc_builtins.dec.add_with_overflow";
-pub const DEC_ADD_OR_PANIC: &str = "roc_builtins.dec.add_or_panic";
-pub const DEC_ADD_SATURATED: &str = "roc_builtins.dec.add_saturated";
-pub const DEC_SUB_WITH_OVERFLOW: &str = "roc_builtins.dec.sub_with_overflow";
-pub const DEC_SUB_OR_PANIC: &str = "roc_builtins.dec.sub_or_panic";
-pub const DEC_SUB_SATURATED: &str = "roc_builtins.dec.sub_saturated";
-pub const DEC_MUL_OR_PANIC: &str = "roc_builtins.dec.mul_or_panic";
-pub const DEC_MUL_SATURATED: &str = "roc_builtins.dec.mul_saturated";
+pub const DEC_FROM_STR: &str = "broc_builtins.dec.from_str";
+pub const DEC_TO_STR: &str = "broc_builtins.dec.to_str";
+pub const DEC_FROM_F64: &str = "broc_builtins.dec.from_f64";
+pub const DEC_EQ: &str = "broc_builtins.dec.eq";
+pub const DEC_NEQ: &str = "broc_builtins.dec.neq";
+pub const DEC_NEGATE: &str = "broc_builtins.dec.negate";
+pub const DEC_MUL_WITH_OVERFLOW: &str = "broc_builtins.dec.mul_with_overflow";
+pub const DEC_DIV: &str = "broc_builtins.dec.div";
+pub const DEC_ADD_WITH_OVERFLOW: &str = "broc_builtins.dec.add_with_overflow";
+pub const DEC_ADD_OR_PANIC: &str = "broc_builtins.dec.add_or_panic";
+pub const DEC_ADD_SATURATED: &str = "broc_builtins.dec.add_saturated";
+pub const DEC_SUB_WITH_OVERFLOW: &str = "broc_builtins.dec.sub_with_overflow";
+pub const DEC_SUB_OR_PANIC: &str = "broc_builtins.dec.sub_or_panic";
+pub const DEC_SUB_SATURATED: &str = "broc_builtins.dec.sub_saturated";
+pub const DEC_MUL_OR_PANIC: &str = "broc_builtins.dec.mul_or_panic";
+pub const DEC_MUL_SATURATED: &str = "broc_builtins.dec.mul_saturated";
 
-pub const UTILS_TEST_PANIC: &str = "roc_builtins.utils.test_panic";
-pub const UTILS_ALLOCATE_WITH_REFCOUNT: &str = "roc_builtins.utils.allocate_with_refcount";
-pub const UTILS_INCREF: &str = "roc_builtins.utils.incref";
-pub const UTILS_DECREF: &str = "roc_builtins.utils.decref";
-pub const UTILS_DECREF_CHECK_NULL: &str = "roc_builtins.utils.decref_check_null";
+pub const UTILS_TEST_PANIC: &str = "broc_builtins.utils.test_panic";
+pub const UTILS_ALLOCATE_WITH_REFCOUNT: &str = "broc_builtins.utils.allocate_with_refcount";
+pub const UTILS_INCREF: &str = "broc_builtins.utils.incref";
+pub const UTILS_DECREF: &str = "broc_builtins.utils.decref";
+pub const UTILS_DECREF_CHECK_NULL: &str = "broc_builtins.utils.decref_check_null";
 
 pub const UTILS_EXPECT_FAILED_START_SHARED_BUFFER: &str =
-    "roc_builtins.utils.expect_failed_start_shared_buffer";
+    "broc_builtins.utils.expect_failed_start_shared_buffer";
 pub const UTILS_EXPECT_FAILED_START_SHARED_FILE: &str =
-    "roc_builtins.utils.expect_failed_start_shared_file";
-pub const UTILS_EXPECT_READ_ENV_SHARED_BUFFER: &str = "roc_builtins.utils.read_env_shared_buffer";
-pub const NOTIFY_PARENT_EXPECT: &str = "roc_builtins.utils.notify_parent_expect";
-pub const NOTIFY_PARENT_DBG: &str = "roc_builtins.utils.notify_parent_dbg";
+    "broc_builtins.utils.expect_failed_start_shared_file";
+pub const UTILS_EXPECT_READ_ENV_SHARED_BUFFER: &str = "broc_builtins.utils.read_env_shared_buffer";
+pub const NOTIFY_PARENT_EXPECT: &str = "broc_builtins.utils.notify_parent_expect";
+pub const NOTIFY_PARENT_DBG: &str = "broc_builtins.utils.notify_parent_dbg";
 
 pub const UTILS_LONGJMP: &str = "longjmp";
 pub const UTILS_SETJMP: &str = "setjmp";
@@ -433,6 +433,6 @@ macro_rules! int_to_int_intrinsic {
 }
 
 pub const NUM_INT_TO_INT_CHECKING_MAX: IntToIntrinsicName =
-    int_to_int_intrinsic!("roc_builtins.num.int_to_", "_checking_max");
+    int_to_int_intrinsic!("broc_builtins.num.int_to_", "_checking_max");
 pub const NUM_INT_TO_INT_CHECKING_MAX_AND_MIN: IntToIntrinsicName =
-    int_to_int_intrinsic!("roc_builtins.num.int_to_", "_checking_max_and_min");
+    int_to_int_intrinsic!("broc_builtins.num.int_to_", "_checking_max_and_min");

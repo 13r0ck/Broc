@@ -3,11 +3,11 @@ use crate::types::{
     name_type_var, AbilitySet, AliasKind, ErrorType, ExtImplicitOpenness, Polarity, RecordField,
     RecordFieldsError, TupleElemsError, TypeExt, Uls,
 };
-use roc_collections::all::{FnvMap, ImMap, ImSet, MutSet, SendMap};
-use roc_collections::{VecMap, VecSet};
-use roc_error_macros::internal_error;
-use roc_module::ident::{Lowercase, TagName, Uppercase};
-use roc_module::symbol::{ModuleId, Symbol};
+use broc_collections::all::{FnvMap, ImMap, ImSet, MutSet, SendMap};
+use broc_collections::{VecMap, VecSet};
+use broc_error_macros::internal_error;
+use broc_module::ident::{Lowercase, TagName, Uppercase};
+use broc_module::symbol::{ModuleId, Symbol};
 use std::fmt;
 use std::iter::{once, Iterator, Map};
 
@@ -16,10 +16,10 @@ use crate::unification_table::{self, UnificationTable};
 // if your changes cause this number to go down, great!
 // please change it to the lower number.
 // if it went up, maybe check that the change is really required
-roc_error_macros::assert_sizeof_all!(Descriptor, 5 * 8 + 4);
-roc_error_macros::assert_sizeof_all!(FlatType, 3 * 8 + 4);
-roc_error_macros::assert_sizeof_all!(UnionTags, 12);
-roc_error_macros::assert_sizeof_all!(RecordFields, 2 * 8);
+broc_error_macros::assert_sizeof_all!(Descriptor, 5 * 8 + 4);
+broc_error_macros::assert_sizeof_all!(FlatType, 3 * 8 + 4);
+broc_error_macros::assert_sizeof_all!(UnionTags, 12);
+broc_error_macros::assert_sizeof_all!(RecordFields, 2 * 8);
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Mark(i32);
@@ -110,7 +110,7 @@ impl SubsHeader {
 #[derive(Clone, Copy)]
 struct SerializedTagName(SubsSlice<u8>);
 
-use roc_serialize::bytes;
+use broc_serialize::bytes;
 
 impl Subs {
     pub fn serialize(
@@ -2318,18 +2318,18 @@ impl From<Content> for Descriptor {
     }
 }
 
-roc_error_macros::assert_sizeof_all!(Content, 4 * 8);
-roc_error_macros::assert_sizeof_all!((Symbol, AliasVariables, Variable), 8 + 12 + 4);
-roc_error_macros::assert_sizeof_all!(AliasVariables, 12);
-roc_error_macros::assert_sizeof_all!(FlatType, 3 * 8 + 4);
-roc_error_macros::assert_sizeof_all!(LambdaSet, 3 * 8 + 4);
+broc_error_macros::assert_sizeof_all!(Content, 4 * 8);
+broc_error_macros::assert_sizeof_all!((Symbol, AliasVariables, Variable), 8 + 12 + 4);
+broc_error_macros::assert_sizeof_all!(AliasVariables, 12);
+broc_error_macros::assert_sizeof_all!(FlatType, 3 * 8 + 4);
+broc_error_macros::assert_sizeof_all!(LambdaSet, 3 * 8 + 4);
 
-roc_error_macros::assert_sizeof_aarch64!((Variable, Option<Lowercase>), 4 * 8);
-roc_error_macros::assert_sizeof_wasm!((Variable, Option<Lowercase>), 4 * 4);
-roc_error_macros::assert_sizeof_default!((Variable, Option<Lowercase>), 4 * 8);
+broc_error_macros::assert_sizeof_aarch64!((Variable, Option<Lowercase>), 4 * 8);
+broc_error_macros::assert_sizeof_wasm!((Variable, Option<Lowercase>), 4 * 4);
+broc_error_macros::assert_sizeof_default!((Variable, Option<Lowercase>), 4 * 8);
 
-roc_error_macros::assert_copyable!(Content);
-roc_error_macros::assert_copyable!(Descriptor);
+broc_error_macros::assert_copyable!(Content);
+broc_error_macros::assert_copyable!(Descriptor);
 
 #[derive(Clone, Copy, Debug)]
 pub enum Content {

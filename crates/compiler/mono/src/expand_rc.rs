@@ -7,7 +7,7 @@
 //        arena: &'a Bump,
 //        home: ModuleId,
 //        ident_ids: &'i mut IdentIds,
-//        procs: &mut MutMap<T, Proc<'a>>,
+//        pbrocs: &mut MutMap<T, Pbroc<'a>>,
 //    ) {
 //        use crate::expand_rc;
 //
@@ -27,13 +27,13 @@
 //            deferred,
 //        };
 //
-//        for (_, proc) in procs.iter_mut() {
-//            let b = expand_rc::expand_and_cancel_proc(
+//        for (_, pbroc) in pbrocs.iter_mut() {
+//            let b = expand_rc::expand_and_cancel_pbroc(
 //                &mut env,
-//                arena.alloc(proc.body.clone()),
-//                proc.args,
+//                arena.alloc(pbroc.body.clone()),
+//                pbroc.args,
 //            );
-//            proc.body = b.clone();
+//            pbroc.body = b.clone();
 //        }
 //    }
 use crate::ir::{BranchInfo, Expr, ModifyRc, Stmt};
@@ -41,8 +41,8 @@ use crate::layout::{Layout, UnionLayout};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
 // use linked_hash_map::LinkedHashMap;
-use roc_collections::all::MutMap;
-use roc_module::symbol::{IdentIds, ModuleId, Symbol};
+use broc_collections::all::MutMap;
+use broc_module::symbol::{IdentIds, ModuleId, Symbol};
 
 // This file is heavily inspired by the Perceus paper
 //
@@ -382,7 +382,7 @@ enum ConstructorLayout<T> {
     Unknown,
 }
 
-pub fn expand_and_cancel_proc<'a>(
+pub fn expand_and_cancel_pbroc<'a>(
     env: &mut Env<'a, '_>,
     stmt: &'a Stmt<'a>,
     arguments: &'a [(Layout<'a>, Symbol)],

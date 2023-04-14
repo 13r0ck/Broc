@@ -1,8 +1,8 @@
-use roc_module::{
+use broc_module::{
     ident::{Lowercase, TagName},
     symbol::Symbol,
 };
-use roc_types::subs::{Content, FlatType, GetSubsSlice, Subs, Variable};
+use broc_types::subs::{Content, FlatType, GetSubsSlice, Subs, Variable};
 
 use crate::{
     util::{check_derivable_ext_var, debug_name_record, debug_name_tag, debug_name_tuple},

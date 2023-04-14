@@ -1,6 +1,6 @@
 [package]
-name = "roc_code_markup"
-description = "Our own markup language for Roc code. Used by the editor and the docs."
+name = "broc_code_markup"
+description = "Our own markup language for Broc code. Used by the editor and the docs."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,9 +8,9 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_ast = { path = "../ast" }
-roc_module = { path = "../compiler/module" }
-roc_error_utils = { path = "../utils/error" }
+broc_ast = { path = "../ast" }
+broc_module = { path = "../compiler/module" }
+broc_error_utils = { path = "../utils/error" }
 
 palette.workspace = true
 

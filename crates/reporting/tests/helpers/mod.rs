@@ -1,24 +1,24 @@
 extern crate bumpalo;
 
 use self::bumpalo::Bump;
-use roc_can::abilities::AbilitiesStore;
-use roc_can::constraint::{Constraint, Constraints};
-use roc_can::env::Env;
-use roc_can::expected::Expected;
-use roc_can::expr::{canonicalize_expr, Expr, Output, PendingDerives};
-use roc_can::operator;
-use roc_can::scope::Scope;
-use roc_collections::all::{ImMap, MutMap, SendSet};
-use roc_constrain::expr::constrain_expr;
-use roc_derive::SharedDerivedModule;
-use roc_module::symbol::{IdentIds, Interns, ModuleId, ModuleIds};
-use roc_parse::parser::{SourceError, SyntaxError};
-use roc_problem::can::Problem;
-use roc_region::all::Loc;
-use roc_solve::solve::{self, Aliases};
-use roc_solve_problem::TypeError;
-use roc_types::subs::{Content, Subs, VarStore, Variable};
-use roc_types::types::Types;
+use broc_can::abilities::AbilitiesStore;
+use broc_can::constraint::{Constraint, Constraints};
+use broc_can::env::Env;
+use broc_can::expected::Expected;
+use broc_can::expr::{canonicalize_expr, Expr, Output, PendingDerives};
+use broc_can::operator;
+use broc_can::scope::Scope;
+use broc_collections::all::{ImMap, MutMap, SendSet};
+use broc_constrain::expr::constrain_expr;
+use broc_derive::SharedDerivedModule;
+use broc_module::symbol::{IdentIds, Interns, ModuleId, ModuleIds};
+use broc_parse::parser::{SourceError, SyntaxError};
+use broc_problem::can::Problem;
+use broc_region::all::Loc;
+use broc_solve::solve::{self, Aliases};
+use broc_solve_problem::TypeError;
+use broc_types::subs::{Content, Subs, VarStore, Variable};
+use broc_types::types::Types;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
@@ -130,7 +130,7 @@ pub fn can_expr_with<'a>(
     home: ModuleId,
     expr_str: &'a str,
 ) -> Result<CanExprOut, ParseErrOut<'a>> {
-    let loc_expr = match roc_parse::test_helpers::parse_loc_with(arena, expr_str) {
+    let loc_expr = match broc_parse::test_helpers::parse_loc_with(arena, expr_str) {
         Ok(e) => e,
         Err(fail) => {
             let interns = Interns::default();
@@ -179,7 +179,7 @@ pub fn can_expr_with<'a>(
     let constraint = constrain_expr(
         &mut types,
         &mut constraints,
-        &mut roc_constrain::expr::Env {
+        &mut broc_constrain::expr::Env {
             rigids: MutMap::default(),
             home,
             resolutions_to_make: vec![],

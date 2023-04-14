@@ -1,8 +1,8 @@
 use crate::target::{arch_str, target_zig_str};
 use libloading::{Error, Library};
-use roc_command_utils::{cargo, clang, get_lib_path, rustup, zig};
-use roc_error_macros::internal_error;
-use roc_mono::ir::OptLevel;
+use broc_command_utils::{cargo, clang, get_lib_path, rustup, zig};
+use broc_error_macros::internal_error;
+use broc_mono::ir::OptLevel;
 use std::collections::HashMap;
 use std::fs::DirEntry;
 use std::io;
@@ -12,19 +12,19 @@ use std::{env, fs};
 use target_lexicon::{Architecture, OperatingSystem, Triple};
 use wasi_libc_sys::{WASI_COMPILER_RT_PATH, WASI_LIBC_PATH};
 
-pub use roc_linker::LinkType;
+pub use broc_linker::LinkType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum LinkingStrategy {
     /// Compile app and host object files, then use a linker like lld or wasm-ld
     Legacy,
-    /// Compile app and host object files, then use the Roc surgical linker
+    /// Compile app and host object files, then use the Broc surgical linker
     Surgical,
     /// Initialise the backend from a host object file, then add the app to it. No linker needed.
     Additive,
 }
 
-/// input_paths can include the host as well as the app. e.g. &["host.o", "roc_app.o"]
+/// input_paths can include the host as well as the app. e.g. &["host.o", "broc_app.o"]
 pub fn link(
     target: &Triple,
     output_path: PathBuf,
@@ -54,12 +54,12 @@ pub fn link(
 
 /// Same format as the precompiled host filename, except with a file extension like ".o" or ".obj"
 pub fn legacy_host_filename(target: &Triple) -> Option<String> {
-    let os = roc_target::OperatingSystem::from(target.operating_system);
+    let os = broc_target::OperatingSystem::from(target.operating_system);
     let ext = os.object_file_ext();
 
     Some(
-        roc_linker::preprocessed_host_filename(target)?
-            .replace(roc_linker::PRECOMPILED_HOST_EXT, ext),
+        broc_linker::preprocessed_host_filename(target)?
+            .replace(broc_linker::PRECOMPILED_HOST_EXT, ext),
     )
 }
 
@@ -120,13 +120,13 @@ pub fn build_zig_host_native(
         .env("HOME", env_home);
 
     if let Some(shared_lib_path) = shared_lib_path {
-        // with LLVM, the builtins are already part of the roc app,
+        // with LLVM, the builtins are already part of the broc app,
         // but with the dev backend, they are missing. To minimize work,
         // we link them as part of the host executable
         zig_cmd.args([
             "build-exe",
             "-fPIE",
-            "-rdynamic", // make sure roc_alloc and friends are exposed
+            "-rdynamic", // make sure broc_alloc and friends are exposed
             shared_lib_path.to_str().unwrap(),
             builtins_host_path.to_str().unwrap(),
         ]);
@@ -371,7 +371,7 @@ pub fn build_zig_host_wasm32(
         "c",
         "-target",
         zig_target,
-        // "-femit-llvm-ir=/home/folkertdev/roc/roc/crates/cli_testing_examples/benchmarks/platform/host.ll",
+        // "-femit-llvm-ir=/home/folkertdev/broc/broc/crates/cli_testing_examples/benchmarks/platform/host.ll",
         "-fPIC",
         "--strip",
     ];
@@ -516,37 +516,37 @@ pub fn build_swift_host_native(
 pub fn rebuild_host(
     opt_level: OptLevel,
     target: &Triple,
-    platform_main_roc: &Path,
+    platform_main_broc: &Path,
     shared_lib_path: Option<&Path>,
 ) -> PathBuf {
-    let c_host_src = platform_main_roc.with_file_name("host.c");
-    let c_host_dest = platform_main_roc.with_file_name("c_host.o");
-    let zig_host_src = platform_main_roc.with_file_name("host.zig");
-    let rust_host_src = platform_main_roc.with_file_name("host.rs");
-    let rust_host_dest = platform_main_roc.with_file_name("rust_host.o");
-    let cargo_host_src = platform_main_roc.with_file_name("Cargo.toml");
-    let swift_host_src = platform_main_roc.with_file_name("host.swift");
-    let swift_host_header_src = platform_main_roc.with_file_name("host.h");
+    let c_host_src = platform_main_broc.with_file_name("host.c");
+    let c_host_dest = platform_main_broc.with_file_name("c_host.o");
+    let zig_host_src = platform_main_broc.with_file_name("host.zig");
+    let rust_host_src = platform_main_broc.with_file_name("host.rs");
+    let rust_host_dest = platform_main_broc.with_file_name("rust_host.o");
+    let cargo_host_src = platform_main_broc.with_file_name("Cargo.toml");
+    let swift_host_src = platform_main_broc.with_file_name("host.swift");
+    let swift_host_header_src = platform_main_broc.with_file_name("host.h");
 
-    let os = roc_target::OperatingSystem::from(target.operating_system);
+    let os = broc_target::OperatingSystem::from(target.operating_system);
     let executable_extension = match os {
-        roc_target::OperatingSystem::Windows => "exe",
-        roc_target::OperatingSystem::Unix => "",
-        roc_target::OperatingSystem::Wasi => "",
+        broc_target::OperatingSystem::Windows => "exe",
+        broc_target::OperatingSystem::Unix => "",
+        broc_target::OperatingSystem::Wasi => "",
     };
 
     let host_dest = if matches!(target.architecture, Architecture::Wasm32) {
         if matches!(opt_level, OptLevel::Development) {
-            platform_main_roc.with_extension("o")
+            platform_main_broc.with_extension("o")
         } else {
-            platform_main_roc.with_extension("bc")
+            platform_main_broc.with_extension("bc")
         }
     } else if shared_lib_path.is_some() {
-        platform_main_roc
+        platform_main_broc
             .with_file_name("dynhost")
             .with_extension(executable_extension)
     } else {
-        platform_main_roc.with_file_name(legacy_host_filename(target).unwrap())
+        platform_main_broc.with_file_name(legacy_host_filename(target).unwrap())
     };
 
     let env_path = env::var("PATH").unwrap_or_else(|_| "".to_string());
@@ -554,7 +554,7 @@ pub fn rebuild_host(
     let env_cpath = env::var("CPATH").unwrap_or_else(|_| "".to_string());
 
     let builtins_host_tempfile =
-        roc_bitcode::host_tempfile().expect("failed to write host builtins object to tempfile");
+        broc_bitcode::host_tempfile().expect("failed to write host builtins object to tempfile");
 
     if zig_host_src.exists() {
         // Compile host.zig
@@ -623,7 +623,7 @@ pub fn rebuild_host(
         run_build_command(zig_cmd, "host.zig", 0);
     } else if cargo_host_src.exists() {
         // Compile and link Cargo.toml, if it exists
-        let cargo_dir = platform_main_roc.parent().unwrap();
+        let cargo_dir = platform_main_broc.parent().unwrap();
 
         let mut cargo_cmd = if cfg!(windows) {
             // on windows, we need the nightly toolchain so we can use `-Z export-executable-symbols`
@@ -666,7 +666,7 @@ pub fn rebuild_host(
             exe_path.set_extension(executable_extension);
             if let Err(e) = std::fs::copy(&exe_path, &host_dest) {
                 panic!(
-                    "unable to copy {} => {}: {:?}\n\nIs the file used by another invocation of roc?",
+                    "unable to copy {} => {}: {:?}\n\nIs the file used by another invocation of broc?",
                     exe_path.display(),
                     host_dest.display(),
                     e,
@@ -936,12 +936,12 @@ fn link_linux(
     let architecture = format!("{}-linux-gnu", target.architecture);
 
     //    Command::new("cp")
-    //        .args(&[input_paths[0], "/home/folkertdev/roc/wasm/host.o"])
+    //        .args(&[input_paths[0], "/home/folkertdev/broc/wasm/host.o"])
     //        .output()
     //        .unwrap();
     //
     //    Command::new("cp")
-    //        .args(&[input_paths[1], "/home/folkertdev/roc/wasm/app.o"])
+    //        .args(&[input_paths[1], "/home/folkertdev/broc/wasm/app.o"])
     //        .output()
     //        .unwrap();
 
@@ -1118,7 +1118,7 @@ fn link_linux(
         // ld.lld requires this argument, and does not accept --arch
         // .args(&["-L/usr/lib/x86_64-linux-gnu"])
         .args([
-            // Libraries - see https://github.com/roc-lang/roc/pull/554#discussion_r496365925
+            // Libraries - see https://github.com/roc-lang/broc/pull/554#discussion_r496365925
             // for discussion and further references
             "-lc",
             "-lm",
@@ -1191,7 +1191,7 @@ fn link_macos(
         ld_command.arg(format!("-L{}/swift", sdk_path));
     };
 
-    let roc_link_flags = match env::var("ROC_LINK_FLAGS") {
+    let broc_link_flags = match env::var("ROC_LINK_FLAGS") {
         Ok(flags) => {
             println!("⚠️ CAUTION: The ROC_LINK_FLAGS environment variable is a temporary workaround, and will no longer do anything once surgical linking lands! If you're concerned about what this means for your use case, please ask about it on Zulip.");
 
@@ -1199,12 +1199,12 @@ fn link_macos(
         }
         Err(_) => "".to_string(),
     };
-    for roc_link_flag in roc_link_flags.split_whitespace() {
-        ld_command.arg(roc_link_flag);
+    for broc_link_flag in broc_link_flags.split_whitespace() {
+        ld_command.arg(broc_link_flag);
     }
 
     ld_command.args([
-        // Libraries - see https://github.com/roc-lang/roc/pull/554#discussion_r496392274
+        // Libraries - see https://github.com/roc-lang/broc/pull/554#discussion_r496392274
         // for discussion and further references
         "-lSystem",
         "-lresolv",
@@ -1229,7 +1229,7 @@ fn link_macos(
         "QuartzCore",
         // "-lrt", // TODO shouldn't we need this?
         // "-lc_nonshared", // TODO shouldn't we need this?
-        // "-lgcc", // TODO will eventually need compiler_rt from gcc or something - see https://github.com/roc-lang/roc/pull/554#discussion_r496370840
+        // "-lgcc", // TODO will eventually need compiler_rt from gcc or something - see https://github.com/roc-lang/broc/pull/554#discussion_r496370840
         "-framework",
         "Security",
         // Output
@@ -1299,7 +1299,7 @@ fn link_wasm32(
             "-O",
             "ReleaseSmall",
             // useful for debugging
-            // "-femit-llvm-ir=/home/folkertdev/roc/roc/crates/cli_testing_examples/benchmarks/platform/host.ll",
+            // "-femit-llvm-ir=/home/folkertdev/broc/broc/crates/cli_testing_examples/benchmarks/platform/host.ll",
         ])
         .spawn()?;
 
@@ -1366,7 +1366,7 @@ pub fn llvm_module_to_dylib(
     use inkwell::targets::{FileType, RelocMode};
 
     let dir = tempfile::tempdir().unwrap();
-    let filename = PathBuf::from("Test.roc");
+    let filename = PathBuf::from("Test.broc");
     let file_path = dir.path().join(filename);
     let mut app_o_file = file_path;
 
@@ -1403,7 +1403,7 @@ pub fn llvm_module_to_dylib(
     let path = dylib_path.as_path().to_str().unwrap();
 
     if matches!(target.architecture, Architecture::Aarch64(_)) {
-        // On AArch64 darwin machines, calling `ldopen` on Roc-generated libs from multiple threads
+        // On AArch64 darwin machines, calling `ldopen` on Broc-generated libs from multiple threads
         // sometimes fails with
         //   cannot dlopen until fork() handlers have completed
         // This may be due to codesigning. In any case, spinning until we are able to dlopen seems
@@ -1433,7 +1433,7 @@ pub fn preprocess_host_wasm32(host_input_path: &Path, preprocessed_host_path: &P
             (but seems to be an unofficial API)
     */
 
-    let builtins_host_tempfile = roc_bitcode::host_wasm_tempfile()
+    let builtins_host_tempfile = broc_bitcode::host_wasm_tempfile()
         .expect("failed to write host builtins object to tempfile");
 
     let mut zig_cmd = zig();

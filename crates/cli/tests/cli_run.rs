@@ -3,20 +3,20 @@ extern crate pretty_assertions;
 
 extern crate bumpalo;
 extern crate indoc;
-extern crate roc_collections;
-extern crate roc_load;
-extern crate roc_module;
+extern crate broc_collections;
+extern crate broc_load;
+extern crate broc_module;
 
 #[cfg(test)]
 mod cli_run {
     use cli_utils::helpers::{
         extract_valgrind_errors, file_path_from_root, fixture_file, fixtures_dir, known_bad_file,
-        run_cmd, run_roc, run_with_valgrind, strip_colors, Out, ValgrindError, ValgrindErrorXWhat,
+        run_cmd, run_broc, run_with_valgrind, strip_colors, Out, ValgrindError, ValgrindErrorXWhat,
     };
     use const_format::concatcp;
     use indoc::indoc;
-    use roc_cli::{CMD_BUILD, CMD_CHECK, CMD_DEV, CMD_FORMAT, CMD_RUN, CMD_TEST};
-    use roc_test_utils::assert_multiline_str_eq;
+    use broc_cli::{CMD_BUILD, CMD_CHECK, CMD_DEV, CMD_FORMAT, CMD_RUN, CMD_TEST};
+    use broc_test_utils::assert_multiline_str_eq;
     use serial_test::serial;
     use std::iter;
     use std::path::Path;
@@ -48,20 +48,20 @@ mod cli_run {
         Dev,
     }
 
-    const OPTIMIZE_FLAG: &str = concatcp!("--", roc_cli::FLAG_OPTIMIZE);
-    const LINKER_FLAG: &str = concatcp!("--", roc_cli::FLAG_LINKER);
-    const CHECK_FLAG: &str = concatcp!("--", roc_cli::FLAG_CHECK);
-    const PREBUILT_PLATFORM: &str = concatcp!("--", roc_cli::FLAG_PREBUILT, "=true");
+    const OPTIMIZE_FLAG: &str = concatcp!("--", broc_cli::FLAG_OPTIMIZE);
+    const LINKER_FLAG: &str = concatcp!("--", broc_cli::FLAG_LINKER);
+    const CHECK_FLAG: &str = concatcp!("--", broc_cli::FLAG_CHECK);
+    const PREBUILT_PLATFORM: &str = concatcp!("--", broc_cli::FLAG_PREBUILT, "=true");
     #[allow(dead_code)]
-    const TARGET_FLAG: &str = concatcp!("--", roc_cli::FLAG_TARGET);
+    const TARGET_FLAG: &str = concatcp!("--", broc_cli::FLAG_TARGET);
 
     #[derive(Debug)]
     enum CliMode {
-        Roc,      // buildAndRunIfNoErrors
-        RocBuild, // buildOnly
-        RocRun,   // buildAndRun
-        RocTest,
-        RocDev,
+        Broc,      // buildAndRunIfNoErrors
+        BrocBuild, // buildOnly
+        BrocRun,   // buildAndRun
+        BrocTest,
+        BrocDev,
     }
 
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
@@ -79,7 +79,7 @@ mod cli_run {
     }
 
     fn check_compile_error(file: &Path, flags: &[&str], expected: &str) {
-        let compile_out = run_roc(
+        let compile_out = run_broc(
             [CMD_CHECK, file.to_str().unwrap()].iter().chain(flags),
             &[],
             &[],
@@ -101,23 +101,23 @@ mod cli_run {
     }
 
     fn check_format_check_as_expected(file: &Path, expects_success_exit_code: bool) {
-        let out = run_roc([CMD_FORMAT, file.to_str().unwrap(), CHECK_FLAG], &[], &[]);
+        let out = run_broc([CMD_FORMAT, file.to_str().unwrap(), CHECK_FLAG], &[], &[]);
 
         assert_eq!(out.status.success(), expects_success_exit_code);
     }
 
-    fn run_roc_on_failure_is_panic<'a, I: IntoIterator<Item = &'a str>>(
+    fn run_broc_on_failure_is_panic<'a, I: IntoIterator<Item = &'a str>>(
         file: &'a Path,
         args: I,
         stdin: &[&str],
-        roc_app_args: &[String],
+        broc_app_args: &[String],
         env: &[(&str, &str)],
     ) -> Out {
-        let compile_out = run_roc_on(file, args, stdin, roc_app_args, env);
+        let compile_out = run_broc_on(file, args, stdin, broc_app_args, env);
 
         assert!(
             compile_out.status.success(),
-            "\n___________\nRoc command failed with status {:?}:\n\n  {} {}\n___________\n",
+            "\n___________\nBroc command failed with status {:?}:\n\n  {} {}\n___________\n",
             compile_out.status,
             compile_out.stdout,
             compile_out.stderr,
@@ -126,19 +126,19 @@ mod cli_run {
         compile_out
     }
 
-    fn run_roc_on<'a, I: IntoIterator<Item = &'a str>>(
+    fn run_broc_on<'a, I: IntoIterator<Item = &'a str>>(
         file: &'a Path,
         args: I,
         stdin: &[&str],
-        roc_app_args: &[String],
+        broc_app_args: &[String],
         env: &[(&str, &str)],
     ) -> Out {
-        let compile_out = run_roc(
+        let compile_out = run_broc(
             // converting these all to String avoids lifetime issues
             args.into_iter()
                 .map(|arg| arg.to_string())
                 .chain([file.to_str().unwrap().to_string(), "--".to_string()])
-                .chain(roc_app_args.iter().cloned()),
+                .chain(broc_app_args.iter().cloned()),
             stdin,
             env,
         );
@@ -152,7 +152,7 @@ mod cli_run {
 
         let is_reporting_runtime = stderr.starts_with("runtime: ") && stderr.ends_with("ms\n");
         if !(stderr.is_empty() || is_reporting_runtime) {
-            panic!("\n___________\nThe roc command:\n\n  {:?}\n\nhad unexpected stderr:\n\n  {}\n___________\n", compile_out.cmd_str, stderr);
+            panic!("\n___________\nThe broc command:\n\n  {:?}\n\nhad unexpected stderr:\n\n  {}\n___________\n", compile_out.cmd_str, stderr);
         }
 
         compile_out
@@ -164,7 +164,7 @@ mod cli_run {
         stdin: &[&str],
         executable_filename: &str,
         flags: &[&str],
-        roc_app_args: &[String],
+        broc_app_args: &[String],
         extra_env: &[(&str, &str)],
         expected_ending: &str,
         use_valgrind: UseValgrind,
@@ -180,17 +180,17 @@ mod cli_run {
         // TODO: expects don't currently work on windows
         let cli_commands = if cfg!(windows) {
             match test_cli_commands {
-                TestCliCommands::Many => vec![CliMode::RocBuild, CliMode::RocRun],
-                TestCliCommands::Run => vec![CliMode::RocRun],
+                TestCliCommands::Many => vec![CliMode::BrocBuild, CliMode::BrocRun],
+                TestCliCommands::Run => vec![CliMode::BrocRun],
                 TestCliCommands::Test => vec![],
                 TestCliCommands::Dev => vec![],
             }
         } else {
             match test_cli_commands {
-                TestCliCommands::Many => vec![CliMode::RocBuild, CliMode::RocRun, CliMode::Roc],
-                TestCliCommands::Run => vec![CliMode::Roc],
-                TestCliCommands::Test => vec![CliMode::RocTest],
-                TestCliCommands::Dev => vec![CliMode::RocDev],
+                TestCliCommands::Many => vec![CliMode::BrocBuild, CliMode::BrocRun, CliMode::Broc],
+                TestCliCommands::Run => vec![CliMode::Broc],
+                TestCliCommands::Test => vec![CliMode::BrocTest],
+                TestCliCommands::Dev => vec![CliMode::BrocDev],
             }
         };
 
@@ -207,8 +207,8 @@ mod cli_run {
             };
 
             let out = match cli_mode {
-                CliMode::RocBuild => {
-                    run_roc_on_failure_is_panic(
+                CliMode::BrocBuild => {
+                    run_broc_on_failure_is_panic(
                         file,
                         iter::once(CMD_BUILD).chain(flags.clone()),
                         &[],
@@ -222,7 +222,7 @@ mod cli_run {
                             .to_str()
                             .unwrap()
                             .to_string()];
-                        valgrind_args.extend(roc_app_args.iter().cloned());
+                        valgrind_args.extend(broc_app_args.iter().cloned());
                         let (valgrind_out, raw_xml) =
                             run_with_valgrind(stdin.iter().copied(), &valgrind_args);
                         if valgrind_out.status.success() {
@@ -264,40 +264,40 @@ mod cli_run {
                         run_cmd(
                             file.with_file_name(executable_filename).to_str().unwrap(),
                             stdin.iter().copied(),
-                            roc_app_args,
+                            broc_app_args,
                             extra_env.iter().copied(),
                         )
                     }
                 }
-                CliMode::Roc => {
-                    run_roc_on_failure_is_panic(file, flags.clone(), stdin, roc_app_args, extra_env)
+                CliMode::Broc => {
+                    run_broc_on_failure_is_panic(file, flags.clone(), stdin, broc_app_args, extra_env)
                 }
-                CliMode::RocRun => run_roc_on_failure_is_panic(
+                CliMode::BrocRun => run_broc_on_failure_is_panic(
                     file,
                     iter::once(CMD_RUN).chain(flags.clone()),
                     stdin,
-                    roc_app_args,
+                    broc_app_args,
                     extra_env,
                 ),
-                CliMode::RocTest => {
+                CliMode::BrocTest => {
                     // here failure is what we expect
 
-                    run_roc_on(
+                    run_broc_on(
                         file,
                         iter::once(CMD_TEST).chain(flags.clone()),
                         stdin,
-                        roc_app_args,
+                        broc_app_args,
                         extra_env,
                     )
                 }
-                CliMode::RocDev => {
+                CliMode::BrocDev => {
                     // here failure is what we expect
 
-                    run_roc_on(
+                    run_broc_on(
                         file,
                         iter::once(CMD_DEV).chain(flags.clone()),
                         stdin,
-                        roc_app_args,
+                        broc_app_args,
                         extra_env,
                     )
                 }
@@ -321,7 +321,7 @@ mod cli_run {
                 );
             }
 
-            if !out.status.success() && !matches!(cli_mode, CliMode::RocTest) {
+            if !out.status.success() && !matches!(cli_mode, CliMode::BrocTest) {
                 // We don't need stdout, Cargo prints it for us.
                 panic!(
                     "Example program exited with status {:?}\nstderr was:\n{:#?}",
@@ -331,24 +331,24 @@ mod cli_run {
         }
     }
 
-    // when you want to run `roc test` to execute `expect`s, perhaps on a library rather than an application.
-    fn test_roc_expect(dir_name: &str, roc_filename: &str) {
-        let path = file_path_from_root(dir_name, roc_filename);
-        let out = run_roc([CMD_TEST, path.to_str().unwrap()], &[], &[]);
+    // when you want to run `broc test` to execute `expect`s, perhaps on a library rather than an application.
+    fn test_broc_expect(dir_name: &str, broc_filename: &str) {
+        let path = file_path_from_root(dir_name, broc_filename);
+        let out = run_broc([CMD_TEST, path.to_str().unwrap()], &[], &[]);
         assert!(out.status.success());
     }
 
     // when you don't need args, stdin or extra_env
-    fn test_roc_app_slim(
+    fn test_broc_app_slim(
         dir_name: &str,
-        roc_filename: &str,
+        broc_filename: &str,
         executable_filename: &str,
         expected_ending: &str,
         use_valgrind: UseValgrind,
     ) {
-        test_roc_app(
+        test_broc_app(
             dir_name,
-            roc_filename,
+            broc_filename,
             executable_filename,
             &[],
             &[],
@@ -360,9 +360,9 @@ mod cli_run {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn test_roc_app(
+    fn test_broc_app(
         dir_name: &str,
-        roc_filename: &str,
+        broc_filename: &str,
         executable_filename: &str,
         stdin: &[&str],
         args: &[Arg],
@@ -371,13 +371,13 @@ mod cli_run {
         use_valgrind: UseValgrind,
         test_cli_commands: TestCliCommands,
     ) {
-        let file_name = file_path_from_root(dir_name, roc_filename);
-        let mut roc_app_args: Vec<String> = Vec::new();
+        let file_name = file_path_from_root(dir_name, broc_filename);
+        let mut broc_app_args: Vec<String> = Vec::new();
 
         for arg in args {
             match arg {
                 Arg::ExamplePath(file) => {
-                    roc_app_args.push(
+                    broc_app_args.push(
                         file_path_from_root(dir_name, file)
                             .to_str()
                             .unwrap()
@@ -385,7 +385,7 @@ mod cli_run {
                     );
                 }
                 Arg::PlainText(arg) => {
-                    roc_app_args.push(arg.to_string());
+                    broc_app_args.push(arg.to_string());
                 }
             }
         }
@@ -397,27 +397,27 @@ mod cli_run {
             "form" | "hello-gui" | "breakout" | "libhello" => {
                 // Since these require things the build system often doesn't have
                 // (e.g. GUIs open a window, Ruby needs ruby installed, WASM needs a browser)
-                // we do `roc build` on them but don't run them.
-                run_roc_on(&file_name, [CMD_BUILD, OPTIMIZE_FLAG], &[], &[], &[]);
+                // we do `broc build` on them but don't run them.
+                run_broc_on(&file_name, [CMD_BUILD, OPTIMIZE_FLAG], &[], &[], &[]);
                 return;
             }
-            "swiftui" | "rocLovesSwift" => {
+            "swiftui" | "brocLovesSwift" => {
                 if cfg!(not(target_os = "macos")) {
                     eprintln!(
                         "WARNING: skipping testing example {} because it only works on MacOS.",
-                        roc_filename
+                        broc_filename
                     );
                     return;
                 } else {
-                    run_roc_on(&file_name, [CMD_BUILD, OPTIMIZE_FLAG], &[], &[], &[]);
+                    run_broc_on(&file_name, [CMD_BUILD, OPTIMIZE_FLAG], &[], &[], &[]);
                     return;
                 }
             }
-            "rocLovesWebAssembly" => {
+            "brocLovesWebAssembly" => {
                 // this is a web assembly example, but we don't test with JS at the moment
                 eprintln!(
                     "WARNING: skipping testing example {} because it only works in a browser!",
-                    roc_filename
+                    broc_filename
                 );
                 return;
             }
@@ -433,7 +433,7 @@ mod cli_run {
             stdin,
             executable_filename,
             &custom_flags,
-            &roc_app_args,
+            &broc_app_args,
             extra_env,
             expected_ending,
             use_valgrind,
@@ -449,7 +449,7 @@ mod cli_run {
             stdin,
             executable_filename,
             &custom_flags,
-            &roc_app_args,
+            &broc_app_args,
             extra_env,
             expected_ending,
             use_valgrind,
@@ -464,7 +464,7 @@ mod cli_run {
                 stdin,
                 executable_filename,
                 &[LINKER_FLAG, "legacy"],
-                &roc_app_args,
+                &broc_app_args,
                 extra_env,
                 expected_ending,
                 use_valgrind,
@@ -477,9 +477,9 @@ mod cli_run {
     #[serial(zig_platform_parser_package_basic_cli_url)]
     #[cfg_attr(windows, ignore)]
     fn hello_world() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples",
-            "helloWorld.roc",
+            "helloWorld.broc",
             "helloWorld",
             "Hello, World!\n",
             UseValgrind::Yes,
@@ -490,9 +490,9 @@ mod cli_run {
     #[serial(cli_platform)]
     #[cfg_attr(windows, ignore)]
     fn hello_world_no_url() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples",
-            "helloWorldNoURL.roc",
+            "helloWorldNoURL.broc",
             "helloWorld",
             "Hello, World!\n",
             UseValgrind::Yes,
@@ -508,10 +508,10 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     // uses C platform
     fn platform_switching_main() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/platform-switching",
-            "main.roc",
-            "rocLovesPlatforms",
+            "main.broc",
+            "brocLovesPlatforms",
             &("Which platform am I running on now?".to_string() + LINE_ENDING),
             UseValgrind::Yes,
         )
@@ -524,11 +524,11 @@ mod cli_run {
     #[test]
     #[cfg_attr(windows, ignore)]
     fn platform_switching_rust() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/platform-switching",
-            "rocLovesRust.roc",
-            "rocLovesRust",
-            "Roc <3 Rust!\n",
+            "brocLovesRust.broc",
+            "brocLovesRust",
+            "Broc <3 Rust!\n",
             UseValgrind::Yes,
         )
     }
@@ -538,33 +538,33 @@ mod cli_run {
     #[serial(zig_platform_parser_package_basic_cli_url)]
     #[cfg_attr(windows, ignore)]
     fn platform_switching_zig() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/platform-switching",
-            "rocLovesZig.roc",
-            "rocLovesZig",
-            "Roc <3 Zig!\n",
+            "brocLovesZig.broc",
+            "brocLovesZig",
+            "Broc <3 Zig!\n",
             UseValgrind::Yes,
         )
     }
 
     #[test]
     fn platform_switching_wasm() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/platform-switching",
-            "rocLovesWebAssembly.roc",
-            "rocLovesWebAssembly",
-            "Roc <3 Web Assembly!\n",
+            "brocLovesWebAssembly.broc",
+            "brocLovesWebAssembly",
+            "Broc <3 Web Assembly!\n",
             UseValgrind::Yes,
         )
     }
 
     #[test]
     fn platform_switching_swift() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/platform-switching",
-            "rocLovesSwift.roc",
-            "rocLovesSwift",
-            "Roc <3 Swift!\n",
+            "brocLovesSwift.broc",
+            "brocLovesSwift",
+            "Broc <3 Swift!\n",
             UseValgrind::Yes,
         )
     }
@@ -575,9 +575,9 @@ mod cli_run {
         // these are in the same test function so we don't have to worry about race conditions
         // on the building of the platform
 
-        test_roc_app(
+        test_broc_app(
             "crates/cli_testing_examples/expects",
-            "expects.roc",
+            "expects.broc",
             "expects-test",
             &[],
             &[],
@@ -606,9 +606,9 @@ mod cli_run {
             TestCliCommands::Dev,
         );
 
-        test_roc_app(
+        test_broc_app(
             "crates/cli_testing_examples/expects",
-            "expects.roc",
+            "expects.broc",
             "expects-test",
             &[],
             &[],
@@ -643,12 +643,12 @@ mod cli_run {
     #[test]
     #[cfg_attr(
         windows,
-        ignore = "this platform is broken, and `roc run --lib` is missing on windows"
+        ignore = "this platform is broken, and `broc run --lib` is missing on windows"
     )]
     fn ruby_interop() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/ruby-interop",
-            "main.roc",
+            "main.broc",
             "libhello",
             "",
             UseValgrind::Yes,
@@ -658,9 +658,9 @@ mod cli_run {
     #[test]
     #[cfg_attr(windows, ignore)]
     fn fibonacci() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "crates/cli_testing_examples/algorithms",
-            "fibonacci.roc",
+            "fibonacci.broc",
             "fibonacci",
             "",
             UseValgrind::Yes,
@@ -669,9 +669,9 @@ mod cli_run {
 
     #[test]
     fn hello_gui() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/gui",
-            "hello.roc",
+            "hello.broc",
             "hello-gui",
             "",
             UseValgrind::No,
@@ -682,9 +682,9 @@ mod cli_run {
     #[serial(breakout)]
     #[test]
     fn breakout() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/gui/breakout",
-            "breakout.roc",
+            "breakout.broc",
             "breakout",
             "",
             UseValgrind::No,
@@ -694,9 +694,9 @@ mod cli_run {
     #[test]
     #[serial(breakout)]
     fn breakout_hello_gui() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/gui/breakout",
-            "hello-gui.roc",
+            "hello-gui.broc",
             "hello-gui",
             "",
             UseValgrind::No,
@@ -706,9 +706,9 @@ mod cli_run {
     #[test]
     #[cfg_attr(windows, ignore)]
     fn quicksort() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "crates/cli_testing_examples/algorithms",
-            "quicksort.roc",
+            "quicksort.broc",
             "quicksort",
             "[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]\n",
             UseValgrind::Yes,
@@ -719,9 +719,9 @@ mod cli_run {
     #[cfg_attr(windows, ignore = "missing __udivdi3 and some other symbols")]
     #[serial(cli_platform)]
     fn cli_args() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli",
-            "args.roc",
+            "args.broc",
             "args",
             &[],
             &[
@@ -743,35 +743,35 @@ mod cli_run {
     #[cfg_attr(windows, ignore = "missing __udivdi3 and some other symbols")]
     #[serial(cli_platform)]
     fn cli_args_check() {
-        let path = file_path_from_root("examples/cli", "args.roc");
-        let out = run_roc([CMD_CHECK, path.to_str().unwrap()], &[], &[]);
+        let path = file_path_from_root("examples/cli", "args.broc");
+        let out = run_broc([CMD_CHECK, path.to_str().unwrap()], &[], &[]);
         assert!(out.status.success());
     }
 
     // TODO: write a new test once mono bugs are resolved in investigation
     #[test]
-    #[cfg(not(debug_assertions))] // https://github.com/roc-lang/roc/issues/4806
+    #[cfg(not(debug_assertions))] // https://github.com/roc-lang/broc/issues/4806
     fn check_virtual_dom_server() {
-        let path = file_path_from_root("examples/virtual-dom-wip", "example-server.roc");
-        let out = run_roc([CMD_CHECK, path.to_str().unwrap()], &[], &[]);
+        let path = file_path_from_root("examples/virtual-dom-wip", "example-server.broc");
+        let out = run_broc([CMD_CHECK, path.to_str().unwrap()], &[], &[]);
         assert!(out.status.success());
     }
 
     // TODO: write a new test once mono bugs are resolved in investigation
     #[test]
-    #[cfg(not(debug_assertions))] // https://github.com/roc-lang/roc/issues/4806
+    #[cfg(not(debug_assertions))] // https://github.com/roc-lang/broc/issues/4806
     fn check_virtual_dom_client() {
-        let path = file_path_from_root("examples/virtual-dom-wip", "example-client.roc");
-        let out = run_roc([CMD_CHECK, path.to_str().unwrap()], &[], &[]);
+        let path = file_path_from_root("examples/virtual-dom-wip", "example-client.broc");
+        let out = run_broc([CMD_CHECK, path.to_str().unwrap()], &[], &[]);
         assert!(out.status.success());
     }
 
     #[test]
     #[cfg_attr(windows, ignore)]
     fn interactive_effects() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli",
-            "effects.roc",
+            "effects.broc",
             "effects",
             &["hi there!"],
             &[],
@@ -786,9 +786,9 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     // tea = The Elm Architecture
     fn terminal_ui_tea() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli",
-            "tui.roc",
+            "tui.broc",
             "tui",
             &["foo\n"], // NOTE: adding more lines leads to memory leaks
             &[],
@@ -802,9 +802,9 @@ mod cli_run {
     #[test]
     #[cfg_attr(windows, ignore)]
     fn false_interpreter() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli/false-interpreter",
-            "False.roc",
+            "False.broc",
             "false",
             &[],
             &[Arg::ExamplePath("examples/sqrt.false")],
@@ -817,9 +817,9 @@ mod cli_run {
 
     #[test]
     fn swift_ui() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/swiftui",
-            "main.roc",
+            "main.broc",
             "swiftui",
             "",
             UseValgrind::No,
@@ -829,14 +829,14 @@ mod cli_run {
     #[test]
     #[cfg_attr(windows, ignore)]
     fn static_site_gen() {
-        test_roc_app(
+        test_broc_app(
             "examples/static-site-gen",
-            "static-site.roc",
+            "static-site.broc",
             "static-site",
             &[],
             &[Arg::ExamplePath("input"), Arg::ExamplePath("output")],
             &[],
-            "Processed 4 files with 3 successes and 0 errors\n",
+            "Pbrocessed 4 files with 3 successes and 0 errors\n",
             UseValgrind::No,
             TestCliCommands::Run,
         )
@@ -846,18 +846,18 @@ mod cli_run {
     #[serial(cli_platform)]
     #[cfg_attr(windows, ignore)]
     fn with_env_vars() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli",
-            "env.roc",
+            "env.broc",
             "env",
             &[],
             &[],
             &[
-                ("EDITOR", "roc-editor"),
+                ("EDITOR", "broc-editor"),
                 ("SHLVL", "3"),
                 ("LETTERS", "a,c,e,j"),
             ],
-            "Your favorite editor is roc-editor!\n\
+            "Your favorite editor is broc-editor!\n\
             Your current shell level is 3!\n\
             Your favorite letters are: a c e j\n",
             UseValgrind::No,
@@ -869,27 +869,27 @@ mod cli_run {
     #[serial(cli_platform)]
     #[cfg_attr(windows, ignore)]
     fn ingested_file() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli",
-            "ingested-file.roc",
+            "ingested-file.broc",
             "ingested-file",
             &[],
             &[],
             &[],
             indoc!(
                 r#"
-                This roc file can print it's own source code. The source is:
+                This broc file can print it's own source code. The source is:
 
                 app "ingested-file"
-                    packages { pf: "cli-platform/main.roc" }
+                    packages { pf: "cli-platform/main.broc" }
                     imports [
                         pf.Stdout,
-                        "ingested-file.roc" as ownCode : Str,
+                        "ingested-file.broc" as ownCode : Str,
                     ]
                     provides [main] to pf
 
                 main =
-                    Stdout.line "\nThis roc file can print it's own source code. The source is:\n\n\(ownCode)"
+                    Stdout.line "\nThis broc file can print it's own source code. The source is:\n\n\(ownCode)"
 
                 "#
             ),
@@ -902,9 +902,9 @@ mod cli_run {
     #[serial(cli_platform)]
     #[cfg_attr(windows, ignore)]
     fn ingested_file_bytes() {
-        test_roc_app(
+        test_broc_app(
             "examples/cli",
-            "ingested-file-bytes.roc",
+            "ingested-file-bytes.broc",
             "ingested-file-bytes",
             &[],
             &[],
@@ -919,9 +919,9 @@ mod cli_run {
     #[serial(zig_platform_parser_package_basic_cli_url)]
     #[cfg_attr(windows, ignore)]
     fn parse_movies_csv() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/parser/examples",
-            "parse-movies-csv.roc",
+            "parse-movies-csv.broc",
             "example",
             "Parse success!\n",
             UseValgrind::No,
@@ -932,9 +932,9 @@ mod cli_run {
     #[serial(zig_platform_parser_package_basic_cli_url)]
     #[cfg_attr(windows, ignore)]
     fn parse_letter_counts() {
-        test_roc_app_slim(
+        test_broc_app_slim(
             "examples/parser/examples",
-            "letter-counts.roc",
+            "letter-counts.broc",
             "example",
             "I counted 7 letter A's!\n",
             UseValgrind::No,
@@ -944,7 +944,7 @@ mod cli_run {
     #[test]
     #[cfg_attr(windows, ignore)]
     fn parse_http() {
-        test_roc_expect("examples/parser/package", "ParserHttp.roc")
+        test_broc_expect("examples/parser/package", "ParserHttp.broc")
     }
 
     // TODO not sure if this cfg should still be here: #[cfg(not(debug_assertions))]
@@ -960,28 +960,28 @@ mod cli_run {
         static BENCHMARKS_BUILD_PLATFORM: Once = Once::new();
 
         fn test_benchmark(
-            roc_filename: &str,
+            broc_filename: &str,
             executable_filename: &str,
             stdin: &[&str],
             expected_ending: &str,
             use_valgrind: UseValgrind,
         ) {
-            let file_name = cli_testing_dir("benchmarks").join(roc_filename);
+            let file_name = cli_testing_dir("benchmarks").join(broc_filename);
 
             // TODO fix QuicksortApp and then remove this!
-            match roc_filename {
-                "QuicksortApp.roc" => {
+            match broc_filename {
+                "QuicksortApp.broc" => {
                     eprintln!(
                     "WARNING: skipping testing benchmark {} because the test is broken right now!",
-                    roc_filename
+                    broc_filename
                 );
                     return;
                 }
-                "TestAStar.roc" => {
+                "TestAStar.broc" => {
                     if cfg!(feature = "wasm32-cli-run") {
                         eprintln!(
                         "WARNING: skipping testing benchmark {} because it currently does not work on wasm32 due to dictionaries.",
-                        roc_filename
+                        broc_filename
                     );
                         return;
                     }
@@ -1102,12 +1102,12 @@ mod cli_run {
             flags: &[&str],
             expected_ending: &str,
         ) {
-            use super::{concatcp, run_roc, CMD_BUILD, TARGET_FLAG};
+            use super::{concatcp, run_broc, CMD_BUILD, TARGET_FLAG};
 
             let mut flags = flags.to_vec();
             flags.push(concatcp!(TARGET_FLAG, "=wasm32"));
 
-            let compile_out = run_roc(
+            let compile_out = run_broc(
                 [CMD_BUILD, file.to_str().unwrap()]
                     .iter()
                     .chain(flags.as_slice()),
@@ -1173,20 +1173,20 @@ mod cli_run {
         #[test]
         #[cfg_attr(windows, ignore)]
         fn nqueens() {
-            test_benchmark("NQueens.roc", "nqueens", &["6"], "4\n", UseValgrind::Yes)
+            test_benchmark("NQueens.broc", "nqueens", &["6"], "4\n", UseValgrind::Yes)
         }
 
         #[test]
         #[cfg_attr(windows, ignore)]
         fn cfold() {
-            test_benchmark("CFold.roc", "cfold", &["3"], "11 & 11\n", UseValgrind::Yes)
+            test_benchmark("CFold.broc", "cfold", &["3"], "11 & 11\n", UseValgrind::Yes)
         }
 
         #[test]
         #[cfg_attr(windows, ignore)]
         fn deriv() {
             test_benchmark(
-                "Deriv.roc",
+                "Deriv.broc",
                 "deriv",
                 &["2"],
                 "1 count: 6\n2 count: 22\n",
@@ -1198,7 +1198,7 @@ mod cli_run {
         #[cfg_attr(windows, ignore)]
         fn rbtree_ck() {
             test_benchmark(
-                "RBTreeCk.roc",
+                "RBTreeCk.broc",
                 "rbtree-ck",
                 &["100"],
                 "10\n",
@@ -1210,7 +1210,7 @@ mod cli_run {
         #[cfg_attr(windows, ignore)]
         fn rbtree_insert() {
             test_benchmark(
-                "RBTreeInsert.roc",
+                "RBTreeInsert.broc",
                 "rbtree-insert",
                 &[],
                 "Node Black 0 {} Empty Empty\n",
@@ -1223,7 +1223,7 @@ mod cli_run {
         #[test]
         fn rbtree_del() {
             test_benchmark(
-                "RBTreeDel.roc",
+                "RBTreeDel.broc",
                 "rbtree-del",
                 &["420"],
                 &[],
@@ -1236,7 +1236,7 @@ mod cli_run {
         #[cfg_attr(windows, ignore)]
         fn astar() {
             test_benchmark(
-                "TestAStar.roc",
+                "TestAStar.broc",
                 "test-astar",
                 &[],
                 "True\n",
@@ -1248,7 +1248,7 @@ mod cli_run {
         #[cfg_attr(windows, ignore)]
         fn base64() {
             test_benchmark(
-                "TestBase64.roc",
+                "TestBase64.broc",
                 "test-base64",
                 &[],
                 "encoded: SGVsbG8gV29ybGQ=\ndecoded: Hello World\n",
@@ -1259,14 +1259,14 @@ mod cli_run {
         #[test]
         #[cfg_attr(windows, ignore)]
         fn closure() {
-            test_benchmark("Closure.roc", "closure", &[], "", UseValgrind::No)
+            test_benchmark("Closure.broc", "closure", &[], "", UseValgrind::No)
         }
 
         #[test]
         #[cfg_attr(windows, ignore)]
         fn issue2279() {
             test_benchmark(
-                "Issue2279.roc",
+                "Issue2279.broc",
                 "issue2279",
                 &[],
                 "Hello, world!\n",
@@ -1277,7 +1277,7 @@ mod cli_run {
         #[test]
         fn quicksort_app() {
             test_benchmark(
-                "QuicksortApp.roc",
+                "QuicksortApp.broc",
                 "quicksortapp",
                 &[],
                 "todo put the correct quicksort answer here",
@@ -1291,7 +1291,7 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     fn run_multi_dep_str_unoptimized() {
         check_output_with_stdin(
-            &fixture_file("multi-dep-str", "Main.roc"),
+            &fixture_file("multi-dep-str", "Main.broc"),
             &[],
             "multi-dep-str",
             &[],
@@ -1308,7 +1308,7 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     fn run_multi_dep_str_optimized() {
         check_output_with_stdin(
-            &fixture_file("multi-dep-str", "Main.roc"),
+            &fixture_file("multi-dep-str", "Main.broc"),
             &[],
             "multi-dep-str",
             &[OPTIMIZE_FLAG],
@@ -1325,7 +1325,7 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     fn run_multi_dep_thunk_unoptimized() {
         check_output_with_stdin(
-            &fixture_file("multi-dep-thunk", "Main.roc"),
+            &fixture_file("multi-dep-thunk", "Main.broc"),
             &[],
             "multi-dep-thunk",
             &[],
@@ -1342,7 +1342,7 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     fn run_multi_dep_thunk_optimized() {
         check_output_with_stdin(
-            &fixture_file("multi-dep-thunk", "Main.roc"),
+            &fixture_file("multi-dep-thunk", "Main.broc"),
             &[],
             "multi-dep-thunk",
             &[OPTIMIZE_FLAG],
@@ -1359,7 +1359,7 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     fn run_packages_unoptimized() {
         check_output_with_stdin(
-            &fixture_file("packages", "app.roc"),
+            &fixture_file("packages", "app.broc"),
             &[],
             "packages-test",
             &[],
@@ -1376,7 +1376,7 @@ mod cli_run {
     #[cfg_attr(windows, ignore)]
     fn run_packages_optimized() {
         check_output_with_stdin(
-            &fixture_file("packages", "app.roc"),
+            &fixture_file("packages", "app.broc"),
             &[],
             "packages-test",
             &[OPTIMIZE_FLAG],
@@ -1391,11 +1391,11 @@ mod cli_run {
     #[test]
     fn known_type_error() {
         check_compile_error(
-            &known_bad_file("TypeError.roc"),
+            &known_bad_file("TypeError.broc"),
             &[],
             indoc!(
                 r#"
-                ── TYPE MISMATCH ─────────────────────────────── tests/known_bad/TypeError.roc ─
+                ── TYPE MISMATCH ─────────────────────────────── tests/known_bad/TypeError.broc ─
 
                 Something is off with the body of the main definition:
 
@@ -1427,11 +1427,11 @@ mod cli_run {
     #[test]
     fn exposed_not_defined() {
         check_compile_error(
-            &known_bad_file("ExposedNotDefined.roc"),
+            &known_bad_file("ExposedNotDefined.broc"),
             &[],
             indoc!(
                 r#"
-                ── MISSING DEFINITION ────────────────── tests/known_bad/ExposedNotDefined.roc ─
+                ── MISSING DEFINITION ────────────────── tests/known_bad/ExposedNotDefined.broc ─
 
                 bar is listed as exposed, but it isn't defined in this module.
 
@@ -1448,11 +1448,11 @@ mod cli_run {
     #[test]
     fn unused_import() {
         check_compile_error(
-            &known_bad_file("UnusedImport.roc"),
+            &known_bad_file("UnusedImport.broc"),
             &[],
             indoc!(
                 r#"
-                ── UNUSED IMPORT ──────────────────────────── tests/known_bad/UnusedImport.roc ─
+                ── UNUSED IMPORT ──────────────────────────── tests/known_bad/UnusedImport.broc ─
 
                 Nothing from Symbol is used in this module.
 
@@ -1471,11 +1471,11 @@ mod cli_run {
     #[test]
     fn unknown_generates_with() {
         check_compile_error(
-            &known_bad_file("UnknownGeneratesWith.roc"),
+            &known_bad_file("UnknownGeneratesWith.broc"),
             &[],
             indoc!(
                 r#"
-                ── UNKNOWN GENERATES FUNCTION ─────── tests/known_bad/UnknownGeneratesWith.roc ─
+                ── UNKNOWN GENERATES FUNCTION ─────── tests/known_bad/UnknownGeneratesWith.broc ─
 
                 I don't know how to generate the foobar function.
 
@@ -1494,20 +1494,20 @@ mod cli_run {
 
     #[test]
     fn format_check_good() {
-        check_format_check_as_expected(&fixture_file("format", "Formatted.roc"), true);
+        check_format_check_as_expected(&fixture_file("format", "Formatted.broc"), true);
     }
 
     #[test]
     fn format_check_reformatting_needed() {
-        check_format_check_as_expected(&fixture_file("format", "NotFormatted.roc"), false);
+        check_format_check_as_expected(&fixture_file("format", "NotFormatted.broc"), false);
     }
 
     #[test]
     fn format_check_folders() {
-        // This fails, because "NotFormatted.roc" is present in this folder
+        // This fails, because "NotFormatted.broc" is present in this folder
         check_format_check_as_expected(&fixtures_dir("format"), false);
 
-        // This doesn't fail, since only "Formatted.roc" and non-roc files are present in this folder
+        // This doesn't fail, since only "Formatted.broc" and non-broc files are present in this folder
         check_format_check_as_expected(&fixtures_dir("format/formatted_directory"), true);
     }
 }
@@ -1515,7 +1515,7 @@ mod cli_run {
 #[cfg(feature = "wasm32-cli-run")]
 fn run_wasm(wasm_path: &std::path::Path, stdin: &[&str]) -> String {
     use bumpalo::Bump;
-    use roc_wasm_interp::{DefaultImportDispatcher, Instance, Value, WasiFile};
+    use broc_wasm_interp::{DefaultImportDispatcher, Instance, Value, WasiFile};
 
     let wasm_bytes = std::fs::read(wasm_path).unwrap();
     let arena = Bump::new();

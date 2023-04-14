@@ -1,7 +1,7 @@
-use roc_parse::ast::Expr;
-use roc_repl_eval::{ReplApp, ReplAppMemory};
-use roc_std::RocStr;
-use roc_target::TargetInfo;
+use broc_parse::ast::Expr;
+use broc_repl_eval::{ReplApp, ReplAppMemory};
+use broc_std::BrocStr;
+use broc_target::TargetInfo;
 
 pub(crate) struct ExpectMemory {
     pub(crate) start: *const u8,
@@ -54,9 +54,9 @@ impl ReplAppMemory for ExpectMemory {
 
         if is_small {
             let ptr = unsafe { self.start.add(addr) };
-            let roc_str: &RocStr = unsafe { &*ptr.cast() };
+            let broc_str: &BrocStr = unsafe { &*ptr.cast() };
 
-            roc_str.as_str()
+            broc_str.as_str()
         } else {
             let offset = self.deref_usize(addr);
             let length = self.deref_usize(addr + std::mem::size_of::<usize>());
@@ -106,7 +106,7 @@ impl<'a> ReplApp<'a> for ExpectReplApp<'a> {
         transform(self.memory, result)
     }
 
-    fn call_function_returns_roc_list<F>(&mut self, main_fn_name: &str, transform: F) -> Expr<'a>
+    fn call_function_returns_broc_list<F>(&mut self, main_fn_name: &str, transform: F) -> Expr<'a>
     where
         F: FnMut(&'a Self::Memory, (usize, usize, usize)) -> Expr<'a>,
         Self::Memory: 'a,
@@ -114,7 +114,7 @@ impl<'a> ReplApp<'a> for ExpectReplApp<'a> {
         self.call_function(main_fn_name, transform)
     }
 
-    fn call_function_returns_roc_str<T, F>(
+    fn call_function_returns_broc_str<T, F>(
         &mut self,
         _target_info: TargetInfo,
         main_fn_name: &str,

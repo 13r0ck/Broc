@@ -3,7 +3,7 @@ use crate::editor::{ed_error::EdResult, theme::EdTheme, util::map_get};
 use crate::graphics::primitives::rect::Rect;
 use crate::graphics::primitives::text as gr_text;
 use cgmath::Vector2;
-use roc_code_markup::{
+use broc_code_markup::{
     markup::{
         attribute::Attribute,
         nodes::{MarkupNode, BLANK_PLACEHOLDER},

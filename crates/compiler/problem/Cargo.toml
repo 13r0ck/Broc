@@ -1,6 +1,6 @@
 [package]
-name = "roc_problem"
-description = "Provides types to describe problems that can occur when compiling Roc code."
+name = "broc_problem"
+description = "Provides types to describe problems that can occur when compiling Broc code."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,8 +8,8 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_module = { path = "../module" }
-roc_parse = { path = "../parse" }
-roc_region = { path = "../region" }
-roc_types = { path = "../types" }
+broc_collections = { path = "../collections" }
+broc_module = { path = "../module" }
+broc_parse = { path = "../parse" }
+broc_region = { path = "../region" }
+broc_types = { path = "../types" }

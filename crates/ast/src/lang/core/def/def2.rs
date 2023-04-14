@@ -1,4 +1,4 @@
-use roc_module::symbol::IdentId;
+use broc_module::symbol::IdentId;
 use std::fmt::Write as _; // import without risk of name clashing
 
 use crate::{

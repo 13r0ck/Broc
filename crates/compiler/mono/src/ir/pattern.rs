@@ -1,18 +1,18 @@
-use crate::ir::{substitute_in_exprs, Env, Expr, Procs, Stmt};
+use crate::ir::{substitute_in_exprs, Env, Expr, Pbrocs, Stmt};
 use crate::layout::{
     self, Builtin, InLayout, Layout, LayoutCache, LayoutInterner, LayoutProblem, TagIdIntType,
     UnionLayout, WrappedVariant,
 };
 use bumpalo::collections::Vec;
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::{BumpMap, BumpMapDefault};
-use roc_error_macros::internal_error;
-use roc_exhaustive::{Ctor, CtorName, ListArity, RenderAs, TagId};
-use roc_module::ident::{Lowercase, TagName};
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
-use roc_problem::can::{RuntimeError, ShadowKind};
-use roc_types::subs::Variable;
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::{BumpMap, BumpMapDefault};
+use broc_error_macros::internal_error;
+use broc_exhaustive::{Ctor, CtorName, ListArity, RenderAs, TagId};
+use broc_module::ident::{Lowercase, TagName};
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
+use broc_problem::can::{RuntimeError, ShadowKind};
+use broc_types::subs::Variable;
 
 use super::literal::{make_num_literal, IntOrFloatValue};
 use super::{Call, CallType, Literal};
@@ -30,12 +30,12 @@ pub enum Pattern<'a> {
     BitLiteral {
         value: bool,
         tag_name: TagName,
-        union: roc_exhaustive::Union,
+        union: broc_exhaustive::Union,
     },
     EnumLiteral {
         tag_id: u8,
         tag_name: TagName,
-        union: roc_exhaustive::Union,
+        union: broc_exhaustive::Union,
     },
     StrLiteral(Box<str>),
 
@@ -50,7 +50,7 @@ pub enum Pattern<'a> {
         tag_id: TagIdIntType,
         arguments: Vec<'a, (Pattern<'a>, InLayout<'a>)>,
         layout: UnionLayout<'a>,
-        union: roc_exhaustive::Union,
+        union: broc_exhaustive::Union,
     },
     Voided {
         tag_name: TagName,
@@ -292,37 +292,37 @@ pub struct WhenBranch<'a> {
 #[allow(clippy::type_complexity)]
 pub fn from_can_pattern<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    can_pattern: &roc_can::pattern::Pattern,
+    can_pattern: &broc_can::pattern::Pattern,
 ) -> Result<
     (
         Pattern<'a>,
-        Vec<'a, (Symbol, Variable, roc_can::expr::Expr)>,
+        Vec<'a, (Symbol, Variable, broc_can::expr::Expr)>,
     ),
     RuntimeError,
 > {
     let mut assignments = Vec::new_in(env.arena);
-    let pattern = from_can_pattern_help(env, procs, layout_cache, can_pattern, &mut assignments)?;
+    let pattern = from_can_pattern_help(env, pbrocs, layout_cache, can_pattern, &mut assignments)?;
 
     Ok((pattern, assignments))
 }
 
 fn from_can_pattern_help<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    can_pattern: &roc_can::pattern::Pattern,
-    assignments: &mut Vec<'a, (Symbol, Variable, roc_can::expr::Expr)>,
+    can_pattern: &broc_can::pattern::Pattern,
+    assignments: &mut Vec<'a, (Symbol, Variable, broc_can::expr::Expr)>,
 ) -> Result<Pattern<'a>, RuntimeError> {
-    use roc_can::pattern::Pattern::*;
+    use broc_can::pattern::Pattern::*;
 
     match can_pattern {
         Underscore => Ok(Pattern::Underscore),
         Identifier(symbol) => Ok(Pattern::Identifier(*symbol)),
         As(subpattern, symbol) => {
             let mono_subpattern =
-                from_can_pattern_help(env, procs, layout_cache, &subpattern.value, assignments)?;
+                from_can_pattern_help(env, pbrocs, layout_cache, &subpattern.value, assignments)?;
 
             Ok(Pattern::As(Box::new(mono_subpattern), *symbol))
         }
@@ -380,7 +380,7 @@ fn from_can_pattern_help<'a>(
             ..
         } => {
             use crate::layout::UnionVariant::*;
-            use roc_exhaustive::Union;
+            use broc_exhaustive::Union;
 
             let res_variant = {
                 let mut layout_env = layout::Env::from_components(
@@ -454,7 +454,7 @@ fn from_can_pattern_help<'a>(
                         })
                     }
 
-                    let union = roc_exhaustive::Union {
+                    let union = broc_exhaustive::Union {
                         render_as: RenderAs::Tag,
                         alternatives: ctors,
                     };
@@ -490,7 +490,7 @@ fn from_can_pattern_help<'a>(
                         mono_args.push((
                             from_can_pattern_help(
                                 env,
-                                procs,
+                                pbrocs,
                                 layout_cache,
                                 &loc_pat.value,
                                 assignments,
@@ -539,7 +539,7 @@ fn from_can_pattern_help<'a>(
                             mono_args.push((
                                 from_can_pattern_help(
                                     env,
-                                    procs,
+                                    pbrocs,
                                     layout_cache,
                                     &loc_pat.value,
                                     assignments,
@@ -604,7 +604,7 @@ fn from_can_pattern_help<'a>(
                                 })
                             }
 
-                            let union = roc_exhaustive::Union {
+                            let union = broc_exhaustive::Union {
                                 render_as: RenderAs::Tag,
                                 alternatives: ctors,
                             };
@@ -625,7 +625,7 @@ fn from_can_pattern_help<'a>(
                                 mono_args.push((
                                     from_can_pattern_help(
                                         env,
-                                        procs,
+                                        pbrocs,
                                         layout_cache,
                                         &loc_pat.value,
                                         assignments,
@@ -656,7 +656,7 @@ fn from_can_pattern_help<'a>(
                                 })
                             }
 
-                            let union = roc_exhaustive::Union {
+                            let union = broc_exhaustive::Union {
                                 render_as: RenderAs::Tag,
                                 alternatives: ctors,
                             };
@@ -670,7 +670,7 @@ fn from_can_pattern_help<'a>(
                                 mono_args.push((
                                     from_can_pattern_help(
                                         env,
-                                        procs,
+                                        pbrocs,
                                         layout_cache,
                                         &loc_pat.value,
                                         assignments,
@@ -700,7 +700,7 @@ fn from_can_pattern_help<'a>(
                                 arity: fields.len(),
                             });
 
-                            let union = roc_exhaustive::Union {
+                            let union = broc_exhaustive::Union {
                                 render_as: RenderAs::Tag,
                                 alternatives: ctors,
                             };
@@ -714,7 +714,7 @@ fn from_can_pattern_help<'a>(
                                 mono_args.push((
                                     from_can_pattern_help(
                                         env,
-                                        procs,
+                                        pbrocs,
                                         layout_cache,
                                         &loc_pat.value,
                                         assignments,
@@ -755,7 +755,7 @@ fn from_can_pattern_help<'a>(
                                 }
                             }
 
-                            let union = roc_exhaustive::Union {
+                            let union = broc_exhaustive::Union {
                                 render_as: RenderAs::Tag,
                                 alternatives: ctors,
                             };
@@ -772,7 +772,7 @@ fn from_can_pattern_help<'a>(
                                 mono_args.push((
                                     from_can_pattern_help(
                                         env,
-                                        procs,
+                                        pbrocs,
                                         layout_cache,
                                         &loc_pat.value,
                                         assignments,
@@ -810,7 +810,7 @@ fn from_can_pattern_help<'a>(
                                 arity: other_fields.len(),
                             });
 
-                            let union = roc_exhaustive::Union {
+                            let union = broc_exhaustive::Union {
                                 render_as: RenderAs::Tag,
                                 alternatives: ctors,
                             };
@@ -827,7 +827,7 @@ fn from_can_pattern_help<'a>(
                                 mono_args.push((
                                     from_can_pattern_help(
                                         env,
-                                        procs,
+                                        pbrocs,
                                         layout_cache,
                                         &loc_pat.value,
                                         assignments,
@@ -860,7 +860,7 @@ fn from_can_pattern_help<'a>(
                 .unwrap();
             let mono_arg_pattern = from_can_pattern_help(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 &loc_arg_pattern.value,
                 assignments,
@@ -900,7 +900,7 @@ fn from_can_pattern_help<'a>(
                     // this elem is destructured by the pattern
                     mono_destructs.push(from_can_tuple_destruct(
                         env,
-                        procs,
+                        pbrocs,
                         layout_cache,
                         &destructs[index].value,
                         res_layout,
@@ -970,7 +970,7 @@ fn from_can_pattern_help<'a>(
                                 // this field is destructured by the pattern
                                 mono_destructs.push(from_can_record_destruct(
                                     env,
-                                    procs,
+                                    pbrocs,
                                     layout_cache,
                                     &destruct.value,
                                     field_layout,
@@ -998,7 +998,7 @@ fn from_can_pattern_help<'a>(
                             Some(destruct) => {
                                 // this field is destructured by the pattern
                                 match &destruct.value.typ {
-                                    roc_can::pattern::DestructType::Optional(_, loc_expr) => {
+                                    broc_can::pattern::DestructType::Optional(_, loc_expr) => {
                                         // if we reach this stage, the optional field is not present
                                         // so we push the default assignment into the branch
                                         assignments.push((
@@ -1031,7 +1031,7 @@ fn from_can_pattern_help<'a>(
                 // this destruct is not in the type, but is in the pattern
                 // it must be an optional field, and we will use the default
                 match &destruct.value.typ {
-                    roc_can::pattern::DestructType::Optional(field_var, loc_expr) => {
+                    broc_can::pattern::DestructType::Optional(field_var, loc_expr) => {
                         assignments.push((
                             destruct.value.symbol,
                             // destruct.value.var,
@@ -1067,7 +1067,7 @@ fn from_can_pattern_help<'a>(
             let mut mono_patterns = Vec::with_capacity_in(patterns.patterns.len(), env.arena);
             for loc_pat in patterns.patterns.iter() {
                 let mono_pat =
-                    from_can_pattern_help(env, procs, layout_cache, &loc_pat.value, assignments)?;
+                    from_can_pattern_help(env, pbrocs, layout_cache, &loc_pat.value, assignments)?;
                 mono_patterns.push(mono_pat);
             }
 
@@ -1096,24 +1096,24 @@ fn make_num_literal_pattern<'a>(
 
 fn from_can_record_destruct<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    can_rd: &roc_can::pattern::RecordDestruct,
+    can_rd: &broc_can::pattern::RecordDestruct,
     field_layout: InLayout<'a>,
-    assignments: &mut Vec<'a, (Symbol, Variable, roc_can::expr::Expr)>,
+    assignments: &mut Vec<'a, (Symbol, Variable, broc_can::expr::Expr)>,
 ) -> Result<RecordDestruct<'a>, RuntimeError> {
     Ok(RecordDestruct {
         label: can_rd.label.clone(),
         variable: can_rd.var,
         layout: field_layout,
         typ: match &can_rd.typ {
-            roc_can::pattern::DestructType::Required => DestructType::Required(can_rd.symbol),
-            roc_can::pattern::DestructType::Optional(_, _) => {
+            broc_can::pattern::DestructType::Required => DestructType::Required(can_rd.symbol),
+            broc_can::pattern::DestructType::Optional(_, _) => {
                 // if we reach this stage, the optional field is present
                 DestructType::Required(can_rd.symbol)
             }
-            roc_can::pattern::DestructType::Guard(_, loc_pattern) => DestructType::Guard(
-                from_can_pattern_help(env, procs, layout_cache, &loc_pattern.value, assignments)?,
+            broc_can::pattern::DestructType::Guard(_, loc_pattern) => DestructType::Guard(
+                from_can_pattern_help(env, pbrocs, layout_cache, &loc_pattern.value, assignments)?,
             ),
         },
     })
@@ -1121,30 +1121,30 @@ fn from_can_record_destruct<'a>(
 
 fn from_can_tuple_destruct<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
-    can_rd: &roc_can::pattern::TupleDestruct,
+    can_rd: &broc_can::pattern::TupleDestruct,
     field_layout: InLayout<'a>,
-    assignments: &mut Vec<'a, (Symbol, Variable, roc_can::expr::Expr)>,
+    assignments: &mut Vec<'a, (Symbol, Variable, broc_can::expr::Expr)>,
 ) -> Result<TupleDestruct<'a>, RuntimeError> {
     Ok(TupleDestruct {
         index: can_rd.destruct_index,
         variable: can_rd.var,
         layout: field_layout,
-        pat: from_can_pattern_help(env, procs, layout_cache, &can_rd.typ.1.value, assignments)?,
+        pat: from_can_pattern_help(env, pbrocs, layout_cache, &can_rd.typ.1.value, assignments)?,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn store_pattern<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     can_pat: &Pattern<'a>,
     outer_symbol: Symbol,
     stmt: Stmt<'a>,
 ) -> Stmt<'a> {
-    match store_pattern_help(env, procs, layout_cache, can_pat, outer_symbol, stmt) {
+    match store_pattern_help(env, pbrocs, layout_cache, can_pat, outer_symbol, stmt) {
         StorePattern::Productive(new) => new,
         StorePattern::NotProductive(new) => new,
     }
@@ -1161,7 +1161,7 @@ enum StorePattern<'a> {
 #[allow(clippy::too_many_arguments)]
 fn store_pattern_help<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     can_pat: &Pattern<'a>,
     outer_symbol: Symbol,
@@ -1179,7 +1179,7 @@ fn store_pattern_help<'a>(
         }
         As(subpattern, symbol) => {
             let stored_subpattern =
-                store_pattern_help(env, procs, layout_cache, subpattern, outer_symbol, stmt);
+                store_pattern_help(env, pbrocs, layout_cache, subpattern, outer_symbol, stmt);
 
             let mut stmt = match stored_subpattern {
                 StorePattern::Productive(stmt) => stmt,
@@ -1200,7 +1200,7 @@ fn store_pattern_help<'a>(
         }
         NewtypeDestructure { arguments, .. } => match arguments.as_slice() {
             [(pattern, _layout)] => {
-                return store_pattern_help(env, procs, layout_cache, pattern, outer_symbol, stmt);
+                return store_pattern_help(env, pbrocs, layout_cache, pattern, outer_symbol, stmt);
             }
             _ => {
                 let mut fields = Vec::with_capacity_in(arguments.len(), env.arena);
@@ -1211,7 +1211,7 @@ fn store_pattern_help<'a>(
 
                 return store_newtype_pattern(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     outer_symbol,
                     layout,
@@ -1228,7 +1228,7 @@ fn store_pattern_help<'a>(
         } => {
             return store_tag_pattern(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 outer_symbol,
                 *layout,
@@ -1245,7 +1245,7 @@ fn store_pattern_help<'a>(
         } => {
             return store_list_pattern(
                 env,
-                procs,
+                pbrocs,
                 layout_cache,
                 outer_symbol,
                 *arity,
@@ -1261,7 +1261,7 @@ fn store_pattern_help<'a>(
 
         OpaqueUnwrap { argument, .. } => {
             let (pattern, _layout) = &**argument;
-            return store_pattern_help(env, procs, layout_cache, pattern, outer_symbol, stmt);
+            return store_pattern_help(env, pbrocs, layout_cache, pattern, outer_symbol, stmt);
         }
 
         RecordDestructure(destructs, [_single_field]) => {
@@ -1273,7 +1273,7 @@ fn store_pattern_help<'a>(
                     DestructType::Guard(guard_pattern) => {
                         return store_pattern_help(
                             env,
-                            procs,
+                            pbrocs,
                             layout_cache,
                             guard_pattern,
                             outer_symbol,
@@ -1288,7 +1288,7 @@ fn store_pattern_help<'a>(
             for (index, destruct) in destructs.iter().enumerate().rev() {
                 match store_record_destruct(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     destruct,
                     index as u64,
@@ -1315,7 +1315,7 @@ fn store_pattern_help<'a>(
             if let Some(destruct) = destructs.first() {
                 return store_pattern_help(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     &destruct.pat,
                     outer_symbol,
@@ -1328,7 +1328,7 @@ fn store_pattern_help<'a>(
             for (index, destruct) in destructs.iter().enumerate().rev() {
                 match store_tuple_destruct(
                     env,
-                    procs,
+                    pbrocs,
                     layout_cache,
                     destruct,
                     index as u64,
@@ -1443,7 +1443,7 @@ pub(crate) fn build_list_index_probe<'a>(
 #[allow(clippy::too_many_arguments)]
 fn store_list_pattern<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     list_sym: Symbol,
     list_arity: ListArity,
@@ -1497,7 +1497,7 @@ fn store_list_pattern<'a>(
                 let symbol = env.unique_symbol();
 
                 // first recurse, continuing to unpack symbol
-                match store_pattern_help(env, procs, layout_cache, element, symbol, stmt) {
+                match store_pattern_help(env, pbrocs, layout_cache, element, symbol, stmt) {
                     StorePattern::Productive(new) => {
                         stmt = new;
                         let (load, needed_stores) = compute_element_load(env);
@@ -1536,7 +1536,7 @@ fn store_list_pattern<'a>(
 #[allow(clippy::too_many_arguments)]
 fn store_tag_pattern<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     structure: Symbol,
     union_layout: UnionLayout<'a>,
@@ -1583,7 +1583,7 @@ fn store_tag_pattern<'a>(
                 let symbol = env.unique_symbol();
 
                 // first recurse, continuing to unpack symbol
-                match store_pattern_help(env, procs, layout_cache, argument, symbol, stmt) {
+                match store_pattern_help(env, pbrocs, layout_cache, argument, symbol, stmt) {
                     StorePattern::Productive(new) => {
                         is_productive = true;
                         stmt = new;
@@ -1610,7 +1610,7 @@ fn store_tag_pattern<'a>(
 #[allow(clippy::too_many_arguments)]
 fn store_newtype_pattern<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     structure: Symbol,
     layout: InLayout<'a>,
@@ -1658,7 +1658,7 @@ fn store_newtype_pattern<'a>(
                 let symbol = env.unique_symbol();
 
                 // first recurse, continuing to unpack symbol
-                match store_pattern_help(env, procs, layout_cache, argument, symbol, stmt) {
+                match store_pattern_help(env, pbrocs, layout_cache, argument, symbol, stmt) {
                     StorePattern::Productive(new) => {
                         is_productive = true;
                         stmt = new;
@@ -1685,7 +1685,7 @@ fn store_newtype_pattern<'a>(
 #[allow(clippy::too_many_arguments)]
 fn store_tuple_destruct<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     destruct: &TupleDestruct<'a>,
     index: u64,
@@ -1734,7 +1734,7 @@ fn store_tuple_destruct<'a>(
         _ => {
             let symbol = env.unique_symbol();
 
-            match store_pattern_help(env, procs, layout_cache, &destruct.pat, symbol, stmt) {
+            match store_pattern_help(env, pbrocs, layout_cache, &destruct.pat, symbol, stmt) {
                 StorePattern::Productive(new) => {
                     stmt = new;
                     stmt = Stmt::Let(symbol, load, destruct.layout, env.arena.alloc(stmt));
@@ -1750,7 +1750,7 @@ fn store_tuple_destruct<'a>(
 #[allow(clippy::too_many_arguments)]
 fn store_record_destruct<'a>(
     env: &mut Env<'a, '_>,
-    procs: &mut Procs<'a>,
+    pbrocs: &mut Pbrocs<'a>,
     layout_cache: &mut LayoutCache<'a>,
     destruct: &RecordDestruct<'a>,
     index: u64,
@@ -1800,7 +1800,7 @@ fn store_record_destruct<'a>(
             _ => {
                 let symbol = env.unique_symbol();
 
-                match store_pattern_help(env, procs, layout_cache, guard_pattern, symbol, stmt) {
+                match store_pattern_help(env, pbrocs, layout_cache, guard_pattern, symbol, stmt) {
                     StorePattern::Productive(new) => {
                         stmt = new;
                         stmt = Stmt::Let(symbol, load, destruct.layout, env.arena.alloc(stmt));

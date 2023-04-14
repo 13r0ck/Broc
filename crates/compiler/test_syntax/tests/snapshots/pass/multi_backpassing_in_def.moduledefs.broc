@@ -1,0 +1,3 @@
+main = 
+    arg1, arg2 <- f {}
+    "Broc <3 Zig!\n"

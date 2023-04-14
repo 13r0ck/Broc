@@ -1,28 +1,28 @@
 use bitvec::vec::BitVec;
 use bumpalo::collections::{String, Vec};
 
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_collections::all::MutMap;
-use roc_error_macros::internal_error;
-use roc_module::low_level::{LowLevel, LowLevelWrapperType};
-use roc_module::symbol::{Interns, Symbol};
-use roc_mono::code_gen_help::{CodeGenHelp, HelperOp, REFCOUNT_MAX};
-use roc_mono::ir::{
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_collections::all::MutMap;
+use broc_error_macros::internal_error;
+use broc_module::low_level::{LowLevel, LowLevelWrapperType};
+use broc_module::symbol::{Interns, Symbol};
+use broc_mono::code_gen_help::{CodeGenHelp, HelperOp, REFCOUNT_MAX};
+use broc_mono::ir::{
     BranchInfo, CallType, CrashTag, Expr, JoinPointId, ListLiteralElement, Literal, ModifyRc,
-    Param, Proc, ProcLayout, Stmt,
+    Param, Pbroc, PbrocLayout, Stmt,
 };
-use roc_mono::layout::{
+use broc_mono::layout::{
     Builtin, InLayout, Layout, LayoutIds, LayoutInterner, STLayoutInterner, TagIdIntType,
     UnionLayout,
 };
-use roc_std::RocDec;
+use broc_std::BrocDec;
 
-use roc_wasm_module::linking::{DataSymbol, WasmObjectSymbol};
-use roc_wasm_module::sections::{
+use broc_wasm_module::linking::{DataSymbol, WasmObjectSymbol};
+use broc_wasm_module::sections::{
     ConstExpr, DataMode, DataSegment, Export, Global, GlobalType, Import, ImportDesc, Limits,
     MemorySection, NameSection,
 };
-use roc_wasm_module::{
+use broc_wasm_module::{
     round_up_to_alignment, Align, ExportType, LocalId, Signature, SymInfo, ValueType, WasmModule,
 };
 
@@ -36,19 +36,19 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Debug)]
-pub enum ProcSource {
-    Roc,
+pub enum PbrocSource {
+    Broc,
     Helper,
-    /// Wrapper function for higher-order calls from Zig to Roc
+    /// Wrapper function for higher-order calls from Zig to Broc
     HigherOrderMapper(usize),
     HigherOrderCompare(usize),
 }
 
 #[derive(Debug)]
-pub struct ProcLookupData<'a> {
+pub struct PbrocLookupData<'a> {
     pub name: Symbol,
-    pub layout: ProcLayout<'a>,
-    pub source: ProcSource,
+    pub layout: PbrocLayout<'a>,
+    pub source: PbrocSource,
 }
 
 pub struct WasmBackend<'a, 'r> {
@@ -62,9 +62,9 @@ pub struct WasmBackend<'a, 'r> {
     pub fn_index_offset: u32,
     import_fn_count: u32,
     called_fns: BitVec<usize>,
-    pub proc_lookup: Vec<'a, ProcLookupData<'a>>,
+    pub pbroc_lookup: Vec<'a, PbrocLookupData<'a>>,
     host_lookup: Vec<'a, (&'a str, u32)>,
-    helper_proc_gen: CodeGenHelp<'a>,
+    helper_pbroc_gen: CodeGenHelp<'a>,
     can_relocate_heap: bool,
 
     // Function-level data
@@ -83,11 +83,11 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         layout_interner: &'r mut STLayoutInterner<'a>,
         interns: &'r mut Interns,
         layout_ids: LayoutIds<'a>,
-        proc_lookup: Vec<'a, ProcLookupData<'a>>,
+        pbroc_lookup: Vec<'a, PbrocLookupData<'a>>,
         host_to_app_map: Vec<'a, (&'a str, u32)>,
         mut module: WasmModule<'a>,
         fn_index_offset: u32,
-        helper_proc_gen: CodeGenHelp<'a>,
+        helper_pbroc_gen: CodeGenHelp<'a>,
     ) -> Self {
         let can_relocate_heap = module.linking.find_internal_symbol("__heap_base").is_ok();
 
@@ -115,7 +115,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             + module.code.dead_import_dummy_count as usize
             + module.code.function_count as usize;
         let mut called_fns = BitVec::repeat(false, host_function_count);
-        called_fns.extend(std::iter::repeat(true).take(proc_lookup.len()));
+        called_fns.extend(std::iter::repeat(true).take(pbroc_lookup.len()));
 
         WasmBackend {
             env,
@@ -128,9 +128,9 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             fn_index_offset,
             import_fn_count: import_fn_count as u32,
             called_fns,
-            proc_lookup,
+            pbroc_lookup,
             host_lookup,
-            helper_proc_gen,
+            helper_pbroc_gen,
             can_relocate_heap,
 
             // Function-level data
@@ -145,7 +145,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
     /// The standard layout is: constant data, then stack, then heap.
     /// Since they're all in one block, they can't grow independently. Only the highest one can grow.
     /// Also, there's no "invalid region" below the stack, so stack overflow will overwrite constants!
-    /// TODO: Detect stack overflow in function prologue... at least in Roc code...
+    /// TODO: Detect stack overflow in function prologue... at least in Broc code...
     fn set_memory_layout(&mut self, stack_size: u32) {
         let mut stack_heap_boundary = self.module.data.end_addr + stack_size;
         stack_heap_boundary = round_up_to_alignment!(stack_heap_boundary, MemorySection::PAGE_SIZE);
@@ -246,18 +246,18 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         }
     }
 
-    pub fn get_helpers(&mut self) -> Vec<'a, Proc<'a>> {
-        self.helper_proc_gen.take_procs()
+    pub fn get_helpers(&mut self) -> Vec<'a, Pbroc<'a>> {
+        self.helper_pbroc_gen.take_pbrocs()
     }
 
-    pub fn register_helper_proc(
+    pub fn register_helper_pbroc(
         &mut self,
         symbol: Symbol,
-        layout: ProcLayout<'a>,
-        source: ProcSource,
+        layout: PbrocLayout<'a>,
+        source: PbrocSource,
     ) -> u32 {
-        let proc_index = self.proc_lookup.len();
-        let wasm_fn_index = self.fn_index_offset + proc_index as u32;
+        let pbroc_index = self.pbroc_lookup.len();
+        let wasm_fn_index = self.fn_index_offset + pbroc_index as u32;
 
         let name = self
             .layout_ids
@@ -265,7 +265,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             .to_symbol_string(symbol, self.interns);
         let name = String::from_str_in(&name, self.env.arena).into_bump_str();
 
-        self.proc_lookup.push(ProcLookupData {
+        self.pbroc_lookup.push(PbrocLookupData {
             name: symbol,
             layout,
             source,
@@ -388,28 +388,28 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
 
     ***********************************************************/
 
-    pub fn build_proc(&mut self, proc: &Proc<'a>) {
-        if DEBUG_SETTINGS.proc_start_end {
-            println!("\ngenerating procedure {:?}\n", proc.name);
+    pub fn build_pbroc(&mut self, pbroc: &Pbroc<'a>) {
+        if DEBUG_SETTINGS.pbroc_start_end {
+            println!("\ngenerating procedure {:?}\n", pbroc.name);
         }
 
-        self.append_proc_debug_name(proc.name.name());
+        self.append_pbroc_debug_name(pbroc.name.name());
 
-        self.start_proc(proc);
+        self.start_pbroc(pbroc);
 
-        self.stmt(&proc.body);
+        self.stmt(&pbroc.body);
 
-        self.finalize_proc();
+        self.finalize_pbroc();
         self.reset();
 
-        if DEBUG_SETTINGS.proc_start_end {
-            println!("\nfinished generating {:?}\n", proc.name);
+        if DEBUG_SETTINGS.pbroc_start_end {
+            println!("\nfinished generating {:?}\n", pbroc.name);
         }
     }
 
-    fn start_proc(&mut self, proc: &Proc<'a>) {
+    fn start_pbroc(&mut self, pbroc: &Pbroc<'a>) {
         use ReturnMethod::*;
-        let ret_layout = WasmLayout::new(self.layout_interner, proc.ret_layout);
+        let ret_layout = WasmLayout::new(self.layout_interner, pbroc.ret_layout);
 
         let ret_type = match ret_layout.return_method(CallConv::C) {
             Primitive(ty, _) => Some(ty),
@@ -429,7 +429,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
 
         self.storage.allocate_args(
             self.layout_interner,
-            proc.args,
+            pbroc.args,
             &mut self.code_builder,
             self.env.arena,
         );
@@ -445,8 +445,8 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         });
     }
 
-    fn finalize_proc(&mut self) {
-        // end the block from start_proc, to ensure all paths pop stack memory (if any)
+    fn finalize_pbroc(&mut self) {
+        // end the block from start_pbroc, to ensure all paths pop stack memory (if any)
         self.end_block();
 
         if let Some(ret_var) = self.storage.return_var {
@@ -468,19 +468,19 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         }
     }
 
-    fn append_proc_debug_name(&mut self, sym: Symbol) {
-        let proc_index = self
-            .proc_lookup
+    fn append_pbroc_debug_name(&mut self, sym: Symbol) {
+        let pbroc_index = self
+            .pbroc_lookup
             .iter()
-            .position(|ProcLookupData { name, .. }| *name == sym)
+            .position(|PbrocLookupData { name, .. }| *name == sym)
             .unwrap();
-        let wasm_fn_index = self.fn_index_offset + proc_index as u32;
+        let wasm_fn_index = self.fn_index_offset + pbroc_index as u32;
 
         let name = String::from_str_in(sym.as_str(self.interns), self.env.arena).into_bump_str();
         self.module.names.append_function(wasm_fn_index, name);
     }
 
-    /// Build a wrapper around a Roc procedure so that it can be called from Zig builtins List.map*
+    /// Build a wrapper around a Broc procedure so that it can be called from Zig builtins List.map*
     ///
     /// The generic Zig code passes *pointers* to all of the argument values (e.g. on the heap in a List).
     /// Numbers up to 64 bits are passed by value, so we need to load them from the provided pointer.
@@ -496,12 +496,12 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         use Align::*;
         use ValueType::*;
 
-        let ProcLookupData {
+        let PbrocLookupData {
             name: wrapper_name,
-            layout: wrapper_proc_layout,
+            layout: wrapper_pbroc_layout,
             ..
-        } = self.proc_lookup[wrapper_lookup_idx];
-        let wrapper_arg_layouts = wrapper_proc_layout.arguments;
+        } = self.pbroc_lookup[wrapper_lookup_idx];
+        let wrapper_arg_layouts = wrapper_pbroc_layout.arguments;
 
         // Our convention is that the last arg of the wrapper is the heap return pointer
         let heap_return_ptr_id = LocalId(wrapper_arg_layouts.len() as u32 - 1);
@@ -528,7 +528,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
                 n_inner_wasm_args += 1;
                 None
             }
-            x => internal_error!("A Roc function should never use ReturnMethod {:?}", x),
+            x => internal_error!("A Broc function should never use ReturnMethod {:?}", x),
         };
 
         // Load all the arguments for the inner function
@@ -604,11 +604,11 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             ret_type: None,
         });
 
-        self.append_proc_debug_name(wrapper_name);
+        self.append_pbroc_debug_name(wrapper_name);
         self.reset();
     }
 
-    /// Build a wrapper around a Roc comparison proc so that it can be called from higher-order Zig builtins.
+    /// Build a wrapper around a Broc comparison pbroc so that it can be called from higher-order Zig builtins.
     /// Comparison procedure signature is: closure_data, a, b -> Order (u8)
     ///
     /// The generic Zig code passes *pointers* to all of the argument values (e.g. on the heap in a List).
@@ -621,13 +621,13 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
     ) {
         use ValueType::*;
 
-        let ProcLookupData {
+        let PbrocLookupData {
             name: wrapper_name,
-            layout: wrapper_proc_layout,
+            layout: wrapper_pbroc_layout,
             ..
-        } = self.proc_lookup[wrapper_lookup_idx];
-        let closure_data_layout = wrapper_proc_layout.arguments[0];
-        let value_layout = wrapper_proc_layout.arguments[1];
+        } = self.pbroc_lookup[wrapper_lookup_idx];
+        let closure_data_layout = wrapper_pbroc_layout.arguments[0];
+        let value_layout = wrapper_pbroc_layout.arguments[1];
 
         let mut n_inner_args = 2;
         if self.layout_interner.stack_size(closure_data_layout) > 0 {
@@ -657,7 +657,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             ret_type: Some(ValueType::I32),
         });
 
-        self.append_proc_debug_name(wrapper_name);
+        self.append_pbroc_debug_name(wrapper_name);
         self.reset();
     }
 
@@ -976,7 +976,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             .get_mut(&self.env.module_id)
             .unwrap();
 
-        let (rc_stmt, new_specializations) = self.helper_proc_gen.expand_refcount_stmt(
+        let (rc_stmt, new_specializations) = self.helper_pbroc_gen.expand_refcount_stmt(
             ident_ids,
             self.layout_interner,
             layout,
@@ -995,7 +995,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
 
         // If any new specializations were created, register their symbol data
         for (spec_sym, spec_layout) in new_specializations.into_iter() {
-            self.register_helper_proc(spec_sym, spec_layout, ProcSource::Helper);
+            self.register_helper_pbroc(spec_sym, spec_layout, PbrocSource::Helper);
         }
 
         self.stmt(rc_stmt);
@@ -1010,7 +1010,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             StoredVarKind::Variable,
         );
 
-        // Store the message as a RocStr on the stack
+        // Store the message as a BrocStr on the stack
         let (local_id, offset) = match msg_storage {
             StoredValue::StackMemory { location, .. } => {
                 location.local_and_offset(self.storage.stack_frame_pointer)
@@ -1019,14 +1019,14 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         };
         self.expr_string_literal(msg, local_id, offset);
 
-        self.stmt_crash(msg_sym, CrashTag::Roc);
+        self.stmt_crash(msg_sym, CrashTag::Broc);
     }
 
     pub fn stmt_crash(&mut self, msg: Symbol, tag: CrashTag) {
         // load the pointer
         self.storage.load_symbols(&mut self.code_builder, &[msg]);
         self.code_builder.i32_const(tag as _);
-        self.call_host_fn_after_loading_args("roc_panic", 2, false);
+        self.call_host_fn_after_loading_args("broc_panic", 2, false);
 
         self.code_builder.unreachable_();
     }
@@ -1043,7 +1043,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
 
             Expr::NullPointer => self.expr_null_pointer(),
 
-            Expr::Call(roc_mono::ir::Call {
+            Expr::Call(broc_mono::ir::Call {
                 call_type,
                 arguments,
             }) => self.expr_call(call_type, arguments, sym, layout, storage),
@@ -1142,7 +1142,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
 
                 match lit {
                     Literal::Decimal(bytes) => {
-                        let (upper_bits, lower_bits) = RocDec::from_ne_bytes(*bytes).as_bits();
+                        let (upper_bits, lower_bits) = BrocDec::from_ne_bytes(*bytes).as_bits();
                         write128(lower_bits as i64, upper_bits);
                     }
                     Literal::Int(x) | Literal::U128(x) => {
@@ -1257,14 +1257,14 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
                 ret_layout: result,
                 ..
             } => {
-                let proc_layout = ProcLayout {
+                let pbroc_layout = PbrocLayout {
                     arguments: arg_layouts,
                     result: *result,
                     niche: func_sym.niche(),
                 };
                 self.expr_call_by_name(
                     func_sym.name(),
-                    &proc_layout,
+                    &pbroc_layout,
                     arguments,
                     ret_sym,
                     ret_layout,
@@ -1304,7 +1304,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
     fn expr_call_by_name(
         &mut self,
         func_sym: Symbol,
-        proc_layout: &ProcLayout<'a>,
+        pbroc_layout: &PbrocLayout<'a>,
         arguments: &'a [Symbol],
         ret_sym: Symbol,
         ret_layout: InLayout<'a>,
@@ -1330,20 +1330,20 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             );
         debug_assert!(!ret_zig_packed_struct);
 
-        let roc_proc_index = self
-            .proc_lookup
+        let broc_pbroc_index = self
+            .pbroc_lookup
             .iter()
-            .position(|lookup| lookup.name == func_sym && &lookup.layout == proc_layout)
+            .position(|lookup| lookup.name == func_sym && &lookup.layout == pbroc_layout)
             .unwrap_or_else(|| {
                 internal_error!(
-                    "Could not find procedure {:?} with proc_layout:\n{:#?}\nKnown procedures:\n{:#?}",
+                    "Could not find procedure {:?} with pbroc_layout:\n{:#?}\nKnown procedures:\n{:#?}",
                     func_sym,
-                    proc_layout,
-                    self.proc_lookup
+                    pbroc_layout,
+                    self.pbroc_lookup
                 );
             });
 
-        let wasm_fn_index = self.fn_index_offset + roc_proc_index as u32;
+        let wasm_fn_index = self.fn_index_offset + broc_pbroc_index as u32;
 
         self.code_builder
             .call(wasm_fn_index, num_wasm_args, has_return_val);
@@ -1379,7 +1379,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             .host_lookup
             .iter()
             .find(|(fn_name, _)| *fn_name == name)
-            .unwrap_or_else(|| panic!("The Roc app tries to call `{}` but I can't find it!", name));
+            .unwrap_or_else(|| panic!("The Broc app tries to call `{}` but I can't find it!", name));
 
         self.called_fns.set(*fn_index as usize, true);
 
@@ -1396,7 +1396,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
     /// If this is the first call for this Layout, it will generate the IR for the procedure.
     /// Call stack is expr_call_low_level -> LowLevelCall::generate -> call_eq_specialized
     /// It's a bit circuitous, but the alternative is to give low_level.rs `pub` access to
-    /// interns, helper_proc_gen, and expr(). That just seemed all wrong.
+    /// interns, helper_pbroc_gen, and expr(). That just seemed all wrong.
     pub fn call_eq_specialized(
         &mut self,
         arguments: &'a [Symbol],
@@ -1412,12 +1412,12 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
 
         // Get an IR expression for the call to the specialized procedure
         let (specialized_call_expr, new_specializations) = self
-            .helper_proc_gen
+            .helper_pbroc_gen
             .call_specialized_equals(ident_ids, self.layout_interner, arg_layout, arguments);
 
         // If any new specializations were created, register their symbol data
         for (spec_sym, spec_layout) in new_specializations.into_iter() {
-            self.register_helper_proc(spec_sym, spec_layout, ProcSource::Helper);
+            self.register_helper_pbroc(spec_sym, spec_layout, PbrocSource::Helper);
         }
 
         // Generate Wasm code for the IR call expression
@@ -1784,7 +1784,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             self.storage
                 .load_symbols(&mut self.code_builder, &[structure]);
 
-            use roc_mono::layout::Discriminant::*;
+            use broc_mono::layout::Discriminant::*;
             match union_layout.discriminant() {
                 U0 | U1 | U8 => self.code_builder.i32_load8_u(id_align, id_offset),
                 U16 => self.code_builder.i32_load16_u(id_align, id_offset),
@@ -1972,7 +1972,7 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         self.code_builder.i32_const(alignment_bytes as i32);
 
         // Call the foreign function. (Zig and C calling conventions are the same for this signature)
-        self.call_host_fn_after_loading_args("roc_alloc", 2, true);
+        self.call_host_fn_after_loading_args("broc_alloc", 2, true);
 
         // Save the allocation address to a temporary local variable
         let local_id = self.storage.create_anonymous_local(ValueType::I32);
@@ -2000,12 +2000,12 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
         // Get an IR expression for the call to the specialized procedure
         let layout = self.storage.symbol_layouts[&argument];
         let (specialized_call_expr, new_specializations) = self
-            .helper_proc_gen
+            .helper_pbroc_gen
             .call_reset_refcount(ident_ids, self.layout_interner, layout, argument);
 
         // If any new specializations were created, register their symbol data
         for (spec_sym, spec_layout) in new_specializations.into_iter() {
-            self.register_helper_proc(spec_sym, spec_layout, ProcSource::Helper);
+            self.register_helper_pbroc(spec_sym, spec_layout, PbrocSource::Helper);
         }
 
         // Generate Wasm code for the IR call expression
@@ -2026,21 +2026,21 @@ impl<'a, 'r> WasmBackend<'a, 'r> {
             .get_mut(&self.env.module_id)
             .unwrap();
 
-        let (proc_symbol, new_specializations) =
-            self.helper_proc_gen
-                .gen_refcount_proc(ident_ids, self.layout_interner, layout, op);
+        let (pbroc_symbol, new_specializations) =
+            self.helper_pbroc_gen
+                .gen_refcount_pbroc(ident_ids, self.layout_interner, layout, op);
 
         // If any new specializations were created, register their symbol data
         for (spec_sym, spec_layout) in new_specializations.into_iter() {
-            self.register_helper_proc(spec_sym, spec_layout, ProcSource::Helper);
+            self.register_helper_pbroc(spec_sym, spec_layout, PbrocSource::Helper);
         }
 
-        let proc_index = self
-            .proc_lookup
+        let pbroc_index = self
+            .pbroc_lookup
             .iter()
-            .position(|lookup| lookup.name == proc_symbol && lookup.layout.arguments[0] == layout)
+            .position(|lookup| lookup.name == pbroc_symbol && lookup.layout.arguments[0] == layout)
             .unwrap();
 
-        self.fn_index_offset + proc_index as u32
+        self.fn_index_offset + pbroc_index as u32
     }
 }

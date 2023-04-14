@@ -3,15 +3,15 @@
 use std::iter::once;
 use std::sync::{Arc, Mutex};
 
-use roc_can::abilities::SpecializationLambdaSets;
-use roc_can::expr::Expr;
-use roc_can::pattern::Pattern;
-use roc_can::{def::Def, module::ExposedByModule};
-use roc_collections::{MutMap, VecMap};
-use roc_derive_key::DeriveKey;
-use roc_module::symbol::{IdentIds, ModuleId, Symbol};
-use roc_region::all::Loc;
-use roc_types::subs::{
+use broc_can::abilities::SpecializationLambdaSets;
+use broc_can::expr::Expr;
+use broc_can::pattern::Pattern;
+use broc_can::{def::Def, module::ExposedByModule};
+use broc_collections::{MutMap, VecMap};
+use broc_derive_key::DeriveKey;
+use broc_module::symbol::{IdentIds, ModuleId, Symbol};
+use broc_region::all::Loc;
+use broc_types::subs::{
     copy_import_to, Content, Descriptor, Mark, OptVariable, Rank, Subs, Variable,
 };
 use util::Env;
@@ -191,7 +191,7 @@ impl DerivedModule {
             .values()
             .filter_map(|(symbol, def, _)| {
                 if should_load_def(*symbol) {
-                    let (new_expr_var, new_expr) = roc_can::copy::deep_copy_expr_across_subs(
+                    let (new_expr_var, new_expr) = broc_can::copy::deep_copy_expr_across_subs(
                         &mut self.subs,
                         gen_subs,
                         def.expr_var,

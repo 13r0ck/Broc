@@ -3,7 +3,7 @@ use std::io::Write;
 
 use bumpalo::collections::vec::Vec;
 use bumpalo::Bump;
-use roc_error_macros::internal_error;
+use broc_error_macros::internal_error;
 
 use crate::{Value, DUMMY_FUNCTION};
 
@@ -1647,7 +1647,7 @@ impl<'a> Serialize for DataSection<'a> {
  *
  *******************************************************************/
 
-/// A Wasm module section that we don't use for Roc code,
+/// A Wasm module section that we don't use for Broc code,
 /// but may be present in a preloaded binary
 #[derive(Debug, Default)]
 pub struct OpaqueSection<'a> {
@@ -1878,7 +1878,7 @@ mod tests {
     use bumpalo::{self, collections::Vec, Bump};
 
     fn test_assert_types_preload<'a>(arena: &'a Bump, original: &TypeSection<'a>) {
-        // Serialize the Type section that we built from Roc code
+        // Serialize the Type section that we built from Broc code
         let mut original_serialized = Vec::with_capacity_in(6 + original.bytes.len(), arena);
         original.serialize(&mut original_serialized);
 

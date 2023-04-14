@@ -15,13 +15,13 @@
 
 use crate::inc_dec::{collect_stmt, occurring_variables_expr, JPLiveVarMap, LiveVarSet};
 use crate::ir::{
-    BranchInfo, Call, Expr, ListLiteralElement, Proc, Stmt, UpdateModeId, UpdateModeIds,
+    BranchInfo, Call, Expr, ListLiteralElement, Pbroc, Stmt, UpdateModeId, UpdateModeIds,
 };
 use crate::layout::{Layout, LayoutInterner, STLayoutInterner, TagIdIntType, UnionLayout};
 use bumpalo::collections::Vec;
 use bumpalo::Bump;
-use roc_collections::all::MutSet;
-use roc_module::symbol::{IdentIds, ModuleId, Symbol};
+use broc_collections::all::MutSet;
+use broc_module::symbol::{IdentIds, ModuleId, Symbol};
 
 pub fn insert_reset_reuse<'a, 'i>(
     arena: &'a Bump,
@@ -29,8 +29,8 @@ pub fn insert_reset_reuse<'a, 'i>(
     home: ModuleId,
     ident_ids: &'i mut IdentIds,
     update_mode_ids: &'i mut UpdateModeIds,
-    mut proc: Proc<'a>,
-) -> Proc<'a> {
+    mut pbroc: Pbroc<'a>,
+) -> Pbroc<'a> {
     let mut env = Env {
         arena,
         interner,
@@ -40,10 +40,10 @@ pub fn insert_reset_reuse<'a, 'i>(
         jp_live_vars: Default::default(),
     };
 
-    let new_body = function_r(&mut env, arena.alloc(proc.body));
-    proc.body = new_body.clone();
+    let new_body = function_r(&mut env, arena.alloc(pbroc.body));
+    pbroc.body = new_body.clone();
 
-    proc
+    pbroc
 }
 
 #[derive(Debug)]

@@ -1,4 +1,4 @@
-pub use roc_ident::IdentStr;
+pub use broc_ident::IdentStr;
 use std::fmt::{self, Debug};
 
 use crate::symbol::PQModuleName;
@@ -77,8 +77,8 @@ pub type TagIdIntType = u16;
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TagName(pub Uppercase);
 
-roc_error_macros::assert_sizeof_non_wasm!(TagName, 16);
-roc_error_macros::assert_sizeof_wasm!(TagName, 8);
+broc_error_macros::assert_sizeof_non_wasm!(TagName, 16);
+broc_error_macros::assert_sizeof_wasm!(TagName, 8);
 
 impl TagName {
     pub fn as_ident_str(&self) -> IdentStr {

@@ -1,5 +1,5 @@
 use indoc::indoc;
-use roc_repl_cli::repl_state::{is_incomplete, ReplState, TIPS};
+use broc_repl_cli::repl_state::{is_incomplete, ReplState, TIPS};
 
 // These are tests of the REPL state machine. They work without actually
 // running the CLI, and without using rustyline, and instead verify

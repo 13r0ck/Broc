@@ -8,13 +8,13 @@ version.workspace = true
 
 [dev-dependencies]
 cli_utils = { path = "../cli_utils" }
-roc_command_utils = { path = "../utils/command" }
-roc_build = { path = "../compiler/build" }
-roc_linker = { path = "../linker" }
-roc_load = { path = "../compiler/load" }
-roc_mono = { path = "../compiler/mono" }
-roc_packaging = { path = "../packaging" }
-roc_reporting = { path = "../reporting" }
+broc_command_utils = { path = "../utils/command" }
+broc_build = { path = "../compiler/build" }
+broc_linker = { path = "../linker" }
+broc_load = { path = "../compiler/load" }
+broc_mono = { path = "../compiler/mono" }
+broc_packaging = { path = "../packaging" }
+broc_reporting = { path = "../reporting" }
 
 bumpalo.workspace = true
 indoc.workspace = true
@@ -24,11 +24,11 @@ tempfile.workspace = true
 [features]
 default = ["target-aarch64", "target-x86_64", "target-wasm32"]
 
-target-aarch64 = ["roc_build/target-aarch64"]
+target-aarch64 = ["broc_build/target-aarch64"]
 target-arm = []
 target-wasm32 = []
 target-x86 = []
-target-x86_64 = ["roc_build/target-x86_64"]
+target-x86_64 = ["broc_build/target-x86_64"]
 
 [package.metadata.cargo-udeps.ignore]
-development = ["roc_build", "roc_linker"]
+development = ["broc_build", "broc_linker"]

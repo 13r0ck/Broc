@@ -3,9 +3,9 @@
 # https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -euxo pipefail
 
-# Could assume roc binary on path but this may be preferable
+# Could assume broc binary on path but this may be preferable
 cargo build --release
-../../target/release/roc build --lib
+../../target/release/broc build --lib
 
 # Neither the application nor python needs a .0, so we can just rename it
 mv libhello.so.1.0 libhello.so.1
@@ -28,4 +28,4 @@ echo "You may now enter your virtual environment.
 In bash/zsh, run: source .interop_env/bin/activate
 In fish, run: source .interop_env/bin/activate.fish
 In csh/tcsh (really?), run: source .interop_env/bin/activate.csh
-Then, try entring an interactive python shell, import demo and call demo.call_roc with your number of choice."
+Then, try entring an interactive python shell, import demo and call demo.call_broc with your number of choice."

@@ -4,8 +4,8 @@
     <script src="./host.js"></script>
     <script>
       const elem = document.getElementById("output");
-      roc_web_platform_run("./rocLovesWebAssembly.wasm", (string_from_roc) => {
-        elem.textContent = string_from_roc;
+      broc_web_platform_run("./brocLovesWebAssembly.wasm", (string_from_broc) => {
+        elem.textContent = string_from_broc;
       });
     </script>
   </body>

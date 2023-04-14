@@ -1,14 +1,14 @@
-# Proposal: Abilities in Roc
+# Proposal: Abilities in Broc
 
-Status: we invite you to try out abilities for beta use, and are working on resolving known limitations (see issue [#2463](https://github.com/roc-lang/roc/issues/2463)).
+Status: we invite you to try out abilities for beta use, and are working on resolving known limitations (see issue [#2463](https://github.com/roc-lang/broc/issues/2463)).
 
-This design idea addresses a variety of problems in Roc at once. It also unlocks some very exciting benefits that I didn't expect at the outset! It's a significant addition to the language, but it also means two other language features can be removed, and numbers can get a lot simpler.
+This design idea addresses a variety of problems in Broc at once. It also unlocks some very exciting benefits that I didn't expect at the outset! It's a significant addition to the language, but it also means two other language features can be removed, and numbers can get a lot simpler.
 
 
-Thankfully it's a nonbreaking change for most Roc code, and in the few places where it actually is a breaking change, the fix should consist only of shifting a handful of characters around. Still, it feels like a big change because of all the implications it brings. Here we go!
+Thankfully it's a nonbreaking change for most Broc code, and in the few places where it actually is a breaking change, the fix should consist only of shifting a handful of characters around. Still, it feels like a big change because of all the implications it brings. Here we go!
 
 ## Background
-Elm has a few specially constrained type variables: `number`, `comparable`, `appendable`, and the lesser-known `compappend`. Roc does not have these; it has no `appendable` or `compappend` equivalent, and instead of `number` and `comparable` it has:
+Elm has a few specially constrained type variables: `number`, `comparable`, `appendable`, and the lesser-known `compappend`. Broc does not have these; it has no `appendable` or `compappend` equivalent, and instead of `number` and `comparable` it has:
 
 
 - `Num *` as the type of number literals, with type aliases like `I64 : Num (Integer Signed64)`
@@ -18,7 +18,7 @@ Elm has a few specially constrained type variables: `number`, `comparable`, `app
 There are a few known problems with this design, as well as some missed opportunities.
 
 ### Problem 1: Nonsense numbers type-check
-Right now in Roc, the following type-checks:
+Right now in Broc, the following type-checks:
 
 ```coffee
 x : Num [ Whatever Str, Blah (List {} -> Bool) ]
@@ -28,13 +28,13 @@ x = 5
 This type-checks because the number literal 5 has the type `Num *`, which unifies with any `Num` - even if the type variable is complete nonsense.
 
 
-It's not clear what should happen here after type-checking. What machine instructions should Roc generate for this nonsense number type? Suppose I later wrote (`if x + 1 > 0 then … `) - what hardware addition instruction should be generated there?
+It's not clear what should happen here after type-checking. What machine instructions should Broc generate for this nonsense number type? Suppose I later wrote (`if x + 1 > 0 then … `) - what hardware addition instruction should be generated there?
 
 
-Arguably the compiler should throw an error - but when? We could do it at compile time, during code generation, but that goes against the design goal of "you can always run your Roc program, even if there are compile-time errors, and it will get as far as it can."
+Arguably the compiler should throw an error - but when? We could do it at compile time, during code generation, but that goes against the design goal of "you can always run your Broc program, even if there are compile-time errors, and it will get as far as it can."
 
 
-So then do we generate a runtime exception as soon as you encounter this code? Now Roc's type system is arguably unsound, because this is a runtime type error which the type checker approved.
+So then do we generate a runtime exception as soon as you encounter this code? Now Broc's type system is arguably unsound, because this is a runtime type error which the type checker approved.
 
 
 Do we add an extra special type constraint just for Num to detect this during the type-checking phase? Now Num is special-cased in a way that no other type is…
@@ -43,7 +43,7 @@ Do we add an extra special type constraint just for Num to detect this during th
 None of these potential solutions have ever felt great to me.
 
 ### Problem 2: Custom number types can't use arithmetic operators
-Roc's ordinary numbers should be enough for most use cases, but there are nice packages like [elm-units](https://package.elm-lang.org/packages/ianmackenzie/elm-units/latest/) which can prevent [really expensive errors](https://spacemath.gsfc.nasa.gov/weekly/6Page53.pdf) by raising compile-time errors for mismatched units...at the cost of having to sacrifice normal arithmetic operators. You can't use `+` on your unit-ful numbers, because `+` in Roc desugars to `Num.add`, not (for example) `Quantity.add`.
+Broc's ordinary numbers should be enough for most use cases, but there are nice packages like [elm-units](https://package.elm-lang.org/packages/ianmackenzie/elm-units/latest/) which can prevent [really expensive errors](https://spacemath.gsfc.nasa.gov/weekly/6Page53.pdf) by raising compile-time errors for mismatched units...at the cost of having to sacrifice normal arithmetic operators. You can't use `+` on your unit-ful numbers, because `+` in Broc desugars to `Num.add`, not (for example) `Quantity.add`.
 
 
 Also, if 128-bit integers aren't big enough, because the numbers you're working with are outside the undecillion range (perhaps recording the distance between the Earth and the edge of the universe in individual atoms or something?) maybe you want to make an arbitrary-sized integer package. Again, you can do that, but you can't use `+` with it. Same with vector packages, matrix packages, etc.
@@ -52,7 +52,7 @@ Also, if 128-bit integers aren't big enough, because the numbers you're working 
 This might not sound like a big problem (e.g. people deal with it in Java land), but in domains where you want to use custom numeric types, not having this is (so I've heard) a significant incentive to use plain numbers instead of more helpful data types.
 
 ### Problem 3: Decoders are still hard to learn
-Roc is currently no different from Elm in this regard. I only recently realized that the design I'm about to describe can also address this problem, but I was very excited to discover that!
+Broc is currently no different from Elm in this regard. I only recently realized that the design I'm about to describe can also address this problem, but I was very excited to discover that!
 
 ### Problem 4: Custom collection equality
 Let's suppose I'm creating a custom data structure: a dictionary, possibly backed by a hash map or a tree. We'll ignore the internal structure of the storage field for now, but the basic technique we'd use would be a private tag wrapper to make an opaque type:
@@ -61,23 +61,23 @@ Let's suppose I'm creating a custom data structure: a dictionary, possibly backe
 Dict k v : [ @Dict { storage : … } ]
 ```
 
-Today in Roc I can make a very nice API for this dictionary, but one thing I can't do is get `==` to do the right thing if my internal storage representation is sensitive to insertion order.
+Today in Broc I can make a very nice API for this dictionary, but one thing I can't do is get `==` to do the right thing if my internal storage representation is sensitive to insertion order.
 
 
 For example, suppose this `Dict` has an internal storage of a binary tree, which means it's possible to get two different internal storage representations depending on the order in which someone makes the same `Dict.insert` calls. Insertion order shouldn't affect equality - what matters is if the two dictionaries contain the same elements! - but by default it does, because `==` only knows how to check if the internal structures match exactly.
 
 
-This feels like a significantly bigger problem in Roc than it is in Elm, because:
+This feels like a significantly bigger problem in Broc than it is in Elm, because:
 
 
-- It's more likely that people will have applications where custom data structures are valuable, e.g. to efficiently store and retrieve millions of values in memory on a server. (This wouldn't likely happen in a browser-based UI.) Discord [ran into a use case like this](https://discord.com/blog/using-rust-to-scale-elixir-for-11-million-concurrent-users) in Elixir, and ended up turning to Rust FFI to get the performance they needed; I'm optimistic that we can get acceptable performance for use cases like this out of pure Roc data structure implementations, and pure Roc data structures would be much more ergonomic than interop - since having to use Task for every operation would be a significant downside for a data structure.
+- It's more likely that people will have applications where custom data structures are valuable, e.g. to efficiently store and retrieve millions of values in memory on a server. (This wouldn't likely happen in a browser-based UI.) Discord [ran into a use case like this](https://discord.com/blog/using-rust-to-scale-elixir-for-11-million-concurrent-users) in Elixir, and ended up turning to Rust FFI to get the performance they needed; I'm optimistic that we can get acceptable performance for use cases like this out of pure Broc data structure implementations, and pure Broc data structures would be much more ergonomic than interop - since having to use Task for every operation would be a significant downside for a data structure.
 - I want to make testing low-friction, especially within the editor, and some of the ideas I have for how to do that rely on `==` being automatically used behind the scenes to compare values against known good values. If someone wrote tests that relied on `==` and then wanted to swap out a data structure for a custom one (e.g. because they ran into the scaling issues Discord did), it would be extra bad if the new data structure stopped working with all the existing tests and they all had to be rewritten to no longer use these convenient testing features and instead use a custom `Dict.contentsEq` or something instead.
 
 
 This is one of the most serious problems on this list. Not for the short term, but for the long term.
 
 ### Problem 5: How to specify functionlessness in documentation
-In Roc's current design, certain types have a functionless constraint. For example, in `Bool.isEq : 'val, 'val -> Bool`,  the type variable `'val` means "a type that contains no functions, which we are naming val here."
+In Broc's current design, certain types have a functionless constraint. For example, in `Bool.isEq : 'val, 'val -> Bool`,  the type variable `'val` means "a type that contains no functions, which we are naming val here."
 
 
 In this design, it's necessarily a breaking change when a type goes from functionless to function-ful, because that type can no longer be used with the `==` operator (among other things).
@@ -92,13 +92,13 @@ There's also a related problem with how to display it in documentation. If I hav
 This is definitely solvable, but once again I can't name any solutions I love.
 
 ### Problem 6: No nice way to specify editor-specific code
-One of the goals for Roc is to have packages ship with editor integrations.
+One of the goals for Broc is to have packages ship with editor integrations.
 
 
 For example, let's say I'm making a custom data structure like the `Dict` from earlier. I want to be able to render an interactive "expando" style `Dict` in the editor, so when someone is in the editor looking at a trace of the values running through their program, they can expand the dictionary to look at just its key-value pairs instead of having to wade through its potentially gnarly internal storage representation. It's a similar problem to equality: as the author of `Dict`, I want to customize that!
 
 
-The question is how I should specify the rendering function for `Dict`. There isn't an obvious answer in current Roc. Would I write a view function in `Dict.roc`, and the editor just looks for a function by that name? If so, would I expose it directly from that module? If so, then does that mean the API docs for Dict will include a view function that's only there for the editor's benefit? Should there be some special language keyword to annotate it as "editor-only" so it doesn't clutter up the rest of the API docs?
+The question is how I should specify the rendering function for `Dict`. There isn't an obvious answer in current Broc. Would I write a view function in `Dict.broc`, and the editor just looks for a function by that name? If so, would I expose it directly from that module? If so, then does that mean the API docs for Dict will include a view function that's only there for the editor's benefit? Should there be some special language keyword to annotate it as "editor-only" so it doesn't clutter up the rest of the API docs?
 
 
 As with the `Num *` problem, there are various ways to solve this using the current language primitives, but I haven't found any that seem really nice.
@@ -107,13 +107,13 @@ As with the `Num *` problem, there are various ways to solve this using the curr
 This is a minor problem, but worth noting briefly.
 
 
-In Roc's development backend, we do mostly the same thing when generating X86-64 instructions and ARM instructions. However, there are also several points in the process where slightly different things need to happen depending on what architecture we're targeting.
+In Broc's development backend, we do mostly the same thing when generating X86-64 instructions and ARM instructions. However, there are also several points in the process where slightly different things need to happen depending on what architecture we're targeting.
 
 
 In Rust, we can use traits to specialize these function calls in a way where Rust's compiler will monomorphize specialized versions of one generic function for each architecture, such that each specialized function does direct calls to the appropriate architecture-specific functions at the appropriate moments. It's exactly as efficient as if those specialized functions had each been written by hand, except they all get to share code.
 
 
-In Roc, you can achieve this same level of reuse by passing around a record of functions, and calling them at the appropriate moments. While this works, it has strictly more overhead potential than the trait-based approach we're using in Rust. Maybe after a bunch of LLVM inlining and optimization passes, it will end up being equivalent, but presumably there will be cases where it does not.
+In Broc, you can achieve this same level of reuse by passing around a record of functions, and calling them at the appropriate moments. While this works, it has strictly more overhead potential than the trait-based approach we're using in Rust. Maybe after a bunch of LLVM inlining and optimization passes, it will end up being equivalent, but presumably there will be cases where it does not.
 
 
 Is the amount of overhead we're talking about here a big deal? Maybe, maybe not, depending on the use case. This is definitely a niche situation, but nevertheless a missed opportunity for some amount of speed compared to what other languages can do.
@@ -232,13 +232,13 @@ Dict.insert : k, v, Dict k v -> Dict k v
 If Hash doesn't require `Eq` for some reason (although it probably should), then `Dict.insert` could require multiple abilities as part of the annotation, e.g. `where k has Hash, Eq`
 
 
-In the Abilities world, Roc no longer needs the concept of the *functionless* constraint, and it can be removed from the language. Abilities can cover all those use cases.
+In the Abilities world, Broc no longer needs the concept of the *functionless* constraint, and it can be removed from the language. Abilities can cover all those use cases.
 
 ### Default Abilities
 One of the many things I like about Elm is that I can make anonymous records and tuples have them Just Work with the `==` operator. In contrast, in Rust I have to name the struct and then add `#[deriving(Eq)]` to it if I want `==` to work on it.
 
 
-However, in Rust, tuples work basically like how they do in Elm: equality Just Works as long as all the elements in the tuple have `Eq`. In fact, Rust tuples automatically derive a bunch of traits. We can do something similar in Roc.
+However, in Rust, tuples work basically like how they do in Elm: equality Just Works as long as all the elements in the tuple have `Eq`. In fact, Rust tuples automatically derive a bunch of traits. We can do something similar in Broc.
 
 
 Specifically, the idea would be to have all records and tags automatically have the following abilities by default, wherever possible. (For example, types that contain functions wouldn't get these abilities, because these operations are unsupported for functions!)
@@ -272,7 +272,7 @@ Having spent a lot of time teaching JSON decoders to beginning Elm programmers, 
 In the Abilities world, we can take this a step further than Rust does. We can have `Encode` and `Decode` as builtin abilities (and then also `Encoder` and `Decoder`, except they work like Serializers and Deserializers do in serde; you have an Encoder or Decoder for a particular encoding - e.g. JSON or XML - rather than for the value you want to encode or decode), and we can have the compiler automatically define them when possible, just like it does for `Eq` and the others.
 
 
-This would mean that in Roc you could do, without any setup other than importing a package to get a generic **Json.decoder**, the following:
+This would mean that in Broc you could do, without any setup other than importing a package to get a generic **Json.decoder**, the following:
 
 ```coffee
 result : Result User [ JsonDecodingErr ]*
@@ -282,14 +282,14 @@ result = Decode.decode Json.decoder jsonStr
 So it would be like serde in Rust, except that - like with Elm records - you wouldn't even need to mark your User as deriving Encode and Decode; those abilities would already be there by default, just like `Eq`, `Hash`, and `Sort`.
 
 
-This would solve [Problem #3](#problem-3-decoders-are-still-hard-to-learn), eliminating the need for a beginner curriculum to include the one technique I've seen beginning Elm programmers struggle the most to learn. That's a very big deal to me! I don't know whether decoding serialized data will be as common in Roc as it is in Elm, but I certainly expect it to come up often.
+This would solve [Problem #3](#problem-3-decoders-are-still-hard-to-learn), eliminating the need for a beginner curriculum to include the one technique I've seen beginning Elm programmers struggle the most to learn. That's a very big deal to me! I don't know whether decoding serialized data will be as common in Broc as it is in Elm, but I certainly expect it to come up often.
 
 
 Other nice things about this design:
 
 
-- Since Encode and Decode are builtins, no packages need to depend on anything to make use of them. In Rust, it's currently a bit awkward that all packages that want to offer serializability have to depend on serde; it has become a nearly ubiquitous dependency in the Cargo ecosystem. By making it a builtin, Roc can avoid that problem.
-- Since Encode and Decode are agnostic to the actual encoding format, anyone can write a new Encoder and Decoder for whatever their new format is (e.g. XSON, the format that looks at XML and JSON and says "why not both?" - which I just made up) and have every serializable Roc type across the entire ecosystem instantly able to be serialized to/from that format.
+- Since Encode and Decode are builtins, no packages need to depend on anything to make use of them. In Rust, it's currently a bit awkward that all packages that want to offer serializability have to depend on serde; it has become a nearly ubiquitous dependency in the Cargo ecosystem. By making it a builtin, Broc can avoid that problem.
+- Since Encode and Decode are agnostic to the actual encoding format, anyone can write a new Encoder and Decoder for whatever their new format is (e.g. XSON, the format that looks at XML and JSON and says "why not both?" - which I just made up) and have every serializable Broc type across the entire ecosystem instantly able to be serialized to/from that format.
 - This design still allows for evolving a default decoder into a bespoke decoder that can cover the same use cases that elm/json does (and a potentially very similar API). 
 
 
@@ -302,7 +302,7 @@ So we've talked about default abilities, and how various builtins would use them
 To do that, we need to talk about a change to the language that was originally motivated by abilities, but which ultimately seems like a good change even if abilities weren't a thing.
 
 ### Newtypes
-Let's suppose Roc no longer has private tags, but does have this syntax:
+Let's suppose Broc no longer has private tags, but does have this syntax:
 
 ```coffee
 UserId := U64
@@ -344,9 +344,9 @@ This design has a few advantages over private tags:
 1. It's more focused. Wrapper types with hidden implementations are really the exact use case that private tags were designed for; the concept of a union of multiple private tags was never really necessary, and in this world it doesn't even exist.
 2. It means there's just one "tags" concept, just like there's one "records" concept. No more "global tags and private tags" split.
 3. The `UserId := U64` declaration is more concise than the private tag equivalent of `UserId : [ @UserId U64 ]`, and it speeds up type checking because there would be (many) fewer type aliases for the compiler to resolve.
-4. It enables traditional phantom types, which Roc currently lacks - e.g.
+4. It enables traditional phantom types, which Broc currently lacks - e.g.
 `Quantity count units := count`
-in Roc would make units a phantom type like in this Elm declaration:
+in Broc would make units a phantom type like in this Elm declaration:
 `type Quantity count units = Quantity count`
 
 
@@ -368,7 +368,7 @@ Dict k v := { storage : … }
 This lets us construct a Dict by calling `@Dict { storage }` and destructure it similarly.
 
 
-As discussed earlier, one problem with creating custom data structures like this in today's Roc is that `==` doesn't necessarily do the right thing. Here's a way to solve this issue:
+As discussed earlier, one problem with creating custom data structures like this in today's Broc is that `==` doesn't necessarily do the right thing. Here's a way to solve this issue:
 
 ```coffee
 Dict k v := { storage : … } has
@@ -389,7 +389,7 @@ Now that I've specified this, when I use `==` on two `Dict` values, this `isEq` 
 I can also write something like has `Num` and provide the relevant functions to obtain a unit-ful number type - which solves [Problem #2](#problem-2-custom-number-types-cant-use-arithmetic-operators).
 
 ### Default Abilities for Newtypes
-By default, if I don't use the has keyword when defining a newtype, Roc will give the type all the default builtin abilities it's eligible to have - so for example, it would get `Eq` and `Hash` by default unless it contains a function, in which case it's not eligible.
+By default, if I don't use the has keyword when defining a newtype, Broc will give the type all the default builtin abilities it's eligible to have - so for example, it would get `Eq` and `Hash` by default unless it contains a function, in which case it's not eligible.
 
 
 In this example, because I wrote has, the `Dict` type has `Eq` as well as the other default ones. I could instead use has `only`, which means `Dict` should not have any of the default abilities, and should instead have only the ones I list.
@@ -432,7 +432,7 @@ It might look surprising at first for a `Dict` implemented as a hash map to requ
 Similarly,  anyone could write a `toStr` function that works on any type that has `Encode`, by using an Encoder which encodes strings.
 
 
-In Elm, having a general toString function proved error-prone (because it was so flexible it masked type mismatches - at work I saw this cause a production bug!) which was why it was replaced by String.fromInt and String.fromFloat. I had originally planned to do the same in Roc, but Encode would mean that anyone can write a flexible toStr and publish it as a package without acknowledging the potential for masking bugs.
+In Elm, having a general toString function proved error-prone (because it was so flexible it masked type mismatches - at work I saw this cause a production bug!) which was why it was replaced by String.fromInt and String.fromFloat. I had originally planned to do the same in Broc, but Encode would mean that anyone can write a flexible toStr and publish it as a package without acknowledging the potential for masking bugs.
 
 
 Knowing that there's a 100% chance that would happen eventually, it seems like it would be better to just publish an Encode.str which encodes values as strings, and which can be used like toStr except you have to actually call (`Encode.encode Encode.str value`) instead of `toStr`. This would mean that although it's an option, it's (by design!) less ergonomic than a flexible function like Num.fromStr, which means the path of least resistance (and least error-proneness) is to use `Num.fromStr` instead of this.
@@ -485,19 +485,19 @@ It's conceivable that defining a new ability could support adding that ability t
 It's too late for me to go back and get Num's newtype declaration to specify has Foo, because Num existed before Foo did!
 
 
-It's possible that Roc could support a way to do this when defining a new ability. It could say for example `Eq has {...} with [ Num { isEq: numIsEq, … } ]`
+It's possible that Broc could support a way to do this when defining a new ability. It could say for example `Eq has {...} with [ Num { isEq: numIsEq, … } ]`
 
 
 However, upon reflection, I think this idea is fatally flawed and we shouldn't do it.
 
 
-On the positive side, this wouldn't introduce any ambiguity. Because Roc doesn't allow cyclic imports, it's already impossible to define two conflicting definitions for a given ability function (e.g. if I define isEq for numbers when defining Num, then Num must import the module where Eq is defined, meaning I can't possibly have Eq's definition mention Num - or else the module where Eq is defined would have had to import Num as well, creating an import cycle!) so that can't happen.
+On the positive side, this wouldn't introduce any ambiguity. Because Broc doesn't allow cyclic imports, it's already impossible to define two conflicting definitions for a given ability function (e.g. if I define isEq for numbers when defining Num, then Num must import the module where Eq is defined, meaning I can't possibly have Eq's definition mention Num - or else the module where Eq is defined would have had to import Num as well, creating an import cycle!) so that can't happen.
 
 
 This also wouldn't necessarily introduce any "you need to import a trait for this to work" compiler errors like we see in Rust.
 
 
-If I'm passing a newtype named Blah to a function which expects that it **has Baz**, then by virtue of the fact that I have a Blah at all, I must have the module where it's defined already loaded in the current build (maybe not as a direct dependency of my module, but definitely as an indirect dependency). Similarly, because I'm calling a function that **has Baz**, I must also (at least indirectly) have the module where Baz is defined loaded. If both modules are loaded, I will definitely be able to find the function implementation(s) I need in either the one or the other, and because Roc wouldn't support orphan instances, I don't need to check any other modules.
+If I'm passing a newtype named Blah to a function which expects that it **has Baz**, then by virtue of the fact that I have a Blah at all, I must have the module where it's defined already loaded in the current build (maybe not as a direct dependency of my module, but definitely as an indirect dependency). Similarly, because I'm calling a function that **has Baz**, I must also (at least indirectly) have the module where Baz is defined loaded. If both modules are loaded, I will definitely be able to find the function implementation(s) I need in either the one or the other, and because Broc wouldn't support orphan instances, I don't need to check any other modules.
 
 
 However, this can cause some serious problems. Once I've done this, now the module where the type is defined can never import the module where the ability is defined. What if the author of that module wants to define that a different type defined in that module has this ability? Tough luck; can't import the ability module, because that would create an import cycle. Gotta move that type out of that module, even if that would create other problems.
@@ -513,7 +513,7 @@ All of this makes me think that "if you want a type to have the ability you're d
 
 ### Abilities for Editor-Specific Code
 I don't know exactly what the API for editor plugins should be yet, but they do have some characteristics that are important:
-   * Making or modifying editor plugins should be so easy, basically everyone does it. This means that code for editor plugins should be written in normal Roc, and the API should have a shallow learning curve.
+   * Making or modifying editor plugins should be so easy, basically everyone does it. This means that code for editor plugins should be written in normal Broc, and the API should have a shallow learning curve.
    * Editor plugins should ship with packages (or even just modules within a local project), but should have no impact on runtime performance of those modules/packages. So it's located there, but can't affect the surrounding code.
    * There's more than one way to integrate with the editor. For example:
    * You can add entries to context menus for certain types
@@ -542,7 +542,7 @@ This seems to be a common exercise in statically typed languages with classes; s
 (This happens in FP too; I doubt [Semiring](https://pursuit.purescript.org/packages/purescript-prelude/5.0.1/docs/Data.Semiring) ends up in a standard library because people kept opening issues saying they were unable to write some really valuable production code without it. A more likely history of that design decision is that a semiring is the mathematically proper way to `classify` those particular `types`, and `typeclasses` encourage classifying types right there in the name.)
 
 
-In my view, type classification is a tempting but ultimately counterproductive exercise that puts a tax on a community which grows linearly with the size of that community: once enough people start doing it, everyone becomes under pressure to do the same, lest their code look suspiciously under-classified. I don't want this to happen in Roc.
+In my view, type classification is a tempting but ultimately counterproductive exercise that puts a tax on a community which grows linearly with the size of that community: once enough people start doing it, everyone becomes under pressure to do the same, lest their code look suspiciously under-classified. I don't want this to happen in Broc.
 
 
 Hopefully the name "abilities" will frame the feature as giving a type a new ability and nothing more. It's not about saying what the type *is*, but rather what you can do with it.

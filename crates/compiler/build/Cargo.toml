@@ -1,6 +1,6 @@
 [package]
-name = "roc_build"
-description = "Responsible for coordinating building and linking of a Roc app with its host."
+name = "broc_build"
+description = "Responsible for coordinating building and linking of a Broc app with its host."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,29 +8,29 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_bitcode = { path = "../builtins/bitcode" }
-roc_can = { path = "../can" }
-roc_collections = { path = "../collections" }
-roc_constrain = { path = "../constrain" }
-roc_error_macros = { path = "../../error_macros" }
-roc_gen_dev = { path = "../gen_dev", default-features = false }
-roc_gen_llvm = { path = "../gen_llvm" }
-roc_gen_wasm = { path = "../gen_wasm" }
-roc_linker = { path = "../../linker" }
-roc_load = { path = "../load" }
-roc_module = { path = "../module" }
-roc_mono = { path = "../mono" }
-roc_packaging = { path = "../../packaging" }
-roc_parse = { path = "../parse" }
-roc_problem = { path = "../problem" }
-roc_region = { path = "../region" }
-roc_reporting = { path = "../../reporting" }
-roc_solve_problem = { path = "../solve_problem" }
-roc_std = { path = "../../roc_std" }
-roc_target = { path = "../roc_target" }
-roc_types = { path = "../types" }
-roc_unify = { path = "../unify" }
-roc_command_utils = { path = "../../utils/command" }
+broc_bitcode = { path = "../builtins/bitcode" }
+broc_can = { path = "../can" }
+broc_collections = { path = "../collections" }
+broc_constrain = { path = "../constrain" }
+broc_error_macros = { path = "../../error_macros" }
+broc_gen_dev = { path = "../gen_dev", default-features = false }
+broc_gen_llvm = { path = "../gen_llvm" }
+broc_gen_wasm = { path = "../gen_wasm" }
+broc_linker = { path = "../../linker" }
+broc_load = { path = "../load" }
+broc_module = { path = "../module" }
+broc_mono = { path = "../mono" }
+broc_packaging = { path = "../../packaging" }
+broc_parse = { path = "../parse" }
+broc_problem = { path = "../problem" }
+broc_region = { path = "../region" }
+broc_reporting = { path = "../../reporting" }
+broc_solve_problem = { path = "../solve_problem" }
+broc_std = { path = "../../broc_std" }
+broc_target = { path = "../broc_target" }
+broc_types = { path = "../types" }
+broc_unify = { path = "../unify" }
+broc_command_utils = { path = "../../utils/command" }
 
 wasi_libc_sys = { path = "../../wasi-libc-sys" }
 
@@ -45,12 +45,12 @@ tempfile.workspace = true
 serde_json.workspace = true
 
 [features]
-target-aarch64 = ["roc_gen_dev/target-aarch64"]
+target-aarch64 = ["broc_gen_dev/target-aarch64"]
 target-arm = []
 target-wasm32 = []
 target-x86 = []
-target-x86_64 = ["roc_gen_dev/target-x86_64"]
+target-x86_64 = ["broc_gen_dev/target-x86_64"]
 
 # This is used to enable fuzzing and sanitizers.
-# Example use is describe here: https://github.com/bhansconnect/roc-fuzz
+# Example use is describe here: https://github.com/bhansconnect/broc-fuzz
 sanitizers = []

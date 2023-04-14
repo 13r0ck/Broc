@@ -223,7 +223,7 @@ fn calc_hashes_for_folder(benches_path_str: &str) -> HashMap<String, String> {
                 .into_string()
                 .expect("Failed to create String from OsString for file_name.")
         })
-        .filter(|file_name_str| !file_name_str.contains(".roc"));
+        .filter(|file_name_str| !file_name_str.contains(".broc"));
 
     let mut files_w_sha = HashMap::new();
 

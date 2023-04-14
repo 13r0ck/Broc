@@ -1,17 +1,17 @@
 use bumpalo::Bump;
-use roc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
-use roc_packaging::cache::{self, RocCacheDir};
-use roc_problem::Severity;
-use roc_reporting::report::Palette;
+use broc_load::{ExecutionMode, LoadConfig, LoadMonomorphizedError, Threading};
+use broc_packaging::cache::{self, BrocCacheDir};
+use broc_problem::Severity;
+use broc_reporting::report::Palette;
 use std::path::PathBuf;
 
-use roc_fmt::annotation::Formattable;
-use roc_fmt::annotation::{Newlines, Parens};
-use roc_load::{LoadingProblem, MonomorphizedModule};
-use roc_parse::ast::Expr;
-use roc_region::all::LineInfo;
-use roc_reporting::report::{can_problem, type_problem, RocDocAllocator};
-use roc_target::TargetInfo;
+use broc_fmt::annotation::Formattable;
+use broc_fmt::annotation::{Newlines, Parens};
+use broc_load::{LoadingProblem, MonomorphizedModule};
+use broc_parse::ast::Expr;
+use broc_region::all::LineInfo;
+use broc_reporting::report::{can_problem, type_problem, BrocDocAllocator};
+use broc_target::TargetInfo;
 
 #[derive(Debug)]
 pub struct ReplOutput {
@@ -23,7 +23,7 @@ pub fn format_answer<'a>(arena: &'a Bump, answer: Expr<'_>) -> &'a str {
     match answer {
         Expr::Closure(_, _) | Expr::MalformedClosure => "<function>",
         _ => {
-            let mut expr = roc_fmt::Buf::new_in(arena);
+            let mut expr = broc_fmt::Buf::new_in(arena);
 
             answer.format_with_options(&mut expr, Parens::NotNeeded, Newlines::Yes, 0);
 
@@ -54,15 +54,15 @@ pub fn compile_to_mono<'a, 'i, I: Iterator<Item = &'i str>>(
     let filename = PathBuf::from("");
     let src_dir = PathBuf::from("fake/test/path");
     let (bytes_before_expr, module_src) = promote_expr_to_module(arena, defs, expr);
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
         filename,
         module_src,
         src_dir,
-        RocCacheDir::Persistent(cache::roc_cache_dir().as_path()),
+        BrocCacheDir::Persistent(cache::broc_cache_dir().as_path()),
         LoadConfig {
             target_info,
-            render: roc_reporting::report::RenderTarget::ColorTerminal,
+            render: broc_reporting::report::RenderTarget::ColorTerminal,
             palette,
             threading: Threading::Single,
             exec_mode: ExecutionMode::Executable,
@@ -118,7 +118,7 @@ pub fn compile_to_mono<'a, 'i, I: Iterator<Item = &'i str>>(
         let src_lines: Vec<&str> = src.split('\n').collect();
 
         // Report parsing and canonicalization problems
-        let alloc = RocDocAllocator::new(&src_lines, *home, interns);
+        let alloc = BrocDocAllocator::new(&src_lines, *home, interns);
 
         for problem in can_probs.into_iter() {
             // Filter out all warnings and errors whose regions end before this,

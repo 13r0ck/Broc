@@ -1,16 +1,16 @@
-//! Provides macros for consistent reporting of errors in Roc's rust code.
+//! Provides macros for consistent reporting of errors in Broc's rust code.
 /// `internal_error!` should be used whenever a compiler invariant is broken.
 /// It is a wrapper around panic that tells the user to file a bug.
 /// This should only be used in cases where there would be a compiler bug and the user can't fix it.
 /// If there is simply an unimplemented feature, please use `unimplemented!`
-/// If there is a user error, please use roc_reporting to print a nice error message.
+/// If there is a user error, please use broc_reporting to print a nice error message.
 #[macro_export]
 macro_rules! internal_error {
     ($($arg:tt)*) => ({
         eprintln!("An internal compiler expectation was broken.");
         eprintln!("This is definitely a compiler bug.");
         // TODO: update this to the new bug template.
-        eprintln!("Please file an issue here: https://github.com/roc-lang/roc/issues/new/choose");
+        eprintln!("Please file an issue here: https://github.com/roc-lang/broc/issues/new/choose");
         #[allow(clippy::panic)] {
             panic!($($arg)*);
         }
@@ -19,13 +19,13 @@ macro_rules! internal_error {
 
 /// `user_error!` should only ever be used temporarily.
 /// It is a way to document locations where we do not yet have nice error reporting.
-/// All cases of `user_error!` should eventually be replaced with pretty error printing using roc_reporting.
+/// All cases of `user_error!` should eventually be replaced with pretty error printing using broc_reporting.
 #[macro_export]
 macro_rules! user_error {
     ($($arg:tt)*) => ({
         eprintln!("We ran into an issue while compiling your code.");
         eprintln!("Sadly, we don't havs a pretty error message for this case yet.");
-        eprintln!("If you can't figure out the problem from the context below, please reach out at: https://roc.zulipchat.com/");
+        eprintln!("If you can't figure out the problem from the context below, please reach out at: https://broc.zulipchat.com/");
         eprintln!($($arg)*);
         std::process::exit(1);
     })
@@ -93,13 +93,13 @@ macro_rules! assert_copyable {
 macro_rules! _incomplete_project {
     ($project_name:literal, $tracking_issue_no:literal) => {
         panic!(
-            "[{}] not yet implemented. Tracking issue: https://github.com/roc-lang/roc/issues/{}",
+            "[{}] not yet implemented. Tracking issue: https://github.com/roc-lang/broc/issues/{}",
             $project_name, $tracking_issue_no,
         )
     };
     ($project_name:literal, $tracking_issue_no:literal, $($arg:tt)+) => {
         panic!(
-            "[{}] not yet implemented. Tracking issue: https://github.com/roc-lang/roc/issues/{}.\nAdditional information: {}",
+            "[{}] not yet implemented. Tracking issue: https://github.com/roc-lang/broc/issues/{}.\nAdditional information: {}",
             $project_name, $tracking_issue_no,
             format_args!($($arg)+),
         )

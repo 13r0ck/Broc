@@ -1,5 +1,5 @@
 [package]
-name = "roc_region"
+name = "broc_region"
 description = "Data structures for storing source-code-location information, used heavily for contextual error messages."
 
 authors.workspace = true

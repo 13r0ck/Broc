@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-use roc_module::symbol::{Interns, Symbol};
+use broc_module::symbol::{Interns, Symbol};
 use ven_pretty::{Arena, DocAllocator, DocBuilder};
 
 use crate::{
-    ir::{Parens, ProcLayout},
+    ir::{Parens, PbrocLayout},
     layout::LayoutInterner,
 };
 
@@ -46,8 +46,8 @@ where
     I: LayoutInterner<'a>,
 {
     let Problem {
-        proc,
-        proc_layout,
+        pbroc,
+        pbroc_layout,
         line,
         kind,
     } = problem;
@@ -56,7 +56,7 @@ where
     docs.push((line, last_doc));
     docs.sort_by_key(|(line, _)| *line);
 
-    let src = proc
+    let src = pbroc
         .to_doc(f, interner, true, Parens::NotNeeded)
         .1
         .pretty(80)
@@ -71,13 +71,13 @@ where
     );
 
     let header = format_header(f, title);
-    let proc_loc = format_proc_spec(f, interns, interner, proc.name.name(), proc_layout);
+    let pbroc_loc = format_pbroc_spec(f, interns, interner, pbroc.name.name(), pbroc_layout);
 
     stack(
         f,
         [
             header,
-            f.concat([f.reflow("in "), proc_loc]),
+            f.concat([f.reflow("in "), pbroc_loc]),
             interpolated_docs,
         ],
     )
@@ -236,9 +236,9 @@ where
                 f.as_string(num_given),
             ])
         }
-        ProblemKind::CallingUndefinedProc {
+        ProblemKind::CallingUndefinedPbroc {
             symbol,
-            proc_layout,
+            pbroc_layout,
             similar,
         } => {
             title = "PROC SPECIALIZATION NOT DEFINED";
@@ -247,7 +247,7 @@ where
                 f,
                 [
                     f.reflow("No specialization"),
-                    format_proc_spec(f, interns, interner, symbol, proc_layout),
+                    format_pbroc_spec(f, interns, interner, symbol, pbroc_layout),
                     f.reflow("was found"),
                 ],
             );
@@ -256,7 +256,7 @@ where
             } else {
                 let similars = similar
                     .into_iter()
-                    .map(|other| format_proc_spec(f, interns, interner, symbol, other));
+                    .map(|other| format_pbroc_spec(f, interns, interner, symbol, other));
                 stack(
                     f,
                     [f.concat([
@@ -436,12 +436,12 @@ fn format_use_kind(use_kind: UseKind) -> &'static str {
     }
 }
 
-fn format_proc_spec<'a, 'd, I>(
+fn format_pbroc_spec<'a, 'd, I>(
     f: &'d Arena<'d>,
     interns: &'d Interns,
     interner: &I,
     symbol: Symbol,
-    proc_layout: ProcLayout<'a>,
+    pbroc_layout: PbrocLayout<'a>,
 ) -> Doc<'d>
 where
     I: LayoutInterner<'a>,
@@ -449,23 +449,23 @@ where
     f.concat([
         f.as_string(symbol.as_str(interns)),
         f.reflow(" : "),
-        format_proc_layout(f, interner, proc_layout),
+        format_pbroc_layout(f, interner, pbroc_layout),
     ])
 }
 
-fn format_proc_layout<'a, 'd, I>(
+fn format_pbroc_layout<'a, 'd, I>(
     f: &'d Arena<'d>,
     interner: &I,
-    proc_layout: ProcLayout<'a>,
+    pbroc_layout: PbrocLayout<'a>,
 ) -> Doc<'d>
 where
     I: LayoutInterner<'a>,
 {
-    let ProcLayout {
+    let PbrocLayout {
         arguments,
         result,
         niche: captures_niche,
-    } = proc_layout;
+    } = pbroc_layout;
     let args = f.intersperse(
         arguments
             .iter()

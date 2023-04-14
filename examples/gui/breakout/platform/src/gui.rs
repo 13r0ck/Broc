@@ -9,7 +9,7 @@ use crate::{
             text::build_glyph_brush,
         },
     },
-    roc::{self, Bounds, RocElem, RocElemTag, RocEvent},
+    broc::{self, Bounds, BrocElem, BrocElemTag, BrocEvent},
 };
 use cgmath::{Vector2, Vector4};
 use glyph_brush::{GlyphCruncher, OwnedSection};
@@ -37,7 +37,7 @@ use winit::{
 const TIME_BETWEEN_TICKS: Duration = Duration::new(0, 1000 / 60);
 
 pub fn run_event_loop(title: &str, window_bounds: Bounds) -> Result<(), Box<dyn Error>> {
-    let (mut model, mut elems) = roc::init_and_render(window_bounds);
+    let (mut model, mut elems) = broc::init_and_render(window_bounds);
 
     // Open window and create a surface
     let mut event_loop = winit::event_loop::EventLoop::new();
@@ -51,7 +51,7 @@ pub fn run_event_loop(title: &str, window_bounds: Bounds) -> Result<(), Box<dyn 
     macro_rules! update_and_rerender {
         ($event:expr) => {
             // TODO use (model, elems) =  ... once we've upgraded rust versions
-            let pair = roc::update_and_render(model, $event);
+            let pair = broc::update_and_render(model, $event);
 
             model = pair.0;
             elems = pair.1;
@@ -73,7 +73,7 @@ pub fn run_event_loop(title: &str, window_bounds: Bounds) -> Result<(), Box<dyn 
             })
             .await
             .expect(r#"Request adapter
-            If you're running this from inside nix, follow the instructions here to resolve this: https://github.com/roc-lang/roc/blob/main/BUILDING_FROM_SOURCE.md#editor
+            If you're running this from inside nix, follow the instructions here to resolve this: https://github.com/roc-lang/broc/blob/main/BUILDING_FROM_SOURCE.md#editor
             "#);
 
         adapter
@@ -152,7 +152,7 @@ pub fn run_event_loop(title: &str, window_bounds: Bounds) -> Result<(), Box<dyn 
                     &cmd_queue,
                 );
 
-                update_and_rerender!(RocEvent::Resize(Bounds {
+                update_and_rerender!(BrocEvent::Resize(Bounds {
                     height: size.height as f32,
                     width: size.width as f32,
                 }));
@@ -171,12 +171,12 @@ pub fn run_event_loop(title: &str, window_bounds: Bounds) -> Result<(), Box<dyn 
                     },
                 ..
             } => {
-                let roc_event = match input_state {
-                    ElementState::Pressed => RocEvent::KeyDown(keycode.into()),
-                    ElementState::Released => RocEvent::KeyUp(keycode.into()),
+                let broc_event = match input_state {
+                    ElementState::Pressed => BrocEvent::KeyDown(keycode.into()),
+                    ElementState::Released => BrocEvent::KeyUp(keycode.into()),
                 };
 
-                model = roc::update(model, roc_event);
+                model = broc::update(model, broc_event);
             }
             // Modifiers Changed
             Event::WindowEvent {
@@ -252,7 +252,7 @@ pub fn run_event_loop(title: &str, window_bounds: Bounds) -> Result<(), Box<dyn 
 
                     let tick = now.saturating_duration_since(app_start_time);
 
-                    update_and_rerender!(RocEvent::Tick(tick));
+                    update_and_rerender!(BrocEvent::Tick(tick));
 
                     *control_flow = winit::event_loop::ControlFlow::WaitUntil(next_tick);
                 }
@@ -419,11 +419,11 @@ fn draw(
 
 /// focused_elem is the currently-focused element (or NULL if nothing has the focus)
 fn to_drawable(
-    elem: &RocElem,
+    elem: &BrocElem,
     bounds: Bounds,
     glyph_brush: &mut GlyphBrush<()>,
 ) -> (Bounds, Drawable) {
-    use RocElemTag::*;
+    use BrocElemTag::*;
 
     match elem.tag() {
         Rect => {

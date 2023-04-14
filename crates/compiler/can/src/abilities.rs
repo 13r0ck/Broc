@@ -1,10 +1,10 @@
 use std::num::NonZeroU32;
 
-use roc_collections::{all::MutMap, VecMap, VecSet};
-use roc_error_macros::internal_error;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_region::all::Region;
-use roc_types::{
+use broc_collections::{all::MutMap, VecMap, VecSet};
+use broc_error_macros::internal_error;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_region::all::Region;
+use broc_types::{
     subs::Variable,
     types::{MemberImpl, Type},
 };
@@ -684,11 +684,11 @@ impl IAbilitiesStore<Pending> {
 }
 
 mod serialize {
-    use roc_collections::{MutMap, VecMap};
-    use roc_module::symbol::Symbol;
-    use roc_region::all::Region;
-    use roc_serialize::bytes;
-    use roc_types::{
+    use broc_collections::{MutMap, VecMap};
+    use broc_module::symbol::Symbol;
+    use broc_region::all::Region;
+    use broc_serialize::bytes;
+    use broc_types::{
         subs::{SubsSlice, Variable},
         types::MemberImpl,
     };
@@ -1245,10 +1245,10 @@ mod serialize {
 
 #[cfg(test)]
 mod test {
-    use roc_collections::VecMap;
-    use roc_module::symbol::Symbol;
-    use roc_region::all::Region;
-    use roc_types::{subs::Variable, types::MemberImpl};
+    use broc_collections::VecMap;
+    use broc_module::symbol::Symbol;
+    use broc_region::all::Region;
+    use broc_types::{subs::Variable, types::MemberImpl};
 
     use super::{
         AbilitiesStore, AbilityMemberData, ImplKey, MemberSpecializationInfo, ResolvedMemberType,

@@ -12,7 +12,7 @@
 [package]
 name = "host"
 version = "0.0.1"
-authors = ["The Roc Contributors"]
+authors = ["The Broc Contributors"]
 license = "UPL-1.0"
 edition = "2018"
 links = "app"
@@ -27,7 +27,7 @@ name = "host"
 path = "src/main.rs"
 
 [dependencies]
-roc_std = { path = "../../../../roc_std" }
+broc_std = { path = "../../../../broc_std" }
 libc = "0.2"
 indoc = "1.0.6"
 

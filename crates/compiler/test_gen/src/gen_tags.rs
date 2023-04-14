@@ -10,16 +10,16 @@ use crate::helpers::wasm::assert_evals_to;
 #[cfg(test)]
 use indoc::indoc;
 
-use roc_mono::layout::STLayoutInterner;
+use broc_mono::layout::STLayoutInterner;
 #[cfg(test)]
-use roc_std::{RocList, RocStr, U128};
+use broc_std::{BrocList, BrocStr, U128};
 
 #[test]
 fn width_and_alignment_u8_u8() {
-    use roc_mono::layout::Layout;
-    use roc_mono::layout::UnionLayout;
+    use broc_mono::layout::Layout;
+    use broc_mono::layout::UnionLayout;
 
-    let target_info = roc_target::TargetInfo::default_x86_64();
+    let target_info = broc_target::TargetInfo::default_x86_64();
     let interner = STLayoutInterner::with_capacity(4, target_info);
 
     let t = &[Layout::U8] as &[_];
@@ -415,8 +415,8 @@ fn if_guard_vanilla() {
                     s -> Str.toUtf8 s
                 "#
         ),
-        RocList::from_slice(b"fooz"),
-        RocList<u8>
+        BrocList::from_slice(b"fooz"),
+        BrocList<u8>
     );
 }
 
@@ -1054,8 +1054,8 @@ fn applied_tag_function() {
             x
             "#
         ),
-        RocList::from_slice(&[RocStr::from("a"), RocStr::from("b")]),
-        RocList<RocStr>
+        BrocList::from_slice(&[BrocStr::from("a"), BrocStr::from("b")]),
+        BrocList<BrocStr>
     );
 }
 
@@ -1071,14 +1071,14 @@ fn applied_tag_function_result() {
             List.keepOks x (\y -> y)
             "#
         ),
-        RocList::from_slice(&[(RocStr::from("a")), (RocStr::from("b"))]),
-        RocList<RocStr>
+        BrocList::from_slice(&[(BrocStr::from("a")), (BrocStr::from("b"))]),
+        BrocList<BrocStr>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[ignore = "This test has incorrect refcounts: https://github.com/roc-lang/roc/issues/2968"]
+#[ignore = "This test has incorrect refcounts: https://github.com/roc-lang/broc/issues/2968"]
 fn applied_tag_function_linked_list() {
     assert_evals_to!(
         indoc!(
@@ -1190,8 +1190,8 @@ fn monomorphized_applied_tag() {
                 f a
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     )
 }
 
@@ -1310,8 +1310,8 @@ fn issue_2365_monomorphize_tag_with_non_empty_ext_var_wrapped() {
             "#
         ),
         (0, 2), // Err, C
-        ([u8; std::mem::size_of::<RocStr>()], u8),
-        |(err_tag, wrap_tag): ([u8; std::mem::size_of::<RocStr>()], u8)| (wrap_tag, err_tag[0])
+        ([u8; std::mem::size_of::<BrocStr>()], u8),
+        |(err_tag, wrap_tag): ([u8; std::mem::size_of::<BrocStr>()], u8)| (wrap_tag, err_tag[0])
     )
 }
 
@@ -1340,8 +1340,8 @@ fn issue_2365_monomorphize_tag_with_non_empty_ext_var_wrapped_nested() {
             "#
         ),
         (0, 2), // Err, C
-        ([u8; std::mem::size_of::<RocStr>()], u8),
-        |(err_tag, wrap_tag): ([u8; std::mem::size_of::<RocStr>()], u8)| (wrap_tag, err_tag[0])
+        ([u8; std::mem::size_of::<BrocStr>()], u8),
+        |(err_tag, wrap_tag): ([u8; std::mem::size_of::<BrocStr>()], u8)| (wrap_tag, err_tag[0])
     )
 }
 
@@ -1393,7 +1393,7 @@ fn issue_2458() {
 }
 
 #[test]
-#[ignore = "See https://github.com/roc-lang/roc/issues/2466"]
+#[ignore = "See https://github.com/roc-lang/broc/issues/2466"]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
 fn issue_2458_deep_recursion_var() {
     assert_evals_to!(
@@ -1550,13 +1550,13 @@ fn issue_2777_default_branch_codegen() {
             [r1, r2, r3, r4]
             "#
         ),
-        RocList::from_slice(&[
-            RocStr::from("redunknown"),
-            RocStr::from("redunknown"),
-            RocStr::from("unknownred"),
-            RocStr::from("redunknown"),
+        BrocList::from_slice(&[
+            BrocStr::from("redunknown"),
+            BrocStr::from("redunknown"),
+            BrocStr::from("unknownred"),
+            BrocStr::from("redunknown"),
         ]),
-        RocList<RocStr>
+        BrocList<BrocStr>
     )
 }
 
@@ -1567,7 +1567,7 @@ fn issue_2777_default_branch_codegen() {
     not(target_family = "windows"),
     any(feature = "gen-llvm", feature = "gen-wasm")
 ))]
-#[should_panic(expected = r#"Roc failed with message: "Tag Foo was part of a type error!""#)]
+#[should_panic(expected = r#"Broc failed with message: "Tag Foo was part of a type error!""#)]
 fn issue_2900_unreachable_pattern() {
     assert_evals_to!(
         indoc!(
@@ -1582,8 +1582,8 @@ fn issue_2900_unreachable_pattern() {
             foo Foo
             "#
         ),
-        RocStr::from("foo"),
-        RocStr,
+        BrocStr::from("foo"),
+        BrocStr,
         |x| x,
         true // ignore type errors
     )
@@ -1605,8 +1605,8 @@ fn issue_3261_non_nullable_unwrapped_recursive_union_at_index() {
             {name, outerList}.name
             "#
         ),
-        RocStr::from("outer"),
-        RocStr
+        BrocStr::from("outer"),
+        BrocStr
     )
 }
 
@@ -1747,8 +1747,8 @@ fn issue_3560_newtype_tag_constructor_has_nested_constructor_with_no_payload() {
                 Wrapper NoPayload -> "nothing"
             "#
         ),
-        RocStr::from("err"),
-        RocStr
+        BrocStr::from("err"),
+        BrocStr
     )
 }
 
@@ -1763,7 +1763,7 @@ fn alignment_i128() {
                 x
                 #"
         ),
-        // NOTE: roc_std::U128 is always aligned to 16, unlike rust's u128
+        // NOTE: broc_std::U128 is always aligned to 16, unlike rust's u128
         ((U128::from(42), true), 1),
         ((U128, bool), u8)
     );
@@ -1771,7 +1771,7 @@ fn alignment_i128() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[ignore = "causes alias analysis panics, should roc_panic"]
+#[ignore = "causes alias analysis panics, should broc_panic"]
 fn error_type_in_tag_union_payload() {
     assert_evals_to!(
         indoc!(
@@ -1813,8 +1813,8 @@ fn issue_3653_recursion_pointer_in_naked_opaque() {
                     _ -> "we're back"
             "#
         ),
-        RocStr::from("we're back"),
-        RocStr
+        BrocStr::from("we're back"),
+        BrocStr
     )
 }
 
@@ -1838,8 +1838,8 @@ fn issue_3653_recursion_pointer_in_naked_opaque_localized() {
                     _ -> "we're back"
             "#
         ),
-        RocStr::from("we're back"),
-        RocStr
+        BrocStr::from("we're back"),
+        BrocStr
     )
 }
 
@@ -1858,8 +1858,8 @@ fn issue_2165_recursive_tag_destructure() {
               Ctor { rec } -> Num.toStr (List.len rec)
             "#
         ),
-        RocStr::from("0"),
-        RocStr
+        BrocStr::from("0"),
+        BrocStr
     )
 }
 
@@ -1880,8 +1880,8 @@ fn tag_union_let_generalization() {
                 Done -> "done"
             "#
         ),
-        RocStr::from("done"),
-        RocStr
+        BrocStr::from("done"),
+        BrocStr
     );
 }
 
@@ -1907,8 +1907,8 @@ fn fit_recursive_union_in_struct_into_recursive_pointer() {
                 _ -> "<bad>"
             "#
         ),
-        RocStr::from("abcdefgh"),
-        RocStr
+        BrocStr::from("abcdefgh"),
+        BrocStr
     );
 }
 
@@ -1925,8 +1925,8 @@ fn match_on_result_with_uninhabited_error_branch() {
                 Ok s -> s
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     );
 }
 
@@ -1943,8 +1943,8 @@ fn dispatch_tag_union_function_inferred() {
                 _ -> "FAIL"
             "#
         ),
-        RocStr::from("okay"),
-        RocStr
+        BrocStr::from("okay"),
+        BrocStr
     );
 }
 
@@ -1968,8 +1968,8 @@ fn issue_4077_fixed_fixpoint() {
                     _ -> "OKAY"
             "#
         ),
-        RocStr::from("OKAY"),
-        RocStr
+        BrocStr::from("OKAY"),
+        BrocStr
     );
 }
 
@@ -2004,8 +2004,8 @@ fn unify_types_with_fixed_fixpoints_outside_fixing_region() {
             main = (\_ -> "OKAY") helloWorld
             "#
         ),
-        RocStr::from("OKAY"),
-        RocStr
+        BrocStr::from("OKAY"),
+        BrocStr
     );
 }
 
@@ -2085,8 +2085,8 @@ fn nullable_wrapped_with_non_nullable_singleton_tags() {
                 |> Str.concat (g C)
             "#
         ),
-        RocStr::from("ABC"),
-        RocStr
+        BrocStr::from("ABC"),
+        BrocStr
     );
 }
 
@@ -2117,8 +2117,8 @@ fn nullable_wrapped_with_nullable_not_last_index() {
                 |> Str.concat (toIdParser CharLiteral)
             "#
         ),
-        RocStr::from("abc"),
-        RocStr
+        BrocStr::from("abc"),
+        BrocStr
     );
 }
 
@@ -2156,8 +2156,8 @@ fn refcount_nullable_unwrapped_needing_no_refcount_issue_5027() {
             main = test {}
             "#
         ),
-        RocStr::from("success"),
-        RocStr
+        BrocStr::from("success"),
+        BrocStr
     );
 }
 

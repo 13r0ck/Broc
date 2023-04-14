@@ -11,7 +11,7 @@ use crate::helpers::wasm::assert_evals_to;
 use indoc::indoc;
 
 #[cfg(all(test, any(feature = "gen-llvm", feature = "gen-wasm")))]
-use roc_std::{RocList, RocStr};
+use broc_std::{BrocList, BrocStr};
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-dev", feature = "gen-wasm"))]
@@ -966,7 +966,7 @@ fn update_the_only_field() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-// https://github.com/roc-lang/roc/issues/1513
+// https://github.com/roc-lang/broc/issues/1513
 fn both_have_unique_fields() {
     assert_evals_to!(
         indoc!(
@@ -987,8 +987,8 @@ fn both_have_unique_fields() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-// https://github.com/roc-lang/roc/issues/2535
-fn different_proc_types_specialized_to_same_layout() {
+// https://github.com/roc-lang/broc/issues/2535
+fn different_pbroc_types_specialized_to_same_layout() {
     assert_evals_to!(
         indoc!(
             r#"
@@ -1010,14 +1010,14 @@ fn different_proc_types_specialized_to_same_layout() {
                ]
             "#
         ),
-        RocList::from_slice(&[1, 2]),
-        RocList<u8>
+        BrocList::from_slice(&[1, 2]),
+        BrocList<u8>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-#[should_panic(expected = r#"Roc failed with message: "Can't create record with improper layout""#)]
+#[should_panic(expected = r#"Broc failed with message: "Can't create record with improper layout""#)]
 fn call_with_bad_record_runtime_error() {
     assert_evals_to!(
         indoc!(
@@ -1048,8 +1048,8 @@ fn generalized_accessor() {
             returnFoo { foo: "foo" }
             "#
         ),
-        RocStr::from("foo"),
-        RocStr
+        BrocStr::from("foo"),
+        BrocStr
     );
 }
 
@@ -1068,8 +1068,8 @@ fn update_record_that_is_a_thunk() {
             fromOriginal = { original & birds: 4, iguanas: 3 }
             "#
         ),
-        RocStr::from("4"),
-        RocStr
+        BrocStr::from("4"),
+        BrocStr
     );
 }
 
@@ -1088,8 +1088,8 @@ fn update_record_that_is_a_thunk_single_field() {
             fromOriginal = { original & birds: 4 }
             "#
         ),
-        RocStr::from("4"),
-        RocStr
+        BrocStr::from("4"),
+        BrocStr
     );
 }
 

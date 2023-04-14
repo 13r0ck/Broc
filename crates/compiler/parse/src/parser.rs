@@ -1,7 +1,7 @@
 use crate::state::State;
 use bumpalo::collections::vec::Vec;
 use bumpalo::Bump;
-use roc_region::all::{Loc, Position, Region};
+use broc_region::all::{Loc, Position, Region};
 use Progress::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1179,7 +1179,7 @@ where
 macro_rules! loc {
     ($parser:expr) => {
         move |arena, state: $crate::state::State<'a>, min_indent: u32| {
-            use roc_region::all::{Loc, Region};
+            use broc_region::all::{Loc, Region};
 
             let start = state.pos();
 

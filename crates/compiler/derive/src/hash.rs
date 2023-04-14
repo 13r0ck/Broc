@@ -2,20 +2,20 @@
 
 use std::iter::once;
 
-use roc_can::{
+use broc_can::{
     expr::{AnnotatedMark, ClosureData, Expr, IntValue, Recursive, WhenBranch, WhenBranchPattern},
     num::{IntBound, IntLitWidth},
     pattern::Pattern,
 };
-use roc_derive_key::hash::FlatHashKey;
-use roc_error_macros::internal_error;
-use roc_module::{
+use broc_derive_key::hash::FlatHashKey;
+use broc_error_macros::internal_error;
+use broc_module::{
     called_via::CalledVia,
     ident::{Lowercase, TagName},
     symbol::Symbol,
 };
-use roc_region::all::{Loc, Region};
-use roc_types::{
+use broc_region::all::{Loc, Region};
+use broc_types::{
     num::int_lit_width_to_variable,
     subs::{
         Content, ExhaustiveMark, FlatType, GetSubsSlice, LambdaSet, OptVariable, RecordFields,
@@ -245,8 +245,8 @@ fn hash_tag_union(
     let (discr_width, discr_precision_var, hash_discr_member) = if union_tags.len() > u64::MAX as _
     {
         // Should never happen, `usize` isn't more than 64 bits on most machines, but who knows?
-        // Maybe someday soon someone will try to compile a huge Roc program on a 128-bit one.
-        internal_error!("new record unlocked: you fit more than 18 billion, billion tags in a Roc program, and the compiler didn't fall over! But it will now. 🤯")
+        // Maybe someday soon someone will try to compile a huge Broc program on a 128-bit one.
+        internal_error!("new record unlocked: you fit more than 18 billion, billion tags in a Broc program, and the compiler didn't fall over! But it will now. 🤯")
     } else if union_tags.len() > u32::MAX as _ {
         (IntLitWidth::U64, Variable::UNSIGNED64, Symbol::HASH_ADD_U64)
     } else if union_tags.len() > u16::MAX as _ {

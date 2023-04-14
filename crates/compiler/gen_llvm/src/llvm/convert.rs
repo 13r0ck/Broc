@@ -4,11 +4,11 @@ use inkwell::context::Context;
 use inkwell::types::{BasicType, BasicTypeEnum, FloatType, IntType, StructType};
 use inkwell::values::StructValue;
 use inkwell::AddressSpace;
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_mono::layout::{
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_mono::layout::{
     round_up_to_alignment, Builtin, InLayout, Layout, LayoutInterner, STLayoutInterner, UnionLayout,
 };
-use roc_target::TargetInfo;
+use broc_target::TargetInfo;
 
 fn basic_type_from_record<'a, 'ctx, 'env>(
     env: &Env<'a, 'ctx, 'env>,
@@ -69,7 +69,7 @@ pub fn struct_type_from_union_layout<'a, 'ctx, 'env>(
     match union_layout {
         NonRecursive([]) => env.context.struct_type(&[], false),
         NonRecursive(tags) => {
-            RocUnion::tagged_from_slices(layout_interner, env.context, tags, env.target_info)
+            BrocUnion::tagged_from_slices(layout_interner, env.context, tags, env.target_info)
                 .struct_type()
         }
         Recursive(tags)
@@ -77,14 +77,14 @@ pub fn struct_type_from_union_layout<'a, 'ctx, 'env>(
             other_tags: tags, ..
         } => {
             if union_layout.stores_tag_id_as_data(env.target_info) {
-                RocUnion::tagged_from_slices(layout_interner, env.context, tags, env.target_info)
+                BrocUnion::tagged_from_slices(layout_interner, env.context, tags, env.target_info)
                     .struct_type()
             } else {
-                RocUnion::untagged_from_slices(layout_interner, env.context, tags, env.target_info)
+                BrocUnion::untagged_from_slices(layout_interner, env.context, tags, env.target_info)
                     .struct_type()
             }
         }
-        NullableUnwrapped { other_fields, .. } => RocUnion::untagged_from_slices(
+        NullableUnwrapped { other_fields, .. } => BrocUnion::untagged_from_slices(
             layout_interner,
             env.context,
             &[other_fields],
@@ -92,7 +92,7 @@ pub fn struct_type_from_union_layout<'a, 'ctx, 'env>(
         )
         .struct_type(),
         NonNullableUnwrapped(fields) => {
-            RocUnion::untagged_from_slices(layout_interner, env.context, &[fields], env.target_info)
+            BrocUnion::untagged_from_slices(layout_interner, env.context, &[fields], env.target_info)
                 .struct_type()
         }
     }
@@ -231,14 +231,14 @@ enum TagType {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct RocUnion<'ctx> {
+pub(crate) struct BrocUnion<'ctx> {
     struct_type: StructType<'ctx>,
     data_align: u32,
     data_width: u32,
     tag_type: Option<TagType>,
 }
 
-impl<'ctx> RocUnion<'ctx> {
+impl<'ctx> BrocUnion<'ctx> {
     pub const TAG_ID_INDEX: u32 = 2;
     pub const TAG_DATA_INDEX: u32 = 1;
 
@@ -303,7 +303,7 @@ impl<'ctx> RocUnion<'ctx> {
         target_info: TargetInfo,
     ) -> Self {
         let tag_type = match layouts.len() {
-            0 => unreachable!("zero-element tag union is not represented as a RocUnion"),
+            0 => unreachable!("zero-element tag union is not represented as a BrocUnion"),
             1..=255 => TagType::I8,
             _ => TagType::I16,
         };
@@ -395,7 +395,7 @@ impl<'ctx> RocUnion<'ctx> {
         // set the tag id
         //
         // NOTE: setting the tag id initially happened before writing the data into it.
-        // That turned out to expose UB. More info at https://github.com/roc-lang/roc/issues/3554
+        // That turned out to expose UB. More info at https://github.com/roc-lang/broc/issues/3554
         if let Some(tag_id) = tag_id {
             let tag_id_type = match self.tag_type.unwrap() {
                 TagType::I8 => env.context.i8_type(),
@@ -423,24 +423,24 @@ impl<'ctx> RocUnion<'ctx> {
     }
 }
 
-/// The int type that the C ABI turns our RocList/RocStr into
+/// The int type that the C ABI turns our BrocList/BrocStr into
 pub fn str_list_int(ctx: &Context, target_info: TargetInfo) -> IntType<'_> {
     match target_info.ptr_width() {
-        roc_target::PtrWidth::Bytes4 => ctx.i64_type(),
-        roc_target::PtrWidth::Bytes8 => ctx.i128_type(),
+        broc_target::PtrWidth::Bytes4 => ctx.i64_type(),
+        broc_target::PtrWidth::Bytes8 => ctx.i128_type(),
     }
 }
 
 pub fn zig_list_type<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> StructType<'ctx> {
-    env.module.get_struct_type("list.RocList").unwrap()
+    env.module.get_struct_type("list.BrocList").unwrap()
 }
 
 pub fn zig_str_type<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> StructType<'ctx> {
-    env.module.get_struct_type("str.RocStr").unwrap()
+    env.module.get_struct_type("str.BrocStr").unwrap()
 }
 
 pub fn zig_dec_type<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> StructType<'ctx> {
-    env.module.get_struct_type("dec.RocDec").unwrap()
+    env.module.get_struct_type("dec.BrocDec").unwrap()
 }
 
 pub fn zig_has_tag_id_type<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> StructType<'ctx> {
@@ -474,8 +474,8 @@ pub fn zig_to_int_checked_result_type<'a, 'ctx, 'env>(
     }
 }
 
-pub fn zig_with_overflow_roc_dec<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> StructType<'ctx> {
+pub fn zig_with_overflow_broc_dec<'a, 'ctx, 'env>(env: &Env<'a, 'ctx, 'env>) -> StructType<'ctx> {
     env.module
-        .get_struct_type("utils.WithOverflow(dec.RocDec)")
+        .get_struct_type("utils.WithOverflow(dec.BrocDec)")
         .unwrap()
 }

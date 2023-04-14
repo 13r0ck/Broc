@@ -1,7 +1,7 @@
-use roc_ast::lang::core::expr::expr2::Expr2;
-use roc_ast::lang::core::pattern::Pattern2;
-use roc_ast::lang::core::val_def::ValueDef;
-use roc_module::symbol::Symbol;
+use broc_ast::lang::core::expr::expr2::Expr2;
+use broc_ast::lang::core::pattern::Pattern2;
+use broc_ast::lang::core::val_def::ValueDef;
+use broc_module::symbol::Symbol;
 
 use crate::editor::ed_error::EdResult;
 use crate::editor::mvc::app_update::InputOutcome;

@@ -89,6 +89,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "anstream"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e579a7752471abc2a8268df8b20005e3eadd975f585398f17efcfd8d4927371"
+dependencies = [
+ "anstyle",
+ "anstyle-parse",
+ "anstyle-query",
+ "anstyle-wincon",
+ "colorchoice",
+ "is-terminal",
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41ed9a86bf92ae6580e0a31281f65a1b1d867c0cc68d5346e2ae128dddfa6a7d"
+
+[[package]]
+name = "anstyle-parse"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e765fd216e48e067936442276d1d57399e37bce53c264d6fefbe298080cb57ee"
+dependencies = [
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle-query"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca11d4be1bab0c8bc8734a9aa7bf4ee8316d462a08c6ac5052f888fef5b494b"
+dependencies = [
+ "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "anstyle-wincon"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bcd8291a340dd8ac70e18878bc4501dd7b4ff970cfa21c207d36ece51ea88fd"
+dependencies = [
+ "anstyle",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "approx"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -110,14 +159,14 @@ dependencies = [
 name = "arena-pool"
 version = "0.0.1"
 dependencies = [
- "roc_error_macros",
+ "broc_error_macros",
 ]
 
 [[package]]
 name = "arrayref"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
+checksum = "6b4930d2cb77ce62f89ee5d5289b4ac049559b1c45539271f5ed4fdc7db34545"
 
 [[package]]
 name = "arrayvec"
@@ -233,12 +282,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "bitflags"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "487f1e0fcbe47deb8b0574e646def1c903389d95241dd1bbcc6ce4a715dfc0c1"
-
-[[package]]
 name = "bitmaps"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -281,11 +324,966 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
 name = "block-buffer"
-version = "0.10.3"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69cce20737498f97b993470a6e536b8523f0af7892a4f928cceb1ac5e52ebe7e"
+checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "broc_alias_analysis"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_debug_flags",
+ "broc_error_macros",
+ "broc_module",
+ "broc_mono",
+ "bumpalo",
+ "morphic_lib",
+]
+
+[[package]]
+name = "broc_ast"
+version = "0.0.1"
+dependencies = [
+ "arrayvec 0.7.2",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_load",
+ "broc_module",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_target",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+ "indoc",
+ "libc",
+ "page_size",
+ "snafu",
+ "ven_graph",
+ "winapi",
+]
+
+[[package]]
+name = "broc_bitcode"
+version = "0.0.1"
+dependencies = [
+ "broc_command_utils",
+ "dunce",
+ "tempfile",
+]
+
+[[package]]
+name = "broc_bitcode_bc"
+version = "0.0.1"
+dependencies = [
+ "broc_command_utils",
+ "dunce",
+ "tempfile",
+]
+
+[[package]]
+name = "broc_build"
+version = "0.0.1"
+dependencies = [
+ "broc_bitcode",
+ "broc_can",
+ "broc_collections",
+ "broc_command_utils",
+ "broc_constrain",
+ "broc_error_macros",
+ "broc_gen_dev",
+ "broc_gen_llvm",
+ "broc_gen_wasm",
+ "broc_linker",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve_problem",
+ "broc_std",
+ "broc_target",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+ "indoc",
+ "inkwell",
+ "libloading",
+ "serde_json",
+ "target-lexicon",
+ "tempfile",
+ "wasi_libc_sys",
+]
+
+[[package]]
+name = "broc_builtins"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_module",
+ "broc_region",
+ "broc_target",
+ "tempfile",
+]
+
+[[package]]
+name = "broc_can"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_exhaustive",
+ "broc_module",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_serialize",
+ "broc_types",
+ "bumpalo",
+ "indoc",
+ "pretty_assertions",
+ "static_assertions",
+ "ven_pretty",
+]
+
+[[package]]
+name = "broc_cli"
+version = "0.0.1"
+dependencies = [
+ "broc_build",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_command_utils",
+ "broc_docs",
+ "broc_editor",
+ "broc_error_macros",
+ "broc_fmt",
+ "broc_gen_llvm",
+ "broc_glue",
+ "broc_linker",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_region",
+ "broc_repl_cli",
+ "broc_repl_expect",
+ "broc_reporting",
+ "broc_target",
+ "broc_test_utils",
+ "broc_tracing",
+ "broc_wasm_interp",
+ "bumpalo",
+ "clap 3.2.23",
+ "cli_utils",
+ "const_format",
+ "criterion",
+ "errno",
+ "indoc",
+ "inkwell",
+ "libc",
+ "libloading",
+ "mimalloc",
+ "parking_lot 0.12.1",
+ "pretty_assertions",
+ "serial_test",
+ "signal-hook",
+ "strum",
+ "target-lexicon",
+ "tempfile",
+ "ven_pretty",
+]
+
+[[package]]
+name = "broc_code_markup"
+version = "0.0.1"
+dependencies = [
+ "broc_ast",
+ "broc_error_utils",
+ "broc_module",
+ "bumpalo",
+ "palette",
+ "serde",
+ "snafu",
+]
+
+[[package]]
+name = "broc_collections"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "bumpalo",
+ "fnv",
+ "hashbrown 0.13.2",
+ "im",
+ "im-rc",
+ "smallvec",
+ "wyhash",
+]
+
+[[package]]
+name = "broc_command_utils"
+version = "0.0.1"
+
+[[package]]
+name = "broc_constrain"
+version = "0.0.1"
+dependencies = [
+ "arrayvec 0.7.2",
+ "broc_can",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_module",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_types",
+]
+
+[[package]]
+name = "broc_debug_flags"
+version = "0.0.1"
+
+[[package]]
+name = "broc_derive"
+version = "0.0.1"
+dependencies = [
+ "broc_can",
+ "broc_collections",
+ "broc_derive_key",
+ "broc_error_macros",
+ "broc_module",
+ "broc_region",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+]
+
+[[package]]
+name = "broc_derive_key"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_error_macros",
+ "broc_module",
+ "broc_region",
+ "broc_types",
+]
+
+[[package]]
+name = "broc_docs"
+version = "0.0.1"
+dependencies = [
+ "broc_ast",
+ "broc_builtins",
+ "broc_can",
+ "broc_code_markup",
+ "broc_collections",
+ "broc_highlight",
+ "broc_load",
+ "broc_module",
+ "broc_packaging",
+ "broc_parse",
+ "broc_region",
+ "broc_reporting",
+ "broc_target",
+ "broc_types",
+ "bumpalo",
+ "peg",
+ "pretty_assertions",
+ "pulldown-cmark",
+ "snafu",
+]
+
+[[package]]
+name = "broc_docs_cli"
+version = "0.0.1"
+dependencies = [
+ "broc_docs",
+ "clap 3.2.23",
+ "libc",
+]
+
+[[package]]
+name = "broc_editor"
+version = "0.0.1"
+dependencies = [
+ "arrayvec 0.7.2",
+ "broc_ast",
+ "broc_builtins",
+ "broc_can",
+ "broc_code_markup",
+ "broc_collections",
+ "broc_command_utils",
+ "broc_load",
+ "broc_module",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+ "bytemuck",
+ "cgmath",
+ "colored",
+ "confy",
+ "copypasta",
+ "fs_extra",
+ "futures",
+ "glyph_brush",
+ "libc",
+ "log",
+ "nonempty",
+ "page_size",
+ "palette",
+ "pest",
+ "pest_derive",
+ "rand",
+ "serde",
+ "snafu",
+ "tempfile",
+ "threadpool",
+ "uuid",
+ "ven_graph",
+ "wgpu",
+ "wgpu_glyph",
+ "winit",
+]
+
+[[package]]
+name = "broc_error_macros"
+version = "0.0.1"
+
+[[package]]
+name = "broc_error_utils"
+version = "0.0.1"
+dependencies = [
+ "snafu",
+]
+
+[[package]]
+name = "broc_exhaustive"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_error_macros",
+ "broc_module",
+ "broc_problem",
+ "broc_region",
+]
+
+[[package]]
+name = "broc_fmt"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_module",
+ "broc_parse",
+ "broc_region",
+ "bumpalo",
+]
+
+[[package]]
+name = "broc_gen_dev"
+version = "0.0.1"
+dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_module",
+ "broc_mono",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_solve",
+ "broc_std",
+ "broc_target",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+ "capstone",
+ "object",
+ "packed_struct",
+ "target-lexicon",
+]
+
+[[package]]
+name = "broc_gen_llvm"
+version = "0.0.1"
+dependencies = [
+ "broc_alias_analysis",
+ "broc_bitcode_bc",
+ "broc_builtins",
+ "broc_collections",
+ "broc_debug_flags",
+ "broc_error_macros",
+ "broc_module",
+ "broc_mono",
+ "broc_region",
+ "broc_std",
+ "broc_target",
+ "bumpalo",
+ "inkwell",
+ "morphic_lib",
+ "target-lexicon",
+]
+
+[[package]]
+name = "broc_gen_wasm"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "broc_builtins",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_module",
+ "broc_mono",
+ "broc_std",
+ "broc_target",
+ "broc_wasm_module",
+ "bumpalo",
+]
+
+[[package]]
+name = "broc_glue"
+version = "0.0.1"
+dependencies = [
+ "backtrace",
+ "broc_build",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_gen_llvm",
+ "broc_linker",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_reporting",
+ "broc_std",
+ "broc_target",
+ "broc_tracing",
+ "broc_types",
+ "bumpalo",
+ "cli_utils",
+ "dircpy",
+ "fnv",
+ "indexmap",
+ "indoc",
+ "libc",
+ "libloading",
+ "pretty_assertions",
+ "strum",
+ "strum_macros",
+ "target-lexicon",
+ "tempfile",
+]
+
+[[package]]
+name = "broc_highlight"
+version = "0.0.1"
+dependencies = [
+ "broc_parse",
+ "broc_region",
+ "html-escape",
+]
+
+[[package]]
+name = "broc_ident"
+version = "0.0.1"
+
+[[package]]
+name = "broc_late_solve"
+version = "0.0.1"
+dependencies = [
+ "broc_can",
+ "broc_collections",
+ "broc_derive",
+ "broc_error_macros",
+ "broc_module",
+ "broc_solve",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+]
+
+[[package]]
+name = "broc_linker"
+version = "0.0.1"
+dependencies = [
+ "bincode",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_reporting",
+ "broc_target",
+ "bumpalo",
+ "iced-x86",
+ "indoc",
+ "libc",
+ "mach_object",
+ "memmap2 0.5.10",
+ "object",
+ "serde",
+ "serial_test",
+ "target-lexicon",
+ "tempfile",
+]
+
+[[package]]
+name = "broc_load"
+version = "0.0.1"
+dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_load_internal",
+ "broc_module",
+ "broc_packaging",
+ "broc_reporting",
+ "broc_target",
+ "broc_types",
+ "bumpalo",
+]
+
+[[package]]
+name = "broc_load_internal"
+version = "0.0.1"
+dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_constrain",
+ "broc_debug_flags",
+ "broc_derive",
+ "broc_derive_key",
+ "broc_error_macros",
+ "broc_late_solve",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_solve_problem",
+ "broc_target",
+ "broc_test_utils",
+ "broc_tracing",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+ "crossbeam",
+ "indoc",
+ "maplit",
+ "parking_lot 0.12.1",
+ "pretty_assertions",
+ "tempfile",
+ "ven_pretty",
+]
+
+[[package]]
+name = "broc_module"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_error_macros",
+ "broc_ident",
+ "broc_region",
+ "bumpalo",
+ "snafu",
+ "static_assertions",
+]
+
+[[package]]
+name = "broc_mono"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_debug_flags",
+ "broc_derive",
+ "broc_derive_key",
+ "broc_error_macros",
+ "broc_exhaustive",
+ "broc_late_solve",
+ "broc_module",
+ "broc_problem",
+ "broc_region",
+ "broc_std",
+ "broc_target",
+ "broc_tracing",
+ "broc_types",
+ "bumpalo",
+ "hashbrown 0.13.2",
+ "parking_lot 0.12.1",
+ "static_assertions",
+ "ven_pretty",
+]
+
+[[package]]
+name = "broc_packaging"
+version = "0.0.1"
+dependencies = [
+ "base64-url",
+ "blake3",
+ "broc_error_macros",
+ "broc_parse",
+ "brotli",
+ "bumpalo",
+ "flate2",
+ "fs_extra",
+ "reqwest",
+ "tar",
+ "tempfile",
+ "walkdir",
+]
+
+[[package]]
+name = "broc_parse"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_module",
+ "broc_region",
+ "bumpalo",
+ "criterion",
+ "encode_unicode 1.0.0",
+ "indoc",
+ "pretty_assertions",
+ "proptest",
+ "quickcheck",
+ "quickcheck_macros",
+]
+
+[[package]]
+name = "broc_problem"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_module",
+ "broc_parse",
+ "broc_region",
+ "broc_types",
+]
+
+[[package]]
+name = "broc_region"
+version = "0.0.1"
+dependencies = [
+ "static_assertions",
+]
+
+[[package]]
+name = "broc_repl_cli"
+version = "0.0.1"
+dependencies = [
+ "broc_build",
+ "broc_builtins",
+ "broc_collections",
+ "broc_gen_llvm",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_parse",
+ "broc_region",
+ "broc_repl_eval",
+ "broc_reporting",
+ "broc_std",
+ "broc_target",
+ "broc_types",
+ "bumpalo",
+ "const_format",
+ "inkwell",
+ "libloading",
+ "rustyline",
+ "rustyline-derive",
+ "target-lexicon",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "broc_repl_eval"
+version = "0.0.1"
+dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_fmt",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_std",
+ "broc_target",
+ "broc_types",
+ "bumpalo",
+]
+
+[[package]]
+name = "broc_repl_expect"
+version = "0.0.1"
+dependencies = [
+ "broc_build",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_error_macros",
+ "broc_gen_llvm",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_region",
+ "broc_repl_eval",
+ "broc_reporting",
+ "broc_std",
+ "broc_target",
+ "broc_types",
+ "bumpalo",
+ "indoc",
+ "inkwell",
+ "libc",
+ "libloading",
+ "pretty_assertions",
+ "signal-hook",
+ "strip-ansi-escapes",
+ "target-lexicon",
+ "tempfile",
+]
+
+[[package]]
+name = "broc_repl_wasm"
+version = "0.0.1"
+dependencies = [
+ "broc_bitcode",
+ "broc_builtins",
+ "broc_collections",
+ "broc_gen_wasm",
+ "broc_load",
+ "broc_parse",
+ "broc_repl_eval",
+ "broc_reporting",
+ "broc_target",
+ "broc_types",
+ "bumpalo",
+ "console_error_panic_hook",
+ "futures",
+ "getrandom",
+ "js-sys",
+ "tempfile",
+ "wasi_libc_sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "broc_reporting"
+version = "0.0.1"
+dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_constrain",
+ "broc_derive",
+ "broc_error_macros",
+ "broc_exhaustive",
+ "broc_fmt",
+ "broc_load",
+ "broc_module",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_solve",
+ "broc_solve_problem",
+ "broc_std",
+ "broc_target",
+ "broc_test_utils",
+ "broc_types",
+ "bumpalo",
+ "distance",
+ "indoc",
+ "insta",
+ "itertools 0.10.5",
+ "pretty_assertions",
+ "ven_pretty",
+]
+
+[[package]]
+name = "broc_serialize"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+]
+
+[[package]]
+name = "broc_solve"
+version = "0.0.1"
+dependencies = [
+ "arrayvec 0.7.2",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_debug_flags",
+ "broc_derive",
+ "broc_derive_key",
+ "broc_error_macros",
+ "broc_exhaustive",
+ "broc_load",
+ "broc_module",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_solve_problem",
+ "broc_target",
+ "broc_types",
+ "broc_unify",
+ "bumpalo",
+ "indoc",
+ "insta",
+ "lazy_static",
+ "libtest-mimic",
+ "pretty_assertions",
+ "regex",
+ "tempfile",
+ "test_solve_helpers",
+]
+
+[[package]]
+name = "broc_solve_problem"
+version = "0.0.1"
+dependencies = [
+ "broc_can",
+ "broc_collections",
+ "broc_exhaustive",
+ "broc_module",
+ "broc_problem",
+ "broc_region",
+ "broc_types",
+]
+
+[[package]]
+name = "broc_std"
+version = "0.0.1"
+dependencies = [
+ "arrayvec 0.7.2",
+ "libc",
+ "pretty_assertions",
+ "quickcheck",
+ "quickcheck_macros",
+ "serde",
+ "serde_json",
+ "static_assertions",
+]
+
+[[package]]
+name = "broc_target"
+version = "0.0.1"
+dependencies = [
+ "strum",
+ "strum_macros",
+ "target-lexicon",
+]
+
+[[package]]
+name = "broc_test_utils"
+version = "0.0.1"
+dependencies = [
+ "pretty_assertions",
+ "remove_dir_all 0.8.2",
+]
+
+[[package]]
+name = "broc_tracing"
+version = "0.0.1"
+dependencies = [
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "broc_types"
+version = "0.0.1"
+dependencies = [
+ "broc_collections",
+ "broc_debug_flags",
+ "broc_error_macros",
+ "broc_module",
+ "broc_region",
+ "broc_serialize",
+ "bumpalo",
+ "static_assertions",
+ "ven_pretty",
+]
+
+[[package]]
+name = "broc_unify"
+version = "0.0.1"
+dependencies = [
+ "bitflags",
+ "broc_collections",
+ "broc_debug_flags",
+ "broc_error_macros",
+ "broc_module",
+ "broc_tracing",
+ "broc_types",
+]
+
+[[package]]
+name = "broc_wasm_interp"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "broc_wasm_module",
+ "bumpalo",
+ "clap 3.2.23",
+ "rand",
+]
+
+[[package]]
+name = "broc_wasm_module"
+version = "0.0.1"
+dependencies = [
+ "bitvec",
+ "broc_error_macros",
+ "bumpalo",
 ]
 
 [[package]]
@@ -326,13 +1324,13 @@ dependencies = [
 
 [[package]]
 name = "bytemuck_derive"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aca418a974d83d40a0c1f0c5cba6ff4bc28d8df099109ca459a2118d40b6322"
+checksum = "fdde5c9cd29ebd706ce1b35600920a33550e402fc998a2e53ad3b42c3c47a192"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -426,7 +1424,7 @@ version = "2.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "textwrap 0.11.0",
  "unicode-width",
 ]
@@ -438,7 +1436,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71655c45cb9845d3270c9d6df84ebe72b4dad3c2ba3f7023ad47c144e4e473a5"
 dependencies = [
  "atty",
- "bitflags 1.3.2",
+ "bitflags",
  "clap_lex 0.2.4",
  "indexmap",
  "strsim",
@@ -448,30 +1446,38 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.1.11"
+version = "4.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42dfd32784433290c51d92c438bb72ea5063797fc3cc9a21a8c4346bebbb2098"
+checksum = "9b802d85aaf3a1cdb02b224ba472ebdea62014fccfcb269b95a4d76443b5ee5a"
 dependencies = [
- "bitflags 2.0.2",
+ "clap_builder",
  "clap_derive",
- "clap_lex 0.3.3",
- "is-terminal",
  "once_cell",
+]
+
+[[package]]
+name = "clap_builder"
+version = "4.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14a1a858f532119338887a4b8e1af9c60de8249cd7bafd68036a489e261e37b6"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "bitflags",
+ "clap_lex 0.4.1",
  "strsim",
- "termcolor",
 ]
 
 [[package]]
 name = "clap_derive"
-version = "4.1.9"
+version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fddf67631444a3a3e3e5ac51c36a5e01335302de677bd78759eaa90ab1f46644"
+checksum = "3f9644cd56d6b87dbe899ef8b053e331c0637664e9e21a33dfcdc36093f5c5c4"
 dependencies = [
  "heck",
- "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -485,25 +1491,22 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.3.3"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "033f6b7a4acb1f358c742aaca805c939ee73b4c6209ae4318ec7aca81c42e646"
-dependencies = [
- "os_str_bytes",
-]
+checksum = "8a2dd5a6fe8c6e3502f568a6353e5273bbb15193ad9a89e457b9970798efbea1"
 
 [[package]]
 name = "cli_utils"
 version = "0.0.1"
 dependencies = [
+ "broc_collections",
+ "broc_command_utils",
+ "broc_load",
+ "broc_module",
+ "broc_reporting",
  "bumpalo",
  "criterion",
  "rlimit",
- "roc_collections",
- "roc_command_utils",
- "roc_load",
- "roc_module",
- "roc_reporting",
  "serde",
  "serde-xml-rs",
  "tempfile",
@@ -536,7 +1539,7 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f425db7937052c684daec3bd6375c8abe2d146dca4b8b143d6db777c39138f3a"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "block",
  "cocoa-foundation",
  "core-foundation 0.9.3",
@@ -548,11 +1551,11 @@ dependencies = [
 
 [[package]]
 name = "cocoa-foundation"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ade49b65d560ca58c403a479bb396592b155c0185eada742ee323d1d68d6318"
+checksum = "931d3837c286f56e3c58423ce4eba12d08db2374461a785c86f672b08b5650d6"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "block",
  "core-foundation 0.9.3",
  "core-graphics-types",
@@ -570,6 +1573,12 @@ dependencies = [
  "termcolor",
  "unicode-width",
 ]
+
+[[package]]
+name = "colorchoice"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
 name = "colored"
@@ -637,9 +1646,9 @@ dependencies = [
 
 [[package]]
 name = "constant_time_eq"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3ad85c1f65dc7b37604eb0e89748faf0b9653065f2a8ef69f96a687ec1e9279"
+checksum = "13418e745008f7349ec7e449155f419a61b92b58a99cc3616942b926825ec76b"
 
 [[package]]
 name = "copyless"
@@ -677,7 +1686,7 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "194a7a9e6de53fa55116934067c844d9d749312f75c6f6d0980e8c252f8c2146"
 dependencies = [
- "core-foundation-sys 0.8.3",
+ "core-foundation-sys 0.8.4",
  "libc",
 ]
 
@@ -689,9 +1698,9 @@ checksum = "b3a71ab494c0b5b860bdc8407ae08978052417070c2ced38573a9157ad75b8ac"
 
 [[package]]
 name = "core-foundation-sys"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
+checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
 
 [[package]]
 name = "core-graphics"
@@ -699,7 +1708,7 @@ version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3889374e6ea6ab25dba90bb5d96202f61108058361f6dc72e8b03e6f8bbe923"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "core-foundation 0.7.0",
  "foreign-types",
  "libc",
@@ -711,7 +1720,7 @@ version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2581bbab3b8ffc6fcbd550bf46c355135d16e9ff2a6ea032ad6b9bf1d7efe4fb"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "core-foundation 0.9.3",
  "core-graphics-types",
  "foreign-types",
@@ -724,7 +1733,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a68b68b3446082644c91ac778bf50cd4104bfb002b5a6a7c44cca5a2c70788b"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "core-foundation 0.9.3",
  "foreign-types",
  "libc",
@@ -745,9 +1754,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28d997bd5e24a5928dd43e46dc529867e207907fe0b239c3477d924f7f2ca320"
+checksum = "280a9f2d8b3a38871a3c8a46fb80db65e5e5ed97da80c4d08bf27fb63e35e181"
 dependencies = [
  "libc",
 ]
@@ -811,9 +1820,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf2b3e8478797446514c91ef04bafcb59faba183e621ad488df88983cc14128c"
+checksum = "a33c2bf77f2df06183c3aa30d1e96c0695a313d4f9c453cc3762a6db39f99200"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils",
@@ -900,7 +1909,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d2301688392eb071b0bf1a37be05c469d3cc4dbbd95df672fe28ab021e6a096"
 dependencies = [
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -911,11 +1920,11 @@ checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
 
 [[package]]
 name = "cvt"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34ac344c7efccb80cd25bc61b2170aec26f2f693fd40e765a539a1243db48c71"
+checksum = "d2ae9bf77fbf2d39ef573205d554d87e86c12f1994e9ea335b0651b9b278bcf1"
 dependencies = [
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
 ]
 
 [[package]]
@@ -924,7 +1933,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2daefd788d1e96e0a9d66dee4b828b883509bc3ea9ce30665f04c3246372690c"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "libloading",
  "winapi",
 ]
@@ -950,7 +1959,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strsim",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -961,7 +1970,7 @@ checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
 dependencies = [
  "darling_core",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1130,24 +2139,13 @@ dependencies = [
 
 [[package]]
 name = "errno"
-version = "0.2.8"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f639046355ee4f37944e44f60642c6f3a7efa3cf6b78c78a0d989a8ce6c396a1"
+checksum = "4bcfec3a70f97c962c307b2d2c56e358cf1d00b558d74262b5f929ee8cc7e73a"
 dependencies = [
  "errno-dragonfly",
  "libc",
- "winapi",
-]
-
-[[package]]
-name = "errno"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50d6a0976c999d473fe89ad888d5a284e55366d9dc9038b1ba2aa15128c4afa0"
-dependencies = [
- "errno-dragonfly",
- "libc",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -1172,25 +2170,25 @@ dependencies = [
 
 [[package]]
 name = "fd-lock"
-version = "3.0.10"
+version = "3.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ef1a30ae415c3a691a4f41afddc2dbcd6d70baf338368d85ebc1e8ed92cedb9"
+checksum = "39ae6b3d9530211fb3b12a95374b8b0823be812f53d09e18c5675c0146b09642"
 dependencies = [
  "cfg-if 1.0.0",
- "rustix 0.36.9",
- "windows-sys 0.45.0",
+ "rustix",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
 name = "filetime"
-version = "0.2.20"
+version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a3de6e8d11b22ff9edc6d916f890800597d60f8b2da1caf2955c274638d6412"
+checksum = "5cbc844cecaee9d4443931972e1289c8ff485cb4cc2767cb03ca139ed6885153"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "redox_syscall",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -1244,9 +2242,9 @@ dependencies = [
 
 [[package]]
 name = "fs_at"
-version = "0.1.1"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab60b097d8208fe02d24ae954c3248a9436f96edefa8f4b9fcb0f26d60d003a9"
+checksum = "37047c0d530b3aefc64e4c4d7c6b1e23030c65973661b70e12c826f426f3f675"
 dependencies = [
  "aligned",
  "cfg-if 1.0.0",
@@ -1271,9 +2269,9 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
 name = "futures"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13e2792b0ff0340399d58445b88fd9770e3489eff258a4cbc1523418f12abf84"
+checksum = "23342abe12aba583913b2e62f22225ff9c950774065e4bfb61a19cd9770fec40"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -1286,9 +2284,9 @@ dependencies = [
 
 [[package]]
 name = "futures-channel"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e5317663a9089767a1ec00a487df42e0ca174b61b4483213ac24448e4664df5"
+checksum = "955518d47e09b25bbebc7a18df10b81f0c766eaf4c4f1cccef2fca5f2a4fb5f2"
 dependencies = [
  "futures-core",
  "futures-sink",
@@ -1296,15 +2294,15 @@ dependencies = [
 
 [[package]]
 name = "futures-core"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec90ff4d0fe1f57d600049061dc6bb68ed03c7d2fbd697274c41805dcb3f8608"
+checksum = "4bca583b7e26f571124fe5b7561d49cb2868d79116cfa0eefce955557c6fee8c"
 
 [[package]]
 name = "futures-executor"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8de0a35a6ab97ec8869e32a2473f4b1324459e14c29275d14b10cb1fd19b50e"
+checksum = "ccecee823288125bd88b4d7f565c9e58e41858e47ab72e8ea2d64e93624386e0"
 dependencies = [
  "futures-core",
  "futures-task",
@@ -1313,38 +2311,38 @@ dependencies = [
 
 [[package]]
 name = "futures-io"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfb8371b6fb2aeb2d280374607aeabfc99d95c72edfe51692e42d3d7f0d08531"
+checksum = "4fff74096e71ed47f8e023204cfd0aa1289cd54ae5430a9523be060cdb849964"
 
 [[package]]
 name = "futures-macro"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95a73af87da33b5acf53acfebdc339fe592ecf5357ac7c0a7734ab9d8c876a70"
+checksum = "89ca545a94061b6365f2c7355b4b32bd20df3ff95f02da9329b34ccc3bd6ee72"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.15",
 ]
 
 [[package]]
 name = "futures-sink"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f310820bb3e8cfd46c80db4d7fb8353e15dfff853a127158425f31e0be6c8364"
+checksum = "f43be4fe21a13b9781a69afa4985b0f6ee0e1afab2c6f454a8cf30e2b2237b6e"
 
 [[package]]
 name = "futures-task"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf79a1bf610b10f42aea489289c5a2c478a786509693b80cd39c44ccd936366"
+checksum = "76d3d132be6c0e6aa1534069c705a74a5997a356c0dc2f86a47765e5617c5b65"
 
 [[package]]
 name = "futures-util"
-version = "0.3.26"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c1d6de3acfef38d2be4b1f543f553131788603495be83da675e180c8d6b7bd1"
+checksum = "26b01e40b772d54cf6c6d721c1d1abd0647a0106a12ecaa1c186273392a69533"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -1369,9 +2367,9 @@ dependencies = [
 
 [[package]]
 name = "generic-array"
-version = "0.14.6"
+version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bff49e947297f3312447abdca79f45f4738097cc82b06e72054d2223f601f1b9"
+checksum = "85649ca51fd72272d7821adaf274ad91c288277713d9c18820d8499a7ff69e9a"
 dependencies = [
  "typenum",
  "version_check",
@@ -1389,9 +2387,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
+checksum = "c85e1d9ab2eadba7e5040d4e09cbd6d072b76a557ad64e797c2cb9d4da21d7e4"
 dependencies = [
  "cfg-if 1.0.0",
  "js-sys",
@@ -1462,7 +2460,7 @@ version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fc59e5f710e310e76e6707f86c561dd646f69a8876da9131703b2f717de818d"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "gpu-alloc-types",
 ]
 
@@ -1472,7 +2470,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54804d0d6bc9d7f26db4eaec1ad10def69b599315f487d32c334a80d1efe67a5"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
 ]
 
 [[package]]
@@ -1481,7 +2479,7 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b0c02e1ba0bdb14e965058ca34e09c020f8e507a760df1121728e0aef68d57a"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "gpu-descriptor-types",
  "hashbrown 0.12.3",
 ]
@@ -1492,14 +2490,14 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "363e3677e55ad168fef68cf9de3a4a310b53124c5e784c53a1d70e92d23f2126"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
 ]
 
 [[package]]
 name = "h2"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5be7b54589b581f624f566bf5d8eb2bab1db736c51528720b6bd36b96b55924d"
+checksum = "66b91535aa35fea1523ad1b86cb6b53c28e0ae566ba4a460f4457e936cad7c6f"
 dependencies = [
  "bytes",
  "fnv",
@@ -1620,9 +2618,9 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 
 [[package]]
 name = "hyper"
-version = "0.14.24"
+version = "0.14.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e011372fa0b68db8350aa7a248930ecc7839bf46d8485577d69f117a75f164c"
+checksum = "ab302d72a6f11a3b910431ff93aae7e773078c769f0a3ef15fb9ec692ed147d4"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -1710,9 +2708,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.9.2"
+version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
+checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg",
  "hashbrown 0.12.3",
@@ -1744,7 +2742,7 @@ source = "git+https://github.com/roc-lang/inkwell?branch=inkwell-llvm-15#95a3a13
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1755,9 +2753,9 @@ checksum = "e567468c50f3d4bc7397702e09b380139f9b9288b4e909b070571007f8b5bf78"
 
 [[package]]
 name = "insta"
-version = "1.28.0"
+version = "1.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea5b3894afe466b4bcf0388630fc15e11938a6074af0cd637c825ba2ec8a099"
+checksum = "9a28d25139df397cbca21408bb742cf6837e04cdbebf1b07b760caf971d6a972"
 dependencies = [
  "console",
  "lazy_static",
@@ -1780,30 +2778,31 @@ dependencies = [
 
 [[package]]
 name = "io-lifetimes"
-version = "1.0.6"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfa919a82ea574332e2de6e74b4c36e74d41982b335080fa59d4ef31be20fdf3"
+checksum = "9c66c74d2ae7e79a5a8f7ac924adbe38ee42a859c6539ad869eb51f0b52dc220"
 dependencies = [
+ "hermit-abi 0.3.1",
  "libc",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
 name = "ipnet"
-version = "2.7.1"
+version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30e22bd8629359895450b59ea7a776c850561b96a3b1d31321c1949d9e6c9146"
+checksum = "12b6ee2129af8d4fb011108c73d99a1b83a85977f23b82460c0ae2e25bb4b57f"
 
 [[package]]
 name = "is-terminal"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "256017f749ab3117e93acb91063009e1f1bb56d03965b14c2c8df4eb02c524d8"
+checksum = "adcf93614601c8129ddf72e2d5633df827ba6551541c6d8c59520a371475be1f"
 dependencies = [
  "hermit-abi 0.3.1",
  "io-lifetimes",
- "rustix 0.37.3",
- "windows-sys 0.45.0",
+ "rustix",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -1879,9 +2878,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.139"
+version = "0.2.141"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "201de327520df007757c1f0adce6e827fe8562fbc28bfd9c15571c66ca1f5f79"
+checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
 
 [[package]]
 name = "libloading"
@@ -1901,9 +2900,9 @@ checksum = "348108ab3fba42ec82ff6e9564fc4ca0247bdccdc68dd8af9764bbc79c3c8ffb"
 
 [[package]]
 name = "libmimalloc-sys"
-version = "0.1.30"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8c7cbf8b89019683667e347572e6d55a7df7ea36b0c4ce69961b0cde67b174"
+checksum = "43a558e3d911bc3c7bfc8c78bc580b404d6e51c1cefbf656e176a94b49b0df40"
 dependencies = [
  "cc",
  "libc",
@@ -1915,7 +2914,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7b603516767d1ab23d0de09d023e62966c3322f7148297c35cf3d97aa8b37fa"
 dependencies = [
- "clap 4.1.11",
+ "clap 4.2.2",
  "termcolor",
  "threadpool",
 ]
@@ -1925,12 +2924,6 @@ name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
-
-[[package]]
-name = "linux-raw-sys"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
 
 [[package]]
 name = "linux-raw-sys"
@@ -1976,7 +2969,7 @@ version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b6f2d7176b94027af58085a2c9d27c4e416586caba409c314569213901d6068"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "byteorder",
  "lazy_static",
  "libc",
@@ -2058,7 +3051,7 @@ version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0514f491f4cc03632ab399ee01e2c1c1b12d3e1cf2d667c1ff5f87d6dcd2084"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "block",
  "core-graphics-types",
  "foreign-types",
@@ -2068,18 +3061,18 @@ dependencies = [
 
 [[package]]
 name = "mimalloc"
-version = "0.1.34"
+version = "0.1.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dcb174b18635f7561a0c6c9fc2ce57218ac7523cf72c50af80e2d79ab8f3ba1"
+checksum = "3d88dad3f985ec267a3fcb7a1726f5cb1a7e8cad8b646e70a84f967210df23da"
 dependencies = [
  "libmimalloc-sys",
 ]
 
 [[package]]
 name = "mime"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
+checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "minimal-lexical"
@@ -2113,7 +3106,7 @@ name = "morphic_lib"
 version = "0.1.0"
 dependencies = [
  "blake3",
- "roc_collections",
+ "broc_collections",
  "smallvec",
  "thiserror",
  "typed-arena",
@@ -2126,7 +3119,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3012f2dbcc79e8e0b5825a4836a7106a75dd9b2fe42c528163be0f572538c705"
 dependencies = [
  "bit-set",
- "bitflags 1.3.2",
+ "bitflags",
  "codespan-reporting",
  "hexf-parse",
  "indexmap",
@@ -2143,7 +3136,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96d868f654c72e75f8687572699cdabe755f03effbb62542768e995d5b8d699d"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "jni-sys",
  "ndk-sys",
  "num_enum",
@@ -2181,7 +3174,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2205,7 +3198,7 @@ version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4916f159ed8e5de0082076562152a76b7a1f64a01fd9d1e0fea002c37624faf"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "cc",
  "cfg-if 1.0.0",
  "libc",
@@ -2218,7 +3211,7 @@ version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f3790c00a0150112de0f4cd161e3d7fc4b2d8a5542ffc35f099a2562aecb35c"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "cc",
  "cfg-if 1.0.0",
  "libc",
@@ -2231,7 +3224,7 @@ version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa52e972a9a719cecb6864fb88568781eb706bac2cd1d4f04a648542dbf78069"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "cfg-if 1.0.0",
  "libc",
  "memoffset 0.6.5",
@@ -2243,7 +3236,7 @@ version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "cfg-if 1.0.0",
  "libc",
  "static_assertions",
@@ -2267,11 +3260,11 @@ checksum = "aeaf4ad7403de93e699c191202f017118df734d3850b01e13a3a8b2e6953d3c9"
 
 [[package]]
 name = "normpath"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "972dec05f98e7c787ede35d7a9ea4735eb7788c299287352757b3def6cc1f7b5"
+checksum = "ec60c60a693226186f5d6edf073232bfb6464ed97eb22cf3b01c1e8198fd97f5"
 dependencies = [
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -2322,7 +3315,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2391,18 +3384,18 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 
 [[package]]
 name = "ordered-float"
-version = "3.4.0"
+version = "3.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d84eb1409416d254e4a9c8fa56cc24701755025b458f0fcd8e59e1f5f40c23bf"
+checksum = "13a384337e997e6860ffbaa83708b2ef329fd8c54cb67a5f64d421e0f943254f"
 dependencies = [
  "num-traits",
 ]
 
 [[package]]
 name = "os_str_bytes"
-version = "6.4.1"
+version = "6.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
+checksum = "ceedf44fb00f2d1984b0bc98102627ce622e083e49a5bacdb3e514fa4238e267"
 
 [[package]]
 name = "output_vt100"
@@ -2447,7 +3440,7 @@ checksum = "9cd6706dfe50d53e0f6aa09e12c034c44faacd23e966ae5a209e8bdb8f179f98"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2481,7 +3474,7 @@ dependencies = [
  "find-crate",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2567,9 +3560,9 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "pest"
-version = "2.5.6"
+version = "2.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cbd939b234e95d72bc393d51788aec68aeeb5d51e748ca08ff3aad58cb722f7"
+checksum = "7b1403e8401ad5dedea73c626b99758535b342502f8d1e361f4a2dd952749122"
 dependencies = [
  "thiserror",
  "ucd-trie",
@@ -2577,9 +3570,9 @@ dependencies = [
 
 [[package]]
 name = "pest_derive"
-version = "2.5.6"
+version = "2.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a81186863f3d0a27340815be8f2078dd8050b14cd71913db9fbda795e5f707d7"
+checksum = "be99c4c1d2fc2769b1d00239431d711d08f6efedcecb8b6e30707160aee99c15"
 dependencies = [
  "pest",
  "pest_generator",
@@ -2587,22 +3580,22 @@ dependencies = [
 
 [[package]]
 name = "pest_generator"
-version = "2.5.6"
+version = "2.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75a1ef20bf3193c15ac345acb32e26b3dc3223aff4d77ae4fc5359567683796b"
+checksum = "e56094789873daa36164de2e822b3888c6ae4b4f9da555a1103587658c805b1e"
 dependencies = [
  "pest",
  "pest_meta",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.15",
 ]
 
 [[package]]
 name = "pest_meta"
-version = "2.5.6"
+version = "2.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e3b284b1f13a20dc5ebc90aff59a51b8d7137c221131b52a7260c08cbc1cc80"
+checksum = "6733073c7cff3d8459fda0e42f13a047870242aed8b509fe98000928975f359e"
 dependencies = [
  "once_cell",
  "pest",
@@ -2639,7 +3632,7 @@ dependencies = [
  "phf_shared",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2725,34 +3718,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-error"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
-dependencies = [
- "proc-macro-error-attr",
- "proc-macro2",
- "quote",
- "syn",
- "version_check",
-]
-
-[[package]]
-name = "proc-macro-error-attr"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
-dependencies = [
- "proc-macro2",
- "quote",
- "version_check",
-]
-
-[[package]]
 name = "proc-macro2"
-version = "1.0.51"
+version = "1.0.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d727cae5b39d21da60fa540906919ad737832fe0b1c165da3a34d6548c849d6"
+checksum = "2b63bdb0cd06f1f4dedf69b254734f9b45af66e4a031e42a7480257d9898b435"
 dependencies = [
  "unicode-ident",
 ]
@@ -2770,7 +3739,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29f1b898011ce9595050a68e60f90bad083ff2987a695a42357134c8381fba70"
 dependencies = [
  "bit-set",
- "bitflags 1.3.2",
+ "bitflags",
  "byteorder",
  "lazy_static",
  "num-traits",
@@ -2790,7 +3759,7 @@ version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d9cc634bc78768157b5cbfe988ffcd1dcba95cd2b2f03a88316c08c6d00ed63"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "memchr",
  "unicase",
 ]
@@ -2826,14 +3795,14 @@ checksum = "b22a693222d716a9587786f37ac3f6b4faedb5b80c23914e7303ff5a1d8016e9"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.23"
+version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8856d8364d252a14d474036ea1358d63c9e6965c8e5c1885c18f73d70bff9c7b"
+checksum = "4424af4bf778aae2051a77b60283332f386554255d722233d09fbfc7e30da2fc"
 dependencies = [
  "proc-macro2",
 ]
@@ -2945,7 +3914,7 @@ version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
 ]
 
 [[package]]
@@ -2961,9 +3930,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.1"
+version = "1.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
+checksum = "8b1f693b24f6ac912f4893ef08244d70b6067480d2f1a46e950c9691e6749d1d"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -2981,9 +3950,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.28"
+version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
+checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "remove_dir_all"
@@ -2996,9 +3965,9 @@ dependencies = [
 
 [[package]]
 name = "remove_dir_all"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7174320e07c29945955cedd70b865995b286847111c8308d349a1f3a9e3af555"
+checksum = "23895cfadc1917fed9c6ed76a8c2903615fa3704f7493ff82b364c6540acc02b"
 dependencies = [
  "aligned",
  "cfg-if 1.0.0",
@@ -3020,21 +3989,21 @@ checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 name = "repl_test"
 version = "0.0.1"
 dependencies = [
+ "broc_build",
+ "broc_cli",
+ "broc_repl_cli",
+ "broc_test_utils",
+ "broc_wasm_interp",
  "bumpalo",
  "indoc",
- "roc_build",
- "roc_cli",
- "roc_repl_cli",
- "roc_test_utils",
- "roc_wasm_interp",
  "strip-ansi-escapes",
 ]
 
 [[package]]
 name = "reqwest"
-version = "0.11.14"
+version = "0.11.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21eed90ec8570952d53b772ecf8f206aa1ec9a3d76b2521c56c42973f2d91ee9"
+checksum = "27b71749df584b7f4cac2c426c127a7c785a5106cc98f7a8feb044115f0fa254"
 dependencies = [
  "base64 0.21.0",
  "bytes",
@@ -3094,965 +4063,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "roc_alias_analysis"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "morphic_lib",
- "roc_collections",
- "roc_debug_flags",
- "roc_error_macros",
- "roc_module",
- "roc_mono",
-]
-
-[[package]]
-name = "roc_ast"
-version = "0.0.1"
-dependencies = [
- "arrayvec 0.7.2",
- "bumpalo",
- "indoc",
- "libc",
- "page_size",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_error_macros",
- "roc_load",
- "roc_module",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_target",
- "roc_types",
- "roc_unify",
- "snafu",
- "ven_graph",
- "winapi",
-]
-
-[[package]]
-name = "roc_bitcode"
-version = "0.0.1"
-dependencies = [
- "dunce",
- "roc_command_utils",
- "tempfile",
-]
-
-[[package]]
-name = "roc_bitcode_bc"
-version = "0.0.1"
-dependencies = [
- "dunce",
- "roc_command_utils",
- "tempfile",
-]
-
-[[package]]
-name = "roc_build"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "indoc",
- "inkwell",
- "libloading",
- "roc_bitcode",
- "roc_can",
- "roc_collections",
- "roc_command_utils",
- "roc_constrain",
- "roc_error_macros",
- "roc_gen_dev",
- "roc_gen_llvm",
- "roc_gen_wasm",
- "roc_linker",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve_problem",
- "roc_std",
- "roc_target",
- "roc_types",
- "roc_unify",
- "serde_json",
- "target-lexicon",
- "tempfile",
- "wasi_libc_sys",
-]
-
-[[package]]
-name = "roc_builtins"
-version = "0.0.1"
-dependencies = [
- "roc_collections",
- "roc_module",
- "roc_region",
- "roc_target",
- "tempfile",
-]
-
-[[package]]
-name = "roc_can"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "bumpalo",
- "indoc",
- "pretty_assertions",
- "roc_collections",
- "roc_error_macros",
- "roc_exhaustive",
- "roc_module",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_serialize",
- "roc_types",
- "static_assertions",
- "ven_pretty",
-]
-
-[[package]]
-name = "roc_cli"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "clap 3.2.23",
- "cli_utils",
- "const_format",
- "criterion",
- "errno 0.3.0",
- "indoc",
- "inkwell",
- "libc",
- "libloading",
- "mimalloc",
- "parking_lot 0.12.1",
- "pretty_assertions",
- "roc_build",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_command_utils",
- "roc_docs",
- "roc_editor",
- "roc_error_macros",
- "roc_fmt",
- "roc_gen_llvm",
- "roc_glue",
- "roc_linker",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_region",
- "roc_repl_cli",
- "roc_repl_expect",
- "roc_reporting",
- "roc_target",
- "roc_test_utils",
- "roc_tracing",
- "roc_wasm_interp",
- "serial_test",
- "signal-hook",
- "strum",
- "target-lexicon",
- "tempfile",
- "ven_pretty",
-]
-
-[[package]]
-name = "roc_code_markup"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "palette",
- "roc_ast",
- "roc_error_utils",
- "roc_module",
- "serde",
- "snafu",
-]
-
-[[package]]
-name = "roc_collections"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "bumpalo",
- "fnv",
- "hashbrown 0.13.2",
- "im",
- "im-rc",
- "smallvec",
- "wyhash",
-]
-
-[[package]]
-name = "roc_command_utils"
-version = "0.0.1"
-
-[[package]]
-name = "roc_constrain"
-version = "0.0.1"
-dependencies = [
- "arrayvec 0.7.2",
- "roc_can",
- "roc_collections",
- "roc_error_macros",
- "roc_module",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_types",
-]
-
-[[package]]
-name = "roc_debug_flags"
-version = "0.0.1"
-
-[[package]]
-name = "roc_derive"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_can",
- "roc_collections",
- "roc_derive_key",
- "roc_error_macros",
- "roc_module",
- "roc_region",
- "roc_types",
- "roc_unify",
-]
-
-[[package]]
-name = "roc_derive_key"
-version = "0.0.1"
-dependencies = [
- "roc_collections",
- "roc_error_macros",
- "roc_module",
- "roc_region",
- "roc_types",
-]
-
-[[package]]
-name = "roc_docs"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "peg",
- "pretty_assertions",
- "pulldown-cmark",
- "roc_ast",
- "roc_builtins",
- "roc_can",
- "roc_code_markup",
- "roc_collections",
- "roc_highlight",
- "roc_load",
- "roc_module",
- "roc_packaging",
- "roc_parse",
- "roc_region",
- "roc_reporting",
- "roc_target",
- "roc_types",
- "snafu",
-]
-
-[[package]]
-name = "roc_docs_cli"
-version = "0.0.1"
-dependencies = [
- "clap 3.2.23",
- "libc",
- "roc_docs",
-]
-
-[[package]]
-name = "roc_editor"
-version = "0.0.1"
-dependencies = [
- "arrayvec 0.7.2",
- "bumpalo",
- "bytemuck",
- "cgmath",
- "colored",
- "confy",
- "copypasta",
- "fs_extra",
- "futures",
- "glyph_brush",
- "libc",
- "log",
- "nonempty",
- "page_size",
- "palette",
- "pest",
- "pest_derive",
- "rand",
- "roc_ast",
- "roc_builtins",
- "roc_can",
- "roc_code_markup",
- "roc_collections",
- "roc_command_utils",
- "roc_load",
- "roc_module",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_types",
- "roc_unify",
- "serde",
- "snafu",
- "tempfile",
- "threadpool",
- "uuid",
- "ven_graph",
- "wgpu",
- "wgpu_glyph",
- "winit",
-]
-
-[[package]]
-name = "roc_error_macros"
-version = "0.0.1"
-
-[[package]]
-name = "roc_error_utils"
-version = "0.0.1"
-dependencies = [
- "snafu",
-]
-
-[[package]]
-name = "roc_exhaustive"
-version = "0.0.1"
-dependencies = [
- "roc_collections",
- "roc_error_macros",
- "roc_module",
- "roc_problem",
- "roc_region",
-]
-
-[[package]]
-name = "roc_fmt"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_collections",
- "roc_module",
- "roc_parse",
- "roc_region",
-]
-
-[[package]]
-name = "roc_gen_dev"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "capstone",
- "object",
- "packed_struct",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_error_macros",
- "roc_module",
- "roc_mono",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_solve",
- "roc_std",
- "roc_target",
- "roc_types",
- "roc_unify",
- "target-lexicon",
-]
-
-[[package]]
-name = "roc_gen_llvm"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "inkwell",
- "morphic_lib",
- "roc_alias_analysis",
- "roc_bitcode_bc",
- "roc_builtins",
- "roc_collections",
- "roc_debug_flags",
- "roc_error_macros",
- "roc_module",
- "roc_mono",
- "roc_region",
- "roc_std",
- "roc_target",
- "target-lexicon",
-]
-
-[[package]]
-name = "roc_gen_wasm"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "bumpalo",
- "roc_builtins",
- "roc_collections",
- "roc_error_macros",
- "roc_module",
- "roc_mono",
- "roc_std",
- "roc_target",
- "roc_wasm_module",
-]
-
-[[package]]
-name = "roc_glue"
-version = "0.0.1"
-dependencies = [
- "backtrace",
- "bumpalo",
- "cli_utils",
- "dircpy",
- "fnv",
- "indexmap",
- "indoc",
- "libc",
- "libloading",
- "pretty_assertions",
- "roc_build",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_error_macros",
- "roc_gen_llvm",
- "roc_linker",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_reporting",
- "roc_std",
- "roc_target",
- "roc_tracing",
- "roc_types",
- "strum",
- "strum_macros",
- "target-lexicon",
- "tempfile",
-]
-
-[[package]]
-name = "roc_highlight"
-version = "0.0.1"
-dependencies = [
- "html-escape",
- "roc_parse",
- "roc_region",
-]
-
-[[package]]
-name = "roc_ident"
-version = "0.0.1"
-
-[[package]]
-name = "roc_late_solve"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_can",
- "roc_collections",
- "roc_derive",
- "roc_error_macros",
- "roc_module",
- "roc_solve",
- "roc_types",
- "roc_unify",
-]
-
-[[package]]
-name = "roc_linker"
-version = "0.0.1"
-dependencies = [
- "bincode",
- "bumpalo",
- "iced-x86",
- "indoc",
- "libc",
- "mach_object",
- "memmap2 0.5.10",
- "object",
- "roc_collections",
- "roc_error_macros",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_reporting",
- "roc_target",
- "serde",
- "serial_test",
- "target-lexicon",
- "tempfile",
-]
-
-[[package]]
-name = "roc_load"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_load_internal",
- "roc_module",
- "roc_packaging",
- "roc_reporting",
- "roc_target",
- "roc_types",
-]
-
-[[package]]
-name = "roc_load_internal"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "crossbeam",
- "indoc",
- "maplit",
- "parking_lot 0.12.1",
- "pretty_assertions",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_constrain",
- "roc_debug_flags",
- "roc_derive",
- "roc_derive_key",
- "roc_error_macros",
- "roc_late_solve",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_solve_problem",
- "roc_target",
- "roc_test_utils",
- "roc_tracing",
- "roc_types",
- "roc_unify",
- "tempfile",
- "ven_pretty",
-]
-
-[[package]]
-name = "roc_module"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_collections",
- "roc_error_macros",
- "roc_ident",
- "roc_region",
- "snafu",
- "static_assertions",
-]
-
-[[package]]
-name = "roc_mono"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "bumpalo",
- "hashbrown 0.13.2",
- "parking_lot 0.12.1",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_debug_flags",
- "roc_derive",
- "roc_derive_key",
- "roc_error_macros",
- "roc_exhaustive",
- "roc_late_solve",
- "roc_module",
- "roc_problem",
- "roc_region",
- "roc_std",
- "roc_target",
- "roc_tracing",
- "roc_types",
- "static_assertions",
- "ven_pretty",
-]
-
-[[package]]
-name = "roc_packaging"
-version = "0.0.1"
-dependencies = [
- "base64-url",
- "blake3",
- "brotli",
- "bumpalo",
- "flate2",
- "fs_extra",
- "reqwest",
- "roc_error_macros",
- "roc_parse",
- "tar",
- "tempfile",
- "walkdir",
-]
-
-[[package]]
-name = "roc_parse"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "criterion",
- "encode_unicode 1.0.0",
- "indoc",
- "pretty_assertions",
- "proptest",
- "quickcheck",
- "quickcheck_macros",
- "roc_collections",
- "roc_module",
- "roc_region",
-]
-
-[[package]]
-name = "roc_problem"
-version = "0.0.1"
-dependencies = [
- "roc_collections",
- "roc_module",
- "roc_parse",
- "roc_region",
- "roc_types",
-]
-
-[[package]]
-name = "roc_region"
-version = "0.0.1"
-dependencies = [
- "static_assertions",
-]
-
-[[package]]
-name = "roc_repl_cli"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "const_format",
- "inkwell",
- "libloading",
- "roc_build",
- "roc_builtins",
- "roc_collections",
- "roc_gen_llvm",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_parse",
- "roc_region",
- "roc_repl_eval",
- "roc_reporting",
- "roc_std",
- "roc_target",
- "roc_types",
- "rustyline",
- "rustyline-derive",
- "target-lexicon",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "roc_repl_eval"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_fmt",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_std",
- "roc_target",
- "roc_types",
-]
-
-[[package]]
-name = "roc_repl_expect"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "indoc",
- "inkwell",
- "libc",
- "libloading",
- "pretty_assertions",
- "roc_build",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_error_macros",
- "roc_gen_llvm",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_region",
- "roc_repl_eval",
- "roc_reporting",
- "roc_std",
- "roc_target",
- "roc_types",
- "signal-hook",
- "strip-ansi-escapes",
- "target-lexicon",
- "tempfile",
-]
-
-[[package]]
-name = "roc_repl_wasm"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "console_error_panic_hook",
- "futures",
- "getrandom",
- "js-sys",
- "roc_bitcode",
- "roc_builtins",
- "roc_collections",
- "roc_gen_wasm",
- "roc_load",
- "roc_parse",
- "roc_repl_eval",
- "roc_reporting",
- "roc_target",
- "roc_types",
- "tempfile",
- "wasi_libc_sys",
- "wasm-bindgen",
- "wasm-bindgen-futures",
-]
-
-[[package]]
-name = "roc_reporting"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "distance",
- "indoc",
- "insta",
- "itertools 0.10.5",
- "pretty_assertions",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_constrain",
- "roc_derive",
- "roc_error_macros",
- "roc_exhaustive",
- "roc_fmt",
- "roc_load",
- "roc_module",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_solve",
- "roc_solve_problem",
- "roc_std",
- "roc_target",
- "roc_test_utils",
- "roc_types",
- "ven_pretty",
-]
-
-[[package]]
-name = "roc_serialize"
-version = "0.0.1"
-dependencies = [
- "roc_collections",
-]
-
-[[package]]
-name = "roc_solve"
-version = "0.0.1"
-dependencies = [
- "arrayvec 0.7.2",
- "bumpalo",
- "indoc",
- "insta",
- "lazy_static",
- "libtest-mimic",
- "pretty_assertions",
- "regex",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_debug_flags",
- "roc_derive",
- "roc_derive_key",
- "roc_error_macros",
- "roc_exhaustive",
- "roc_load",
- "roc_module",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_solve_problem",
- "roc_target",
- "roc_types",
- "roc_unify",
- "tempfile",
- "test_solve_helpers",
-]
-
-[[package]]
-name = "roc_solve_problem"
-version = "0.0.1"
-dependencies = [
- "roc_can",
- "roc_collections",
- "roc_exhaustive",
- "roc_module",
- "roc_problem",
- "roc_region",
- "roc_types",
-]
-
-[[package]]
-name = "roc_std"
-version = "0.0.1"
-dependencies = [
- "arrayvec 0.7.2",
- "libc",
- "pretty_assertions",
- "quickcheck",
- "quickcheck_macros",
- "serde",
- "serde_json",
- "static_assertions",
-]
-
-[[package]]
-name = "roc_target"
-version = "0.0.1"
-dependencies = [
- "strum",
- "strum_macros",
- "target-lexicon",
-]
-
-[[package]]
-name = "roc_test_utils"
-version = "0.0.1"
-dependencies = [
- "pretty_assertions",
- "remove_dir_all 0.8.1",
-]
-
-[[package]]
-name = "roc_tracing"
-version = "0.0.1"
-dependencies = [
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "roc_types"
-version = "0.0.1"
-dependencies = [
- "bumpalo",
- "roc_collections",
- "roc_debug_flags",
- "roc_error_macros",
- "roc_module",
- "roc_region",
- "roc_serialize",
- "static_assertions",
- "ven_pretty",
-]
-
-[[package]]
-name = "roc_unify"
-version = "0.0.1"
-dependencies = [
- "bitflags 1.3.2",
- "roc_collections",
- "roc_debug_flags",
- "roc_error_macros",
- "roc_module",
- "roc_tracing",
- "roc_types",
-]
-
-[[package]]
-name = "roc_wasm_interp"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "bumpalo",
- "clap 3.2.23",
- "rand",
- "roc_wasm_module",
-]
-
-[[package]]
-name = "roc_wasm_module"
-version = "0.0.1"
-dependencies = [
- "bitvec",
- "bumpalo",
- "roc_error_macros",
-]
-
-[[package]]
 name = "rustc-demangle"
-version = "0.1.21"
+version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ef03e0a2b150c7a90d01faf6254c9c48a41e95fb2a8c2ac1c6f0d2b9aefc342"
+checksum = "d4a36c42d1873f9a77c53bde094f9664d9891bc604a45b4798fd2c389ed12e5b"
 
 [[package]]
 name = "rustc-hash"
@@ -4066,35 +4080,21 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366"
 dependencies = [
- "semver 1.0.16",
+ "semver 1.0.17",
 ]
 
 [[package]]
 name = "rustix"
-version = "0.36.9"
+version = "0.37.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd5c6ff11fecd55b40746d1995a02f2eb375bf8c00d192d521ee09f42bef37bc"
+checksum = "85597d61f83914ddeba6a47b3b8ffe7365107221c2e557ed94426489fefb5f77"
 dependencies = [
- "bitflags 1.3.2",
- "errno 0.2.8",
+ "bitflags",
+ "errno",
  "io-lifetimes",
  "libc",
- "linux-raw-sys 0.1.4",
- "windows-sys 0.45.0",
-]
-
-[[package]]
-name = "rustix"
-version = "0.37.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62b24138615de35e32031d041a09032ef3487a616d901ca4db224e7d557efae2"
-dependencies = [
- "bitflags 1.3.2",
- "errno 0.3.0",
- "io-lifetimes",
- "libc",
- "linux-raw-sys 0.3.1",
- "windows-sys 0.45.0",
+ "linux-raw-sys",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -4141,7 +4141,7 @@ name = "rustyline"
 version = "9.1.1"
 source = "git+https://github.com/roc-lang/rustyline?rev=e74333c#e74333c0d618896b88175bf06645108f996fe6d0"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "cfg-if 1.0.0",
  "clipboard-win 4.5.0",
  "dirs-next",
@@ -4165,7 +4165,7 @@ version = "0.6.0"
 source = "git+https://github.com/roc-lang/rustyline?rev=e74333c#e74333c0d618896b88175bf06645108f996fe6d0"
 dependencies = [
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4216,9 +4216,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.16"
+version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58bc9567378fc7690d6b2addae4e60ac2eeea07becb2c64b9f218b53865cba2a"
+checksum = "bebd363326d05ec3e2f532ab7660680f3b02130d780c299bca73469d521bc0ed"
 
 [[package]]
 name = "semver-parser"
@@ -4231,9 +4231,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.153"
+version = "1.0.160"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a382c72b4ba118526e187430bb4963cd6d55051ebf13d9b25574d379cc98d20"
+checksum = "bb2f3770c8bce3bcda7e149193a069a0f4365bda1fa5cd88e03bca26afc1216c"
 dependencies = [
  "serde_derive",
 ]
@@ -4262,20 +4262,20 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.153"
+version = "1.0.160"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ef476a5790f0f6decbc66726b6e5d63680ed518283e64c7df415989d880954f"
+checksum = "291a097c63d8497e00160b166a967a4a79c64f3facdd01cbd7502231688d77df"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.15",
 ]
 
 [[package]]
 name = "serde_json"
-version = "1.0.94"
+version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c533a59c9d8a93a09c6ab31f0fd5e5f4dd1b8fc9434804029839884765d04ea"
+checksum = "057d394a50403bcac12672b2b18fb387ab6d289d957dab67dd201875391e52f1"
 dependencies = [
  "itoa",
  "ryu",
@@ -4328,7 +4328,7 @@ checksum = "079a83df15f85d89a68d64ae1238f142f172b1fa915d0d76b26a7cba1b659a69"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4424,7 +4424,7 @@ checksum = "133659a15339456eeeb07572eb02a91c91e9815e9cbc89566944d2c8d3efdbf6"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4433,7 +4433,7 @@ version = "0.15.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a28f16a97fa0e8ce563b2774d1e732dd5d4025d2772c5dba0a41a0f90a29da3"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "calloop",
  "dlib",
  "lazy_static",
@@ -4452,7 +4452,7 @@ version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f307c47d32d2715eb2e0ece5589057820e0e5e70d07c247d1063e844e107f454"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "dlib",
  "lazy_static",
  "log",
@@ -4494,7 +4494,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4519,7 +4519,7 @@ version = "0.2.0+1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "246bfa38fe3db3f1dfc8ca5a2cdeb7348c78be2112740cc0ec8ef18b6d94f830"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "num-traits",
 ]
 
@@ -4575,7 +4575,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4589,6 +4589,17 @@ name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "syn"
+version = "2.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a34fcf3e8b60f57e6a14301a2e916d323af98b0ea63c599441eec8558660c822"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4645,23 +4656,23 @@ dependencies = [
 name = "test_derive"
 version = "0.0.1"
 dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_constrain",
+ "broc_debug_flags",
+ "broc_derive",
+ "broc_derive_key",
+ "broc_load_internal",
+ "broc_module",
+ "broc_packaging",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_target",
+ "broc_types",
  "bumpalo",
  "insta",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_constrain",
- "roc_debug_flags",
- "roc_derive",
- "roc_derive_key",
- "roc_load_internal",
- "roc_module",
- "roc_packaging",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_target",
- "roc_types",
  "ven_pretty",
 ]
 
@@ -4669,6 +4680,33 @@ dependencies = [
 name = "test_gen"
 version = "0.0.1"
 dependencies = [
+ "broc_bitcode",
+ "broc_build",
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_command_utils",
+ "broc_constrain",
+ "broc_debug_flags",
+ "broc_error_macros",
+ "broc_gen_dev",
+ "broc_gen_llvm",
+ "broc_gen_wasm",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_std",
+ "broc_target",
+ "broc_types",
+ "broc_unify",
+ "broc_wasm_interp",
+ "broc_wasm_module",
  "bumpalo",
  "criterion",
  "indoc",
@@ -4676,33 +4714,6 @@ dependencies = [
  "lazy_static",
  "libc",
  "libloading",
- "roc_bitcode",
- "roc_build",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_command_utils",
- "roc_constrain",
- "roc_debug_flags",
- "roc_error_macros",
- "roc_gen_dev",
- "roc_gen_llvm",
- "roc_gen_wasm",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_std",
- "roc_target",
- "roc_types",
- "roc_unify",
- "roc_wasm_interp",
- "roc_wasm_module",
  "target-lexicon",
  "tempfile",
  "wasi_libc_sys",
@@ -4712,18 +4723,18 @@ dependencies = [
 name = "test_mono"
 version = "0.0.1"
 dependencies = [
+ "broc_builtins",
+ "broc_can",
+ "broc_collections",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_reporting",
+ "broc_target",
+ "broc_tracing",
  "bumpalo",
  "indoc",
- "roc_builtins",
- "roc_can",
- "roc_collections",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_reporting",
- "roc_target",
- "roc_tracing",
  "test_mono_macros",
 ]
 
@@ -4733,32 +4744,32 @@ version = "0.0.1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
 name = "test_solve_helpers"
 version = "0.0.1"
 dependencies = [
+ "broc_can",
+ "broc_derive",
+ "broc_late_solve",
+ "broc_load",
+ "broc_module",
+ "broc_packaging",
+ "broc_problem",
+ "broc_region",
+ "broc_reporting",
+ "broc_solve",
+ "broc_solve_problem",
+ "broc_target",
+ "broc_types",
  "bumpalo",
  "indoc",
  "insta",
  "lazy_static",
  "pretty_assertions",
  "regex",
- "roc_can",
- "roc_derive",
- "roc_late_solve",
- "roc_load",
- "roc_module",
- "roc_packaging",
- "roc_problem",
- "roc_region",
- "roc_reporting",
- "roc_solve",
- "roc_solve_problem",
- "roc_target",
- "roc_types",
  "tempfile",
 ]
 
@@ -4766,15 +4777,15 @@ dependencies = [
 name = "test_syntax"
 version = "0.0.1"
 dependencies = [
+ "broc_collections",
+ "broc_fmt",
+ "broc_module",
+ "broc_parse",
+ "broc_region",
+ "broc_test_utils",
  "bumpalo",
  "indoc",
  "pretty_assertions",
- "roc_collections",
- "roc_fmt",
- "roc_module",
- "roc_parse",
- "roc_region",
- "roc_test_utils",
  "walkdir",
 ]
 
@@ -4795,22 +4806,22 @@ checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
 
 [[package]]
 name = "thiserror"
-version = "1.0.39"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5ab016db510546d856297882807df8da66a16fb8c4101cb8b30054b0d5b2d9c"
+checksum = "978c9a314bd8dc99be594bc3c175faaa9794be04a5a5e153caba6915336cebac"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.39"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5420d42e90af0c38c3290abcca25b9b3bdf379fc9f55c528f53a269d9c9a267e"
+checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.15",
 ]
 
 [[package]]
@@ -4886,14 +4897,13 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.26.0"
+version = "1.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03201d01c3c27a29c8a5cee5b55a93ddae1ccf6f08f65365c2c918f8c1b76f64"
+checksum = "d0de47a4eecbe11f498978a9b29d792f0d2692d1dd003650c24c76510e3bc001"
 dependencies = [
  "autocfg",
  "bytes",
  "libc",
- "memchr",
  "mio",
  "num_cpus",
  "pin-project-lite",
@@ -4943,9 +4953,9 @@ checksum = "3ab8ed2edee10b50132aed5f331333428b011c99402b5a534154ed15746f9622"
 
 [[package]]
 name = "toml_edit"
-version = "0.19.4"
+version = "0.19.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a1eb0622d28f4b9c90adc4ea4b2b46b47663fde9ac5fafcb14a1369d5508825"
+checksum = "239410c8609e8125456927e6707163a3b1fdb40561e4b803bc041f466ccfdc13"
 dependencies = [
  "indexmap",
  "toml_datetime",
@@ -4989,7 +4999,7 @@ checksum = "4017f8f45139870ca7e672686113917c71c7a6e02d4924eda67186083c03081a"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -5076,6 +5086,18 @@ checksum = "9e79c4d996edb816c91e4308506774452e55e95c3c9de07b6729e17e15a5ef81"
 name = "uitest"
 version = "0.0.1"
 dependencies = [
+ "broc_builtins",
+ "broc_collections",
+ "broc_derive",
+ "broc_load",
+ "broc_module",
+ "broc_mono",
+ "broc_packaging",
+ "broc_parse",
+ "broc_problem",
+ "broc_reporting",
+ "broc_solve",
+ "broc_target",
  "bumpalo",
  "indoc",
  "insta",
@@ -5083,18 +5105,6 @@ dependencies = [
  "libtest-mimic",
  "pretty_assertions",
  "regex",
- "roc_builtins",
- "roc_collections",
- "roc_derive",
- "roc_load",
- "roc_module",
- "roc_mono",
- "roc_packaging",
- "roc_parse",
- "roc_problem",
- "roc_reporting",
- "roc_solve",
- "roc_target",
  "tempfile",
  "test_solve_helpers",
 ]
@@ -5116,9 +5126,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-bidi"
-version = "0.3.10"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d54675592c1dbefd78cbd98db9bacd89886e1ca50692a0692baefffdeb92dd58"
+checksum = "92888ba5573ff080736b3648696b70cafad7d250551175acbaa4e0385b3e1460"
 
 [[package]]
 name = "unicode-ident"
@@ -5178,15 +5188,15 @@ checksum = "5190c9442dcdaf0ddd50f37420417d219ae5261bbf5db120d0f9bab996c9cba1"
 
 [[package]]
 name = "utf8parse"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "936e4b492acfd135421d8dca4b1aa80a7bfc26e702ef3af710e0752684df5372"
+checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "uuid"
-version = "1.3.0"
+version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1674845326ee10d37ca60470760d4288a6f80f304007d92e5c53bab78c9cfd79"
+checksum = "5b55a3fef2a1e3b3a00ce878640918820d3c51081576ac657d23af9fc7928fdb"
 dependencies = [
  "getrandom",
 ]
@@ -5195,16 +5205,16 @@ dependencies = [
 name = "valgrind"
 version = "0.0.1"
 dependencies = [
+ "broc_build",
+ "broc_command_utils",
+ "broc_linker",
+ "broc_load",
+ "broc_mono",
+ "broc_packaging",
+ "broc_reporting",
  "bumpalo",
  "cli_utils",
  "indoc",
- "roc_build",
- "roc_command_utils",
- "roc_linker",
- "roc_load",
- "roc_mono",
- "roc_packaging",
- "roc_reporting",
  "target-lexicon",
  "tempfile",
 ]
@@ -5219,7 +5229,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 name = "ven_graph"
 version = "2.0.5-pre"
 dependencies = [
- "roc_collections",
+ "broc_collections",
 ]
 
 [[package]]
@@ -5269,12 +5279,11 @@ dependencies = [
 
 [[package]]
 name = "walkdir"
-version = "2.3.2"
+version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "808cf2735cd4b6866113f648b791c6adc5714537bc222d9347bb203386ffda56"
+checksum = "36df944cda56c7d8d8b7496af378e6b16de9284591917d307c9b4d313c44e698"
 dependencies = [
  "same-file",
- "winapi",
  "winapi-util",
 ]
 
@@ -5298,7 +5307,7 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 name = "wasi_libc_sys"
 version = "0.0.1"
 dependencies = [
- "roc_command_utils",
+ "broc_command_utils",
 ]
 
 [[package]]
@@ -5322,7 +5331,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
  "wasm-bindgen-shared",
 ]
 
@@ -5356,7 +5365,7 @@ checksum = "2aff81306fcac3c7515ad4e177f521b5c9a15f2b08f4e32d823066102f35a5f6"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 1.0.109",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -5373,7 +5382,7 @@ version = "0.29.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f3b068c05a039c9f755f881dc50f01732214f5685e379829759088967c46715"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "downcast-rs",
  "libc",
  "nix 0.24.3",
@@ -5412,7 +5421,7 @@ version = "0.29.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b950621f9354b322ee817a23474e479b34be96c2e909c14f7bc0100e9a970bc6"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "wayland-client",
  "wayland-commons",
  "wayland-scanner",
@@ -5497,7 +5506,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4688c000eb841ca55f7b35db659b78d6e1cd77d7caf8fb929f4e181f754047d"
 dependencies = [
  "arrayvec 0.7.2",
- "bitflags 1.3.2",
+ "bitflags",
  "cfg_aliases",
  "codespan-reporting",
  "copyless",
@@ -5522,7 +5531,7 @@ dependencies = [
  "arrayvec 0.7.2",
  "ash",
  "bit-set",
- "bitflags 1.3.2",
+ "bitflags",
  "block",
  "core-graphics-types",
  "d3d12",
@@ -5557,7 +5566,7 @@ version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "549533d9e1cdd4b4cda7718d33ff500fc4c34b5467b71d76b547ae0324f3b2a2"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
 ]
 
 [[package]]
@@ -5618,13 +5627,13 @@ version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7"
 dependencies = [
- "windows_aarch64_gnullvm",
- "windows_aarch64_msvc",
- "windows_i686_gnu",
- "windows_i686_msvc",
- "windows_x86_64_gnu",
- "windows_x86_64_gnullvm",
- "windows_x86_64_msvc",
+ "windows_aarch64_gnullvm 0.42.2",
+ "windows_aarch64_msvc 0.42.2",
+ "windows_i686_gnu 0.42.2",
+ "windows_i686_msvc 0.42.2",
+ "windows_x86_64_gnu 0.42.2",
+ "windows_x86_64_gnullvm 0.42.2",
+ "windows_x86_64_msvc 0.42.2",
 ]
 
 [[package]]
@@ -5633,65 +5642,131 @@ version = "0.45.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75283be5efb2831d37ea142365f009c02ec203cd29a3ebecbc093d52315b66d0"
 dependencies = [
- "windows-targets",
+ "windows-targets 0.42.2",
+]
+
+[[package]]
+name = "windows-sys"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "677d2418bec65e3338edb076e806bc1ec15693c5d0104683f2efe857f61056a9"
+dependencies = [
+ "windows-targets 0.48.0",
 ]
 
 [[package]]
 name = "windows-targets"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e2522491fbfcd58cc84d47aeb2958948c4b8982e9a2d8a2a35bbaed431390e7"
+checksum = "8e5180c00cd44c9b1c88adb3693291f1cd93605ded80c250a75d472756b4d071"
 dependencies = [
- "windows_aarch64_gnullvm",
- "windows_aarch64_msvc",
- "windows_i686_gnu",
- "windows_i686_msvc",
- "windows_x86_64_gnu",
- "windows_x86_64_gnullvm",
- "windows_x86_64_msvc",
+ "windows_aarch64_gnullvm 0.42.2",
+ "windows_aarch64_msvc 0.42.2",
+ "windows_i686_gnu 0.42.2",
+ "windows_i686_msvc 0.42.2",
+ "windows_x86_64_gnu 0.42.2",
+ "windows_x86_64_gnullvm 0.42.2",
+ "windows_x86_64_msvc 0.42.2",
+]
+
+[[package]]
+name = "windows-targets"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b1eb6f0cd7c80c79759c929114ef071b87354ce476d9d94271031c0497adfd5"
+dependencies = [
+ "windows_aarch64_gnullvm 0.48.0",
+ "windows_aarch64_msvc 0.48.0",
+ "windows_i686_gnu 0.48.0",
+ "windows_i686_msvc 0.48.0",
+ "windows_x86_64_gnu 0.48.0",
+ "windows_x86_64_gnullvm 0.48.0",
+ "windows_x86_64_msvc 0.48.0",
 ]
 
 [[package]]
 name = "windows_aarch64_gnullvm"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c9864e83243fdec7fc9c5444389dcbbfd258f745e7853198f365e3c4968a608"
+checksum = "597a5118570b68bc08d8d59125332c54f1ba9d9adeedeef5b99b02ba2b0698f8"
+
+[[package]]
+name = "windows_aarch64_gnullvm"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91ae572e1b79dba883e0d315474df7305d12f569b400fcf90581b06062f7e1bc"
 
 [[package]]
 name = "windows_aarch64_msvc"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c8b1b673ffc16c47a9ff48570a9d85e25d265735c503681332589af6253c6c7"
+checksum = "e08e8864a60f06ef0d0ff4ba04124db8b0fb3be5776a5cd47641e942e58c4d43"
+
+[[package]]
+name = "windows_aarch64_msvc"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2ef27e0d7bdfcfc7b868b317c1d32c641a6fe4629c171b8928c7b08d98d7cf3"
 
 [[package]]
 name = "windows_i686_gnu"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de3887528ad530ba7bdbb1faa8275ec7a1155a45ffa57c37993960277145d640"
+checksum = "c61d927d8da41da96a81f029489353e68739737d3beca43145c8afec9a31a84f"
+
+[[package]]
+name = "windows_i686_gnu"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "622a1962a7db830d6fd0a69683c80a18fda201879f0f447f065a3b7467daa241"
 
 [[package]]
 name = "windows_i686_msvc"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf4d1122317eddd6ff351aa852118a2418ad4214e6613a50e0191f7004372605"
+checksum = "44d840b6ec649f480a41c8d80f9c65108b92d89345dd94027bfe06ac444d1060"
+
+[[package]]
+name = "windows_i686_msvc"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4542c6e364ce21bf45d69fdd2a8e455fa38d316158cfd43b3ac1c5b1b19f8e00"
 
 [[package]]
 name = "windows_x86_64_gnu"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1040f221285e17ebccbc2591ffdc2d44ee1f9186324dd3e84e99ac68d699c45"
+checksum = "8de912b8b8feb55c064867cf047dda097f92d51efad5b491dfb98f6bbb70cb36"
+
+[[package]]
+name = "windows_x86_64_gnu"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca2b8a661f7628cbd23440e50b05d705db3686f894fc9580820623656af974b1"
 
 [[package]]
 name = "windows_x86_64_gnullvm"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "628bfdf232daa22b0d64fdb62b09fcc36bb01f05a3939e20ab73aaf9470d0463"
+checksum = "26d41b46a36d453748aedef1486d5c7a85db22e56aff34643984ea85514e94a3"
+
+[[package]]
+name = "windows_x86_64_gnullvm"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7896dbc1f41e08872e9d5e8f8baa8fdd2677f29468c4e156210174edc7f7b953"
 
 [[package]]
 name = "windows_x86_64_msvc"
-version = "0.42.1"
+version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd"
+checksum = "9aec5da331524158c6d1a4ac0ab1541149c0b9505fde06423b02f5ef0106b9f0"
+
+[[package]]
+name = "windows_x86_64_msvc"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
 
 [[package]]
 name = "winit"
@@ -5699,7 +5774,7 @@ version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b43cc931d58b99461188607efd7acb2a093e65fc621f54cad78517a6063e73a"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "cocoa",
  "core-foundation 0.9.3",
  "core-graphics 0.22.3",
@@ -5728,9 +5803,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.3.5"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee7b2c67f962bf5042bfd8b6a916178df33a26eec343ae064cb8e069f638fa6f"
+checksum = "ae8970b36c66498d8ff1d66685dc86b91b29db0c7739899012f63a63814b4b28"
 dependencies = [
  "memchr",
 ]
@@ -5764,9 +5839,9 @@ dependencies = [
 
 [[package]]
 name = "x11-clipboard"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0827f86aa910c4e73329a4f619deabe88ebb4b042370bf023c2d5d8b4eb54695"
+checksum = "980b9aa9226c3b7de8e2adb11bf20124327c054e0e5812d2aac0b5b5a87e7464"
 dependencies = [
  "x11rb",
 ]

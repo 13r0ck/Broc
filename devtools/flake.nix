@@ -1,22 +1,22 @@
 {
-  description = "Allows sharing dependencies between dev tools and roc";
+  description = "Allows sharing dependencies between dev tools and broc";
 
   inputs = {
-    # change this path to the path of your roc folder
-    roc.url = "path:/home/username/gitrepos/roc1/roc";
+    # change this path to the path of your broc folder
+    broc.url = "path:/home/username/gitrepos/broc1/broc";
     # to easily make configs for multiple architectures
     flake-utils.url = "github:numtide/flake-utils";
   };
-  outputs = { self, roc, flake-utils }:
+  outputs = { self, broc, flake-utils }:
     let supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ];
     in flake-utils.lib.eachSystem supportedSystems (system:
       let
-        pkgs = import roc.inputs.nixpkgs {
+        pkgs = import broc.inputs.nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
 
-        rocShell = roc.devShell.${system};
+        brocShell = broc.devShell.${system};
       in {
         devShell = pkgs.mkShell {
           packages = let
@@ -43,13 +43,13 @@
             };
           in [ vscodeWithExtensions devInputs ];
 
-          inputsFrom = [ rocShell ];
+          inputsFrom = [ brocShell ];
 
           # env vars
-          LLVM_SYS_130_PREFIX = rocShell.LLVM_SYS_130_PREFIX;
-          NIX_GLIBC_PATH = rocShell.NIX_GLIBC_PATH;
-          LD_LIBRARY_PATH = rocShell.LD_LIBRARY_PATH;
-          NIXPKGS_ALLOW_UNFREE = rocShell.NIXPKGS_ALLOW_UNFREE;
+          LLVM_SYS_130_PREFIX = brocShell.LLVM_SYS_130_PREFIX;
+          NIX_GLIBC_PATH = brocShell.NIX_GLIBC_PATH;
+          LD_LIBRARY_PATH = brocShell.LD_LIBRARY_PATH;
+          NIXPKGS_ALLOW_UNFREE = brocShell.NIXPKGS_ALLOW_UNFREE;
         };
       });
 }

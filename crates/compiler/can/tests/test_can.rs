@@ -4,9 +4,9 @@ extern crate pretty_assertions;
 extern crate indoc;
 
 extern crate bumpalo;
-extern crate roc_can;
-extern crate roc_parse;
-extern crate roc_region;
+extern crate broc_can;
+extern crate broc_parse;
+extern crate broc_region;
 
 mod helpers;
 
@@ -14,10 +14,10 @@ mod helpers;
 mod test_can {
     use crate::helpers::{can_expr_with, test_home, CanExprOut};
     use bumpalo::Bump;
-    use roc_can::expr::Expr::{self, *};
-    use roc_can::expr::{ClosureData, IntValue, Recursive};
-    use roc_problem::can::{CycleEntry, FloatErrorKind, IntErrorKind, Problem, RuntimeError};
-    use roc_region::all::{Position, Region};
+    use broc_can::expr::Expr::{self, *};
+    use broc_can::expr::{ClosureData, IntValue, Recursive};
+    use broc_problem::can::{CycleEntry, FloatErrorKind, IntErrorKind, Problem, RuntimeError};
+    use broc_region::all::{Position, Region};
     use std::{f64, i64};
 
     fn assert_can_runtime_error(input: &str, expected: RuntimeError) {
@@ -94,7 +94,7 @@ mod test_can {
 
     #[test]
     fn int_too_large() {
-        use roc_parse::ast::Base;
+        use broc_parse::ast::Base;
 
         let string = "340_282_366_920_938_463_463_374_607_431_768_211_456".to_string();
 
@@ -111,7 +111,7 @@ mod test_can {
 
     #[test]
     fn int_too_small() {
-        use roc_parse::ast::Base;
+        use broc_parse::ast::Base;
 
         let string = "-170_141_183_460_469_231_731_687_303_715_884_105_729".to_string();
 
@@ -651,12 +651,12 @@ mod test_can {
 
         assert!(matches!(
             loc_expr.value,
-            Expr::RuntimeError(roc_problem::can::RuntimeError::InvalidOptionalValue { .. })
+            Expr::RuntimeError(broc_problem::can::RuntimeError::InvalidOptionalValue { .. })
         ));
     }
 
     // TAIL CALLS
-    fn get_closure(expr: &Expr, i: usize) -> roc_can::expr::Recursive {
+    fn get_closure(expr: &Expr, i: usize) -> broc_can::expr::Recursive {
         match expr {
             LetRec(assignments, body, _) => {
                 match &assignments.get(i).map(|def| &def.loc_expr.value) {
@@ -992,7 +992,7 @@ mod test_can {
                 # There was a bug where annotating a def meant that its
                 # references no longer got reported.
                 #
-                # https://github.com/roc-lang/roc/issues/298
+                # https://github.com/roc-lang/broc/issues/298
                 x : List Booly
                 x = [y]
 

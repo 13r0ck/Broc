@@ -10,7 +10,7 @@ use crate::helpers::wasm::assert_evals_to;
 use indoc::indoc;
 
 #[allow(unused_imports)]
-use roc_std::{RocResult, RocStr};
+use broc_std::{BrocResult, BrocStr};
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
@@ -227,7 +227,7 @@ fn is_err() {
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
-fn roc_result_ok_i64() {
+fn broc_result_ok_i64() {
     assert_evals_to!(
         indoc!(
             r#"
@@ -237,14 +237,14 @@ fn roc_result_ok_i64() {
             result
             "#
         ),
-        RocResult::ok(42),
-        RocResult<i64, ()>
+        BrocResult::ok(42),
+        BrocResult<i64, ()>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-fn roc_result_ok_f64() {
+fn broc_result_ok_f64() {
     // NOTE: the dev backend does not currently use float registers when returning a more
     // complex type, but the rust side does expect it to. Hence this test fails with gen-dev
 
@@ -257,14 +257,14 @@ fn roc_result_ok_f64() {
             result
             "#
         ),
-        RocResult::ok(42.0),
-        RocResult<f64, ()>
+        BrocResult::ok(42.0),
+        BrocResult<f64, ()>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm", feature = "gen-dev"))]
-fn roc_result_err() {
+fn broc_result_err() {
     assert_evals_to!(
         indoc!(
             r#"
@@ -274,8 +274,8 @@ fn roc_result_err() {
             result
             "#
         ),
-        RocResult::err(RocStr::from("foo")),
-        RocResult<i64, RocStr>
+        BrocResult::err(BrocStr::from("foo")),
+        BrocResult<i64, BrocStr>
     );
 }
 
@@ -286,14 +286,14 @@ fn issue_2583_specialize_errors_behind_unified_branches() {
         r#"
         if Bool.true then List.first [15] else Str.toI64 ""
         "#,
-        RocResult::ok(15i64),
-        RocResult<i64, bool>
+        BrocResult::ok(15i64),
+        BrocResult<i64, bool>
     )
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-fn roc_result_after_on_ok() {
+fn broc_result_after_on_ok() {
     assert_evals_to!(indoc!(
         r#"
             input : Result I64 Str
@@ -302,14 +302,14 @@ fn roc_result_after_on_ok() {
             Result.try input \num ->
                 if num < 0 then Err "negative!" else Ok -num
             "#),
-        RocResult::ok(-1),
-        RocResult<i64, RocStr>
+        BrocResult::ok(-1),
+        BrocResult<i64, BrocStr>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-fn roc_result_after_on_err() {
+fn broc_result_after_on_err() {
     assert_evals_to!(indoc!(
         r#"
             input : Result I64 Str
@@ -318,14 +318,14 @@ fn roc_result_after_on_err() {
             Result.try input \num ->
                 if num < 0 then Err "negative!" else Ok -num
         "#),
-        RocResult::err(RocStr::from("already a string")),
-        RocResult<i64, RocStr>
+        BrocResult::err(BrocStr::from("already a string")),
+        BrocResult<i64, BrocStr>
     );
 }
 
 #[test]
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-fn roc_result_after_err() {
+fn broc_result_after_err() {
     assert_evals_to!(
         indoc!(
             r#"
@@ -337,8 +337,8 @@ fn roc_result_after_err() {
             result
             "#
         ),
-        RocResult::ok(RocStr::from("already a string")),
-        RocResult<RocStr, i64>
+        BrocResult::ok(BrocStr::from("already a string")),
+        BrocResult<BrocStr, i64>
     );
 
     assert_evals_to!(indoc!(
@@ -350,7 +350,7 @@ fn roc_result_after_err() {
 
             result
             "#),
-        RocResult::err(-100),
-        RocResult<RocStr, i64>
+        BrocResult::err(-100),
+        BrocResult<BrocStr, i64>
     );
 }

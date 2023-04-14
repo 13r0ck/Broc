@@ -3,12 +3,12 @@ use crate::expr::{AnnotatedMark, ClosureData, Expr::*};
 use crate::expr::{Expr, Recursive};
 
 use crate::pattern::Pattern;
-use roc_collections::all::SendMap;
-use roc_module::ident::TagName;
-use roc_module::low_level::LowLevel;
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{VarStore, Variable};
+use broc_collections::all::SendMap;
+use broc_module::ident::TagName;
+use broc_module::low_level::LowLevel;
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{VarStore, Variable};
 
 /// We use a rust macro to ensure that every LowLevel gets handled
 macro_rules! map_symbol_to_lowlevel_and_arity {
@@ -213,7 +213,7 @@ map_symbol_to_lowlevel_and_arity! {
 }
 
 /// Some builtins cannot be constructed in code gen alone, and need to be defined
-/// as separate Roc defs. For example, List.get has this type:
+/// as separate Broc defs. For example, List.get has this type:
 ///
 /// List.get : List elem, Nat -> Result elem [OutOfBounds]*
 ///
@@ -564,7 +564,7 @@ fn to_num_is_zero(symbol: Symbol, var_store: &mut VarStore) -> Def {
                     var_store.fresh(),
                     "0".to_string().into_boxed_str(),
                     crate::expr::IntValue::I128(0i128.to_ne_bytes()),
-                    roc_types::num::NumBound::None,
+                    broc_types::num::NumBound::None,
                 ),
             ),
         ],

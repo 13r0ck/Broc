@@ -1,6 +1,6 @@
 [package]
-name = "roc_exhaustive"
-description = "Provides exhaustiveness checking for Roc."
+name = "broc_exhaustive"
+description = "Provides exhaustiveness checking for Broc."
 
 authors.workspace = true
 edition.workspace = true
@@ -8,8 +8,8 @@ license.workspace = true
 version.workspace = true
 
 [dependencies]
-roc_collections = { path = "../collections" }
-roc_error_macros = { path = "../../error_macros" }
-roc_module = { path = "../module" }
-roc_problem = { path = "../problem" }
-roc_region = { path = "../region" }
+broc_collections = { path = "../collections" }
+broc_error_macros = { path = "../../error_macros" }
+broc_module = { path = "../module" }
+broc_problem = { path = "../problem" }
+broc_region = { path = "../region" }

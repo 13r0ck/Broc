@@ -2,7 +2,7 @@
 extern crate pretty_assertions;
 extern crate bumpalo;
 extern crate indoc;
-extern crate roc_reporting;
+extern crate broc_reporting;
 
 mod helpers;
 
@@ -11,23 +11,23 @@ mod test_reporting {
     use crate::helpers::{can_expr, infer_expr, test_home, CanExprOut, ParseErrOut};
     use bumpalo::Bump;
     use indoc::indoc;
-    use roc_can::abilities::AbilitiesStore;
-    use roc_can::expr::PendingDerives;
-    use roc_load::{self, ExecutionMode, LoadConfig, LoadedModule, LoadingProblem, Threading};
-    use roc_module::symbol::{Interns, ModuleId};
-    use roc_packaging::cache::RocCacheDir;
-    use roc_parse::module::parse_header;
-    use roc_parse::state::State;
-    use roc_parse::test_helpers::parse_expr_with;
-    use roc_problem::Severity;
-    use roc_region::all::LineInfo;
-    use roc_reporting::report::{
+    use broc_can::abilities::AbilitiesStore;
+    use broc_can::expr::PendingDerives;
+    use broc_load::{self, ExecutionMode, LoadConfig, LoadedModule, LoadingProblem, Threading};
+    use broc_module::symbol::{Interns, ModuleId};
+    use broc_packaging::cache::BrocCacheDir;
+    use broc_parse::module::parse_header;
+    use broc_parse::state::State;
+    use broc_parse::test_helpers::parse_expr_with;
+    use broc_problem::Severity;
+    use broc_region::all::LineInfo;
+    use broc_reporting::report::{
         can_problem, parse_problem, type_problem, RenderTarget, Report, ANSI_STYLE_CODES,
         DEFAULT_PALETTE,
     };
-    use roc_reporting::report::{RocDocAllocator, RocDocBuilder};
-    use roc_solve_problem::TypeError;
-    use roc_types::subs::Subs;
+    use broc_reporting::report::{BrocDocAllocator, BrocDocBuilder};
+    use broc_solve_problem::TypeError;
+    use broc_types::subs::Subs;
     use std::path::PathBuf;
 
     fn filename_from_string(str: &str) -> PathBuf {
@@ -37,11 +37,11 @@ mod test_reporting {
         filename
     }
 
-    fn to_simple_report(doc: RocDocBuilder) -> Report {
+    fn to_simple_report(doc: BrocDocBuilder) -> Report {
         Report {
             title: "".to_string(),
             doc,
-            filename: filename_from_string(r"/code/proj/Main.roc"),
+            filename: filename_from_string(r"/code/proj/Main.broc"),
             severity: Severity::RuntimeError,
         }
     }
@@ -86,7 +86,7 @@ mod test_reporting {
         path.push("snapshots");
         path.push("fail");
         let kind = if is_expr { "expr" } else { "header" };
-        path.push(format!("{}.{}.roc", test_name, kind));
+        path.push(format!("{}.{}.broc", test_name, kind));
 
         std::fs::write(path, src).unwrap();
     }
@@ -114,24 +114,24 @@ mod test_reporting {
             // We can't have all tests use "tmp" because tests run in parallel,
             // so append the test name to the tmp path.
             let tmp = format!("tmp/{}", subdir);
-            let dir = roc_test_utils::TmpDir::new(&tmp);
+            let dir = broc_test_utils::TmpDir::new(&tmp);
 
-            let filename = PathBuf::from("Test.roc");
+            let filename = PathBuf::from("Test.broc");
             let file_path = dir.path().join(filename);
             let full_file_path = file_path.clone();
             let mut file = File::create(file_path).unwrap();
             writeln!(file, "{}", module_src).unwrap();
             let load_config = LoadConfig {
-                target_info: roc_target::TargetInfo::default_x86_64(),
+                target_info: broc_target::TargetInfo::default_x86_64(),
                 render: RenderTarget::Generic,
                 palette: DEFAULT_PALETTE,
                 threading: Threading::Single,
                 exec_mode: ExecutionMode::Check,
             };
-            let result = roc_load::load_and_typecheck(
+            let result = broc_load::load_and_typecheck(
                 arena,
                 full_file_path,
-                RocCacheDir::Disallowed,
+                BrocCacheDir::Disallowed,
                 load_config,
             );
             drop(file);
@@ -151,7 +151,7 @@ mod test_reporting {
         (
             String,
             Vec<TypeError>,
-            Vec<roc_problem::can::Problem>,
+            Vec<broc_problem::can::Problem>,
             ModuleId,
             Interns,
         ),
@@ -174,11 +174,11 @@ mod test_reporting {
 
     fn list_reports_new<F>(subdir: &str, arena: &Bump, src: &str, finalize_render: F) -> String
     where
-        F: FnOnce(RocDocBuilder<'_>, &mut String),
+        F: FnOnce(BrocDocBuilder<'_>, &mut String),
     {
         use ven_pretty::DocAllocator;
 
-        let filename = filename_from_string(r"/code/proj/Main.roc");
+        let filename = filename_from_string(r"/code/proj/Main.broc");
 
         let mut buf = String::new();
 
@@ -189,7 +189,7 @@ mod test_reporting {
                 let src_lines: Vec<&str> = module_src.split('\n').collect();
                 let mut reports = Vec::new();
 
-                let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+                let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
                 for problem in can_problems {
                     let report = can_problem(&alloc, &lines, filename.clone(), problem.clone());
@@ -229,7 +229,7 @@ mod test_reporting {
     ) -> Result<
         (
             Vec<TypeError>,
-            Vec<roc_problem::can::Problem>,
+            Vec<broc_problem::can::Problem>,
             ModuleId,
             Interns,
         ),
@@ -258,7 +258,7 @@ mod test_reporting {
             subs.rigid_var(var.value, "*".into());
         }
 
-        let mut solve_aliases = roc_solve::solve::Aliases::default();
+        let mut solve_aliases = broc_solve::solve::Aliases::default();
 
         for (name, alias) in output.aliases {
             solve_aliases.insert(&mut types, name, alias);
@@ -286,14 +286,14 @@ mod test_reporting {
 
     fn list_reports<F>(arena: &Bump, src: &str, buf: &mut String, callback: F)
     where
-        F: FnOnce(RocDocBuilder<'_>, &mut String),
+        F: FnOnce(BrocDocBuilder<'_>, &mut String),
     {
         use ven_pretty::DocAllocator;
 
         let src_lines: Vec<&str> = src.split('\n').collect();
         let lines = LineInfo::new(src);
 
-        let filename = filename_from_string(r"/code/proj/Main.roc");
+        let filename = filename_from_string(r"/code/proj/Main.broc");
 
         match infer_expr_help(arena, src) {
             Err(parse_err) => {
@@ -303,7 +303,7 @@ mod test_reporting {
                     interns,
                 } = parse_err;
 
-                let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+                let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
                 let problem = fail.into_file_error(filename.clone());
                 let doc = parse_problem(&alloc, &lines, filename, 0, problem);
@@ -313,7 +313,7 @@ mod test_reporting {
             Ok((type_problems, can_problems, home, interns)) => {
                 let mut reports = Vec::new();
 
-                let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+                let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
                 for problem in can_problems {
                     let report = can_problem(&alloc, &lines, filename.clone(), problem.clone());
@@ -345,24 +345,24 @@ mod test_reporting {
 
     fn list_header_reports<F>(arena: &Bump, src: &str, buf: &mut String, callback: F)
     where
-        F: FnOnce(RocDocBuilder<'_>, &mut String),
+        F: FnOnce(BrocDocBuilder<'_>, &mut String),
     {
         use ven_pretty::DocAllocator;
 
         let state = State::new(src.as_bytes());
 
-        let filename = filename_from_string(r"/code/proj/Main.roc");
+        let filename = filename_from_string(r"/code/proj/Main.broc");
         let src_lines: Vec<&str> = src.split('\n').collect();
         let lines = LineInfo::new(src);
 
-        match roc_parse::module::parse_header(arena, state) {
+        match broc_parse::module::parse_header(arena, state) {
             Err(fail) => {
                 let interns = Interns::default();
                 let home = crate::helpers::test_home();
 
-                let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+                let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
-                use roc_parse::parser::SyntaxError;
+                use broc_parse::parser::SyntaxError;
                 let problem = fail
                     .map_problem(SyntaxError::Header)
                     .into_file_error(filename.clone());
@@ -378,9 +378,9 @@ mod test_reporting {
         let mut buf: String = String::new();
         let arena = Bump::new();
 
-        let callback = |doc: RocDocBuilder<'_>, buf: &mut String| {
+        let callback = |doc: BrocDocBuilder<'_>, buf: &mut String| {
             doc.1
-                .render_raw(70, &mut roc_reporting::report::CiWrite::new(buf))
+                .render_raw(70, &mut broc_reporting::report::CiWrite::new(buf))
                 .expect("list_reports")
         };
 
@@ -400,12 +400,12 @@ mod test_reporting {
         let mut buf: String = String::new();
         let arena = Bump::new();
 
-        let callback = |doc: RocDocBuilder<'_>, buf: &mut String| {
+        let callback = |doc: BrocDocBuilder<'_>, buf: &mut String| {
             doc.1
                 .render_raw(
                     70,
-                    &mut roc_reporting::report::ColorWrite::new(
-                        &roc_reporting::report::DEFAULT_PALETTE,
+                    &mut broc_reporting::report::ColorWrite::new(
+                        &broc_reporting::report::DEFAULT_PALETTE,
                         buf,
                     ),
                 )
@@ -423,9 +423,9 @@ mod test_reporting {
     fn __new_report_problem_as(test_name: &str, src: &str, check_render: impl FnOnce(&str)) {
         let arena = Bump::new();
 
-        let finalize_render = |doc: RocDocBuilder<'_>, buf: &mut String| {
+        let finalize_render = |doc: BrocDocBuilder<'_>, buf: &mut String| {
             doc.1
-                .render_raw(70, &mut roc_reporting::report::CiWrite::new(buf))
+                .render_raw(70, &mut broc_reporting::report::CiWrite::new(buf))
                 .expect("list_reports")
         };
 
@@ -478,7 +478,7 @@ mod test_reporting {
         "#
         ),
         @r###"
-    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.roc ─
+    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.broc ─
 
     The List module does not expose `isempty`:
 
@@ -505,7 +505,7 @@ mod test_reporting {
         "#
         ),
         @r###"
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `y` is not used anywhere in your code.
 
@@ -530,7 +530,7 @@ mod test_reporting {
        "#
         ),
         @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     The `i` name is first defined here:
 
@@ -562,7 +562,7 @@ mod test_reporting {
        "#
         ),
         @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     The `Booly` name is first defined here:
 
@@ -594,7 +594,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     Using != and == together requires parentheses, to clarify how they
     should be grouped.
@@ -605,7 +605,7 @@ mod test_reporting {
     );
 
     test_report!(
-        #[ignore = "Blocked on https://github.com/roc-lang/roc/issues/3385"]
+        #[ignore = "Blocked on https://github.com/roc-lang/broc/issues/3385"]
         unrecognized_name,
         indoc!(
             r#"
@@ -623,7 +623,7 @@ mod test_reporting {
             "#
         ),
         @r#"
-        ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+        ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
         Nothing is named `bar` in this scope.
 
@@ -647,7 +647,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `true` in this scope.
 
@@ -679,7 +679,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     Using more than one == like this requires parentheses, to clarify how
     things should be grouped.
@@ -705,7 +705,7 @@ mod test_reporting {
          "#
         ),
         @r###"
-    ── UNUSED ARGUMENT ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED ARGUMENT ─────────────────────────────────────── /code/proj/Main.broc ─
 
     `box` doesn't use `htmlChildren`.
 
@@ -718,7 +718,7 @@ mod test_reporting {
     at the start of a variable name is a way of saying that the variable
     is not used.
 
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `y` is not used anywhere in your code.
 
@@ -747,7 +747,7 @@ mod test_reporting {
         let mut buf = String::new();
         let src_lines: Vec<&str> = src.split('\n').collect();
 
-        let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+        let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
         let symbol = interns.symbol(test_home(), "activityIndicatorLarge".into());
 
@@ -779,7 +779,7 @@ mod test_reporting {
         let src_lines: Vec<&str> = src.split('\n').collect();
         let module_id = interns.module_id(&"Util.Int".into());
 
-        let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+        let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
         to_simple_report(alloc.module(module_id)).render_color_terminal(
             &mut buf,
             &alloc,
@@ -802,7 +802,7 @@ mod test_reporting {
             ),
             indoc!(
                 r#"
-                <cyan>── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─<reset>
+                <cyan>── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─<reset>
 
                 Nothing is named `theAdmin` in this scope.
 
@@ -828,7 +828,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `if` condition needs to be a Bool:
 
@@ -854,7 +854,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `if` guard condition needs to be a Bool:
 
@@ -879,7 +879,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `if` has an `else` branch with a different type from its `then` branch:
 
@@ -906,7 +906,7 @@ mod test_reporting {
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 3rd branch of this `if` does not match all the previous branches:
 
@@ -936,7 +936,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd branch of this `when` does not match all the previous branches:
 
@@ -974,7 +974,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -1018,7 +1018,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This list contains elements with different types:
 
@@ -1045,7 +1045,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This list contains elements with different types:
 
@@ -1078,7 +1078,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I cannot update the `.foo` field like this:
 
@@ -1108,7 +1108,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1133,7 +1133,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1159,7 +1159,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1172,7 +1172,7 @@ mod test_reporting {
 
         List ∞ -> *
 
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `g`:
 
@@ -1199,7 +1199,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -1235,7 +1235,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -1269,7 +1269,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1295,7 +1295,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1333,7 +1333,7 @@ mod test_reporting {
         // against that extra variable, rather than possibly having to translate a `Type`
         // again.
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1346,7 +1346,7 @@ mod test_reporting {
 
         List ∞ -> List *
 
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `g`:
 
@@ -1373,7 +1373,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `f`:
 
@@ -1386,7 +1386,7 @@ mod test_reporting {
 
         List ∞ -> List *
 
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `g`:
 
@@ -1414,7 +1414,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `f` has an unexpected type:
 
@@ -1448,7 +1448,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `f` has an unexpected type:
 
@@ -1485,7 +1485,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `f` has an unexpected type:
 
@@ -1522,7 +1522,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the `then` branch of this `if` expression:
 
@@ -1556,7 +1556,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -1589,7 +1589,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -1621,7 +1621,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The `x` value is not a function, but it was given 1 argument:
 
@@ -1643,7 +1643,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The `f` function expects 1 argument, but it got 2 instead:
 
@@ -1665,14 +1665,14 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO FEW ARGS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO FEW ARGS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `f` function expects 2 arguments, but it got only 1:
 
     7│      f 1
             ^
 
-    Roc does not allow functions to be partially applied. Use a closure to
+    Broc does not allow functions to be partially applied. Use a closure to
     make partial application explicit.
     "###
     );
@@ -1686,7 +1686,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -1715,7 +1715,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern in this `when` does not match the previous ones:
 
@@ -1741,7 +1741,7 @@ mod test_reporting {
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -1769,7 +1769,7 @@ mod test_reporting {
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -1798,7 +1798,7 @@ mod test_reporting {
              "#
         ),
         @r###"
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `foo` in this scope.
 
@@ -1854,7 +1854,7 @@ mod test_reporting {
         ),
         // Just putting this here. We should probably handle or-patterns better
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern in this branch does not match the previous ones:
 
@@ -1882,7 +1882,7 @@ mod test_reporting {
         ),
         // Maybe this should specifically say the pattern doesn't work?
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -1910,7 +1910,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of this definition:
 
@@ -1941,7 +1941,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer pattern is malformed:
 
@@ -1962,7 +1962,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This float pattern is malformed:
 
@@ -1983,7 +1983,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This hex integer pattern is malformed:
 
@@ -2004,7 +2004,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This octal integer pattern is malformed:
 
@@ -2025,7 +2025,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This binary integer pattern is malformed:
 
@@ -2047,7 +2047,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -2097,7 +2097,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the `else` branch of this `if` expression:
 
@@ -2131,7 +2131,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -2166,7 +2166,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -2202,7 +2202,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `ok` in this scope.
 
@@ -2233,7 +2233,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `ok` is not used anywhere in your code.
 
@@ -2243,7 +2243,7 @@ mod test_reporting {
     If you didn't intend on using `ok` then remove it so future readers of
     your code don't wonder why it is there.
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -2275,14 +2275,14 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.broc ─
 
     `f` is defined directly in terms of itself:
 
     4│      f = f
             ^^^^^
 
-    Roc evaluates values strictly, so running this program would enter an
+    Broc evaluates values strictly, so running this program would enter an
     infinite loop!
 
     Hint: Did you mean to define `f` as a function?
@@ -2302,7 +2302,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.broc ─
 
     The `foo` definition is causing a very tricky infinite loop:
 
@@ -2330,7 +2330,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `x` record doesn’t have a `foo` field:
 
@@ -2352,7 +2352,7 @@ mod test_reporting {
         ),
         // TODO also suggest fields with the correct type
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `x` record doesn’t have a `foo` field:
 
@@ -2385,7 +2385,7 @@ mod test_reporting {
         ),
         // TODO also suggest fields with the correct type
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `r` record doesn’t have a `foo` field:
 
@@ -2413,7 +2413,7 @@ mod test_reporting {
         ),
         // TODO also suggest fields with the correct type
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `x` record doesn’t have a `foo` field:
 
@@ -2443,7 +2443,7 @@ mod test_reporting {
         ),
         // TODO also suggest fields with the correct type
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `add` has an unexpected type:
 
@@ -2468,7 +2468,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `add` has an unexpected type:
 
@@ -2496,7 +2496,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `add` has an unexpected type:
 
@@ -2524,7 +2524,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -2558,7 +2558,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -2601,7 +2601,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This pattern does not cover all the possibilities:
 
@@ -2632,7 +2632,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -2663,7 +2663,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2690,7 +2690,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2718,7 +2718,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2747,7 +2747,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2776,7 +2776,7 @@ mod test_reporting {
         ),
         // Tip: Looks like a record field guard is not exhaustive. Learn more about record pattern matches at TODO.
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2805,7 +2805,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2831,7 +2831,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -2858,7 +2858,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.roc ─
+    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern is redundant:
 
@@ -2886,7 +2886,7 @@ mod test_reporting {
         ),
         // de-aliases the alias to give a better error message
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `f` has an unexpected type:
 
@@ -2924,7 +2924,7 @@ mod test_reporting {
         ),
         // should not report Bar as unused!
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `Foo` alias is self-recursive in an invalid way:
 
@@ -2950,7 +2950,7 @@ mod test_reporting {
         ),
         // should not report Bar as unused!
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `Foo` alias is self-recursive in an invalid way:
 
@@ -2970,7 +2970,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.broc ─
 
     This record defines the `.x` field twice!
 
@@ -2994,7 +2994,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.broc ─
 
     This record defines the `.x` field twice!
 
@@ -3022,7 +3022,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.broc ─
 
     This record defines the `.x` field twice!
 
@@ -3057,7 +3057,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.broc ─
 
     This record defines the `.x` field twice!
 
@@ -3090,7 +3090,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE FIELD NAME ────────────────────────────────── /code/proj/Main.broc ─
 
     This record type defines the `.foo` field twice!
 
@@ -3118,7 +3118,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── DUPLICATE TAG NAME ──────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE TAG NAME ──────────────────────────────────── /code/proj/Main.broc ─
 
     This tag union type defines the `Foo` tag twice!
 
@@ -3147,7 +3147,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── NAMING PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── NAMING PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This annotation does not match the definition immediately following
     it:
@@ -3183,7 +3183,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This definition of `MyAlias` has an unexpected pattern:
 
@@ -3192,7 +3192,7 @@ mod test_reporting {
 
     Only type variables like `a` or `value` can occur in this position.
 
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `MyAlias` is not used anywhere in your code.
 
@@ -3215,7 +3215,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This definition of `Age` has an unexpected pattern:
 
@@ -3237,7 +3237,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.broc ─
 
     The `Num` opaque expects 1 type argument, but it got 2 instead:
 
@@ -3259,7 +3259,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.broc ─
 
     The `Num` opaque expects 1 type argument, but it got 2 instead:
 
@@ -3283,7 +3283,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO FEW TYPE ARGUMENTS ──────────────────────────────── /code/proj/Main.roc ─
+    ── TOO FEW TYPE ARGUMENTS ──────────────────────────────── /code/proj/Main.broc ─
 
     The `Pair` alias expects 2 type arguments, but it got 1 instead:
 
@@ -3307,7 +3307,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.broc ─
 
     The `Pair` alias expects 2 type arguments, but it got 3 instead:
 
@@ -3330,14 +3330,14 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNUSED TYPE ALIAS PARAMETER ─────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED TYPE ALIAS PARAMETER ─────────────────────────── /code/proj/Main.broc ─
 
     The `a` type parameter is not used in the `Foo` alias definition:
 
     4│      Foo a : [Foo]
                 ^
 
-    Roc does not allow unused type parameters!
+    Broc does not allow unused type parameters!
 
     Tip: If you want an unused type parameter (a so-called "phantom
     type"), read the guide section on phantom values.
@@ -3352,7 +3352,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── ARGUMENTS BEFORE EQUALS ────────────────── tmp/elm_function_syntax/Test.roc ─
+    ── ARGUMENTS BEFORE EQUALS ────────────────── tmp/elm_function_syntax/Test.broc ─
 
     I am partway through parsing a definition, but I got stuck here:
 
@@ -3362,7 +3362,7 @@ mod test_reporting {
     4│      f x y = x
               ^^^
 
-    Looks like you are trying to define a function. In roc, functions are
+    Looks like you are trying to define a function. In broc, functions are
     always written as a lambda, like increment = \n -> n + 1.
     "###
     );
@@ -3380,7 +3380,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -3429,7 +3429,7 @@ mod test_reporting {
         // TODO render tag unions across multiple lines
         // TODO do not show recursion var if the recursion var does not render on the surface of a type
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -3483,55 +3483,55 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal is too big:
 
     4│      x = 170_141_183_460_469_231_731_687_303_715_884_105_728_000
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    The largest number representable in Roc is the maximum U128 value,
+    The largest number representable in Broc is the maximum U128 value,
     340_282_366_920_938_463_463_374_607_431_768_211_455.
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal is too small:
 
     6│      y = -170_141_183_460_469_231_731_687_303_715_884_105_728_000
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    The smallest number representable in Roc is the minimum I128 value,
+    The smallest number representable in Broc is the minimum I128 value,
     -170_141_183_460_469_231_731_687_303_715_884_105_728.
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal is too big:
 
     8│      h = 0xFFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    The largest number representable in Roc is the maximum U128 value,
+    The largest number representable in Broc is the maximum U128 value,
     340_282_366_920_938_463_463_374_607_431_768_211_455.
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal is too small:
 
     9│      l = -0xFFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    The smallest number representable in Roc is the minimum I128 value,
+    The smallest number representable in Broc is the minimum I128 value,
     -170_141_183_460_469_231_731_687_303_715_884_105_728.
 
     Tip: Learn more about number literals at TODO
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `add` has an unexpected type:
 
@@ -3560,26 +3560,26 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This float literal is too big:
 
     4│      overflow = 11.7976931348623157e308
                        ^^^^^^^^^^^^^^^^^^^^^^^
 
-    Roc uses signed 64-bit floating points, allowing values between
+    Broc uses signed 64-bit floating points, allowing values between
     -1.7976931348623157e308 and 1.7976931348623157e308
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This float literal is too small:
 
     5│      underflow = -11.7976931348623157e308
                         ^^^^^^^^^^^^^^^^^^^^^^^^
 
-    Roc uses signed 64-bit floating points, allowing values between
+    Broc uses signed 64-bit floating points, allowing values between
     -1.7976931348623157e308 and 1.7976931348623157e308
 
     Tip: Learn more about number literals at TODO
@@ -3605,7 +3605,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal contains an invalid digit:
 
@@ -3617,7 +3617,7 @@ mod test_reporting {
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This hex integer literal contains an invalid digit:
 
@@ -3629,7 +3629,7 @@ mod test_reporting {
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This octal integer literal contains an invalid digit:
 
@@ -3641,7 +3641,7 @@ mod test_reporting {
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This binary integer literal contains an invalid digit:
 
@@ -3671,7 +3671,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This hex integer literal contains no digits:
 
@@ -3683,7 +3683,7 @@ mod test_reporting {
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This octal integer literal contains no digits:
 
@@ -3695,7 +3695,7 @@ mod test_reporting {
 
     Tip: Learn more about number literals at TODO
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This binary integer literal contains no digits:
 
@@ -3719,7 +3719,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This float literal contains an invalid digit:
 
@@ -3750,7 +3750,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression cannot be updated:
 
@@ -3759,7 +3759,7 @@ mod test_reporting {
 
     Only variables can be updated with record update syntax.
 
-    ── MODULE NOT IMPORTED ─────────────────────────────────── /code/proj/Main.roc ─
+    ── MODULE NOT IMPORTED ─────────────────────────────────── /code/proj/Main.broc ─
 
     The `Test` module is not imported:
 
@@ -3774,7 +3774,7 @@ mod test_reporting {
         Dict
         Hash
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression cannot be updated:
 
@@ -3793,7 +3793,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── MODULE NOT IMPORTED ─────────────────────────────────── /code/proj/Main.roc ─
+    ── MODULE NOT IMPORTED ─────────────────────────────────── /code/proj/Main.broc ─
 
     The `Foo` module is not imported:
 
@@ -3818,7 +3818,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `add` has an unexpected type:
 
@@ -3846,7 +3846,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 1st argument to `f` is weird:
 
@@ -3875,7 +3875,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of this definition:
 
@@ -3906,7 +3906,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 1st argument to `f` is weird:
 
@@ -3939,7 +3939,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -3972,7 +3972,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -4003,7 +4003,7 @@ mod test_reporting {
                 "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to this function has an unexpected type:
 
@@ -4037,7 +4037,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -4071,7 +4071,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -4099,7 +4099,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── BAD OPTIONAL VALUE ──────────────────────────────────── /code/proj/Main.roc ─
+    ── BAD OPTIONAL VALUE ──────────────────────────────────── /code/proj/Main.broc ─
 
     This record uses an optional value for the `.y` field in an incorrect
     context!
@@ -4136,7 +4136,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.roc ─
+    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.broc ─
 
     The 3rd pattern is redundant:
 
@@ -4181,7 +4181,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNUSED ARGUMENT ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED ARGUMENT ─────────────────────────────────────── /code/proj/Main.broc ─
 
     `f` doesn't use `foo`.
 
@@ -4203,7 +4203,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am trying to parse a qualified name here:
 
@@ -4224,7 +4224,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am trying to parse a qualified name here:
 
@@ -4244,7 +4244,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I trying to parse a record field access here:
 
@@ -4266,7 +4266,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNKNOWN OPERATOR ──────────────── tmp/type_annotation_double_colon/Test.roc ─
+    ── UNKNOWN OPERATOR ──────────────── tmp/type_annotation_double_colon/Test.broc ─
 
     This looks like an operator, but it's not one I recognize!
 
@@ -4277,7 +4277,7 @@ mod test_reporting {
               ^^
 
     I have no specific suggestion for this operator, see TODO for the full
-    list of operators in Roc.
+    list of operators in Broc.
     "###
     );
 
@@ -4298,7 +4298,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This value is not a function, but it was given 3 arguments:
 
@@ -4317,7 +4317,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED TAG UNION TYPE ───────────────────── tmp/tag_union_open/Test.roc ─
+    ── UNFINISHED TAG UNION TYPE ───────────────────── tmp/tag_union_open/Test.broc ─
 
     I am partway through parsing a tag union type, but I got stuck here:
 
@@ -4339,7 +4339,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED TAG UNION TYPE ────────────────────── tmp/tag_union_end/Test.roc ─
+    ── UNFINISHED TAG UNION TYPE ────────────────────── tmp/tag_union_end/Test.broc ─
 
     I am partway through parsing a tag union type, but I got stuck here:
 
@@ -4361,7 +4361,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── WEIRD TAG NAME ────────────────── tmp/tag_union_lowercase_tag_name/Test.roc ─
+    ── WEIRD TAG NAME ────────────────── tmp/tag_union_lowercase_tag_name/Test.broc ─
 
     I am partway through parsing a tag union type, but I got stuck here:
 
@@ -4382,7 +4382,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── WEIRD TAG NAME ─────────── tmp/tag_union_second_lowercase_tag_name/Test.roc ─
+    ── WEIRD TAG NAME ─────────── tmp/tag_union_second_lowercase_tag_name/Test.broc ─
 
     I am partway through parsing a tag union type, but I got stuck here:
 
@@ -4403,7 +4403,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED RECORD TYPE ────────────────────── tmp/record_type_open/Test.roc ─
+    ── UNFINISHED RECORD TYPE ────────────────────── tmp/record_type_open/Test.broc ─
 
     I am partway through parsing a record type, but I got stuck here:
 
@@ -4426,7 +4426,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED RECORD TYPE ─────────────── tmp/record_type_open_indent/Test.roc ─
+    ── UNFINISHED RECORD TYPE ─────────────── tmp/record_type_open_indent/Test.broc ─
 
     I am partway through parsing a record type, but I got stuck here:
 
@@ -4449,7 +4449,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED RECORD TYPE ─────────────────────── tmp/record_type_end/Test.roc ─
+    ── UNFINISHED RECORD TYPE ─────────────────────── tmp/record_type_end/Test.broc ─
 
     I am partway through parsing a record type, but I got stuck here:
 
@@ -4471,7 +4471,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED RECORD TYPE ──────── tmp/record_type_keyword_field_name/Test.roc ─
+    ── UNFINISHED RECORD TYPE ──────── tmp/record_type_keyword_field_name/Test.broc ─
 
     I just started parsing a record type, but I got stuck on this field
     name:
@@ -4493,7 +4493,7 @@ mod test_reporting {
             "#
         ),
         @r###"
-    ── UNFINISHED RECORD TYPE ───────────── tmp/record_type_missing_comma/Test.roc ─
+    ── UNFINISHED RECORD TYPE ───────────── tmp/record_type_missing_comma/Test.broc ─
 
     I am partway through parsing a record type, but I got stuck here:
 
@@ -4510,7 +4510,7 @@ mod test_reporting {
         record_type_tab,
         "f : { foo \t }",
         @r###"
-    ── TAB CHARACTER ──────────────────────────────── tmp/record_type_tab/Test.roc ─
+    ── TAB CHARACTER ──────────────────────────────── tmp/record_type_tab/Test.broc ─
 
     I encountered a tab character
 
@@ -4527,7 +4527,7 @@ mod test_reporting {
         |golden| pretty_assertions::assert_eq!(
             golden,
             &format!(
-                r###"── TAB CHARACTER ─────────────────────────────── tmp/comment_with_tab/Test.roc ─
+                r###"── TAB CHARACTER ─────────────────────────────── tmp/comment_with_tab/Test.broc ─
 
 I encountered a tab character
 
@@ -4549,7 +4549,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED PARENTHESES ────────────────── tmp/type_in_parens_start/Test.roc ─
+    ── UNFINISHED PARENTHESES ────────────────── tmp/type_in_parens_start/Test.broc ─
 
     I am partway through parsing a type in parentheses, but I got stuck
     here:
@@ -4572,7 +4572,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED PARENTHESES ──────────────────── tmp/type_in_parens_end/Test.roc ─
+    ── UNFINISHED PARENTHESES ──────────────────── tmp/type_in_parens_end/Test.broc ─
 
     I am partway through parsing a type in parentheses, but I got stuck
     here:
@@ -4597,7 +4597,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am confused by this type name:
 
@@ -4627,7 +4627,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am confused by this type name:
 
@@ -4656,7 +4656,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED TYPE ───────────────────────── tmp/type_apply_stray_dot/Test.roc ─
+    ── UNFINISHED TYPE ───────────────────────── tmp/type_apply_stray_dot/Test.broc ─
 
     I just started parsing a type, but I got stuck here:
 
@@ -4677,7 +4677,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am confused by this type name:
 
@@ -4708,7 +4708,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am confused by this type name:
 
@@ -4728,7 +4728,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── MISSING FINAL EXPRESSION ──────── tmp/def_missing_final_expression/Test.roc ─
+    ── MISSING FINAL EXPRESSION ──────── tmp/def_missing_final_expression/Test.broc ─
 
     I am partway through parsing a definition, but I got stuck here:
 
@@ -4756,7 +4756,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── INDENT ENDS AFTER EXPRESSION ────── tmp/expression_indentation_end/Test.roc ─
+    ── INDENT ENDS AFTER EXPRESSION ────── tmp/expression_indentation_end/Test.broc ─
 
     I am partway through parsing an expression, but I got stuck here:
 
@@ -4782,7 +4782,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED INLINE ALIAS ──────────────────── tmp/type_inline_alias/Test.roc ─
+    ── UNFINISHED INLINE ALIAS ──────────────────── tmp/type_inline_alias/Test.broc ─
 
     I just started parsing an inline type alias, but I got stuck here:
 
@@ -4804,7 +4804,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── DOUBLE COMMA ─────────────────────────────── tmp/type_double_comma/Test.roc ─
+    ── DOUBLE COMMA ─────────────────────────────── tmp/type_double_comma/Test.broc ─
 
     I just started parsing a function argument type, but I encountered two
     commas in a row:
@@ -4827,7 +4827,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED TYPE ─────────────────────── tmp/type_argument_no_arrow/Test.roc ─
+    ── UNFINISHED TYPE ─────────────────────── tmp/type_argument_no_arrow/Test.broc ─
 
     I am partway through parsing a type, but I got stuck here:
 
@@ -4850,7 +4850,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED TYPE ───────────── tmp/type_argument_arrow_then_nothing/Test.roc ─
+    ── UNFINISHED TYPE ───────────── tmp/type_argument_arrow_then_nothing/Test.broc ─
 
     I just started parsing a type, but I got stuck here:
 
@@ -4875,7 +4875,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `myDict` definition:
 
@@ -4910,7 +4910,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `myDict` definition:
 
@@ -4942,7 +4942,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── IF GUARD NO CONDITION ───────────── tmp/if_guard_without_condition/Test.roc ─
+    ── IF GUARD NO CONDITION ───────────── tmp/if_guard_without_condition/Test.broc ─
 
     I just started parsing an if guard, but there is no guard condition:
 
@@ -4967,7 +4967,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED PATTERN ────────────────────────── tmp/empty_or_pattern/Test.roc ─
+    ── UNFINISHED PATTERN ────────────────────────── tmp/empty_or_pattern/Test.broc ─
 
     I just started parsing a pattern, but I got stuck here:
 
@@ -4992,7 +4992,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── MISSING ARROW ────────────────────────── tmp/pattern_binds_keyword/Test.roc ─
+    ── MISSING ARROW ────────────────────────── tmp/pattern_binds_keyword/Test.broc ─
 
     I am partway through parsing a `when` expression, but got stuck here:
 
@@ -5028,7 +5028,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED WHEN ─────────────────────────── tmp/when_missing_arrow/Test.roc ─
+    ── UNFINISHED WHEN ─────────────────────────── tmp/when_missing_arrow/Test.broc ─
 
     I was partway through parsing a `when` expression, but I got stuck here:
 
@@ -5061,7 +5061,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED ARGUMENT LIST ───────────────── tmp/lambda_double_comma/Test.roc ─
+    ── UNFINISHED ARGUMENT LIST ───────────────── tmp/lambda_double_comma/Test.broc ─
 
     I am partway through parsing a function argument list, but I got stuck
     at this comma:
@@ -5082,7 +5082,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED ARGUMENT LIST ──────────────── tmp/lambda_leading_comma/Test.roc ─
+    ── UNFINISHED ARGUMENT LIST ──────────────── tmp/lambda_leading_comma/Test.broc ─
 
     I am partway through parsing a function argument list, but I got stuck
     at this comma:
@@ -5129,7 +5129,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── NOT END OF FILE ──────────────────────── tmp/when_outdented_branch/Test.roc ─
+    ── NOT END OF FILE ──────────────────────── tmp/when_outdented_branch/Test.broc ─
 
     I expected to reach the end of the file, but got stuck here:
 
@@ -5148,7 +5148,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNEXPECTED ARROW ─────────────── tmp/when_over_indented_underscore/Test.roc ─
+    ── UNEXPECTED ARROW ─────────────── tmp/when_over_indented_underscore/Test.broc ─
 
     I am parsing a `when` expression right now, but this arrow is confusing
     me:
@@ -5185,7 +5185,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNEXPECTED ARROW ────────────────────── tmp/when_over_indented_int/Test.roc ─
+    ── UNEXPECTED ARROW ────────────────────── tmp/when_over_indented_int/Test.broc ─
 
     I am parsing a `when` expression right now, but this arrow is confusing
     me:
@@ -5225,7 +5225,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED IF ────────────────────────────── tmp/if_outdented_then/Test.roc ─
+    ── UNFINISHED IF ────────────────────────────── tmp/if_outdented_then/Test.broc ─
 
     I was partway through parsing an `if` expression, but I got stuck here:
 
@@ -5245,7 +5245,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED IF ──────────────────────────────── tmp/if_missing_else/Test.roc ─
+    ── UNFINISHED IF ──────────────────────────────── tmp/if_missing_else/Test.broc ─
 
     I was partway through parsing an `if` expression, but I got stuck here:
 
@@ -5264,7 +5264,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED LIST ──────────────────────────── tmp/list_double_comma/Test.roc ─
+    ── UNFINISHED LIST ──────────────────────────── tmp/list_double_comma/Test.broc ─
 
     I am partway through started parsing a list, but I got stuck here:
 
@@ -5284,7 +5284,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── UNFINISHED LIST ───────────────────────────── tmp/list_without_end/Test.roc ─
+    ── UNFINISHED LIST ───────────────────────────── tmp/list_without_end/Test.broc ─
 
     I am partway through started parsing a list, but I got stuck here:
 
@@ -5310,7 +5310,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This float literal contains an invalid digit:
 
@@ -5328,7 +5328,7 @@ Tab characters are not allowed."###,
         unicode_not_hex,
         r#""abc\u(zzzz)def""#,
         @r###"
-    ── WEIRD CODE POINT ───────────────────────────── tmp/unicode_not_hex/Test.roc ─
+    ── WEIRD CODE POINT ───────────────────────────── tmp/unicode_not_hex/Test.broc ─
 
     I am partway through parsing a unicode code point, but I got stuck
     here:
@@ -5338,7 +5338,7 @@ Tab characters are not allowed."###,
 
     I was expecting a hexadecimal number, like \u(1100) or \u(00FF).
 
-    Learn more about working with unicode in roc at TODO
+    Learn more about working with unicode in broc at TODO
     "###
     );
 
@@ -5346,7 +5346,7 @@ Tab characters are not allowed."###,
         interpolate_not_identifier,
         r#""abc\(32)def""#,
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This string interpolation is invalid:
 
@@ -5364,14 +5364,14 @@ Tab characters are not allowed."###,
         unicode_too_large,
         r#""abc\u(110000)def""#,
         @r###"
-    ── INVALID UNICODE ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── INVALID UNICODE ─────────────────────────────────────── /code/proj/Main.broc ─
 
     This unicode code point is invalid:
 
     4│      "abc\u(110000)def"
                    ^^^^^^
 
-    Learn more about working with unicode in roc at TODO
+    Learn more about working with unicode in broc at TODO
     "###
     );
 
@@ -5379,7 +5379,7 @@ Tab characters are not allowed."###,
         weird_escape,
         r#""abc\qdef""#,
         @r###"
-    ── WEIRD ESCAPE ──────────────────────────────────── tmp/weird_escape/Test.roc ─
+    ── WEIRD ESCAPE ──────────────────────────────────── tmp/weird_escape/Test.broc ─
 
     I was partway through parsing a  string literal, but I got stuck here:
 
@@ -5403,7 +5403,7 @@ Tab characters are not allowed."###,
         single_quote_too_long,
         r#"'abcdef'"#,
         @r###"
-    ── INVALID SCALAR ───────────────────────── tmp/single_quote_too_long/Test.roc ─
+    ── INVALID SCALAR ───────────────────────── tmp/single_quote_too_long/Test.broc ─
 
     I am part way through parsing this scalar literal (character literal),
     but it's too long to fit in a U32 so it's not a valid scalar.
@@ -5411,7 +5411,7 @@ Tab characters are not allowed."###,
     4│      'abcdef'
              ^
 
-    You could change it to something like 'a' or '\n'. Note, roc strings
+    You could change it to something like 'a' or '\n'. Note, broc strings
     use double quotes, like "hello".
     "###
     );
@@ -5420,7 +5420,7 @@ Tab characters are not allowed."###,
         single_no_end,
         r#""there is no end"#,
         @r###"
-    ── ENDLESS STRING ───────────────────────────────── tmp/single_no_end/Test.roc ─
+    ── ENDLESS STRING ───────────────────────────────── tmp/single_no_end/Test.broc ─
 
     I cannot find the end of this string:
 
@@ -5436,7 +5436,7 @@ Tab characters are not allowed."###,
         multi_no_end,
         r#""""there is no end"#,
         @r###"
-    ── ENDLESS STRING ────────────────────────────────── tmp/multi_no_end/Test.roc ─
+    ── ENDLESS STRING ────────────────────────────────── tmp/multi_no_end/Test.broc ─
 
     I cannot find the end of this block string:
 
@@ -5452,7 +5452,7 @@ Tab characters are not allowed."###,
         multi_insufficient_indent,
         "    \"\"\"\n  testing\n    \"\"\"", // 4 space indent on the start, 2 space on the `testing` line
         @r###"
-    ── INSUFFICIENT INDENT IN MULTI-LINE STRING ─ ..._insufficient_indent/Test.roc ─
+    ── INSUFFICIENT INDENT IN MULTI-LINE STRING ─ ..._insufficient_indent/Test.broc ─
 
     This multiline string is not sufficiently indented:
 
@@ -5474,7 +5474,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── INDENT ENDS AFTER EXPRESSION ──── tmp/dbg_without_final_expression/Test.roc ─
+    ── INDENT ENDS AFTER EXPRESSION ──── tmp/dbg_without_final_expression/Test.broc ─
 
     I am partway through parsing a dbg statement, but I got stuck here:
 
@@ -5496,7 +5496,7 @@ Tab characters are not allowed."###,
             "#
         ),
         @r###"
-    ── INDENT ENDS AFTER EXPRESSION ─ tmp/expect_without_final_expression/Test.roc ─
+    ── INDENT ENDS AFTER EXPRESSION ─ tmp/expect_without_final_expression/Test.broc ─
 
     I am partway through parsing an expect statement, but I got stuck
     here:
@@ -5511,7 +5511,7 @@ Tab characters are not allowed."###,
     "###
     );
 
-    // https://github.com/roc-lang/roc/issues/1714
+    // https://github.com/roc-lang/broc/issues/1714
     test_report!(
     interpolate_concat_is_transparent_1714,
             indoc!(
@@ -5522,7 +5522,7 @@ Tab characters are not allowed."###,
             "#,
             ),
             @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `if` has an `else` branch with a different type from its `then` branch:
 
@@ -5548,7 +5548,7 @@ Tab characters are not allowed."###,
                 $name,
                 &format!(r#"if Bool.true then "abc" else 1 {} 2"#, $op),
                 |golden| assert_eq!(golden, format!(
-r#"── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+r#"── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
 This `if` has an `else` branch with a different type from its `then` branch:
 
@@ -5591,7 +5591,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `foo` record doesn’t have a `if` field:
 
@@ -5610,7 +5610,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.roc ─
+    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.broc ─
 
     The Num module does not expose `if`:
 
@@ -5634,7 +5634,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I trying to parse a record field access here:
 
@@ -5653,7 +5653,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am very confused by this field access:
 
@@ -5672,7 +5672,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am very confused by this field access
 
@@ -5693,7 +5693,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── NAMING PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── NAMING PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am trying to parse an identifier here:
 
@@ -5727,7 +5727,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── UNKNOWN OPERATOR ───────────────────────────────────── tmp/case_of/Test.roc ─
+    ── UNKNOWN OPERATOR ───────────────────────────────────── tmp/case_of/Test.broc ─
 
     This looks like an operator, but it's not one I recognize!
 
@@ -5760,7 +5760,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `bar` in this scope.
 
@@ -5785,7 +5785,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── UNKNOWN OPERATOR ──────────────────────────── tmp/invalid_operator/Test.roc ─
+    ── UNKNOWN OPERATOR ──────────────────────────── tmp/invalid_operator/Test.broc ─
 
     This looks like an operator, but it's not one I recognize!
 
@@ -5797,7 +5797,7 @@ All branches in an `if` must have the same type!
                   ^^
 
     I have no specific suggestion for this operator, see TODO for the full
-    list of operators in Roc.
+    list of operators in Broc.
     "###
     );
 
@@ -5810,7 +5810,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── UNKNOWN OPERATOR ───────────────────────────────── tmp/double_plus/Test.roc ─
+    ── UNKNOWN OPERATOR ───────────────────────────────── tmp/double_plus/Test.broc ─
 
     This looks like an operator, but it's not one I recognize!
 
@@ -5837,7 +5837,7 @@ All branches in an `if` must have the same type!
             "#
         ),
         @r###"
-    ── UNKNOWN OPERATOR ────────────────────────────── tmp/inline_hastype/Test.roc ─
+    ── UNKNOWN OPERATOR ────────────────────────────── tmp/inline_hastype/Test.broc ─
 
     This looks like an operator, but it's not one I recognize!
 
@@ -5868,7 +5868,7 @@ All branches in an `if` must have the same type!
         |golden| pretty_assertions::assert_eq!(
             golden,
             &format!(
-                r###"── UNKNOWN OPERATOR ───────────────────────────── tmp/wild_case_arrow/Test.roc ─
+                r###"── UNKNOWN OPERATOR ───────────────────────────── tmp/wild_case_arrow/Test.broc ─
 
 This looks like an operator, but it's not one I recognize!
 
@@ -5880,7 +5880,7 @@ This looks like an operator, but it's not one I recognize!
 
 Looks like you are trying to define a function.{}
 
-In roc, functions are always written as a lambda, like{}
+In broc, functions are always written as a lambda, like{}
 
     increment = \n -> n + 1"###,
                 ' ', ' '
@@ -5894,14 +5894,14 @@ In roc, functions are always written as a lambda, like{}
             indoc!(
                 r#"
                 app "test-base64"
-                    packages { pf: "platform/main.roc" }
+                    packages { pf: "platform/main.broc" }
                     imports [pf.Task, Base64]
                     provides [main, @Foo] to pf
                 "#
             ),
             indoc!(
                 r#"
-                ── WEIRD PROVIDES ──────────────────────────────────────── /code/proj/Main.roc ─
+                ── WEIRD PROVIDES ──────────────────────────────────────── /code/proj/Main.broc ─
 
                 I am partway through parsing a provides list, but I got stuck here:
 
@@ -5938,7 +5938,7 @@ In roc, functions are always written as a lambda, like{}
             ),
             indoc!(
                 r#"
-                ── BAD REQUIRES ────────────────────────────────────────── /code/proj/Main.roc ─
+                ── BAD REQUIRES ────────────────────────────────────────── /code/proj/Main.broc ─
 
                 I am partway through parsing a header, but I got stuck here:
 
@@ -5966,7 +5966,7 @@ In roc, functions are always written as a lambda, like{}
             ),
             indoc!(
                 r#"
-                ── WEIRD IMPORTS ───────────────────────────────────────── /code/proj/Main.roc ─
+                ── WEIRD IMPORTS ───────────────────────────────────────── /code/proj/Main.broc ─
 
                 I am partway through parsing a header, but I got stuck here:
 
@@ -5993,7 +5993,7 @@ In roc, functions are always written as a lambda, like{}
             ),
             indoc!(
                 r#"
-                ── WEIRD EXPOSES ───────────────────────────────────────── /code/proj/Main.roc ─
+                ── WEIRD EXPOSES ───────────────────────────────────────── /code/proj/Main.broc ─
 
                 I am partway through parsing an `exposes` list, but I got stuck here:
 
@@ -6021,7 +6021,7 @@ In roc, functions are always written as a lambda, like{}
             ),
             indoc!(
                 r#"
-                ── WEIRD MODULE NAME ───────────────────────────────────── /code/proj/Main.roc ─
+                ── WEIRD MODULE NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
                 I am partway through parsing a header, but got stuck here:
 
@@ -6047,7 +6047,7 @@ In roc, functions are always written as a lambda, like{}
             ),
             indoc!(
                 r#"
-                ── WEIRD APP NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+                ── WEIRD APP NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
                 I am partway through parsing a header, but got stuck here:
 
@@ -6071,7 +6071,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This value is not a function, but it was given 2 arguments:
 
@@ -6092,7 +6092,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This value is not a function, but it was given 2 arguments:
 
@@ -6114,7 +6114,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -6140,7 +6140,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED PARENTHESES ──────────────── tmp/pattern_in_parens_open/Test.roc ─
+    ── UNFINISHED PARENTHESES ──────────────── tmp/pattern_in_parens_open/Test.broc ─
 
     I am partway through parsing a pattern in parentheses, but I got stuck
     here:
@@ -6163,7 +6163,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED PARENTHESES ─────────── tmp/pattern_in_parens_end_comma/Test.roc ─
+    ── UNFINISHED PARENTHESES ─────────── tmp/pattern_in_parens_end_comma/Test.broc ─
 
     I am partway through parsing a pattern in parentheses, but I got stuck
     here:
@@ -6186,7 +6186,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED PARENTHESES ───────────────── tmp/pattern_in_parens_end/Test.roc ─
+    ── UNFINISHED PARENTHESES ───────────────── tmp/pattern_in_parens_end/Test.broc ─
 
     I am partway through parsing a pattern in parentheses, but I got stuck
     here:
@@ -6210,7 +6210,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED FUNCTION ───── tmp/unfinished_closure_pattern_in_parens/Test.roc ─
+    ── UNFINISHED FUNCTION ───── tmp/unfinished_closure_pattern_in_parens/Test.broc ─
 
     I was partway through parsing a  function, but I got stuck here:
 
@@ -6230,7 +6230,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED PARENTHESES ───────── tmp/pattern_in_parens_indent_open/Test.roc ─
+    ── UNFINISHED PARENTHESES ───────── tmp/pattern_in_parens_indent_open/Test.broc ─
 
     I am partway through parsing a pattern in parentheses, but I got stuck
     here:
@@ -6255,7 +6255,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `map` has an unexpected type:
 
@@ -6283,7 +6283,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `expect` condition needs to be a Bool:
 
@@ -6310,7 +6310,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `mul` has an unexpected type:
 
@@ -6325,7 +6325,7 @@ In roc, functions are always written as a lambda, like{}
 
         Num *
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `mult` definition:
 
@@ -6354,7 +6354,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `mul` has an unexpected type:
 
@@ -6369,7 +6369,7 @@ In roc, functions are always written as a lambda, like{}
 
         Num a
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `mult` definition:
 
@@ -6404,7 +6404,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This alias has the same name as a builtin:
 
@@ -6414,7 +6414,7 @@ In roc, functions are always written as a lambda, like{}
     All builtin aliases are in scope by default, so I need this alias to
     have a different name!
 
-    ── TOO FEW TYPE ARGUMENTS ──────────────────────────────── /code/proj/Main.roc ─
+    ── TOO FEW TYPE ARGUMENTS ──────────────────────────────── /code/proj/Main.broc ─
 
     The `Result` alias expects 2 type arguments, but it got 1 instead:
 
@@ -6442,7 +6442,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This alias has the same name as a builtin:
 
@@ -6452,7 +6452,7 @@ In roc, functions are always written as a lambda, like{}
     All builtin aliases are in scope by default, so I need this alias to
     have a different name!
 
-    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY TYPE ARGUMENTS ─────────────────────────────── /code/proj/Main.broc ─
 
     The `Result` alias expects 2 type arguments, but it got 3 instead:
 
@@ -6474,7 +6474,7 @@ In roc, functions are always written as a lambda, like{}
         ),
         // TODO: We should tell the user that we inferred `_` as `a`
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -6508,7 +6508,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -6540,7 +6540,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -6580,7 +6580,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `inner` definition:
 
@@ -6609,7 +6609,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── NOT AN INLINE ALIAS ────────── tmp/error_inline_alias_not_an_alias/Test.roc ─
+    ── NOT AN INLINE ALIAS ────────── tmp/error_inline_alias_not_an_alias/Test.broc ─
 
     The inline type after this `as` is not a type alias:
 
@@ -6629,7 +6629,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── QUALIFIED ALIAS NAME ──────────── tmp/error_inline_alias_qualified/Test.roc ─
+    ── QUALIFIED ALIAS NAME ──────────── tmp/error_inline_alias_qualified/Test.broc ─
 
     This type alias has a qualified name:
 
@@ -6649,7 +6649,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE ARGUMENT NOT LOWERCASE ─ ...r_inline_alias_argument_uppercase/Test.roc ─
+    ── TYPE ARGUMENT NOT LOWERCASE ─ ...r_inline_alias_argument_uppercase/Test.broc ─
 
     This alias type argument is not lowercase:
 
@@ -6673,7 +6673,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `isEmpty` has an unexpected type:
 
@@ -6709,7 +6709,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `c` has an unexpected type:
 
@@ -6742,7 +6742,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `F` alias is self-recursive in an invalid way:
 
@@ -6765,7 +6765,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `F` alias is self-recursive in an invalid way:
 
@@ -6787,7 +6787,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `F` alias is self-recursive in an invalid way:
 
@@ -6812,7 +6812,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 1st argument to `job` is weird:
 
@@ -6847,7 +6847,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `job` definition:
 
@@ -6878,7 +6878,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── NESTED DATATYPE ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── NESTED DATATYPE ─────────────────────────────────────── /code/proj/Main.broc ─
 
     `Nested` is a nested datatype. Here is one recursive usage of it:
 
@@ -6890,7 +6890,7 @@ In roc, functions are always written as a lambda, like{}
     4│      Nested a : [Chain a (Nested (List a)), Term]
             ^^^^^^^^
 
-    Nested datatypes are not supported in Roc.
+    Nested datatypes are not supported in Broc.
 
     Hint: Consider rewriting the definition of `Nested` to use the recursive type with the same arguments.
     "###
@@ -6906,7 +6906,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── NESTED DATATYPE ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── NESTED DATATYPE ─────────────────────────────────────── /code/proj/Main.broc ─
 
     `Nested` is a nested datatype. Here is one recursive usage of it:
 
@@ -6918,7 +6918,7 @@ In roc, functions are always written as a lambda, like{}
     4│      f : {} -> [Chain a (Nested (List a)), Term] as Nested a
                                                            ^^^^^^^^
 
-    Nested datatypes are not supported in Roc.
+    Nested datatypes are not supported in Broc.
 
     Hint: Consider rewriting the definition of `Nested` to use the recursive type with the same arguments.
     "###
@@ -6954,7 +6954,7 @@ In roc, functions are always written as a lambda, like{}
 
                     let real = format!(indoc!(
                         r#"
-                        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+                        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
                         This 1st argument to `use` has an unexpected type:
 
@@ -7021,7 +7021,7 @@ In roc, functions are always written as a lambda, like{}
 
                     let real = format!(indoc!(
                         r#"
-                        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+                        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
                         The branches of this `when` expression don't match the condition:
 
@@ -7073,7 +7073,7 @@ In roc, functions are always written as a lambda, like{}
         ),
         // TODO: link to number suffixes
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal contains an invalid digit:
 
@@ -7096,7 +7096,7 @@ In roc, functions are always written as a lambda, like{}
         ),
         // TODO: link to number suffixes
         @r###"
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal contains an invalid digit:
 
@@ -7118,7 +7118,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CONFLICTING NUMBER SUFFIX ───────────────────────────── /code/proj/Main.roc ─
+    ── CONFLICTING NUMBER SUFFIX ───────────────────────────── /code/proj/Main.broc ─
 
     This number literal is an integer, but it has a float suffix:
 
@@ -7135,7 +7135,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CONFLICTING NUMBER SUFFIX ───────────────────────────── /code/proj/Main.roc ─
+    ── CONFLICTING NUMBER SUFFIX ───────────────────────────── /code/proj/Main.broc ─
 
     This number literal is a float, but it has an integer suffix:
 
@@ -7148,7 +7148,7 @@ In roc, functions are always written as a lambda, like{}
         u8_overflow,
         "256u8",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7164,7 +7164,7 @@ In roc, functions are always written as a lambda, like{}
         negative_u8,
         "-1u8",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7180,7 +7180,7 @@ In roc, functions are always written as a lambda, like{}
         u16_overflow,
         "65536u16",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7196,7 +7196,7 @@ In roc, functions are always written as a lambda, like{}
         negative_u16,
         "-1u16",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7212,7 +7212,7 @@ In roc, functions are always written as a lambda, like{}
         u32_overflow,
         "4_294_967_296u32",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7228,7 +7228,7 @@ In roc, functions are always written as a lambda, like{}
         negative_u32,
         "-1u32",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7244,7 +7244,7 @@ In roc, functions are always written as a lambda, like{}
         u64_overflow,
         "18_446_744_073_709_551_616u64",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7260,7 +7260,7 @@ In roc, functions are always written as a lambda, like{}
         negative_u64,
         "-1u64",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7276,7 +7276,7 @@ In roc, functions are always written as a lambda, like{}
         negative_u128,
         "-1u128",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7292,7 +7292,7 @@ In roc, functions are always written as a lambda, like{}
         i8_overflow,
         "128i8",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7308,7 +7308,7 @@ In roc, functions are always written as a lambda, like{}
         i8_underflow,
         "-129i8",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7324,7 +7324,7 @@ In roc, functions are always written as a lambda, like{}
         i16_overflow,
         "32768i16",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7340,7 +7340,7 @@ In roc, functions are always written as a lambda, like{}
         i16_underflow,
         "-32769i16",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7356,7 +7356,7 @@ In roc, functions are always written as a lambda, like{}
         i32_overflow,
         "2_147_483_648i32",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7372,7 +7372,7 @@ In roc, functions are always written as a lambda, like{}
         i32_underflow,
         "-2_147_483_649i32",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7388,7 +7388,7 @@ In roc, functions are always written as a lambda, like{}
         i64_overflow,
         "9_223_372_036_854_775_808i64",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7404,7 +7404,7 @@ In roc, functions are always written as a lambda, like{}
         i64_underflow,
         "-9_223_372_036_854_775_809i64",
         @r###"
-    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER UNDERFLOWS SUFFIX ────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal underflows the type indicated by its suffix:
 
@@ -7420,7 +7420,7 @@ In roc, functions are always written as a lambda, like{}
         i128_overflow,
         "170_141_183_460_469_231_731_687_303_715_884_105_728i128",
         @r###"
-    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.roc ─
+    ── NUMBER OVERFLOWS SUFFIX ─────────────────────────────── /code/proj/Main.broc ─
 
     This integer literal overflows the type indicated by its suffix:
 
@@ -7442,7 +7442,7 @@ In roc, functions are always written as a lambda, like{}
         // TODO: this error message could be improved, e.g. something like "This argument can
         // be used as ... because of its literal value"
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `get` has an unexpected type:
 
@@ -7468,7 +7468,7 @@ In roc, functions are always written as a lambda, like{}
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `get` has an unexpected type:
 
@@ -7495,7 +7495,7 @@ In roc, functions are always written as a lambda, like{}
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `get` has an unexpected type:
 
@@ -7522,7 +7522,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -7553,7 +7553,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `R` alias is self-recursive in an invalid way:
 
@@ -7576,7 +7576,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `R` alias is self-recursive in an invalid way:
 
@@ -7600,7 +7600,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `Foo` alias is recursive in an invalid way:
 
@@ -7635,7 +7635,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This alias has the same name as a builtin:
 
@@ -7655,7 +7655,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.roc ─
+    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.broc ─
 
     The opaque type Age referenced here is not defined:
 
@@ -7676,7 +7676,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.roc ─
+    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.broc ─
 
     The opaque type Age referenced here is not defined:
 
@@ -7690,7 +7690,7 @@ In roc, functions are always written as a lambda, like{}
 
     Note: It looks like there are no opaque types declared in this scope yet!
 
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `Age` is not used anywhere in your code.
 
@@ -7713,7 +7713,7 @@ In roc, functions are always written as a lambda, like{}
         // and checking it during can. The reason the error appears is because it is parsed as
         // Apply(Error(OtherModule), [@Age, 21])
         @r###"
-    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.roc ─
+    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.broc ─
 
     The opaque type Age referenced here is not defined:
 
@@ -7722,7 +7722,7 @@ In roc, functions are always written as a lambda, like{}
 
     Note: It looks like there are no opaque types declared in this scope yet!
 
-    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
     I am trying to parse a qualified name here:
 
@@ -7749,7 +7749,7 @@ In roc, functions are always written as a lambda, like{}
         // `@Age` can be linked to the declaration of `Age` inside `age`, and a suggestion to
         // raise that declaration to the outer scope.
         @r###"
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `Age` is not used anywhere in your code.
 
@@ -7759,7 +7759,7 @@ In roc, functions are always written as a lambda, like{}
     If you didn't intend on using `Age` then remove it so future readers of
     your code don't wonder why it is there.
 
-    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.roc ─
+    ── OPAQUE TYPE NOT DEFINED ─────────────────────────────── /code/proj/Main.broc ─
 
     The opaque type Age referenced here is not defined:
 
@@ -7780,7 +7780,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── MODULE NOT IMPORTED ─────────────────────────────────── /code/proj/Main.roc ─
+    ── MODULE NOT IMPORTED ─────────────────────────────────── /code/proj/Main.broc ─
 
     The `Task` module is not imported:
 
@@ -7812,7 +7812,7 @@ In roc, functions are always written as a lambda, like{}
         // TODO(opaques): error could be improved by saying that the opaque definition demands
         // that the argument be a U8, and linking to the definitin!
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -7841,7 +7841,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -7871,7 +7871,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `v` definition:
 
@@ -7909,7 +7909,7 @@ In roc, functions are always written as a lambda, like{}
         // TODO(opaques): error could be improved by saying that the user-provided pattern
         // probably wants to change "Age" to "@Age"!
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 1st argument to `f` is weird:
 
@@ -7944,7 +7944,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern in this `when` does not match the previous ones:
 
@@ -7975,7 +7975,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -8013,7 +8013,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -8046,7 +8046,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `y` has an unexpected type:
 
@@ -8079,7 +8079,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -8103,7 +8103,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── INVALID_EXTENSION_TYPE ──────────────────────────────── /code/proj/Main.roc ─
+    ── INVALID_EXTENSION_TYPE ──────────────────────────────── /code/proj/Main.broc ─
 
     This record extension type is invalid:
 
@@ -8124,7 +8124,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── INVALID_EXTENSION_TYPE ──────────────────────────────── /code/proj/Main.roc ─
+    ── INVALID_EXTENSION_TYPE ──────────────────────────────── /code/proj/Main.broc ─
 
     This tag union extension type is invalid:
 
@@ -8151,7 +8151,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `UnknownType` in this scope.
 
@@ -8165,7 +8165,7 @@ In roc, functions are always written as a lambda, like{}
         Unsigned32
         Unsigned16
 
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `UnknownType` in this scope.
 
@@ -8192,7 +8192,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED ABILITY ── tmp/ability_first_demand_not_indented_enough/Test.roc ─
+    ── UNFINISHED ABILITY ── tmp/ability_first_demand_not_indented_enough/Test.broc ─
 
     I was partway through parsing an ability definition, but I got stuck
     here:
@@ -8217,7 +8217,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── UNFINISHED ABILITY ─── tmp/ability_demands_not_indented_with_first/Test.roc ─
+        ── UNFINISHED ABILITY ─── tmp/ability_demands_not_indented_with_first/Test.broc ─
 
         I was partway through parsing an ability definition, but I got stuck
         here:
@@ -8240,7 +8240,7 @@ In roc, functions are always written as a lambda, like{}
                 "#
         ),
         @r#"
-        ── UNFINISHED ABILITY ───────────── tmp/ability_demand_value_has_args/Test.roc ─
+        ── UNFINISHED ABILITY ───────────── tmp/ability_demand_value_has_args/Test.broc ─
 
         I was partway through parsing an ability definition, but I got stuck
         here:
@@ -8264,7 +8264,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNFINISHED ABILITY ────────── tmp/ability_non_signature_expression/Test.roc ─
+    ── UNFINISHED ABILITY ────────── tmp/ability_non_signature_expression/Test.broc ─
 
     I was partway through parsing an ability definition, but I got stuck
     here:
@@ -8287,7 +8287,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.roc ─
+    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.broc ─
 
     The definition of `I` has an unbound type variable:
 
@@ -8309,7 +8309,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.roc ─
+    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.broc ─
 
     The definition of `I` has an unbound type variable:
 
@@ -8331,7 +8331,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.roc ─
+    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.broc ─
 
     The definition of `I` has 2 unbound type variables.
 
@@ -8355,7 +8355,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.roc ─
+    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.broc ─
 
     The definition of `I` has an unbound type variable:
 
@@ -8377,7 +8377,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.roc ─
+    ── UNBOUND TYPE VARIABLE ───────────────────────────────── /code/proj/Main.broc ─
 
     The definition of `I` has an unbound type variable:
 
@@ -8400,7 +8400,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── ABILITY HAS TYPE VARIABLES ──────────────────────────── /code/proj/Main.roc ─
+    ── ABILITY HAS TYPE VARIABLES ──────────────────────────── /code/proj/Main.broc ─
 
     The definition of the `MHash` ability includes type variables:
 
@@ -8410,7 +8410,7 @@ In roc, functions are always written as a lambda, like{}
     Abilities cannot depend on type variables, but their member values
     can!
 
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `MHash` is not used anywhere in your code.
 
@@ -8432,7 +8432,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── HAS CLAUSE IS NOT AN ABILITY ────────────────────────── /code/proj/Main.roc ─
+    ── HAS CLAUSE IS NOT AN ABILITY ────────────────────────── /code/proj/Main.broc ─
 
     The type referenced in this "has" clause is not an ability:
 
@@ -8451,7 +8451,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+        ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
         The `a` name is first defined here:
 
@@ -8480,7 +8480,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+        ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
         The `Ability` name is first defined here:
 
@@ -8507,7 +8507,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── ABILITY MEMBER MISSING HAS CLAUSE ───────────────────── /code/proj/Main.roc ─
+        ── ABILITY MEMBER MISSING HAS CLAUSE ───────────────────── /code/proj/Main.broc ─
 
         The definition of the ability member `ab` does not include a `has` clause
         binding a type variable to the ability `Ability`:
@@ -8522,7 +8522,7 @@ In roc, functions are always written as a lambda, like{}
 
         Otherwise, the function does not need to be part of the ability!
 
-        ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+        ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
         `Ability` is not used anywhere in your code.
 
@@ -8544,7 +8544,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── ABILITY MEMBER BINDS MULTIPLE VARIABLES ─────────────── /code/proj/Main.roc ─
+        ── ABILITY MEMBER BINDS MULTIPLE VARIABLES ─────────────── /code/proj/Main.broc ─
 
         The definition of the ability member `eq` includes multiple variables
         bound to the `MEq`` ability:`
@@ -8572,7 +8572,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── ILLEGAL HAS CLAUSE ──────────────────────────────────── /code/proj/Main.roc ─
+    ── ILLEGAL HAS CLAUSE ──────────────────────────────────── /code/proj/Main.broc ─
 
     A `has` clause is not allowed here:
 
@@ -8581,7 +8581,7 @@ In roc, functions are always written as a lambda, like{}
 
     `has` clauses can only be specified on the top-level type annotations.
 
-    ── ABILITY MEMBER MISSING HAS CLAUSE ───────────────────── /code/proj/Main.roc ─
+    ── ABILITY MEMBER MISSING HAS CLAUSE ───────────────────── /code/proj/Main.broc ─
 
     The definition of the ability member `hash` does not include a `has`
     clause binding a type variable to the ability `MHash`:
@@ -8612,7 +8612,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
         Something is off with this specialization of `hash`:
 
@@ -8645,7 +8645,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `MEq` ability:
 
@@ -8671,7 +8671,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `hash` is not used anywhere in your code.
 
@@ -8700,7 +8700,7 @@ In roc, functions are always written as a lambda, like{}
         ),
         // TODO: the error message here could be seriously improved!
         @r###"
-    ── OVERLOADED SPECIALIZATION ───────────────────────────── /code/proj/Main.roc ─
+    ── OVERLOADED SPECIALIZATION ───────────────────────────── /code/proj/Main.broc ─
 
     This ability member specialization is already claimed to specialize
     another opaque type:
@@ -8713,7 +8713,7 @@ In roc, functions are always written as a lambda, like{}
     Ability specializations can only provide implementations for one
     opaque type, since all opaque types are different!
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This specialization of `hash` is overly general:
 
@@ -8753,7 +8753,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── OVERLOADED SPECIALIZATION ───────────────────────────── /code/proj/Main.roc ─
+    ── OVERLOADED SPECIALIZATION ───────────────────────────── /code/proj/Main.broc ─
 
     This ability member specialization is already claimed to specialize
     another opaque type:
@@ -8784,7 +8784,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with this specialization of `eq`:
 
@@ -8819,7 +8819,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `hash` definition:
 
@@ -8860,7 +8860,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -8873,7 +8873,7 @@ In roc, functions are always written as a lambda, like{}
 
     Only builtin abilities can have generated implementations!
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -8898,14 +8898,14 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── ABILITY NOT ON TOP-LEVEL ────────────────────────────── /code/proj/Main.roc ─
+        ── ABILITY NOT ON TOP-LEVEL ────────────────────────────── /code/proj/Main.broc ─
 
         This ability definition is not on the top-level of a module:
 
         4│>      MHash has
         5│>          hash : a -> U64 | a has MHash
 
-        Abilities can only be defined on the top-level of a Roc module.
+        Abilities can only be defined on the top-level of a Broc module.
         "#
     );
 
@@ -8926,7 +8926,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `hashable` definition:
 
@@ -8972,7 +8972,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── ABILITY USED AS TYPE ────────────────────────────────── /code/proj/Main.roc ─
+    ── ABILITY USED AS TYPE ────────────────────────────────── /code/proj/Main.broc ─
 
     You are attempting to use the ability `MHash` as a type directly:
 
@@ -8986,7 +8986,7 @@ In roc, functions are always written as a lambda, like{}
 
         a has MHash
 
-    ── ABILITY USED AS TYPE ────────────────────────────────── /code/proj/Main.roc ─
+    ── ABILITY USED AS TYPE ────────────────────────────────── /code/proj/Main.broc ─
 
     You are attempting to use the ability `MHash` as a type directly:
 
@@ -9016,7 +9016,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -9041,7 +9041,7 @@ In roc, functions are always written as a lambda, like{}
     "###
     );
 
-    // from https://github.com/roc-lang/roc/commit/1372737f5e53ee5bb96d7e1b9593985e5537023a
+    // from https://github.com/roc-lang/broc/commit/1372737f5e53ee5bb96d7e1b9593985e5537023a
     // There was a bug where this reported UnusedArgument("val")
     // since it was used only in the returned function only.
     //
@@ -9063,17 +9063,17 @@ In roc, functions are always written as a lambda, like{}
         indoc!(
             r#"
             app "test-missing-comma"
-                packages { pf: "platform/main.roc" }
+                packages { pf: "platform/main.broc" }
                 imports [pf.Task Base64]
                 provides [main, @Foo] to pf
             "#
         ),
         @r#"
-        ── WEIRD IMPORTS ────────────────────────── tmp/imports_missing_comma/Test.roc ─
+        ── WEIRD IMPORTS ────────────────────────── tmp/imports_missing_comma/Test.broc ─
 
         I am partway through parsing a imports list, but I got stuck here:
 
-        2│      packages { pf: "platform/main.roc" }
+        2│      packages { pf: "platform/main.broc" }
         3│      imports [pf.Task Base64]
                                  ^
 
@@ -9094,7 +9094,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+        ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
         This `when` does not cover all the possibilities:
 
@@ -9141,7 +9141,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── SPECIALIZATION NOT ON TOP-LEVEL ─────────────────────── /code/proj/Main.roc ─
+        ── SPECIALIZATION NOT ON TOP-LEVEL ─────────────────────── /code/proj/Main.broc ─
 
         This specialization of the `default` ability member is in a nested
         scope:
@@ -9166,7 +9166,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `isEq` has an unexpected type:
 
@@ -9202,7 +9202,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `remove` has an unexpected type:
 
@@ -9223,7 +9223,7 @@ In roc, functions are always written as a lambda, like{}
     change the type annotation to be more specific? Maybe change the code
     to be more general?
 
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `new`:
 
@@ -9236,7 +9236,7 @@ In roc, functions are always written as a lambda, like{}
 
         { set : Set ∞ }
 
-    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR TYPE ───────────────────────────────────────── /code/proj/Main.broc ─
 
     I'm inferring a weird self-referential type for `goal`:
 
@@ -9266,7 +9266,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.roc ─
+        ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.broc ─
 
         The `t1` definition is causing a very tricky infinite loop:
 
@@ -9294,7 +9294,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -9320,9 +9320,9 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         // TODO: this error message is quite unfortunate. We should remove the duplication, and
-        // also support regions that point to things in other modules. See also https://github.com/roc-lang/roc/issues/3056.
+        // also support regions that point to things in other modules. See also https://github.com/roc-lang/broc/issues/3056.
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -9359,7 +9359,7 @@ In roc, functions are always written as a lambda, like{}
                 "#
         ),
         @r#"
-            ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.roc ─
+            ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.broc ─
 
             The `t1` definition is causing a very tricky infinite loop:
 
@@ -9389,7 +9389,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── IMPLEMENTATION NOT FOUND ────────────────────────────── /code/proj/Main.roc ─
+    ── IMPLEMENTATION NOT FOUND ────────────────────────────── /code/proj/Main.broc ─
 
     An implementation of `eq` could not be found in this scope:
 
@@ -9400,7 +9400,7 @@ In roc, functions are always written as a lambda, like{}
     another variable that implements this ability member, like
     { eq: myeq }
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `MEq` ability:
 
@@ -9427,7 +9427,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNRECOGNIZED NAME ───────────────────────────────────── /code/proj/Main.broc ─
 
     Nothing is named `aMEq` in this scope.
 
@@ -9441,7 +9441,7 @@ In roc, functions are always written as a lambda, like{}
         myMEq
         eq
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `MEq` ability:
 
@@ -9468,7 +9468,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── OPTIONAL ABILITY IMPLEMENTATION ─────────────────────── /code/proj/Main.roc ─
+    ── OPTIONAL ABILITY IMPLEMENTATION ─────────────────────── /code/proj/Main.broc ─
 
     Ability implementations cannot be optional:
 
@@ -9479,7 +9479,7 @@ In roc, functions are always written as a lambda, like{}
 
 
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `MEq` ability:
 
@@ -9506,7 +9506,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── OPTIONAL ABILITY IMPLEMENTATION ─────────────────────── /code/proj/Main.roc ─
+    ── OPTIONAL ABILITY IMPLEMENTATION ─────────────────────── /code/proj/Main.broc ─
 
     Ability implementations cannot be optional:
 
@@ -9519,7 +9519,7 @@ In roc, functions are always written as a lambda, like{}
     record of implementations. For example,    has [Encoding] will attempt
     to derive `Encoding`
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `Encoding` ability:
 
@@ -9544,7 +9544,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── QUALIFIED ABILITY IMPLEMENTATION ────────────────────── /code/proj/Main.roc ─
+    ── QUALIFIED ABILITY IMPLEMENTATION ────────────────────── /code/proj/Main.broc ─
 
     This ability implementation is qualified:
 
@@ -9554,7 +9554,7 @@ In roc, functions are always written as a lambda, like{}
     Custom implementations must be defined in the local scope, and
     unqualified.
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `MEq` ability:
 
@@ -9579,7 +9579,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── ABILITY IMPLEMENTATION NOT IDENTIFIER ───────────────── /code/proj/Main.roc ─
+    ── ABILITY IMPLEMENTATION NOT IDENTIFIER ───────────────── /code/proj/Main.broc ─
 
     This ability implementation is not an identifier:
 
@@ -9591,7 +9591,7 @@ In roc, functions are always written as a lambda, like{}
 
     Tip: consider defining this expression as a variable.
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     This type does not fully implement the `MEq` ability:
 
@@ -9618,7 +9618,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── DUPLICATE IMPLEMENTATION ────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE IMPLEMENTATION ────────────────────────────── /code/proj/Main.broc ─
 
     This ability member implementation is duplicate:
 
@@ -9646,7 +9646,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── NOT AN ABILITY ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── NOT AN ABILITY ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This identifier is not an ability in scope:
 
@@ -9669,7 +9669,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── ILLEGAL DERIVE ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── ILLEGAL DERIVE ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This ability cannot be derived:
 
@@ -9692,7 +9692,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Encoding` ability for `A`:
 
@@ -9717,7 +9717,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Encoding` ability for `A`:
 
@@ -9769,7 +9769,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     The `main` name is first defined here:
 
@@ -9784,7 +9784,7 @@ In roc, functions are always written as a lambda, like{}
     Since these variables have the same name, it's easy to use the wrong
     one by accident. Give one of them a new name.
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -9792,7 +9792,7 @@ In roc, functions are always written as a lambda, like{}
         ^^^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
     "###
@@ -9818,7 +9818,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r#"
-        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+        ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
         Something is off with the body of the `withOpen` definition:
 
@@ -9853,7 +9853,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression is used in an unexpected way:
 
@@ -9900,7 +9900,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `foo` has an unexpected type:
 
@@ -9945,7 +9945,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `isEq` has an unexpected type:
 
@@ -9970,7 +9970,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `isEq` has an unexpected type:
 
@@ -10007,7 +10007,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the 2nd branch of this `when` expression:
 
@@ -10044,7 +10044,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `map` has an unexpected type:
 
@@ -10070,7 +10070,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-        ── NAME NOT BOUND IN ALL PATTERNS ──────────────────────── /code/proj/Main.roc ─
+        ── NAME NOT BOUND IN ALL PATTERNS ──────────────────────── /code/proj/Main.broc ─
 
         `x` is not bound in all patterns of this `when` branch
 
@@ -10081,7 +10081,7 @@ In roc, functions are always written as a lambda, like{}
         of the branch. Otherwise, the program would crash when it tries to use
         an identifier that wasn't bound!
 
-        ── NAME NOT BOUND IN ALL PATTERNS ──────────────────────── /code/proj/Main.roc ─
+        ── NAME NOT BOUND IN ALL PATTERNS ──────────────────────── /code/proj/Main.broc ─
 
         `y` is not bound in all patterns of this `when` branch
 
@@ -10092,7 +10092,7 @@ In roc, functions are always written as a lambda, like{}
         of the branch. Otherwise, the program would crash when it tries to use
         an identifier that wasn't bound!
 
-        ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+        ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
         `y` is not used in this `when` branch.
 
@@ -10114,7 +10114,7 @@ In roc, functions are always written as a lambda, like{}
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -10142,14 +10142,14 @@ In roc, functions are always written as a lambda, like{}
         |golden| pretty_assertions::assert_eq!(
             golden,
             &format!(
-                r###"── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.roc ─
+                r###"── SYNTAX PROBLEM ──────────────────────────────────────── /code/proj/Main.broc ─
 
 Underscores are not allowed in identifier names:
 
 6│      f 1 _ 1
 {}
 
-I recommend using camelCase. It's the standard style in Roc code!
+I recommend using camelCase. It's the standard style in Broc code!
 "###,
                 "  " // TODO make the reporter not insert extraneous spaces here in the first place!
             ),
@@ -10172,7 +10172,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10180,11 +10180,11 @@ I recommend using camelCase. It's the standard style in Roc code!
             ^^^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10192,11 +10192,11 @@ I recommend using camelCase. It's the standard style in Roc code!
             ^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10204,11 +10204,11 @@ I recommend using camelCase. It's the standard style in Roc code!
             ^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10216,7 +10216,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              ^^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
     "###
@@ -10238,7 +10238,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10246,11 +10246,11 @@ I recommend using camelCase. It's the standard style in Roc code!
         ^^^^^^^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10258,11 +10258,11 @@ I recommend using camelCase. It's the standard style in Roc code!
         ^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10270,11 +10270,11 @@ I recommend using camelCase. It's the standard style in Roc code!
         ^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
 
-    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY DEFINITION ──────────────────────────────── /code/proj/Main.broc ─
 
     This destructure assignment doesn't introduce any new variables:
 
@@ -10282,7 +10282,7 @@ I recommend using camelCase. It's the standard style in Roc code!
         ^^^
 
     If you don't need to use the value on the right-hand-side of this
-    assignment, consider removing the assignment. Since Roc is purely
+    assignment, consider removing the assignment. Since Broc is purely
     functional, assignments that don't introduce variables cannot affect a
     program's behavior!
     "###
@@ -10302,7 +10302,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `hash` is not used anywhere in your code.
 
@@ -10329,7 +10329,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── WRONG SPECIALIZATION TYPE ───────────────────────────── /code/proj/Main.roc ─
+    ── WRONG SPECIALIZATION TYPE ───────────────────────────── /code/proj/Main.broc ─
 
     This specialization of `hash` is not for the expected type:
 
@@ -10352,7 +10352,7 @@ I recommend using camelCase. It's the standard style in Roc code!
                 "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `x` definition:
 
@@ -10382,7 +10382,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.roc ─
+    ── CYCLIC ALIAS ────────────────────────────────────────── /code/proj/Main.broc ─
 
     The `Recursive` opaque is self-recursive in an invalid way:
 
@@ -10404,7 +10404,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Decoding` ability for `A`:
 
@@ -10429,7 +10429,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Decoding` ability for `A`:
 
@@ -10483,7 +10483,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -10514,7 +10514,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -10544,7 +10544,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNUSED ARGUMENT ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED ARGUMENT ─────────────────────────────────────── /code/proj/Main.broc ─
 
     This function doesn't use `x`.
 
@@ -10576,7 +10576,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -10609,7 +10609,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `f` definition:
 
@@ -10646,7 +10646,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the `then` branch of this `if` expression:
 
@@ -10678,7 +10678,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED DEFINITION ───────────────────────────────────── /code/proj/Main.broc ─
 
     `foo` is not used in this `when` branch.
 
@@ -10704,7 +10704,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -10733,7 +10733,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -10799,7 +10799,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -10827,7 +10827,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -10854,7 +10854,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNMATCHABLE PATTERN ─────────────────────────────────── /code/proj/Main.roc ─
+    ── UNMATCHABLE PATTERN ─────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern will never be matched:
 
@@ -10881,7 +10881,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNMATCHABLE PATTERN ─────────────────────────────────── /code/proj/Main.roc ─
+    ── UNMATCHABLE PATTERN ─────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern will never be matched:
 
@@ -10893,7 +10893,7 @@ I recommend using camelCase. It's the standard style in Roc code!
     It's impossible to create a value of this shape, so this pattern can
     be safely removed!
 
-    ── UNMATCHABLE PATTERN ─────────────────────────────────── /code/proj/Main.roc ─
+    ── UNMATCHABLE PATTERN ─────────────────────────────────── /code/proj/Main.broc ─
 
     The 3rd pattern will never be matched:
 
@@ -10918,7 +10918,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE NAME ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This opaque type has the same name as a builtin:
 
@@ -10940,7 +10940,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNUSED IMPORT ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNUSED IMPORT ───────────────────────────────────────── /code/proj/Main.broc ─
 
     `List.concat` is not used in this module.
 
@@ -10952,7 +10952,7 @@ I recommend using camelCase. It's the standard style in Roc code!
     );
 
     test_report!(
-        #[ignore = "https://github.com/roc-lang/roc/issues/4096"]
+        #[ignore = "https://github.com/roc-lang/broc/issues/4096"]
         unnecessary_builtin_module_import,
         indoc!(
             r#"
@@ -10966,7 +10966,7 @@ I recommend using camelCase. It's the standard style in Roc code!
     );
 
     test_report!(
-        #[ignore = "https://github.com/roc-lang/roc/issues/4096"]
+        #[ignore = "https://github.com/roc-lang/broc/issues/4096"]
         unnecessary_builtin_type_import,
         indoc!(
             r#"
@@ -10992,14 +10992,14 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.roc ─
+    ── CIRCULAR DEFINITION ─────────────────────────────────── /code/proj/Main.broc ─
 
     `main` is defined directly in terms of itself:
 
     3│>  main =
     4│>      if Bool.true then {} else main
 
-    Roc evaluates values strictly, so running this program would enter an
+    Broc evaluates values strictly, so running this program would enter an
     infinite loop!
 
     Hint: Did you mean to define `main` as a function?
@@ -11014,7 +11014,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `if` condition needs to be a Bool:
 
@@ -11040,7 +11040,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This `if` condition needs to be a Bool:
 
@@ -11068,7 +11068,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Hash` ability for `A`:
 
@@ -11093,7 +11093,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Hash` ability for `A`:
 
@@ -11175,7 +11175,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11202,7 +11202,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11248,7 +11248,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11284,7 +11284,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `shiftRightZfBy` has an unexpected type:
 
@@ -11299,7 +11299,7 @@ I recommend using camelCase. It's the standard style in Roc code!
 
         U8
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `shiftRightBy` has an unexpected type:
 
@@ -11314,7 +11314,7 @@ I recommend using camelCase. It's the standard style in Roc code!
 
         U8
 
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `shiftLeftBy` has an unexpected type:
 
@@ -11342,7 +11342,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `contains` has an unexpected type:
 
@@ -11369,7 +11369,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Eq` ability for `A`:
 
@@ -11394,7 +11394,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -11424,7 +11424,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Eq` ability for `A`:
 
@@ -11432,8 +11432,8 @@ I recommend using camelCase. It's the standard style in Roc code!
                       ^^
 
     Note: I can't derive `Bool.isEq` for floating-point types. That's
-    because Roc's floating-point numbers cannot be compared for total
-    equality - in Roc, `NaN` is never comparable to `NaN`. If a type
+    because Broc's floating-point numbers cannot be compared for total
+    equality - in Broc, `NaN` is never comparable to `NaN`. If a type
     doesn't support total equality, it cannot support the `Eq` ability!
 
     Tip: You can define a custom implementation of `Eq` for `A`.
@@ -11450,7 +11450,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Eq` ability for `A`:
 
@@ -11458,8 +11458,8 @@ I recommend using camelCase. It's the standard style in Roc code!
                       ^^
 
     Note: I can't derive `Bool.isEq` for floating-point types. That's
-    because Roc's floating-point numbers cannot be compared for total
-    equality - in Roc, `NaN` is never comparable to `NaN`. If a type
+    because Broc's floating-point numbers cannot be compared for total
+    equality - in Broc, `NaN` is never comparable to `NaN`. If a type
     doesn't support total equality, it cannot support the `Eq` ability!
 
     Tip: You can define a custom implementation of `Eq` for `A`.
@@ -11478,7 +11478,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Eq` ability for `A`:
 
@@ -11560,7 +11560,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11587,7 +11587,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11616,7 +11616,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11639,7 +11639,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11679,7 +11679,7 @@ I recommend using camelCase. It's the standard style in Roc code!
              "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11700,8 +11700,8 @@ I recommend using camelCase. It's the standard style in Roc code!
     cannot be generated.
 
     Note: I can't derive `Bool.isEq` for floating-point types. That's
-    because Roc's floating-point numbers cannot be compared for total
-    equality - in Roc, `NaN` is never comparable to `NaN`. If a type
+    because Broc's floating-point numbers cannot be compared for total
+    equality - in Broc, `NaN` is never comparable to `NaN`. If a type
     doesn't support total equality, it cannot support the `Eq` ability!
     "###
     );
@@ -11717,7 +11717,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.roc ─
+    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.broc ─
 
     The Bool module does not expose `structuralEq`:
 
@@ -11731,7 +11731,7 @@ I recommend using camelCase. It's the standard style in Roc code!
         Bool.false
         Bool.isEq
 
-    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.roc ─
+    ── NOT EXPOSED ─────────────────────────────────────────── /code/proj/Main.broc ─
 
     The Bool module does not expose `structuralNotEq`:
 
@@ -11759,7 +11759,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -11784,7 +11784,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The 1st argument to `foo` is weird:
 
@@ -11813,7 +11813,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Hash` ability for `F`:
 
@@ -11824,7 +11824,7 @@ I recommend using camelCase. It's the standard style in Roc code!
 
     Tip: You can define a custom implementation of `Hash` for `F`.
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Eq` ability for `F`:
 
@@ -11835,7 +11835,7 @@ I recommend using camelCase. It's the standard style in Roc code!
 
     Tip: You can define a custom implementation of `Eq` for `F`.
 
-    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.roc ─
+    ── INCOMPLETE ABILITY IMPLEMENTATION ───────────────────── /code/proj/Main.broc ─
 
     I can't derive an implementation of the `Encoding` ability for `F`:
 
@@ -11858,7 +11858,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── DUPLICATE BOUND ABILITY ─────────────────────────────── /code/proj/Main.roc ─
+    ── DUPLICATE BOUND ABILITY ─────────────────────────────── /code/proj/Main.broc ─
 
     I already saw that this type variable is bound to the `Hash` ability
     once before:
@@ -11883,7 +11883,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `g` has an unexpected type:
 
@@ -11920,7 +11920,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `g` has an unexpected type:
 
@@ -11958,7 +11958,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 1st argument to `g` has an unexpected type:
 
@@ -11991,7 +11991,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNFINISHED LIST PATTERN ────────── tmp/list_pattern_not_terminated/Test.roc ─
+    ── UNFINISHED LIST PATTERN ────────── tmp/list_pattern_not_terminated/Test.broc ─
 
     I am partway through parsing a list pattern, but I got stuck here:
 
@@ -12012,7 +12012,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── INCORRECT REST PATTERN ─────── tmp/list_pattern_weird_rest_pattern/Test.roc ─
+    ── INCORRECT REST PATTERN ─────── tmp/list_pattern_weird_rest_pattern/Test.broc ─
 
     It looks like you may trying to write a list rest pattern, but it's
     not the form I expect:
@@ -12034,7 +12034,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNNECESSARY WILDCARD ────────────────────────────────── /code/proj/Main.roc ─
+    ── UNNECESSARY WILDCARD ────────────────────────────────── /code/proj/Main.broc ─
 
     This type annotation has a wildcard type variable (`*`) that isn't
     needed.
@@ -12061,7 +12061,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── MULTIPLE LIST REST PATTERNS ─────────────────────────── /code/proj/Main.roc ─
+    ── MULTIPLE LIST REST PATTERNS ─────────────────────────── /code/proj/Main.broc ─
 
     This list pattern match has multiple rest patterns:
 
@@ -12071,7 +12071,7 @@ I recommend using camelCase. It's the standard style in Roc code!
     I only support compiling list patterns with one .. pattern! Can you
     remove this additional one?
 
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12095,7 +12095,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── MULTIPLE LIST REST PATTERNS ─────────────────────────── /code/proj/Main.roc ─
+    ── MULTIPLE LIST REST PATTERNS ─────────────────────────── /code/proj/Main.broc ─
 
     This list pattern match has multiple rest patterns:
 
@@ -12105,7 +12105,7 @@ I recommend using camelCase. It's the standard style in Roc code!
     I only support compiling list patterns with one .. pattern! Can you
     remove this additional one?
 
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12129,7 +12129,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This list element doesn't match the types of other elements in the
     pattern:
@@ -12156,7 +12156,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The branches of this `when` expression don't match the condition:
 
@@ -12189,7 +12189,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12229,7 +12229,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12285,7 +12285,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12312,7 +12312,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12355,7 +12355,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12382,7 +12382,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12431,7 +12431,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12462,7 +12462,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12494,7 +12494,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12543,7 +12543,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -12577,7 +12577,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.roc ─
+    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.broc ─
 
     The 3rd pattern is redundant:
 
@@ -12605,7 +12605,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.roc ─
+    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.broc ─
 
     The 3rd pattern is redundant:
 
@@ -12633,7 +12633,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.roc ─
+    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.broc ─
 
     The 3rd pattern is redundant:
 
@@ -12661,7 +12661,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.roc ─
+    ── REDUNDANT PATTERN ───────────────────────────────────── /code/proj/Main.broc ─
 
     The 2nd pattern is redundant:
 
@@ -12700,7 +12700,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -12730,7 +12730,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This value passed to `crash` is not a string:
 
@@ -12755,7 +12755,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── UNAPPLIED CRASH ─────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNAPPLIED CRASH ─────────────────────────────────────── /code/proj/Main.broc ─
 
     This `crash` doesn't have a message given to it:
 
@@ -12776,7 +12776,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── OVERAPPLIED CRASH ───────────────────────────────────── /code/proj/Main.roc ─
+    ── OVERAPPLIED CRASH ───────────────────────────────────── /code/proj/Main.broc ─
 
     This `crash` has too many values given to it:
 
@@ -12812,7 +12812,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -12824,8 +12824,8 @@ I recommend using camelCase. It's the standard style in Roc code!
         FloatingPoint ?
 
     Note: I can't derive `Bool.isEq` for floating-point types. That's
-    because Roc's floating-point numbers cannot be compared for total
-    equality - in Roc, `NaN` is never comparable to `NaN`. If a type
+    because Broc's floating-point numbers cannot be compared for total
+    equality - in Broc, `NaN` is never comparable to `NaN`. If a type
     doesn't support total equality, it cannot support the `Eq` ability!
     "###
     );
@@ -12854,7 +12854,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── DEFINITION ONLY USED IN RECURSION ───────────────────── /code/proj/Main.roc ─
+    ── DEFINITION ONLY USED IN RECURSION ───────────────────── /code/proj/Main.broc ─
 
     This definition is only used in recursion with itself:
 
@@ -12887,7 +12887,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── DEFINITIONs ONLY USED IN RECURSION ──────────────────── /code/proj/Main.roc ─
+    ── DEFINITIONs ONLY USED IN RECURSION ──────────────────── /code/proj/Main.broc ─
 
     These 2 definitions are only used in mutual recursion with themselves:
 
@@ -12923,7 +12923,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── DEFINITION ONLY USED IN RECURSION ───────────────────── /code/proj/Main.roc ─
+    ── DEFINITION ONLY USED IN RECURSION ───────────────────── /code/proj/Main.broc ─
 
     This definition is only used in recursion with itself:
 
@@ -12959,7 +12959,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── DEFINITIONs ONLY USED IN RECURSION ──────────────────── /code/proj/Main.roc ─
+    ── DEFINITIONs ONLY USED IN RECURSION ──────────────────── /code/proj/Main.broc ─
 
     These 2 definitions are only used in mutual recursion with themselves:
 
@@ -12998,7 +12998,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             {one, str}
         "#),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This 2nd argument to `concat` has an unexpected type:
 
@@ -13029,7 +13029,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the `else` branch of this `if` expression:
 
@@ -13066,7 +13066,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the `else` branch of this `if` expression:
 
@@ -13102,7 +13102,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `main` definition:
 
@@ -13140,7 +13140,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
     @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     Something is off with the body of the `main` definition:
 
@@ -13191,7 +13191,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -13220,7 +13220,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -13270,7 +13270,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -13310,7 +13310,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TYPE MISMATCH ───────────────────────────────────────── /code/proj/Main.broc ─
 
     This expression has a type that does not implement the abilities it's expected to:
 
@@ -13350,7 +13350,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.roc ─
+    ── UNSAFE PATTERN ──────────────────────────────────────── /code/proj/Main.broc ─
 
     This `when` does not cover all the possibilities:
 
@@ -13398,7 +13398,7 @@ I recommend using camelCase. It's the standard style in Roc code!
             "#
         ),
         @r###"
-    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.roc ─
+    ── TOO MANY ARGS ───────────────────────────────────────── /code/proj/Main.broc ─
 
     The `parser` value is an opaque type, so it cannot be called with an
     argument:

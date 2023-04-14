@@ -1,14 +1,14 @@
-<!-- The welcome and installation section are located in tutorial.roc -->
+<!-- The welcome and installation section are located in tutorial.broc -->
 
 ## [Strings and Numbers](#strings-and-numbers) {#strings-and-numbers}
 
-Let's start by getting acquainted with Roc's [_Read-Eval-Print-Loop_](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop), or **REPL** for short. Run this in a terminal:
+Let's start by getting acquainted with Broc's [_Read-Eval-Print-Loop_](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop), or **REPL** for short. Run this in a terminal:
 
-<code class="block">roc repl</code>
+<code class="block">broc repl</code>
 
-If Roc is [installed](#installation), you should see this:
+If Broc is [installed](#installation), you should see this:
 
-<pre><samp>The rockin’ roc repl</samp></pre>
+<pre><samp>The brockin’ broc repl</samp></pre>
 
 So far, so good!
 
@@ -22,7 +22,7 @@ The REPL should cheerfully display the following:
 
 <pre><samp><span class="literal">"Hello, World!" </span><span class="colon">:</span> Str <span class="comment">               # val1</span></samp></pre>
 
-Congratulations! You've just written your first Roc code.
+Congratulations! You've just written your first Broc code.
 
 ### [Naming Things](#naming-things) {#naming-things}
 
@@ -69,7 +69,7 @@ You should see this output:
 
 According to the REPL, one plus one equals two. Sounds right!
 
-Roc will respect [order of operations](https://en.wikipedia.org/wiki/Order_of_operations) when using multiple arithmetic operators like `+` and `-`, but you can use parentheses to specify exactly how they should be grouped.
+Broc will respect [order of operations](https://en.wikipedia.org/wiki/Order_of_operations) when using multiple arithmetic operators like `+` and `-`, but you can use parentheses to specify exactly how they should be grouped.
 
 <pre><samp><span class="repl-prompt">1 <span class="op">+</span> 2 <span class="op">*</span> (3 <span class="op">-</span> 4)
 
@@ -88,7 +88,7 @@ Remember back in the [string interpolation](#string-interpolation) section when 
 
 Here we're calling the `Str.concat` function and passing two arguments: the string `"Hi "` and the string `"there!"`. This _concatenates_ the two strings together (that is, it puts one after the other) and returns the resulting combined string of `"Hi there!"`.
 
-Note that in Roc, we don't need parentheses or commas to call functions. We don't write `Str.concat("Hi ", "there!")` but rather `Str.concat "Hi " "there!"`.
+Note that in Broc, we don't need parentheses or commas to call functions. We don't write `Str.concat("Hi ", "there!")` but rather `Str.concat "Hi " "there!"`.
 
 That said, just like in the arithmetic example above, we can use parentheses to specify how nested function calls should work. For example, we could write this:
 
@@ -120,35 +120,35 @@ We'll get into more depth about modules later, but for now you can think of a mo
 
 ## [Building an Application](#building-an-application) {#building-an-application}
 
-Let's move out of the REPL and create our first Roc application!
+Let's move out of the REPL and create our first Broc application!
 
-Make a file named `main.roc` and put this in it:
+Make a file named `main.broc` and put this in it:
 
-```roc
+```broc
 app "hello"
     packages { pf: "https://github.com/roc-lang/basic-cli/releases/download/0.3.1/97mY3sUwo433-pcnEQUlMhn-sWiIf_J9bPhcAFZoqY4.tar.br" }
     imports [pf.Stdout]
     provides [main] to pf
 
 main =
-    Stdout.line "I'm a Roc application!"
+    Stdout.line "I'm a Broc application!"
 ```
 
 Try running this with:
 
-<samp>roc dev</samp>
+<samp>broc dev</samp>
 
 You should see a message about a file being downloaded, followed by this:
 
-<samp>I'm a Roc application!</samp>
+<samp>I'm a Broc application!</samp>
 
-Congratulations, you've written your first Roc application! We'll go over what the parts above `main` do later, but let's play around a bit first.
+Congratulations, you've written your first Broc application! We'll go over what the parts above `main` do later, but let's play around a bit first.
 
 ### [Defs](#defs) {#defs}
 
 Try replacing the `main` line with this:
 
-```roc
+```broc
 birds = 3
 
 iguanas = 2
@@ -159,13 +159,13 @@ main =
     Stdout.line "There are \(total) animals."
 ```
 
-Now run `roc dev` again. This time the "Downloading ..." message won't appear; the file has been cached from last time, and won't need to be downloaded again.
+Now run `broc dev` again. This time the "Downloading ..." message won't appear; the file has been cached from last time, and won't need to be downloaded again.
 
 You should see this:
 
 <samp>There are 5 animals.</samp>
 
-`main.roc` now has four definitions (_defs_ for short) `birds`, `iguanas`, `total`, and `main`.
+`main.broc` now has four definitions (_defs_ for short) `birds`, `iguanas`, `total`, and `main`.
 
 A definition names an expression.
 
@@ -179,7 +179,7 @@ You can name a def using any combination of letters and numbers, but they have t
 
 **Note:** Defs are constant; they can't be reassigned. We'd get an error if we wrote these two defs in the same scope:
 
-```roc
+```broc
 birds = 3
 birds = 2
 ```
@@ -188,7 +188,7 @@ birds = 2
 
 So far we've called functions like `Num.toStr`, `Str.concat`, and `Stdout.line`. Next let's try defining a function of our own.
 
-```roc
+```broc
 birds = 3
 
 iguanas = 2
@@ -210,7 +210,7 @@ The `\num1, num2 ->` syntax defines a function's arguments, and the expression a
 
 Let's modify this function to return an empty string if the numbers add to zero.
 
-```roc
+```broc
 addAndStringify = \num1, num2 ->
     sum = num1 + num2
 
@@ -231,7 +231,7 @@ Every `if` must be accompanied by both `then` and also `else`. Having an `if` wi
 
 We can combine `if` and `else` to get `else if`, like so:
 
-```roc
+```broc
 addAndStringify = \num1, num2 ->
     sum = num1 + num2
 
@@ -245,7 +245,7 @@ addAndStringify = \num1, num2 ->
 
 Note that `else if` is not a separate language keyword! It's just an `if`/`else` where the `else` branch contains another `if`/`else`. This is easier to see with different indentation:
 
-```roc
+```broc
 addAndStringify = \num1, num2 ->
     sum = num1 + num2
 
@@ -262,20 +262,20 @@ This differently-indented version is equivalent to writing `else if sum < 0 then
 
 ### [Comments](#comments) {#comments}
 
-This is a comment in Roc:
+This is a comment in Broc:
 
-```roc
+```broc
 # The 'name' field is unused by addAndStringify
 ```
 
 Whenever you write `#` it means that the rest of the line is a comment, and will not affect the
-running program. Roc does not have multiline comment syntax.
+running program. Broc does not have multiline comment syntax.
 
 ### [Doc Comments](#doc-comments) {#doc-comments}
 
-Comments that begin with `##` are "doc comments" which will be included in generated documentation (`roc docs`). They can include code blocks by adding five spaces after `##`.
+Comments that begin with `##` are "doc comments" which will be included in generated documentation (`broc docs`). They can include code blocks by adding five spaces after `##`.
 
-```roc
+```broc
 ## This is a comment for documentation, and includes a code block.
 ##
 ##     x = 2
@@ -286,9 +286,9 @@ Like other comments, doc comments do not affect the running program.
 
 ## [Debugging](#debugging) {#debugging}
 
-[Print debugging](https://en.wikipedia.org/wiki/Debugging#Techniques) is the most common debugging technique in the history of programming, and Roc has a `dbg` keyword to facilitate it. Here's an example of how to use `dbg`:
+[Print debugging](https://en.wikipedia.org/wiki/Debugging#Techniques) is the most common debugging technique in the history of programming, and Broc has a `dbg` keyword to facilitate it. Here's an example of how to use `dbg`:
 
-```roc
+```broc
 pluralize = \singular, plural, count ->
     dbg count
 
@@ -300,29 +300,29 @@ pluralize = \singular, plural, count ->
 
 Whenever this `dbg` line of code is reached, the value of `count` will be printed to [stderr](<https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)>), along with the source code file and line number where the `dbg` itself was written:
 
-<samp><span class="kw">[pluralize.roc 6:8]</span> 5</samp>
+<samp><span class="kw">[pluralize.broc 6:8]</span> 5</samp>
 
-Here, `[pluralize.roc 6:8]` tells us that this `dbg` was written in the file `pluralize.roc` on line 6, column 8.
+Here, `[pluralize.broc 6:8]` tells us that this `dbg` was written in the file `pluralize.broc` on line 6, column 8.
 
 You can give `dbg` any expression you like, for example:
 
-```roc
+```broc
 dbg Str.concat singular plural
 ```
 
 An easy way to print multiple values at a time is to wrap them in a tag, for example a concise tag like `T`:
 
-```roc
+```broc
 dbg T "the value of count is:" count
 ```
 
-> **Note:** `dbg` is a debugging tool, and is only available when running your program via a `roc` subcommand (for example using `roc dev`, `roc run`, or `roc test`). When you build a standalone application with `roc build`, any uses of `dbg` won't be included!
+> **Note:** `dbg` is a debugging tool, and is only available when running your program via a `broc` subcommand (for example using `broc dev`, `broc run`, or `broc test`). When you build a standalone application with `broc build`, any uses of `dbg` won't be included!
 
 ## [Records](#records) {#records}
 
 Currently our `addAndStringify` function takes two arguments. We can instead make it take one argument like so:
 
-```roc
+```broc
 total = addAndStringify { birds: 5, iguanas: 7 }
 
 addAndStringify = \counts ->
@@ -331,19 +331,19 @@ addAndStringify = \counts ->
 
 The function now takes a _record_, which is a group of named values. Records are not [objects](https://en.wikipedia.org/wiki/Object_(computer_science)); they don't have methods or inheritance, they just store information.
 
-The expression `{ birds: 5, iguanas: 7 }` defines a record with two _fields_ (the `birds` field and the `iguanas` field) and then assigns the number `5` to the `birds` field and the number `7` to the `iguanas` field. Order doesn't matter with record fields; we could have also specified `iguanas` first and `birds` second, and Roc would consider it the exact same record.
+The expression `{ birds: 5, iguanas: 7 }` defines a record with two _fields_ (the `birds` field and the `iguanas` field) and then assigns the number `5` to the `birds` field and the number `7` to the `iguanas` field. Order doesn't matter with record fields; we could have also specified `iguanas` first and `birds` second, and Broc would consider it the exact same record.
 
 When we write `counts.birds`, it accesses the `birds` field of the `counts` record, and when we write `counts.iguanas` it accesses the `iguanas` field.
 
-When we use [`==`](/builtins/Bool#isEq) on records, it compares all the fields in both records with [`==`](/builtins/Bool#isEq), and only considers the two records equal if all of their fields are equal. If one record has more fields than the other, or if the types associated with a given field are different between one field and the other, the Roc compiler will give an error at build time.
+When we use [`==`](/builtins/Bool#isEq) on records, it compares all the fields in both records with [`==`](/builtins/Bool#isEq), and only considers the two records equal if all of their fields are equal. If one record has more fields than the other, or if the types associated with a given field are different between one field and the other, the Broc compiler will give an error at build time.
 
-> **Note:** Some other languages have a concept of "identity equality" that's separate from the "structural equality" we just described. Roc does not have a concept of identity equality; this is the only way equality works!
+> **Note:** Some other languages have a concept of "identity equality" that's separate from the "structural equality" we just described. Broc does not have a concept of identity equality; this is the only way equality works!
 
 ### [Accepting extra fields](#accepting-extra-fields) {#accepting-extra-fields}
 
 The `addAndStringify` function will accept any record with at least the fields `birds` and `iguanas`, but it will also accept records with more fields. For example:
 
-```roc
+```broc
 total = addAndStringify { birds: 5, iguanas: 7 }
 
 # The `note` field is unused by addAndStringify
@@ -357,11 +357,11 @@ This works because `addAndStringify` only uses `counts.birds` and `counts.iguana
 
 ### [Record shorthands](#record-shorthands) {#record-shorthands}
 
-Roc has a couple of shorthands you can use to express some record-related operations more concisely.
+Broc has a couple of shorthands you can use to express some record-related operations more concisely.
 
 Instead of writing `\record -> record.x` we can write `.x` and it will evaluate to the same thing: a function that takes a record and returns its `x` field. You can do this with any field you want. For example:
 
-```roc
+```broc
 # returnFoo is a function that takes a record
 # and returns the `foo` field of that record.
 returnFoo = .foo
@@ -382,14 +382,14 @@ In these cases, we shorten it to writing the name of the def alone—for example
 
 We can use _destructuring_ to avoid naming a record in a function argument, instead giving names to its individual fields:
 
-```roc
+```broc
 addAndStringify = \{ birds, iguanas } ->
     Num.toStr (birds + iguanas)
 ```
 
 Here, we've _destructured_ the record to create a `birds` def that's assigned to its `birds` field, and an `iguanas` def that's assigned to its `iguanas` field. We can customize this if we like:
 
-```roc
+```broc
 addAndStringify = \{ birds, iguanas: lizards } ->
     Num.toStr (birds + lizards)
 ```
@@ -398,7 +398,7 @@ In this version, we created a `lizards` def that's assigned to the record's `igu
 
 Finally, destructuring can be used in defs too:
 
-```roc
+```broc
 { x, y } = { x: 5, y: 10 }
 ```
 
@@ -406,7 +406,7 @@ Finally, destructuring can be used in defs too:
 
 So far we've only constructed records from scratch, by specifying all of their fields. We can also construct new records by using another record to use as a starting point, and then specifying only the fields we want to be different. For example, here are two ways to get the same record:
 
-```roc
+```broc
 original = { birds: 5, zebras: 2, iguanas: 7, goats: 1 }
 fromScratch = { birds: 4, zebras: 2, iguanas: 3, goats: 1 }
 fromOriginal = { original & birds: 4, iguanas: 3 }
@@ -422,11 +422,11 @@ Note that `&` can't introduce new fields to a record, or change the types of exi
 
 ## [Optional Record Fields](#optional-record-fields) {#optional-record-fields}
 
-Roc supports optional record fields using the `?` operator. This can be a useful pattern where you pass a function a record of configuration values, some of which you'd like to provide defaults for.
+Broc supports optional record fields using the `?` operator. This can be a useful pattern where you pass a function a record of configuration values, some of which you'd like to provide defaults for.
 
-In Roc you can write a function like:
+In Broc you can write a function like:
 
-```roc
+```broc
 table = \{ 
         height, 
         width, 
@@ -441,7 +441,7 @@ also providing default values for any fields that might be missing.
 
 Here's the type of `table`:
 
-```roc
+```broc
 table :
     {
         height : Pixels,
@@ -459,7 +459,7 @@ numeric type, and the `title` and `description` fields have the type `Str`.
 This means you can choose to omit the `title`, `description`, or both fields, when calling the function... but if you provide them, they must have the type `Str`.
 
 This is also the type that would have been inferred for `table` if no annotation
-had been written. Roc's compiler can tell from the destructuring syntax
+had been written. Broc's compiler can tell from the destructuring syntax
 `title ? ""` that `title` is an optional field, and that it has the type `Str`.
 These default values can reference other expressions in the record destructure; if you wanted, you could write `{ height, width, title ? "", description ? Str.concat "A table called " title }`.
 
@@ -475,7 +475,7 @@ ergonomics of destructuring mean this wouldn't be a good fit for data modeling, 
 
 Sometimes we want to represent that something can have one of several values. For example:
 
-```roc
+```broc
 stoplightColor =
     if something > 0 then
         Red
@@ -491,7 +491,7 @@ A tag is a literal value just like a number or a string. Similarly to how I can 
 
 Let's say we wanted to turn `stoplightColor` from a `Red`, `Green`, or `Yellow` into a string. Here's one way we could do that:
 
-```roc
+```broc
 stoplightStr =
     if stoplightColor == Red then
         "red"
@@ -503,7 +503,7 @@ stoplightStr =
 
 We can express this logic more concisely using `when`/`is` instead of `if`/`then`:
 
-```roc
+```broc
 stoplightStr =
     when stoplightColor is
         Red -> "red"
@@ -520,7 +520,7 @@ Besides being more concise, there are other advantages to using `when` here.
 
 We can still have the equivalent of an `else` branch in our `when` if we like. Instead of writing `else`, we write `_ ->` like so:
 
-```roc
+```broc
 stoplightStr =
     when stoplightColor is
         Red -> "red"
@@ -531,7 +531,7 @@ This lets us more concisely handle multiple cases. However, it has the downside 
 
 We can make this `when` _exhaustive_ (that is, covering all possibilities) without using `_ ->` by using `|` to specify multiple matching conditions for the same branch:
 
-```roc
+```broc
 stoplightStr =
     when stoplightColor is
         Red -> "red"
@@ -542,7 +542,7 @@ You can read `Green | Yellow` as "either `Green` or `Yellow`". By writing it thi
 
 We can also combine `if` and `when` to make branches more specific:
 
-```roc
+```broc
 stoplightStr =
     when stoplightColor is
         Red -> "red"
@@ -553,7 +553,7 @@ stoplightStr =
 
 This will give the same answer for `stoplightStr` as if we had written the following:
 
-```roc
+```broc
 stoplightStr =
     when stoplightColor is
         Red -> "red"
@@ -572,7 +572,7 @@ Either style can be a reasonable choice depending on the circumstances.
 
 Tags can have _payloads_—that is, values inside them. For example:
 
-```roc
+```broc
 stoplightColor =
     if something > 100 then
         Red
@@ -605,7 +605,7 @@ We refer to whatever comes before a `->` in a `when` expression as a _pattern_�
 
 You can also pattern match on lists, like so:
 
-```roc
+```broc
 when myList is
     [] -> 0 # the list is empty
     [Foo, ..] -> 1 # it starts with a Foo tag
@@ -624,33 +624,33 @@ This can be both more concise and more efficient (at runtime) than calling [`Lis
 
 ## [Booleans](#booleans) {#booleans}
 
-In many programming languages, `true` and `false` are special language keywords that refer to the two [boolean](https://en.wikipedia.org/wiki/Boolean_data_type) values. In Roc, booleans do not get special keywords; instead, they are exposed as the ordinary values `Bool.true` and `Bool.false`.
+In many programming languages, `true` and `false` are special language keywords that refer to the two [boolean](https://en.wikipedia.org/wiki/Boolean_data_type) values. In Broc, booleans do not get special keywords; instead, they are exposed as the ordinary values `Bool.true` and `Bool.false`.
 
-This design is partly to keep the number of special keywords in the language smaller, but mainly to suggest how booleans are intended to be used in Roc: for [_boolean logic_](https://en.wikipedia.org/wiki/Boolean_algebra) (`&&`, `||`, and so on) as opposed to for data modeling. Tags are the preferred choice for data modeling, and having tag values be more concise than boolean values helps make this preference clear.
+This design is partly to keep the number of special keywords in the language smaller, but mainly to suggest how booleans are intended to be used in Broc: for [_boolean logic_](https://en.wikipedia.org/wiki/Boolean_algebra) (`&&`, `||`, and so on) as opposed to for data modeling. Tags are the preferred choice for data modeling, and having tag values be more concise than boolean values helps make this preference clear.
 
-As an example of why tags are encouraged for data modeling, in many languages it would be common to write a record like `{ name: "Richard", isAdmin: Bool.true }`, but in Roc it would be preferable to write something like `{ name: "Richard", role: Admin }`. At first, the `role` field might only ever be set to `Admin` or `Normal`, but because the data has been modeled using tags instead of booleans, it's much easier to add other alternatives in the future, like `Guest` or `Moderator` - some of which might also want payloads.
+As an example of why tags are encouraged for data modeling, in many languages it would be common to write a record like `{ name: "Richard", isAdmin: Bool.true }`, but in Broc it would be preferable to write something like `{ name: "Richard", role: Admin }`. At first, the `role` field might only ever be set to `Admin` or `Normal`, but because the data has been modeled using tags instead of booleans, it's much easier to add other alternatives in the future, like `Guest` or `Moderator` - some of which might also want payloads.
 
 ## [Lists](#lists) {#lists}
 
-Another thing we can do in Roc is to make a _list_ of values. Here's an example:
+Another thing we can do in Broc is to make a _list_ of values. Here's an example:
 
-```roc
+```broc
 names = ["Sam", "Lee", "Ari"]
 ```
 
 This is a list with three elements in it, all strings. We can add a fourth element using `List.append` like so:
 
-```roc
+```broc
 List.append names "Jess"
 ```
 
-This returns a **new** list with `"Jess"` after `"Ari"`, and doesn't modify the original list at all. All values in Roc (including lists, but also records, strings, numbers, and so on) are immutable, meaning whenever we want to "change" them, we want to instead pass them to a function which returns some variation of what was passed in.
+This returns a **new** list with `"Jess"` after `"Ari"`, and doesn't modify the original list at all. All values in Broc (including lists, but also records, strings, numbers, and so on) are immutable, meaning whenever we want to "change" them, we want to instead pass them to a function which returns some variation of what was passed in.
 
 ### [List.map](#list-map) {#list-map}
 
 A common way to transform one list into another is to use `List.map`. Here's an example of how to use it:
 
-```roc
+```broc
 List.map [1, 2, 3] \num -> num * 2
 ```
 
@@ -665,7 +665,7 @@ It then returns a list which it creates by calling the given function on each el
 
 We can also give `List.map` a named function, instead of an anonymous one:
 
-```roc
+```broc
 List.map [1, 2, 3] Num.isOdd
 ```
 
@@ -677,13 +677,13 @@ As such, calling `List.map [1, 2, 3] Num.isOdd` returns a new list of `[Bool.tru
 
 If we tried to give `List.map` a function that didn't work on the elements in the list, then we'd get an error at compile time. Here's a valid, and then an invalid example:
 
-```roc
+```broc
 # working example
 List.map [-1, 2, 3, -4] Num.isNegative
 # returns [Bool.true, Bool.false, Bool.false, Bool.true]
 ```
 
-```roc
+```broc
 # invalid example
 List.map ["A", "B", "C"] Num.isNegative
 # error: isNegative doesn't work on strings!
@@ -693,11 +693,11 @@ Because `Num.isNegative` works on numbers and not strings, calling `List.map` wi
 
 This wouldn't work either:
 
-```roc
+```broc
 List.map ["A", "B", "C", 1, 2, 3] Num.isNegative
 ```
 
-Every element in a Roc list has to share the same type. For example, we can have a list of strings like `["Sam", "Lee", "Ari"]`, or a list of numbers like `[1, 2, 3, 4, 5]` but we can't have a list which mixes strings and numbers like `["Sam", 1, "Lee", 2, 3]`, that would be a compile-time error.
+Every element in a Broc list has to share the same type. For example, we can have a list of strings like `["Sam", "Lee", "Ari"]`, or a list of numbers like `[1, 2, 3, 4, 5]` but we can't have a list which mixes strings and numbers like `["Sam", 1, "Lee", 2, 3]`, that would be a compile-time error.
 
 Ensuring that all elements in a list share a type eliminates entire categories of problems. For example, it means that whenever you use `List.append` to add elements to a list, as long as you don't have any compile-time errors, you won't get any runtime errors from calling `List.map` afterwards, no matter what you appended to the list! More generally, it's safe to assume that unless you run out of memory, `List.map` will run successfully unless you got a compile-time error about an incompatibility (like `Num.negate` on a list of strings).
 
@@ -705,7 +705,7 @@ Ensuring that all elements in a list share a type eliminates entire categories o
 
 We can use tags with payloads to make a list that contains a mixture of different types. For example:
 
-```roc
+```broc
 List.map [StrElem "A", StrElem "b", NumElem 1, StrElem "c", NumElem -3] \elem ->
     when elem is
         NumElem num -> Num.isNegative num
@@ -715,7 +715,7 @@ List.map [StrElem "A", StrElem "b", NumElem 1, StrElem "c", NumElem -3] \elem ->
 
 Compare this with the example from earlier, which caused a compile-time error:
 
-```roc
+```broc
 List.map ["A", "B", "C", 1, 2, 3] Num.isNegative
 ```
 
@@ -727,40 +727,40 @@ We could take this as far as we like, adding more different tags (e.g. `BoolElem
 
 Let's say I want to apply a tag to a bunch of elements in a list. For example:
 
-```roc
+```broc
 List.map ["a", "b", "c"] \str -> Foo str
 ```
 
 This is a perfectly reasonable way to write it, but I can also write it like this:
 
-```roc
+```broc
 List.map ["a", "b", "c"] Foo
 ```
 
-These two versions compile to the same thing. As a convenience, Roc lets you specify a tag name where a function is expected; when you do this, the compiler infers that you want a function which uses all of its arguments as the payload to the given tag.
+These two versions compile to the same thing. As a convenience, Broc lets you specify a tag name where a function is expected; when you do this, the compiler infers that you want a function which uses all of its arguments as the payload to the given tag.
 
 ### [List.any and List.all](#list-any-and-list-all) {#list-any-and-list-all}
 
 There are several functions that work like `List.map`, they walk through each element of a list and do something with it. Another is `List.any`, which returns `Bool.true` if calling the given function on any element in the list returns `Bool.true`:
 
-```roc
+```broc
 List.any [1, 2, 3] Num.isOdd
 # returns `Bool.true` because 1 and 3 are odd
 ```
 
-```roc
+```broc
 List.any [1, 2, 3] Num.isNegative
 # returns `Bool.false` because none of these is negative
 ```
 
 There's also `List.all` which only returns `Bool.true` if all the elements in the list pass the test:
 
-```roc
+```broc
 List.all [1, 2, 3] Num.isOdd
 # returns `Bool.false` because 2 is not odd
 ```
 
-```roc
+```broc
 List.all [1, 2, 3] Num.isPositive
 # returns `Bool.true` because all of these are positive
 ```
@@ -769,21 +769,21 @@ List.all [1, 2, 3] Num.isPositive
 
 You can also drop elements from a list. One way is `List.dropAt` - for example:
 
-```roc
+```broc
 List.dropAt ["Sam", "Lee", "Ari"] 1
 # drops the element at offset 1 ("Lee") and returns ["Sam", "Ari"]
 ```
 
 Another way is to use `List.keepIf`, which passes each of the list's elements to the given function, and then keeps them only if that function returns `Bool.true`.
 
-```roc
+```broc
 List.keepIf [1, 2, 3, 4, 5] Num.isEven
 # returns [2, 4]
 ```
 
 There's also `List.dropIf`, which does the opposite:
 
-```roc
+```broc
 List.dropIf [1, 2, 3, 4, 5] Num.isEven
 # returns [1, 3, 5]
 ```
@@ -794,11 +794,11 @@ Another thing we can do with a list is to get an individual element out of it. `
 
 For example, what do each of these return?
 
-```roc
+```broc
 List.get ["a", "b", "c"] 1
 ```
 
-```roc
+```broc
 List.get ["a", "b", "c"] 100
 ```
 
@@ -806,7 +806,7 @@ The answer is that the first one returns `Ok "b"` and the second one returns `Er
 
 Here's how calling `List.get` can look in practice:
 
-```roc
+```broc
 when List.get ["a", "b", "c"] index is
     Ok str -> "I got this string: \(str)"
     Err OutOfBounds -> "That index was out of bounds, sorry!"
@@ -814,13 +814,13 @@ when List.get ["a", "b", "c"] index is
 
 There's also `List.first`, which always gets the first element, and `List.last` which always gets the last. They return `Err ListWasEmpty` instead of `Err OutOfBounds`, because the only way they can fail is if you pass them an empty list!
 
-These functions demonstrate a common pattern in Roc: operations that can fail returning either an `Ok` tag with the answer (if successful), or an `Err` tag with another tag describing what went wrong (if unsuccessful). In fact, it's such a common pattern that there's a whole module called `Result` which deals with these two tags. Here are some examples of `Result` functions:
+These functions demonstrate a common pattern in Broc: operations that can fail returning either an `Ok` tag with the answer (if successful), or an `Err` tag with another tag describing what went wrong (if unsuccessful). In fact, it's such a common pattern that there's a whole module called `Result` which deals with these two tags. Here are some examples of `Result` functions:
 
-```roc
+```broc
 Result.withDefault (List.get ["a", "b", "c"] 100) ""
 # returns "" because that's the default we said to use if List.get returned an Err
 ```
-```roc
+```broc
 Result.isOk (List.get ["a", "b", "c"] 1)
 # returns `Bool.true` because `List.get` returned an `Ok` tag. (The payload gets ignored.)
 
@@ -844,7 +844,7 @@ because it's more concise, runs faster, and doesn't give you any `Result`s to de
 
 Here's an example:
 
-```roc
+```broc
 List.walk [1, 2, 3, 4, 5] { evens: [], odds: [] } \state, elem ->
     if Num.isEven elem then
         { state & evens: List.append state.evens elem }
@@ -862,7 +862,7 @@ In this example, we walk over the list `[1, 2, 3, 4, 5]` and add each element to
 2. An initial `state` value. (`{ evens: [], odds: [] }`)
 3. A function which takes the current `state` and element, and returns a new `state`. (`\state, elem -> ...`)
 
-It then proceeds to walk over each element in the list and call that function. Each time, the state that function returns becomes the argument to the next function call. Here are the arguments the function will receive, and what it will return, as `List.walk` walks over the list `[1, 2, 3, 4, 5]`:
+It then pbroceeds to walk over each element in the list and call that function. Each time, the state that function returns becomes the argument to the next function call. Here are the arguments the function will receive, and what it will return, as `List.walk` walks over the list `[1, 2, 3, 4, 5]`:
 
 |               State               | Element |             Return Value             |
 | --------------------------------- | ------- | ------------------------------------ |
@@ -888,10 +888,10 @@ A helpful way to remember the argument order for `List.walk` is that that its ar
 
 When you have nested function calls, sometimes it can be clearer to write them in a "pipelined" style using the `|>` operator. Here are three examples of writing the same expression; they all compile to exactly the same thing, but two of them use the `|>` operator to change how the calls look.
 
-```roc
+```broc
 Result.withDefault (List.get ["a", "b", "c"] 1) ""
 ```
-```roc
+```broc
 List.get ["a", "b", "c"] 1
 |> Result.withDefault ""
 ```
@@ -900,7 +900,7 @@ The `|>` operator takes the value that comes before the `|>` and passes it as th
 
 We can take this a step further like so:
 
-```roc
+```broc
 ["a", "b", "c"]
 |> List.get 1
 |> Result.withDefault ""
@@ -910,30 +910,30 @@ This is still equivalent to the first expression. Since `|>` is known as the "pi
 
 One reason the `|>` operator injects the value as the first argument is to make it work better with functions where argument order matters. For example, these two uses of `List.append` are equivalent:
 
-```roc
+```broc
 List.append ["a", "b", "c"] "d"
 ```
-```roc
+```broc
 ["a", "b", "c"]
 |> List.append "d"
 ```
 
-Another example is `Num.div`. All three of the following do the same thing, because `a / b` in Roc is syntax sugar for `Num.div a b`:
+Another example is `Num.div`. All three of the following do the same thing, because `a / b` in Broc is syntax sugar for `Num.div a b`:
 
-```roc
+```broc
 first / second
 ```
-```roc
+```broc
 Num.div first second
 ```
 
-All operators in Roc are syntax sugar for normal function calls. See the [Operator Desugaring Table](https://www.roc-lang.org/tutorial#operator-desugaring-table) at the end of this tutorial for a complete list of them.
+All operators in Broc are syntax sugar for normal function calls. See the [Operator Desugaring Table](https://www.roc-lang.org/tutorial#operator-desugaring-table) at the end of this tutorial for a complete list of them.
 
 ## [Types](#types) {#types}
 
 Sometimes you may want to document the type of a definition. For example, you might write:
 
-```roc
+```broc
 # Takes a firstName string and a lastName string, and returns a string
 fullName = \firstName, lastName ->
     "\(firstName) \(lastName)"
@@ -945,19 +945,19 @@ Comments can be valuable documentation, but they can also get out of date and be
 
 Here's another way to document this function's type, which doesn't have that problem:
 
-```roc
+```broc
 fullName : Str, Str -> Str
 fullName = \firstName, lastName ->
     "\(firstName) \(lastName)"
 ```
 
-The `fullName :` line is a _type annotation_. It's a strictly optional piece of metadata we can add above a def to describe its type. Unlike a comment, the Roc compiler will check type annotations for accuracy. If the annotation ever doesn't fit with the implementation, we'll get a compile-time error.
+The `fullName :` line is a _type annotation_. It's a strictly optional piece of metadata we can add above a def to describe its type. Unlike a comment, the Broc compiler will check type annotations for accuracy. If the annotation ever doesn't fit with the implementation, we'll get a compile-time error.
 
 The annotation `fullName : Str, Str -> Str` says "`fullName` is a function that takes two strings as arguments and returns a string."
 
 We can give type annotations to any value, not just functions. For example:
 
-```roc
+```broc
 firstName : Str
 firstName = "Amy"
 
@@ -969,7 +969,7 @@ These annotations say that both `firstName` and `lastName` have the type `Str`.
 
 We can annotate records similarly. For example, we could move `firstName` and `lastName` into a record like so:
 
-```roc
+```broc
 amy : { firstName : Str, lastName : Str }
 amy = { firstName: "Amy", lastName: "Lee" }
 
@@ -981,7 +981,7 @@ jen = { firstName: "Jen", lastName: "Majura" }
 
 When we have a recurring type annotation like this, it can be nice to give it its own name. We do this like so:
 
-```roc
+```broc
 Musician : { firstName : Str, lastName : Str }
 
 amy : Musician
@@ -997,7 +997,7 @@ Here, `Musician` is a _type alias_. A type alias is like a def, except it gives 
 
 Annotations for lists must specify what type the list's elements have:
 
-```roc
+```broc
 names : List Str
 names = ["Amy", "Simone", "Tarja"]
 ```
@@ -1008,7 +1008,7 @@ You can read `List Str` as "a list of strings." Here, `Str` is a _type parameter
 
 There are some functions that work on any list, regardless of its type parameter. For example, `List.isEmpty` has this type:
 
-```roc
+```broc
 isEmpty : List * -> Bool
 ```
 
@@ -1020,7 +1020,7 @@ The wildcard type also comes up with empty lists. Suppose we have one function t
 
 `List.reverse` works similarly to `List.isEmpty`, but with an important distinction. As with `isEmpty`, we can call `List.reverse` on any list, regardless of its type parameter. However, consider these calls:
 
-```roc
+```broc
 strings : List Str
 strings = List.reverse ["a", "b"]
 
@@ -1034,15 +1034,15 @@ We saw that `List.isEmpty` has the type `List * -> Bool`, so we might think the 
 
 What we want is something like one of these:
 
-```roc
+```broc
 reverse : List elem -> List elem
 ```
 
-```roc
+```broc
 reverse : List value -> List value
 ```
 
-```roc
+```broc
 reverse : List a -> List a
 ```
 
@@ -1058,7 +1058,7 @@ Similarly, the only way to have a function whose type is `a -> a` is if the func
 
 We can also annotate types that include tags:
 
-```roc
+```broc
 colorFromStr : Str -> [Red, Green, Yellow]
 colorFromStr = \string ->
     when string is
@@ -1071,7 +1071,7 @@ You can read the type `[Red, Green, Yellow]` as "a tag union of the tags `Red`, 
 
 Some tag unions have only one tag in them. For example:
 
-```roc
+```broc
 redTag : [Red]
 redTag = Red
 ```
@@ -1080,7 +1080,7 @@ redTag = Red
 
 Tag union types can accumulate more tags based on how they're used. Consider this `if` expression:
 
-```roc
+```broc
 \str ->
     if Str.isEmpty str then
         Ok "it was empty"
@@ -1088,24 +1088,24 @@ Tag union types can accumulate more tags based on how they're used. Consider thi
         Err ["it was not empty"]
 ```
 
-Here, Roc sees that the first branch has the type `[Ok Str]` and that the `else` branch has the type `[Err (List Str)]`, so it concludes that the whole `if` expression evaluates to the combination of those two tag unions: `[Ok Str, Err (List Str)]`.
+Here, Broc sees that the first branch has the type `[Ok Str]` and that the `else` branch has the type `[Err (List Str)]`, so it concludes that the whole `if` expression evaluates to the combination of those two tag unions: `[Ok Str, Err (List Str)]`.
 
 This means this entire `\str -> ...` function has the type `Str -> [Ok Str, Err (List Str)]`. However, it would be most common to annotate it as `Result Str (List Str)` instead, because the `Result` type (for operations like `Result.withDefault`, which we saw earlier) is a type alias for a tag union with `Ok` and `Err` tags that each have one payload:
 
-```roc
+```broc
 Result ok err : [Ok ok, Err err]
 ```
 
 We just saw how tag unions get combined when different branches of a conditional return different tags. Another way tag unions can get combined is through pattern matching. For example:
 
-```roc
+```broc
 when color is
     Red -> "red"
     Yellow -> "yellow"
     Green -> "green"
 ```
 
-Here, Roc's compiler will infer that `color`'s type is `[Red, Yellow, Green]`, because those are the three possibilities this `when` handles.
+Here, Broc's compiler will infer that `color`'s type is `[Red, Yellow, Green]`, because those are the three possibilities this `when` handles.
 
 ### [Opaque Types](#opaque-types) {#opaque-types}
 
@@ -1116,7 +1116,7 @@ A type can be defined to be opaque to hide its internal structure. This is a lot
 
 You can create an opaque type with the `:=` operator. Let's make one called `Username`:	
 
-```roc
+```broc
 Username := Str
 
 fromStr : Str -> Username
@@ -1136,13 +1136,13 @@ Note that if we define `Username := Str` inside another module (e.g. `Main`) and
 
 ## [Numeric types](#numeric-types) {#numeric-types}
 
-Roc has different numeric types that each have different tradeoffs. They can all be broken down into two categories: [fractions](https://en.wikipedia.org/wiki/Fraction), and [integers](https://en.wikipedia.org/wiki/Integer). In Roc we call these `Frac` and `Int` for short.
+Broc has different numeric types that each have different tradeoffs. They can all be broken down into two categories: [fractions](https://en.wikipedia.org/wiki/Fraction), and [integers](https://en.wikipedia.org/wiki/Integer). In Broc we call these `Frac` and `Int` for short.
 
 ### [Integers](#integers) {#integers}
 
-Roc's integer types have two important characteristics: their _size_ and their [_signedness_](https://en.wikipedia.org/wiki/Signedness). Together, these two characteristics determine the range of numbers the integer type can represent.
+Broc's integer types have two important characteristics: their _size_ and their [_signedness_](https://en.wikipedia.org/wiki/Signedness). Together, these two characteristics determine the range of numbers the integer type can represent.
 
-For example, the Roc type `U8` can represent the numbers 0 through 255, whereas the `I16` type can represent the numbers -32768 through 32767. You can actually infer these ranges from their names (`U8` and `I16`) alone!
+For example, the Broc type `U8` can represent the numbers 0 through 255, whereas the `I16` type can represent the numbers -32768 through 32767. You can actually infer these ranges from their names (`U8` and `I16`) alone!
 
 The `U` in `U8` indicates that it's _unsigned_, meaning that it can't have a minus [sign](<https://en.wikipedia.org/wiki/Sign_(mathematics)>), and therefore can't be negative. The fact that it's unsigned tells us immediately that its lowest value is zero. The 8 in `U8` means it is 8 [bits](https://en.wikipedia.org/wiki/Bit) in size, which means it has room to represent 2⁸ (=256) different numbers. Since one of those 256 different numbers is 0, we can look at `U8` and know that it goes from `0` (since it's unsigned) to `255` (2⁸ - 1, since it's 8 bits).
 
@@ -1158,7 +1158,7 @@ Choosing a size depends on your performance needs and the range of numbers you w
 - Smaller integer sizes take up less memory. These savings rarely matters in variables and function arguments, but the sizes of integers that you use in data structures can add up. This can also affect whether those data structures fit in [cache lines](https://en.wikipedia.org/wiki/CPU_cache#Cache_performance), which can easily be a performance bottleneck.
 - Certain processors work faster on some numeric sizes than others. There isn't even a general rule like "larger numeric sizes run slower" (or the reverse, for that matter) that applies to all processors. In fact, if the CPU is taking too long to run numeric calculations, you may find a performance improvement by experimenting with numeric sizes that are larger than otherwise necessary. However, in practice, doing this typically degrades overall performance, so be careful to measure properly!
 
-Here are the different fixed-size integer types that Roc supports:
+Here are the different fixed-size integer types that Broc supports:
 
 | Range                                                                                                             | Type   |
 |-------------------------------------------------------------------------------------------------------------------|--------|
@@ -1173,7 +1173,7 @@ Here are the different fixed-size integer types that Roc supports:
 | `-170_141_183_460_469_231_731_687_303_715_884_105_728` <br> `170_141_183_460_469_231_731_687_303_715_884_105_727` | `I128` |
 | `0`     <br>  _(over 340 undecillion)_`340_282_366_920_938_463_463_374_607_431_768_211_455`                       | `U128` |
 
-Roc also has one variable-size integer type: `Nat` (short for "natural number"). The size of `Nat` is equal to the size of a memory address, which varies by system. For example, when compiling for a 64-bit system, `Nat` works the same way as `U64`. When compiling for a 32-bit system, it works the same way as `U32`. Most popular computing devices today are 64-bit, so `Nat` is usually the same as `U64`, but Web Assembly is typically 32-bit - so when running a Roc program built for Web Assembly, `Nat` will work like a `U32` in that program.
+Broc also has one variable-size integer type: `Nat` (short for "natural number"). The size of `Nat` is equal to the size of a memory address, which varies by system. For example, when compiling for a 64-bit system, `Nat` works the same way as `U64`. When compiling for a 32-bit system, it works the same way as `U32`. Most popular computing devices today are 64-bit, so `Nat` is usually the same as `U64`, but Web Assembly is typically 32-bit - so when running a Broc program built for Web Assembly, `Nat` will work like a `U32` in that program.
 
 A common use for `Nat` is to store the length of a collection like a `List`; there's a function `List.len : List * -> Nat` which returns the length of the given list. 64-bit systems can represent longer lists in memory than 32-bit systems can, which is why the length of a list is represented as a `Nat`.
 
@@ -1183,7 +1183,7 @@ As such, it's very important to design your integer operations not to exceed the
 
 ### [Fractions](#fractions) {#fractions}
 
-Roc has three fractional types:
+Broc has three fractional types:
 
 - `F32`, a 32-bit [floating-point number](https://en.wikipedia.org/wiki/IEEE_754)
 - `F64`, a 64-bit [floating-point number](https://en.wikipedia.org/wiki/IEEE_754)
@@ -1205,7 +1205,7 @@ There are some use cases where `F64` and `F32` can be better choices than `Dec` 
 
 Some operations work on specific numeric types - such as `I64` or `Dec` - but operations support multiple numeric types. For example, the `Num.abs` function works on any number, since you can take the [absolute value](https://en.wikipedia.org/wiki/Absolute_value) of integers and fractions alike. Its type is:
 
-```roc
+```broc
 abs : Num a -> Num a
 ```
 
@@ -1213,13 +1213,13 @@ This type says `abs` takes a number and then returns a number of the same type. 
 
 There's also an `Int` type which is only compatible with integers, and a `Frac` type which is only compatible with fractions. For example:
 
-```roc
+```broc
 Num.xor : Int a, Int a -> Int a
 ```
-```roc
+```broc
 Num.cos : Frac a -> Frac a
 ```
-When you write a number literal in Roc, it has the type `Num *`. So you could call `Num.xor 1 1` and also `Num.cos 1` and have them all work as expected; the number literal `1` has the type `Num *`, which is compatible with the more constrained types `Int` and `Frac`. For the same reason, you can pass number literals to functions expecting even more constrained types, like `I32` or `F64`.
+When you write a number literal in Broc, it has the type `Num *`. So you could call `Num.xor 1 1` and also `Num.cos 1` and have them all work as expected; the number literal `1` has the type `Num *`, which is compatible with the more constrained types `Int` and `Frac`. For the same reason, you can pass number literals to functions expecting even more constrained types, like `I32` or `F64`.
 
 ### [Number Literals](#number-literals) {#number-literals}
 
@@ -1235,19 +1235,19 @@ Integer literals can be written in [hexadecimal](https://en.wikipedia.org/wiki/H
 
 ## [Crashing](#crashing) {#crashing}
 
-Ideally, Roc programs would never crash. However, there are some situations where they may. For example:
+Ideally, Broc programs would never crash. However, there are some situations where they may. For example:
 
 1.  When doing normal integer arithmetic (e.g. `x + y`) that [overflows](https://en.wikipedia.org/wiki/Integer_overflow).
 2.  When the system runs out of memory.
 3.  When a variable-length collection (like a `List` or `Str`) gets too long to be representible in the operating system's address space. (A 64-bit operating system's address space can represent several [exabytes](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) of data, so this case should not come up often.)
 
-Crashes in Roc are not like [try/catch exceptions](https://en.wikipedia.org/wiki/Exception_handling) found in some other programming languages. There is no way to "catch" a crash. It immediately ends the program, and what happens next is defined by the [platform](https://github.com/roc-lang/roc/wiki/Roc-concepts-explained#platform). For example, a command-line interface platform might exit with a nonzero [exit code](https://en.wikipedia.org/wiki/Exit_status), whereas a web server platform might have the current request respond with a [HTTP 500 error](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#500).
+Crashes in Broc are not like [try/catch exceptions](https://en.wikipedia.org/wiki/Exception_handling) found in some other programming languages. There is no way to "catch" a crash. It immediately ends the program, and what happens next is defined by the [platform](https://github.com/roc-lang/broc/wiki/Broc-concepts-explained#platform). For example, a command-line interface platform might exit with a nonzero [exit code](https://en.wikipedia.org/wiki/Exit_status), whereas a web server platform might have the current request respond with a [HTTP 500 error](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#500).
 
 ### [Crashing in unreachable branches](#crashing-in-unreachable-branches) {#crashing-in-unreachable-branches}
 
-You can intentionally crash a Roc program, for example inside a conditional branch that you believe is unreachable. Suppose you're certain that a particular `List U8` contains valid UTF-8 bytes, which means when you call `Str.fromUtf8` on it, the `Result` it returns will always be `Ok`. In that scenario, you can use the `crash` keyword to handle the `Err` case like so:
+You can intentionally crash a Broc program, for example inside a conditional branch that you believe is unreachable. Suppose you're certain that a particular `List U8` contains valid UTF-8 bytes, which means when you call `Str.fromUtf8` on it, the `Result` it returns will always be `Ok`. In that scenario, you can use the `crash` keyword to handle the `Err` case like so:
 
-```roc
+```broc
 answer : Str
 answer =
     when Str.fromUtf8 definitelyValidUtf8 is
@@ -1263,7 +1263,7 @@ If the unthinkable happens, and somehow the program reaches this `Err` branch ev
 
 Another use for `crash` is as a TODO marker when you're in the middle of building something:
 
-```roc
+```broc
 if x > y then
     transmogrify (x * 2)
 else
@@ -1276,15 +1276,15 @@ This lets you do things like write tests for the non-`crash` branch, and then co
 
 `crash` is not for error handling.
 
-The reason Roc has a `crash` keyword is for scenarios where it's expected that no error will ever happen (like in [unreachable branches](#crashing-in-unreachable-branches)), or where graceful error handling is infeasible (like running out of memory).
+The reason Broc has a `crash` keyword is for scenarios where it's expected that no error will ever happen (like in [unreachable branches](#crashing-in-unreachable-branches)), or where graceful error handling is infeasible (like running out of memory).
 
-Errors that are recoverable should be represented using normal Roc types (like [Result](https://www.roc-lang.org/builtins/Result)) and then handled without crashing. For example, by having the application report that something went wrong, and then continue running from there.
+Errors that are recoverable should be represented using normal Broc types (like [Result](https://www.roc-lang.org/builtins/Result)) and then handled without crashing. For example, by having the application report that something went wrong, and then continue running from there.
 
 ## [Tests and expectations](#tests-and-expectations) {#tests-and-expectations}
 
-You can write automated tests for your Roc code like so:
+You can write automated tests for your Broc code like so:
 
-```roc
+```broc
 pluralize = \singular, plural, count ->
     countStr = Num.toStr count
 
@@ -1298,11 +1298,11 @@ expect pluralize "cactus" "cacti" 1 == "1 cactus"
 expect pluralize "cactus" "cacti" 2 == "2 cacti"
 ```
 
-If you put this in a file named `main.roc` and run `roc test`, Roc will execute the two `expect` expressions (that is, the two `pluralize` calls) and report any that returned `Bool.false`.
+If you put this in a file named `main.broc` and run `broc test`, Broc will execute the two `expect` expressions (that is, the two `pluralize` calls) and report any that returned `Bool.false`.
 
 If a test fails, it will not show the actual value that differs from the expected value. To show the actual value, you can write the expect like this:
 
-```roc
+```broc
 expect
     funcOut = pluralize "cactus" "cacti" 1
 
@@ -1313,7 +1313,7 @@ expect
 
 Expects do not have to be at the top level:
 
-```roc
+```broc
 pluralize = \singular, plural, count ->
     countStr = Num.toStr count
 
@@ -1327,12 +1327,12 @@ pluralize = \singular, plural, count ->
 
 This `expect` will fail if you call `pluralize` passing a count of 0.
 
-Note that inline `expect`s do not halt the program! They are designed to inform, not to affect control flow. In fact, if you do `roc build`, they are not even included in the final binary.
-So you'll want to use `roc dev` or `roc test` to get the output for `expect`.
+Note that inline `expect`s do not halt the program! They are designed to inform, not to affect control flow. In fact, if you do `broc build`, they are not even included in the final binary.
+So you'll want to use `broc dev` or `broc test` to get the output for `expect`.
 
 ## [Modules](#modules) {#modules}
 
-Each `.roc` file is a separate module and contains Roc code for different purposes. Here are all of the different types of modules that Roc suppports;
+Each `.broc` file is a separate module and contains Broc code for different purposes. Here are all of the different types of modules that Broc suppports;
 
 - **Builtins** provide functions that are automatically imported into every module. 
 - **Applications** are combined with a platform and compiled into an executable.
@@ -1343,7 +1343,7 @@ Each `.roc` file is a separate module and contains Roc code for different purpos
 
 ### [Builtin Modules](#builtin-modules) {#builtin-modules}
 
-There are several modules that are built into the Roc compiler, which are imported automatically into every Roc module. They are:
+There are several modules that are built into the Broc compiler, which are imported automatically into every Broc module. They are:
 
 1.  `Bool`
 2.  `Str`
@@ -1355,7 +1355,7 @@ There are several modules that are built into the Roc compiler, which are import
 
 You may have noticed that we already used the first five. For example, when we wrote `Str.concat` and `Num.isEven`, we were referencing functions stored in the `Str` and `Num` modules.
 
-These modules are not ordinary `.roc` files that live on your filesystem. Rather, they are built directly into the Roc compiler. That's why they're called "builtins!"
+These modules are not ordinary `.broc` files that live on your filesystem. Rather, they are built directly into the Broc compiler. That's why they're called "builtins!"
 
 Besides being built into the compiler, the builtin modules are different from other modules in that:
 
@@ -1364,22 +1364,22 @@ Besides being built into the compiler, the builtin modules are different from ot
 
 ### [App Module Header](#app-module-header) {#app-module-header}
 
-Let's take a closer look at the part of `main.roc` above the `main` def:
+Let's take a closer look at the part of `main.broc` above the `main` def:
 
-```roc
+```broc
 app "hello"
     packages { pf: "https://github.com/roc-lang/basic-cli/releases/download/0.3.1/97mY3sUwo433-pcnEQUlMhn-sWiIf_J9bPhcAFZoqY4.tar.br" }
     imports [pf.Stdout]
     provides main to pf
 ```
 
-This is known as a _module header_. Every `.roc` file is a _module_, and there are different types of modules. We know this particular one is an _application module_ because it begins with the `app` keyword.
+This is known as a _module header_. Every `.broc` file is a _module_, and there are different types of modules. We know this particular one is an _application module_ because it begins with the `app` keyword.
 
-The line `app "hello"` states that this module defines a Roc application, and that building this application should produce an executable named `hello`. This means when you run `roc dev`, the Roc compiler will build an executable named `hello` (or `hello.exe` on Windows) and run it. You can also build the executable without running it by running `roc build`.
+The line `app "hello"` states that this module defines a Broc application, and that building this application should produce an executable named `hello`. This means when you run `broc dev`, the Broc compiler will build an executable named `hello` (or `hello.exe` on Windows) and run it. You can also build the executable without running it by running `broc build`.
 
-The remaining lines all involve the [platform](https://github.com/roc-lang/roc/wiki/Roc-concepts-explained#platform) this application is built on:
+The remaining lines all involve the [platform](https://github.com/roc-lang/broc/wiki/Broc-concepts-explained#platform) this application is built on:
 
-```roc
+```broc
 packages { pf: "https://github.com/roc-lang/basic-cli/releases/download/0.3.1/97mY3sUwo433-pcnEQUlMhn-sWiIf_J9bPhcAFZoqY4.tar.br" }
     imports [pf.Stdout]
     provides [main] to pf
@@ -1395,17 +1395,17 @@ The `imports [pf.Stdout]` line says that we want to import the `Stdout` module f
 
 This import has a direct interaction with our definition of `main`. Let's look at that again:
 
-```roc
-main = Stdout.line "I'm a Roc application!"
+```broc
+main = Stdout.line "I'm a Broc application!"
 ```
 
 Here, `main` is calling a function called `Stdout.line`. More specifically, it's calling a function named `line` which is exposed by a module named `Stdout`.
 
 When we write `imports [pf.Stdout]`, it specifies that the `Stdout` module comes from the package we named `pf` in the `packages { pf: ... }` section.
 
-If we would like to include other modules in our application, say `AdditionalModule.roc` and `AnotherModule.roc`, then they can be imported directly in `imports` like this:
+If we would like to include other modules in our application, say `AdditionalModule.broc` and `AnotherModule.broc`, then they can be imported directly in `imports` like this:
 
-```roc
+```broc
 imports [pf.Stdout, AdditionalModule, AnotherModule]
 ```
 
@@ -1413,45 +1413,45 @@ You can find documentation for the `Stdout.line` function in the [Stdout](https:
 
 ### [Package Modules](#interface-modules) {#interface-modules}
 
-Package modules enable Roc code to be easily re-used and shared. This is achieved by organizing code into different Interface modules and then including these in the `exposes` field of the package file structure, `package "name" exposes [ MyInterface ] packages {}`. The modules that are listed in the `exposes` field are then available for use in applications, platforms, or other packages. Internal modules that are not listed will be unavailable for use outside of the package.
+Package modules enable Broc code to be easily re-used and shared. This is achieved by organizing code into different Interface modules and then including these in the `exposes` field of the package file structure, `package "name" exposes [ MyInterface ] packages {}`. The modules that are listed in the `exposes` field are then available for use in applications, platforms, or other packages. Internal modules that are not listed will be unavailable for use outside of the package.
 
-See [Parser Package](https://github.com/roc-lang/roc/tree/main/examples/parser/package) for an example.
+See [Parser Package](https://github.com/roc-lang/broc/tree/main/examples/parser/package) for an example.
 
-Package documentation can be generated using the Roc cli with `roc docs /package/*.roc`.
+Package documentation can be generated using the Broc cli with `broc docs /package/*.broc`.
 
-Build a package for distribution with `roc build --bundle .tar.br /package/main.roc`. This will create a single tarball that can then be easily shared online using a URL.  
+Build a package for distribution with `broc build --bundle .tar.br /package/main.broc`. This will create a single tarball that can then be easily shared online using a URL.  
 
-You can import a package that is available either locally, or from a URL into a Roc application or platform. This is achieved by specifying the package in the `packages` section of the application or platform file structure. For example, `packages { .., parser: "<package URL>" }` is an example that imports a parser module from a URL.
+You can import a package that is available either locally, or from a URL into a Broc application or platform. This is achieved by specifying the package in the `packages` section of the application or platform file structure. For example, `packages { .., parser: "<package URL>" }` is an example that imports a parser module from a URL.
 
-How does the Roc cli import and download a package from a URL? 
+How does the Broc cli import and download a package from a URL? 
 
-1. First it checks to see whether the relevant folder already exists in the local filesystem and if not, creates it. If there is a package already downloaded then there is no need to download or extract anything. Packages are cached in a directory, typically `~/.cache/roc` on UNIX, and `%APPDATA%\\Roc` on Windows.
+1. First it checks to see whether the relevant folder already exists in the local filesystem and if not, creates it. If there is a package already downloaded then there is no need to download or extract anything. Packages are cached in a directory, typically `~/.cache/broc` on UNIX, and `%APPDATA%\\Broc` on Windows.
 2. It then downloads the file at that URL and verifies that the hash of the file matches the hash at the end of the URL.
 3. If the hash of the file matches the hash in the URL, then decompress and extract its contents into the cache folder so that it can be used.
 
-Why is a Roc package URL so long?
+Why is a Broc package URL so long?
 
 Including the hash solves a number of problems:
 
 1. The package at the URL can not suddenly change and cause different behavior.
 2. Because of 1. there is no need to check the URL on every compilation to see if we have the latest version.
-3. If the domain of the URL expires, a malicious actor can change the package but the hash will not match so the roc cli will reject it.   
+3. If the domain of the URL expires, a malicious actor can change the package but the hash will not match so the broc cli will reject it.   
 
 ### [Interface Modules](#interface-modules) {#interface-modules}
 
 \[This part of the tutorial has not been written yet. Coming soon!\]
 
-See [Html Interface](https://github.com/roc-lang/roc/blob/main/examples/virtual-dom-wip/platform/Html.roc) for an example.
+See [Html Interface](https://github.com/roc-lang/broc/blob/main/examples/virtual-dom-wip/platform/Html.broc) for an example.
 
 ### [Platform Modules](#interface-modules) {#interface-modules}
 
 \[This part of the tutorial has not been written yet. Coming soon!\]
 
-See [Platform Switching Rust](https://github.com/roc-lang/roc/blob/main/examples/platform-switching/rust-platform/main.roc) for an example.
+See [Platform Switching Rust](https://github.com/roc-lang/broc/blob/main/examples/platform-switching/rust-platform/main.broc) for an example.
 
 ## [Tasks](#tasks) {#tasks}
 
-Tasks are technically not part of the Roc language, but they're very common in platforms. Let's continue using the [basic-cli](https://github.com/roc-lang/basic-cli) platform we've been using up to this point as an example!
+Tasks are technically not part of the Broc language, but they're very common in platforms. Let's continue using the [basic-cli](https://github.com/roc-lang/basic-cli) platform we've been using up to this point as an example!
 
 In the `basic-cli` platform, we have four operations we can do:
 
@@ -1464,7 +1464,7 @@ We'll use these four operations to learn about tasks.
 
 Let's start with a basic "Hello World" program.
 
-```roc
+```broc
 app "cli-tutorial"
     packages { pf: "https://github.com/roc-lang/basic-cli/releases/download/0.3.1/97mY3sUwo433-pcnEQUlMhn-sWiIf_J9bPhcAFZoqY4.tar.br" }
     imports [pf.Stdout]
@@ -1476,11 +1476,11 @@ main =
 
 The `Stdout.line` function takes a `Str` and writes it to [standard output](<https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)>). It has this type:
 
-```roc
+```broc
 Stdout.line : Str -> Task {} *
 ```
 
-A `Task` represents an _effect_; an interaction with state outside your Roc program, such as the terminal's standard output, or a file.
+A `Task` represents an _effect_; an interaction with state outside your Broc program, such as the terminal's standard output, or a file.
 
 When we set `main` to be a `Task`, the task will get run when we run our program. Here, we've set `main` to be a task that writes `"Hello, World!"` to `stdout` when it gets run, so that's what our program does!
 
@@ -1488,13 +1488,13 @@ When we set `main` to be a `Task`, the task will get run when we run our program
 
 In contrast, `Stdin.line` produces a `Str` when it finishes reading from [standard input](<https://en.wikipedia.org/wiki/Standard_streams#Standard_input_(stdin)>). That `Str` is reflected in its type:
 
-```roc
+```broc
 Stdin.line : Task Str *
 ```
 
 Let's change `main` to read a line from `stdin`, and then print it back out again:
 
-```roc
+```broc
 app "cli-tutorial"
     packages { pf: "https://github.com/roc-lang/basic-cli/releases/download/0.3.1/97mY3sUwo433-pcnEQUlMhn-sWiIf_J9bPhcAFZoqY4.tar.br" }
     imports [pf.Stdout, pf.Stdin, pf.Task]
@@ -1511,13 +1511,13 @@ The `Task.await` function combines two tasks into one bigger `Task` which first 
 
 The type of `Task.await` is:
 
-```roc
+```broc
 Task.await : Task a err, (a -> Task b err) -> Task b err
 ```
 
 The second argument to `Task.await` is a "callback function" which runs after the first task completes. This callback function receives the output of that first task, and then returns the second task. This means the second task can make use of output from the first task, like we did in our `\text -> ...` callback function here:
 
-```roc
+```broc
 \text ->
     Stdout.line "You just entered: \(text)"
 ```
@@ -1526,7 +1526,7 @@ Notice that, just like before, we're still building `main` from a single `Task`.
 
 For example, we can print a prompt before we pause to read from `stdin`, so it no longer looks like the program isn't doing anything when we start it up:
 
-```roc
+```broc
 task =
     Task.await (Stdout.line "Type something press Enter:") \_ ->
         Task.await Stdin.line \text ->
@@ -1535,7 +1535,7 @@ task =
 
 This works, but we can make it a little nicer to read. Let's change it to the following:
 
-```roc
+```broc
 app "cli-tutorial"
     packages { pf: "https://github.com/roc-lang/basic-cli/releases/download/0.3.1/97mY3sUwo433-pcnEQUlMhn-sWiIf_J9bPhcAFZoqY4.tar.br" }
     imports [pf.Stdout, pf.Stdin, pf.Task.{ await }]
@@ -1549,11 +1549,11 @@ main =
 
 Here we've changed how we're importing the `Task` module. Before it was `pf.Task` and now it's `pf.Task.{ await }`. The difference is that we're importing `await` in an _unqualified_ way, meaning that whenever we write `await` in this module, it will refer to `Task.await`. Now we no longer need to write `Task.` every time we want to use `await`.
 
-It's most common in Roc to call functions from other modules in a _qualified_ way (`Task.await`) rather than unqualified (`await`) like this, but it can be nice for a function with an uncommon name (like "await") which often gets called repeatedly across a small number of lines of code.
+It's most common in Broc to call functions from other modules in a _qualified_ way (`Task.await`) rather than unqualified (`await`) like this, but it can be nice for a function with an uncommon name (like "await") which often gets called repeatedly across a small number of lines of code.
 
 Speaking of calling `await` repeatedly, if we keep calling it more and more on this code, we'll end up doing a lot of indenting. If we'd rather not indent so much, we can rewrite `task` into this style which looks different but does the same thing:
 
-```roc
+```broc
 task =
     _ <- await (Stdout.line "Type something press Enter:")
     text <- await Stdin.line
@@ -1565,7 +1565,7 @@ This `<-` syntax is called _backpassing_. The `<-` is a way to define an anonymo
 
 Here, we're using backpassing to define two anonymous functions. Here's one of them:
 
-```roc
+```broc
 text <-
 
 Stdout.line "You just entered: \(text)"
@@ -1573,7 +1573,7 @@ Stdout.line "You just entered: \(text)"
 
 It may not look like it, but this code is defining an anonymous function! You might remember it as the anonymous function we previously defined like this:
 
-```roc
+```broc
 \text ->
     Stdout.line "You just entered: \(text)"
 ```
@@ -1586,14 +1586,14 @@ Let's look at these two complete expressions side by side. They are both saying 
 
 Here's the original:
 
-```roc
+```broc
 await Stdin.line \text ->
     Stdout.line "You just entered: \(text)"
 ```
 
 And here's the equivalent expression with backpassing syntax:
 
-```roc
+```broc
 text <- await Stdin.line
 
 Stdout.line "You just entered: \(text)"
@@ -1601,7 +1601,7 @@ Stdout.line "You just entered: \(text)"
 
 Here's the other function we're defining with backpassing:
 
-```roc
+```broc
 _ <-
 text <- await Stdin.line
 
@@ -1610,7 +1610,7 @@ Stdout.line "You just entered: \(text)"
 
 We could also have written that function this way if we preferred:
 
-```roc
+```broc
 _ <-
 
 await Stdin.line \text ->
@@ -1619,9 +1619,9 @@ await Stdin.line \text ->
 
 This is using a mix of a backpassing function `_ <-` and a normal function `\text ->`, which is totally allowed! Since backpassing is nothing more than syntax sugar for defining a function and passing back as an argument to another function, there's no reason we can't mix and match if we like.
 
-That said, the typical style in which this `task` would be written in Roc is using backpassing for all the `await` calls, like we had above:
+That said, the typical style in which this `task` would be written in Broc is using backpassing for all the `await` calls, like we had above:
 
-```roc
+```broc
 task =
     _ <- await (Stdout.line "Type something press Enter:")
     text <- await Stdin.line
@@ -1637,9 +1637,9 @@ This way, it reads like a series of instructions:
 
 Some important things to note about backpassing and `await`:
 
-- `await` is not a language keyword in Roc! It's referring to the `Task.await` function, which we imported unqualified by writing `Task.{ await }` in our module imports. (That said, it is playing a similar role here to the `await` keyword in languages that have `async`/`await` keywords, even though in this case it's a function instead of a special keyword.)
+- `await` is not a language keyword in Broc! It's referring to the `Task.await` function, which we imported unqualified by writing `Task.{ await }` in our module imports. (That said, it is playing a similar role here to the `await` keyword in languages that have `async`/`await` keywords, even though in this case it's a function instead of a special keyword.)
 - Backpassing syntax does not need to be used with `await` in particular. It can be used with any function.
-- Roc's compiler treats functions defined with backpassing exactly the same way as functions defined the other way. The only difference between `\text ->` and `text <-` is how they look, so feel free to use whichever looks nicer to you!
+- Broc's compiler treats functions defined with backpassing exactly the same way as functions defined the other way. The only difference between `\text ->` and `text <-` is how they look, so feel free to use whichever looks nicer to you!
 
 ## [Abilities](#abilities) {#abilities}
 
@@ -1653,7 +1653,7 @@ Here are some concepts you likely won't need as a beginner, but may want to know
 
 Let's say I write a function which takes a record with a `firstName` and `lastName` field, and puts them together with a space in between:
 
-```roc
+```broc
 fullName = \user ->
     "\(user.firstName) \(user.lastName)"
 ```
@@ -1670,14 +1670,14 @@ In contrast, a _closed record_ is one that requires an exact set of fields (and 
 
 If we add a type annotation to this `fullName` function, we can choose to have it accept either an open record or a closed record:
 
-```roc
+```broc
 # Closed record
 fullName : { firstName : Str, lastName : Str } -> Str
 fullName = \user ->
     "\(user.firstName) \(user.lastName)"
 ```
 
-```roc
+```broc
 # Open record (because of the `*`)
 fullName : { firstName : Str, lastName : Str }* -> Str
 fullName = \user ->
@@ -1694,7 +1694,7 @@ If the type variable in a record type is a `*` (such as in `{ first : Str, last 
 
 The type variable can also be a named type variable, like so:
 
-```roc
+```broc
 addHttps : { url : Str }a -> { url : Str }a
 addHttps = \record ->
     { record & url: "https://\(record.url)" }
@@ -1726,7 +1726,7 @@ You can add type annotations to make record types less flexible than what the co
 
 If you like, you can always annotate your functions as accepting open records. However, in practice this may not always be the nicest choice. For example, let's say you have a `User` type alias, like so:
 
-```roc
+```broc
 User : {
     email : Str,
     firstName : Str,
@@ -1738,19 +1738,19 @@ This defines `User` to be a closed record, which in practice is the most common 
 
 If you want to have a function take a `User`, you might write its type like so:
 
-```roc
+```broc
 isValid : User -> Bool
 ```
 
 If you want to have a function return a `User`, you might write its type like so:
 
-```roc
+```broc
 userFromEmail : Str -> User
 ```
 
 A function which takes a user and returns a user might look like this:
 
-```roc
+```broc
 capitalizeNames : User -> User
 ```
 
@@ -1758,7 +1758,7 @@ This is a perfectly reasonable way to write all of these functions. However, I m
 
 Since open records have a type variable (like `*` in `{ email : Str }*` or `a` in `{ email : Str }a -> { email : Str }a`), in order to do this I'd need to add a type variable to the `User` type alias:
 
-```roc
+```broc
 User a : {
     email : Str
     firstName : Str
@@ -1770,13 +1770,13 @@ Notice that the `a` type variable appears not only in `User a` but also in `}a` 
 
 Using `User a` type alias, I can still write the same three functions, but now their types need to look different. This is what the first one would look like:
 
-```roc
+```broc
 isValid : User * -> Bool
 ```
 
 Here, the `User *` type alias substitutes `*` for the type variable `a` in the type alias, which takes it from `{ email : Str, ... }a` to `{ email : Str, ... }*`. Now I can pass it any record that has at least the fields in `User`, and possibly others as well, which was my goal.
 
-```roc
+```broc
 userFromEmail : Str -> User {}
 ```
 
@@ -1788,7 +1788,7 @@ This function still returns the same record as it always did, it just needs to b
 
 The third function might need to use a named type variable:
 
-```roc
+```broc
 capitalizeNames : User a -> User a
 ```
 
@@ -1796,7 +1796,7 @@ If this function does a record update on the given user, and returns that - for 
 
 However, if returns a new `User` that it created from scratch, then its type could instead be:
 
-```roc
+```broc
 capitalizeNames : User * -> User {}
 ```
 
@@ -1808,13 +1808,13 @@ That said, this is a useful technique to know about if you want to (for example)
 
 ### [Open and Closed Tag Unions](#open-and-closed-tag-unions) {#open-and-closed-tag-unions}
 
-Just like how Roc has open records and closed records, it also has open and closed tag unions.
+Just like how Broc has open records and closed records, it also has open and closed tag unions.
 
 The _open tag union_ (or _open union_ for short) `[Foo Str, Bar Bool]*` represents a tag that might be `Foo Str` and might be `Bar Bool`, but might also be some other tag whose type isn't known at compile time.
 
 Because an open union represents possibilities that are impossible to know ahead of time, any `when` I use on a `[Foo Str, Bar Bool]*` value must include a catch-all `_ ->` branch. Otherwise, if one of those unknown tags were to come up, the `when` would not know what to do with it! For example:
 
-```roc
+```broc
 example : [Foo Str, Bar Bool]* -> Bool
 example = \tag ->
     when tag is
@@ -1825,7 +1825,7 @@ example = \tag ->
 
 In contrast, a _closed tag union_ (or _closed union_) like `[Foo Str, Bar Bool]` (without the `*`) represents the set of all possible tags. If I use a `when` on one of these, I can match on `Foo` only and then on `Bar` only, with no need for a catch-all branch. For example:
 
-```roc
+```broc
 example : [Foo Str, Bar Bool] -> Bool
 example = \tag ->
     when tag is
@@ -1833,7 +1833,7 @@ example = \tag ->
         Bar bool -> bool
 ```
 
-If we were to remove the type annotations from the previous two code examples, Roc would infer the same types for them anyway.
+If we were to remove the type annotations from the previous two code examples, Broc would infer the same types for them anyway.
 
 It would infer `tag : [Foo Str, Bar Bool]` for the latter example because the `when tag is` expression only includes a `Foo Str` branch and a `Bar Bool` branch, and nothing else. Since the `when` doesn't handle any other possibilities, these two tags must be the only possible ones.
 
@@ -1849,7 +1849,7 @@ When we make a new record, it's inferred to be a closed record. For example, in 
 
 This is because open unions can accumulate additional tags based on how they're used in the program, whereas closed unions cannot. For example, let's look at this conditional:
 
-```roc
+```broc
 if x > 5 then
     "foo"
 else
@@ -1858,7 +1858,7 @@ else
 
 This will be a type mismatch because the two branches have incompatible types. Strings and numbers are not type-compatible! Now let's look at another example:
 
-```roc
+```broc
 if x > 5 then
     Ok "foo"
 else
@@ -1903,7 +1903,7 @@ In summary, here's a way to think about the difference between open unions in a 
 
 Earlier we saw these two examples, one with an open tag union and the other with a closed one:
 
-```roc
+```broc
 example : [Foo Str, Bar Bool]* -> Bool
 example = \tag ->
     when tag is
@@ -1912,7 +1912,7 @@ example = \tag ->
         _ -> Bool.false
 ```
 
-```roc
+```broc
 example : [Foo Str, Bar Bool] -> Bool
 example = \tag ->
     when tag is
@@ -1922,7 +1922,7 @@ example = \tag ->
 
 Similarly to how there are open records with a `*`, closed records with nothing, and constrained records with a named type variable, we can also have _constrained tag unions_ with a named type variable. Here's an example:
 
-```roc
+```broc
 example : [Foo Str, Bar Bool]a -> [Foo Str, Bar Bool]a
 example = \tag ->
     when tag is
@@ -1935,12 +1935,12 @@ This type says that the `example` function will take either a `Foo Str` tag, or 
 
 So if we give this function a `[Foo Str, Bar Bool, Baz (List Str)]` argument, then it will be guaranteed to return a `[Foo Str, Bar Bool, Baz (List Str)]` value. This is more constrained than a function that returned `[Foo Str, Bar Bool]*` because that would say it could return _any_ other tag (in addition to the `Foo Str` and `Bar Bool` we already know about).
 
-If we removed the type annotation from `example` above, Roc's compiler would infer the same type anyway. This may be surprising if you look closely at the body of the function, because:
+If we removed the type annotation from `example` above, Broc's compiler would infer the same type anyway. This may be surprising if you look closely at the body of the function, because:
 
 - The return type includes `Foo Str`, but no branch explicitly returns `Foo`. Couldn't the return type be `[Bar Bool]a` instead?
 - The argument type includes `Bar Bool` even though we never look at `Bar`'s payload. Couldn't the argument type be inferred to be `Bar *` instead of `Bar Bool`, since we never look at it?
 
-The reason it has this type is the `other -> other` branch. Take a look at that branch, and ask this question: "What is the type of `other`?" There has to be exactly one answer! It can't be the case that `other` has one type before the `->` and another type after it; whenever you see a named value in Roc, it is guaranteed to have the same type everywhere it appears in that scope.
+The reason it has this type is the `other -> other` branch. Take a look at that branch, and ask this question: "What is the type of `other`?" There has to be exactly one answer! It can't be the case that `other` has one type before the `->` and another type after it; whenever you see a named value in Broc, it is guaranteed to have the same type everywhere it appears in that scope.
 
 For this reason, any time you see a function that only runs a `when` on its only argument, and that `when` includes a branch like `x -> x` or `other -> other`, the function's argument type and return type must necessarily be equivalent.
 
@@ -1954,7 +1954,7 @@ For this reason, any time you see a function that only runs a `when` on its only
 
 ### [Operator Desugaring Table](#operator-desugaring-table) {#operator-desugaring-table}
 
-Here are various Roc expressions involving operators, and what they desugar to.
+Here are various Broc expressions involving operators, and what they desugar to.
 
 | Expression                    |    Desugars To     |
 | ----------------------------- | ------------------ | 

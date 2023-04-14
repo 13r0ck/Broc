@@ -1,5 +1,5 @@
 [package]
-name = "roc_collections"
+name = "broc_collections"
 description = "Domain-specific collections created for the needs of the compiler."
 
 authors.workspace = true

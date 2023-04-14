@@ -1,8 +1,8 @@
-use roc_builtins::bitcode::{FloatWidth, IntWidth};
-use roc_can::expr::IntValue;
-use roc_error_macros::internal_error;
-use roc_module::symbol::Symbol;
-use roc_std::RocDec;
+use broc_builtins::bitcode::{FloatWidth, IntWidth};
+use broc_can::expr::IntValue;
+use broc_error_macros::internal_error;
+use broc_module::symbol::Symbol;
+use broc_std::BrocDec;
 
 use crate::layout::{Builtin, InLayout, Layout, LayoutInterner, TLLayoutInterner};
 
@@ -99,7 +99,7 @@ pub fn make_num_literal<'a>(
             },
         },
         Layout::Builtin(Builtin::Decimal) => {
-            let dec = match RocDec::from_str(num_str) {
+            let dec = match BrocDec::from_str(num_str) {
                 Some(d) => d,
                 None => internal_error!(
                     "Invalid decimal for float literal = {}. This should be a type error!",

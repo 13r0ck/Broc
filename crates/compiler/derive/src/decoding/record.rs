@@ -1,17 +1,17 @@
-use roc_can::expr::{
+use broc_can::expr::{
     AnnotatedMark, ClosureData, Expr, Field, Recursive, WhenBranch, WhenBranchPattern,
 };
-use roc_can::pattern::Pattern;
-use roc_collections::SendMap;
-use roc_module::called_via::CalledVia;
-use roc_module::ident::Lowercase;
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::{
+use broc_can::pattern::Pattern;
+use broc_collections::SendMap;
+use broc_module::called_via::CalledVia;
+use broc_module::ident::Lowercase;
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::{
     Content, ExhaustiveMark, FlatType, LambdaSet, OptVariable, RecordFields, RedundantMark,
     SubsSlice, TagExt, UnionLambdas, UnionTags, Variable,
 };
-use roc_types::types::RecordField;
+use broc_types::types::RecordField;
 
 use crate::synth_var;
 use crate::util::{Env, ExtensionKind};
@@ -26,7 +26,7 @@ use super::wrap_in_decode_custom_decode_with;
 ///
 /// we'd like to generate an impl like
 ///
-/// ```roc
+/// ```broc
 /// decoder : Decoder {first: a, second: b} fmt | a has Decoding, b has Decoding, fmt has DecoderFormatting
 /// decoder =
 ///     initialState : {f0: Result a [NoField], f1: Result b [NoField]}

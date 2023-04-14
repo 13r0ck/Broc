@@ -1,18 +1,18 @@
-use roc_collections::all::MutSet;
-use roc_module::ident::{Ident, Lowercase, ModuleName};
-use roc_module::symbol::DERIVABLE_ABILITIES;
-use roc_problem::can::PrecedenceProblem::BothNonAssociative;
-use roc_problem::can::{
+use broc_collections::all::MutSet;
+use broc_module::ident::{Ident, Lowercase, ModuleName};
+use broc_module::symbol::DERIVABLE_ABILITIES;
+use broc_problem::can::PrecedenceProblem::BothNonAssociative;
+use broc_problem::can::{
     BadPattern, CycleEntry, ExtensionTypeKind, FloatErrorKind, IntErrorKind, Problem, RuntimeError,
     ShadowKind,
 };
-use roc_problem::Severity;
-use roc_region::all::{LineColumn, LineColumnRegion, LineInfo, Loc, Region};
-use roc_types::types::AliasKind;
+use broc_problem::Severity;
+use broc_region::all::{LineColumn, LineColumnRegion, LineInfo, Loc, Region};
+use broc_types::types::AliasKind;
 use std::path::PathBuf;
 
 use crate::error::r#type::suggest;
-use crate::report::{to_file_problem_report, Annotation, Report, RocDocAllocator, RocDocBuilder};
+use crate::report::{to_file_problem_report, Annotation, Report, BrocDocAllocator, BrocDocBuilder};
 use ven_pretty::DocAllocator;
 
 const SYNTAX_PROBLEM: &str = "SYNTAX PROBLEM";
@@ -61,7 +61,7 @@ const UNNECESSARY_IMPLEMENTATIONS: &str = "UNNECESSARY IMPLEMENTATIONS";
 const INCOMPLETE_ABILITY_IMPLEMENTATION: &str = "INCOMPLETE ABILITY IMPLEMENTATION";
 
 pub fn can_problem<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     problem: Problem,
@@ -259,7 +259,7 @@ pub fn can_problem<'b>(
             title = SYNTAX_PROBLEM.to_string();
         }
         Problem::UnsupportedPattern(BadPattern::Unsupported(pattern_type), region) => {
-            use roc_parse::pattern::PatternType::*;
+            use broc_parse::pattern::PatternType::*;
 
             let this_thing = match pattern_type {
                 TopLevelDef => "a top-level definition:",
@@ -324,7 +324,7 @@ pub fn can_problem<'b>(
                     alloc.reflow(" definition:"),
                 ]),
                 alloc.region(lines.convert_region(variable_region)),
-                alloc.reflow("Roc does not allow unused type parameters!"),
+                alloc.reflow("Broc does not allow unused type parameters!"),
                 // TODO add link to this guide section
                 alloc.tip().append(alloc.reflow(
                     "If you want an unused type parameter (a so-called \"phantom type\"), \
@@ -539,7 +539,7 @@ pub fn can_problem<'b>(
                     alloc.parser_suggestion("\\u(00FF)"),
                     alloc.text("."),
                 ]),
-                alloc.reflow(r"Learn more about working with unicode in roc at TODO"),
+                alloc.reflow(r"Learn more about working with unicode in broc at TODO"),
             ]);
 
             title = INVALID_UNICODE.to_string();
@@ -548,7 +548,7 @@ pub fn can_problem<'b>(
             doc = alloc.stack([
                 alloc.reflow("This unicode code point is invalid:"),
                 alloc.region(lines.convert_region(region)),
-                alloc.reflow("Learn more about working with unicode in roc at TODO"),
+                alloc.reflow("Learn more about working with unicode in broc at TODO"),
             ]);
 
             title = INVALID_UNICODE.to_string();
@@ -592,7 +592,7 @@ pub fn can_problem<'b>(
                     alloc.reflow(" must match its definition:"),
                 ]),
                 alloc.region(lines.convert_region(def_region)),
-                alloc.reflow("Nested datatypes are not supported in Roc."),
+                alloc.reflow("Nested datatypes are not supported in Broc."),
                 alloc.concat([
                     alloc.hint("Consider rewriting the definition of "),
                     alloc.symbol_unqualified(alias),
@@ -760,7 +760,7 @@ pub fn can_problem<'b>(
                     .concat([alloc
                         .reflow("This ability definition is not on the top-level of a module:")]),
                 alloc.region(lines.convert_region(region)),
-                alloc.reflow("Abilities can only be defined on the top-level of a Roc module."),
+                alloc.reflow("Abilities can only be defined on the top-level of a Broc module."),
             ]);
             title = ABILITY_NOT_ON_TOPLEVEL.to_string();
         }
@@ -972,7 +972,7 @@ pub fn can_problem<'b>(
             doc = alloc.stack([
                 alloc.reflow("This destructure assignment doesn't introduce any new variables:"),
                 alloc.region(lines.convert_region(region)),
-                alloc.reflow("If you don't need to use the value on the right-hand-side of this assignment, consider removing the assignment. Since Roc is purely functional, assignments that don't introduce variables cannot affect a program's behavior!"),
+                alloc.reflow("If you don't need to use the value on the right-hand-side of this assignment, consider removing the assignment. Since Broc is purely functional, assignments that don't introduce variables cannot affect a program's behavior!"),
             ]);
             title = "UNNECESSARY DEFINITION".to_string();
         }
@@ -1108,7 +1108,7 @@ pub fn can_problem<'b>(
     }
 }
 
-fn list_builtin_abilities<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'a> {
+fn list_builtin_abilities<'a>(alloc: &'a BrocDocAllocator<'a>) -> BrocDocBuilder<'a> {
     alloc.intersperse(
         DERIVABLE_ABILITIES
             .iter()
@@ -1118,7 +1118,7 @@ fn list_builtin_abilities<'a>(alloc: &'a RocDocAllocator<'a>) -> RocDocBuilder<'
 }
 
 fn to_invalid_optional_value_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     filename: PathBuf,
     field_name: Lowercase,
@@ -1142,12 +1142,12 @@ fn to_invalid_optional_value_report<'b>(
 }
 
 fn to_invalid_optional_value_report_help<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     field_name: Lowercase,
     field_region: Region,
     record_region: Region,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     alloc.stack([
         alloc.concat([
             alloc.reflow("This record uses an optional value for the "),
@@ -1168,12 +1168,12 @@ fn to_invalid_optional_value_report_help<'b>(
 }
 
 fn to_bad_ident_expr_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
-    bad_ident: roc_parse::ident::BadIdent,
+    bad_ident: broc_parse::ident::BadIdent,
     surroundings: Region,
-) -> RocDocBuilder<'b> {
-    use roc_parse::ident::BadIdent::*;
+) -> BrocDocBuilder<'b> {
+    use broc_parse::ident::BadIdent::*;
 
     match bad_ident {
         Start(_) | Space(_, _) => unreachable!("these are handled in the parser"),
@@ -1263,7 +1263,7 @@ fn to_bad_ident_expr_report<'b>(
                     lines.convert_region(region),
                 ),
                 alloc.concat([alloc
-                    .reflow(r"I recommend using camelCase. It's the standard style in Roc code!")]),
+                    .reflow(r"I recommend using camelCase. It's the standard style in Broc code!")]),
             ])
         }
 
@@ -1338,12 +1338,12 @@ fn to_bad_ident_expr_report<'b>(
 }
 
 fn to_bad_ident_pattern_report<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
-    bad_ident: roc_parse::ident::BadIdent,
+    bad_ident: broc_parse::ident::BadIdent,
     surroundings: Region,
-) -> RocDocBuilder<'b> {
-    use roc_parse::ident::BadIdent::*;
+) -> BrocDocBuilder<'b> {
+    use broc_parse::ident::BadIdent::*;
 
     match bad_ident {
         Start(_) | Space(_, _) => unreachable!("these are handled in the parser"),
@@ -1458,7 +1458,7 @@ fn what_is_next<'a>(source_lines: &'a [&'a str], pos: LineColumn) -> BadIdentNex
             let chars = &line[col_index..];
             let mut it = chars.chars();
 
-            match roc_parse::keyword::KEYWORDS
+            match broc_parse::keyword::KEYWORDS
                 .iter()
                 .find(|keyword| crate::error::parse::starts_with_keyword(chars, keyword))
             {
@@ -1503,12 +1503,12 @@ where
 }
 
 fn report_shadowing<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     original_region: Region,
     shadow: Loc<Ident>,
     kind: ShadowKind,
-) -> (&'static str, RocDocBuilder<'b>) {
+) -> (&'static str, BrocDocBuilder<'b>) {
     let (what, what_plural, is_builtin) = match kind {
         ShadowKind::Variable => ("variable", "variables", false),
         ShadowKind::Alias(sym) => ("alias", "aliases", sym.is_builtin()),
@@ -1553,10 +1553,10 @@ fn report_shadowing<'b>(
 }
 
 fn pretty_runtime_error<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
     runtime_error: RuntimeError,
-) -> (RocDocBuilder<'b>, &'static str) {
+) -> (BrocDocBuilder<'b>, &'static str) {
     let doc;
     let title;
 
@@ -1589,8 +1589,8 @@ fn pretty_runtime_error<'b>(
             title = CIRCULAR_DEF;
         }
         RuntimeError::MalformedPattern(problem, region) => {
-            use roc_parse::ast::Base;
-            use roc_problem::can::MalformedPatternProblem::*;
+            use broc_parse::ast::Base;
+            use broc_problem::can::MalformedPatternProblem::*;
 
             let name = match problem {
                 MalformedInt => " integer ",
@@ -1747,7 +1747,7 @@ fn pretty_runtime_error<'b>(
                 alloc.region(lines.convert_region(region)),
                 alloc.concat([
                     alloc
-                        .reflow("Roc uses signed 64-bit floating points, allowing values between "),
+                        .reflow("Broc uses signed 64-bit floating points, allowing values between "),
                     alloc.text(format!("{:e}", f64::MIN)),
                     alloc.reflow(" and "),
                     alloc.text(format!("{:e}", f64::MAX)),
@@ -1787,7 +1787,7 @@ fn pretty_runtime_error<'b>(
         }
         RuntimeError::InvalidInt(error @ IntErrorKind::InvalidDigit, base, region, _raw_str)
         | RuntimeError::InvalidInt(error @ IntErrorKind::Empty, base, region, _raw_str) => {
-            use roc_parse::ast::Base::*;
+            use broc_parse::ast::Base::*;
 
             let (problem, contains) = if let IntErrorKind::InvalidDigit = error {
                 (
@@ -1853,7 +1853,7 @@ fn pretty_runtime_error<'b>(
                     "small",
                     alloc.concat([
                         alloc.reflow(
-                            "The smallest number representable in Roc is the minimum I128 value, ",
+                            "The smallest number representable in Broc is the minimum I128 value, ",
                         ),
                         alloc.int_literal(i128::MIN),
                         alloc.text("."),
@@ -1864,7 +1864,7 @@ fn pretty_runtime_error<'b>(
                     "big",
                     alloc.concat([
                         alloc.reflow(
-                            "The largest number representable in Roc is the maximum U128 value, ",
+                            "The largest number representable in Broc is the maximum U128 value, ",
                         ),
                         alloc.int_literal(u128::MAX),
                         alloc.text("."),
@@ -2139,10 +2139,10 @@ fn pretty_runtime_error<'b>(
 }
 
 pub fn to_circular_def_doc<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
-    entries: &[roc_problem::can::CycleEntry],
-) -> RocDocBuilder<'b> {
+    entries: &[broc_problem::can::CycleEntry],
+) -> BrocDocBuilder<'b> {
     // TODO "are you trying to mutate a variable?
     // TODO tip?
     match entries {
@@ -2154,7 +2154,7 @@ pub fn to_circular_def_doc<'b>(
                     alloc.reflow(" is defined directly in terms of itself:"),
                 ]),
                 alloc.region(lines.convert_region(Region::span_across(symbol_region, expr_region))),
-                alloc.reflow("Roc evaluates values strictly, so running this program would enter an infinite loop!"),
+                alloc.reflow("Broc evaluates values strictly, so running this program would enter an infinite loop!"),
                 alloc.hint("").append(alloc.concat([
                     alloc.reflow("Did you mean to define "),alloc.symbol_unqualified(*symbol),alloc.reflow(" as a function?"),
                 ])),
@@ -2188,12 +2188,12 @@ pub fn to_circular_def_doc<'b>(
 }
 
 fn not_found<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
-    region: roc_region::all::Region,
+    region: broc_region::all::Region,
     name: &Ident,
     options: MutSet<Box<str>>,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     let mut suggestions = suggest::sort(
         name.as_inline_str().as_str(),
         options.iter().map(|v| v.as_ref()).collect(),
@@ -2236,15 +2236,15 @@ fn not_found<'b>(
 
 /// Generate a message informing the user that a module was referenced, but not found
 ///
-/// See [`roc_problem::can::ModuleNotImported`]
+/// See [`broc_problem::can::ModuleNotImported`]
 fn module_not_found<'b>(
-    alloc: &'b RocDocAllocator<'b>,
+    alloc: &'b BrocDocAllocator<'b>,
     lines: &LineInfo,
-    region: roc_region::all::Region,
+    region: broc_region::all::Region,
     name: &ModuleName,
     options: MutSet<Box<str>>,
     module_exists: bool,
-) -> RocDocBuilder<'b> {
+) -> BrocDocBuilder<'b> {
     // If the module exists, sugguest that the user import it
     let details = if module_exists {
         // TODO:  Maybe give an example of how to do that

@@ -1,11 +1,11 @@
 use crate::expr::Expr;
 use crate::pattern::Pattern;
-use roc_module::symbol::Symbol;
-use roc_region::all::{Loc, Region};
-use roc_types::subs::Variable;
+use broc_module::symbol::Symbol;
+use broc_region::all::{Loc, Region};
+use broc_types::subs::Variable;
 
 #[derive(Clone, Debug)]
-pub struct Procedure {
+pub struct Pbrocedure {
     pub name: Option<Box<str>>,
     pub is_self_tail_recursive: bool,
     pub definition: Region,
@@ -16,7 +16,7 @@ pub struct Procedure {
     pub ret_var: Variable,
 }
 
-impl Procedure {
+impl Pbrocedure {
     pub fn new(
         definition: Region,
         args: Vec<Loc<Pattern>>,
@@ -24,8 +24,8 @@ impl Procedure {
         references: References,
         var: Variable,
         ret_var: Variable,
-    ) -> Procedure {
-        Procedure {
+    ) -> Pbrocedure {
+        Pbrocedure {
             name: None,
             is_self_tail_recursive: false,
             definition,

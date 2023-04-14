@@ -1,17 +1,17 @@
 use libloading::Library;
-use roc_build::link::{link, LinkType};
-use roc_builtins::bitcode;
-use roc_load::{EntryPoint, ExecutionMode, LoadConfig, Threading};
-use roc_mono::ir::SingleEntryPoint;
-use roc_packaging::cache::RocCacheDir;
-use roc_region::all::LineInfo;
+use broc_build::link::{link, LinkType};
+use broc_builtins::bitcode;
+use broc_load::{EntryPoint, ExecutionMode, LoadConfig, Threading};
+use broc_mono::ir::SingleEntryPoint;
+use broc_packaging::cache::BrocCacheDir;
+use broc_region::all::LineInfo;
 use tempfile::tempdir;
 
 #[cfg(any(feature = "gen-llvm", feature = "gen-wasm"))]
-use roc_collections::all::MutMap;
+use broc_collections::all::MutMap;
 
 #[allow(unused_imports)]
-use roc_mono::ir::pretty_print_ir_symbols;
+use broc_mono::ir::pretty_print_ir_symbols;
 
 #[allow(dead_code)]
 fn promote_expr_to_module(src: &str) -> String {
@@ -33,11 +33,11 @@ pub fn helper(
     src: &str,
     _leak: bool,
     lazy_literals: bool,
-) -> (String, Vec<roc_problem::can::Problem>, Library) {
+) -> (String, Vec<broc_problem::can::Problem>, Library) {
     use std::path::PathBuf;
 
     let dir = tempdir().unwrap();
-    let filename = PathBuf::from("Test.roc");
+    let filename = PathBuf::from("Test.broc");
     let src_dir = PathBuf::from("fake/test/path");
     let app_o_file = dir.path().join("app.o");
 
@@ -53,24 +53,24 @@ pub fn helper(
     }
 
     let load_config = LoadConfig {
-        target_info: roc_target::TargetInfo::default_x86_64(),
-        render: roc_reporting::report::RenderTarget::ColorTerminal,
-        palette: roc_reporting::report::DEFAULT_PALETTE,
+        target_info: broc_target::TargetInfo::default_x86_64(),
+        render: broc_reporting::report::RenderTarget::ColorTerminal,
+        palette: broc_reporting::report::DEFAULT_PALETTE,
         threading: Threading::Single,
         exec_mode: ExecutionMode::Executable,
     };
-    let loaded = roc_load::load_and_monomorphize_from_str(
+    let loaded = broc_load::load_and_monomorphize_from_str(
         arena,
         filename,
         module_src,
         src_dir,
-        RocCacheDir::Disallowed,
+        BrocCacheDir::Disallowed,
         load_config,
     );
 
     let mut loaded = loaded.expect("failed to load module");
 
-    use roc_load::MonomorphizedModule;
+    use broc_load::MonomorphizedModule;
     let MonomorphizedModule {
         module_id,
         procedures,
@@ -83,11 +83,11 @@ pub fn helper(
     // You can comment and uncomment this block out to get more useful information
     // while you're working on the dev backend!
     {
-        // println!("=========== Procedures ==========");
+        // println!("=========== Pbrocedures ==========");
         // if pretty_print_ir_symbols() {
         //     println!("");
-        //     for proc in procedures.values() {
-        //         println!("{}", proc.to_pretty(200));
+        //     for pbroc in procedures.values() {
+        //         println!("{}", pbroc.to_pretty(200));
         //     }
         // } else {
         //     println!("{:?}", procedures.values());
@@ -122,7 +122,7 @@ pub fn helper(
     let main_fn_symbol = entry_point.symbol;
     let main_fn_layout = entry_point.layout;
 
-    let mut layout_ids = roc_mono::layout::LayoutIds::default();
+    let mut layout_ids = broc_mono::layout::LayoutIds::default();
     let main_fn_name = layout_ids
         .get_toplevel(main_fn_symbol, &main_fn_layout)
         .to_exposed_symbol_string(main_fn_symbol, &interns);
@@ -132,7 +132,7 @@ pub fn helper(
     let mut delayed_errors = Vec::new();
 
     for (home, (module_path, src)) in loaded.sources {
-        use roc_reporting::report::{can_problem, type_problem, RocDocAllocator, DEFAULT_PALETTE};
+        use broc_reporting::report::{can_problem, type_problem, BrocDocAllocator, DEFAULT_PALETTE};
 
         let can_problems = loaded.can_problems.remove(&home).unwrap_or_default();
         let type_problems = loaded.type_problems.remove(&home).unwrap_or_default();
@@ -148,9 +148,9 @@ pub fn helper(
         let palette = DEFAULT_PALETTE;
 
         // Report parsing and canonicalization problems
-        let alloc = RocDocAllocator::new(&src_lines, home, &interns);
+        let alloc = BrocDocAllocator::new(&src_lines, home, &interns);
 
-        use roc_problem::can::Problem::*;
+        use broc_problem::can::Problem::*;
         for problem in can_problems.into_iter() {
             // Ignore "unused" problems
             match problem {
@@ -185,7 +185,7 @@ pub fn helper(
         assert_eq!(0, 1, "Mistakes were made");
     }
 
-    let env = roc_gen_dev::Env {
+    let env = broc_gen_dev::Env {
         arena,
         module_id,
         exposed_to_host: exposed_to_host.top_level_values.keys().copied().collect(),
@@ -194,7 +194,7 @@ pub fn helper(
     };
 
     let target = target_lexicon::Triple::host();
-    let module_object = roc_gen_dev::build_module(
+    let module_object = broc_gen_dev::build_module(
         &env,
         &mut interns,
         &mut layout_interner,
@@ -208,7 +208,7 @@ pub fn helper(
     std::fs::write(&app_o_file, module_out).expect("failed to write object to file");
 
     let builtins_host_tempfile =
-        roc_bitcode::host_tempfile().expect("failed to write host builtins object to tempfile");
+        broc_bitcode::host_tempfile().expect("failed to write host builtins object to tempfile");
 
     if false {
         std::fs::copy(&app_o_file, "/tmp/app.o").unwrap();
@@ -265,7 +265,7 @@ macro_rules! assert_evals_to {
     };
     ($src:expr, $expected:expr, $ty:ty, $transform:expr, $leak:expr, $lazy_literals:expr) => {
         use bumpalo::Bump;
-        use roc_gen_dev::run_jit_function_raw;
+        use broc_gen_dev::run_jit_function_raw;
 
         let arena = Bump::new();
         let (main_fn_name, errors, lib) =

@@ -1,16 +1,16 @@
 use crate::solve::{self, Aliases};
-use roc_can::abilities::{AbilitiesStore, ResolvedImpl};
-use roc_can::constraint::{Constraint as ConstraintSoa, Constraints};
-use roc_can::expr::PendingDerives;
-use roc_can::module::{ExposedByModule, ResolvedImplementations, RigidVariables};
-use roc_collections::all::MutMap;
-use roc_collections::VecMap;
-use roc_derive::SharedDerivedModule;
-use roc_error_macros::internal_error;
-use roc_module::symbol::{ModuleId, Symbol};
-use roc_solve_problem::TypeError;
-use roc_types::subs::{Content, ExposedTypesStorageSubs, FlatType, StorageSubs, Subs, Variable};
-use roc_types::types::{Alias, MemberImpl, Types};
+use broc_can::abilities::{AbilitiesStore, ResolvedImpl};
+use broc_can::constraint::{Constraint as ConstraintSoa, Constraints};
+use broc_can::expr::PendingDerives;
+use broc_can::module::{ExposedByModule, ResolvedImplementations, RigidVariables};
+use broc_collections::all::MutMap;
+use broc_collections::VecMap;
+use broc_derive::SharedDerivedModule;
+use broc_error_macros::internal_error;
+use broc_module::symbol::{ModuleId, Symbol};
+use broc_solve_problem::TypeError;
+use broc_types::subs::{Content, ExposedTypesStorageSubs, FlatType, StorageSubs, Subs, Variable};
+use broc_types::types::{Alias, MemberImpl, Types};
 
 /// A marker that a given Subs has been solved.
 /// The only way to obtain a Solved<Subs> is by running the solver on it.
@@ -143,7 +143,7 @@ pub fn exposed_types_storage_subs(
                         Content::Structure(FlatType::Func(_, lambda_set_var, _)) => *lambda_set_var,
                         content => internal_error!(
                             "ambient lambda set function import is not a function, found: {:?}",
-                            roc_types::subs::SubsFmtContent(content, storage_subs.as_inner())
+                            broc_types::subs::SubsFmtContent(content, storage_subs.as_inner())
                         ),
                     };
                     stored_specialization_lambda_set_vars.insert(lset_var, imported_lset_var);

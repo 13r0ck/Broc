@@ -9,10 +9,10 @@ set -euxo pipefail
 # in nixos, to set it globally, i needed to say `programs.java.enable = true;` in `/etc/nixos/configuration.nix`
 
 
-# if roc is in your path, you could
-# roc build impl.roc --no-link
-# else, assuming in roc repo and that you ran `cargo run --release`
-../../target/release/roc build impl.roc --no-link
+# if broc is in your path, you could
+# broc build impl.broc --no-link
+# else, assuming in broc repo and that you ran `cargo run --release`
+../../target/release/broc build impl.broc --no-link
 
 
 # make jvm look here to see libinterop.so
@@ -35,7 +35,7 @@ clang \
     -I"$JAVA_HOME/include/linux" \
     # -shared -o libinterop.dylib \ # for macos
     -shared -o libinterop.so \
-    rocdemo.o bridge.c
+    brocdemo.o bridge.c
 
 
 # then run
